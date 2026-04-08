@@ -1,0 +1,92 @@
+name: Test Articulous Generator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install lxml
+
+      - name: Validate XML files
+        run: |
+          echo "Validating XML files..."
+          find content -type f -name "*.xml" | while read f; do
+            if ! xmllint --noout "$f"; then
+              echo "❌ Invalid XML: $f"
+              exit 1
+            fi
+          done
+          echo "✔ All XML files are well-formed."
+
+      - name: Check for empty XML files
+        run: |
+          echo "Checking for empty XML files..."
+          EMPTY=$(find content -type f -name "*.xml" -size 0)
+          if [ ! -z "$EMPTY" ]; then
+            echo "❌ Empty XML files found:"
+            echo "$EMPTY"
+            exit 1
+          fi
+          echo "✔ No empty XML files."
+
+      - name: Run generator (full build)
+        run: |
+          echo "Running full build..."
+          chmod +x sitegen.py
+          ./sitegen.py --force --verbose
+
+      - name: Verify output directory exists
+        run: |
+          if [ ! -d "output" ]; then
+            echo "❌ Output directory missing!"
+            exit 1
+          fi
+          echo "✔ Output directory exists."
+
+      - name: Verify expected output files
+        run: |
+          REQUIRED=(
+            "output/rss.xml"
+            "output/sitemap.xml"
+            "output/search.json"
+          )
+          for f in "${REQUIRED[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing required output file: $f"
+              exit 1
+            fi
+          done
+          echo "✔ All required output files exist."
+
+      - name: Run generator (dry-run)
+        run: |
+          echo "Running dry-run..."
+          ./sitegen.py --dry-run --verbose
+
+      - name: Fuzz test: random rebuilds
+        run: |
+          echo "Running fuzz tests..."
+          for i in {1..5}; do
+            ./sitegen.py --verbose --only articles
+            ./sitegen.py --verbose --only index
+            ./sitegen.py --verbose --only tags
+          done
+          echo "✔ Fuzz tests completed."

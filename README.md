@@ -1,10 +1,6 @@
-# articulous
-a static site generator based on XSLT  
-[![AVR Build](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml) — Custom Quartz Watch Movement
-
-
 # Articulous Static Site Generator
 
+[![Articulous](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml)  
 A fast, parallel, incremental static site generator powered by **XML + XSLT**.  
 Written in Python, with optional SaxonC acceleration for high‑performance builds.
 

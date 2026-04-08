@@ -1,5 +1,7 @@
 # articulous
-a static site generator based on XSLT
+a static site generator based on XSLT  
+[![AVR Build](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml) — Custom Quartz Watch Movement
+
 
 # Articulous Static Site Generator
 

@@ -231,6 +231,11 @@ import subprocess
 from lxml import etree
 
 
+def _safe_xml_parser():
+    # Disable external entity resolution, DTD loading, and network access (XXE-safe).
+    return etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False)
+
+
 def configure_saxonc(config):
     """
     Validate SaxonC installation and return the path to the Transform binary.
@@ -296,8 +301,8 @@ def run_transform(engine, saxonc_bin, xml_path, xsl_path, output_path, dry_run=F
     logging.debug(f"Running lxml transform: {xml_path} -> {output_path}")
 
     try:
-        dom = etree.parse(str(xml_path))
-        xslt = etree.XSLT(etree.parse(str(xsl_path)))
+        dom = etree.parse(str(xml_path), parser=_safe_xml_parser())
+        xslt = etree.XSLT(etree.parse(str(xsl_path), parser=_safe_xml_parser()))
         result = xslt(dom)
     except Exception as e:
         logging.error(f"lxml transform failed: {e}")
@@ -387,7 +392,7 @@ def parse_article_xml(path: Path):
     </article>
     """
     try:
-        tree = etree.parse(str(path))
+        tree = etree.parse(str(path), parser=_safe_xml_parser())
         root = tree.getroot()
     except Exception as e:
         logging.error(f"Failed to parse XML: {path} — {e}")
@@ -428,7 +433,7 @@ def discover_article_files(content_dir: Path):
     return sorted(content_dir.rglob("*.xml"))
 
 
-def load_articles(content_dir: Path, config):
+def load_articles(content_dir: Path):
     """
     Load and parse all articles from the content directory.
     """
@@ -469,7 +474,7 @@ def build_url_from_pattern(base_url: str, pattern: str, **kwargs):
 # Index Pages (pagination)
 # ------------------------------------------------------------
 
-def build_index_models(articles, config, temp_dir: Path):
+def build_index_models(articles, config):
     """
     Build paginated index models.
     Returns a list of dicts, each representing one index page.
@@ -503,7 +508,7 @@ def build_index_models(articles, config, temp_dir: Path):
 # Tag Pages
 # ------------------------------------------------------------
 
-def build_tags_models(articles, config, temp_dir: Path):
+def build_tags_models(articles, config):
     """
     Build tag pages: one page per tag.
     """
@@ -533,7 +538,7 @@ def build_tags_models(articles, config, temp_dir: Path):
 # RSS Feed
 # ------------------------------------------------------------
 
-def build_rss_model(articles, config, temp_dir: Path):
+def build_rss_model(articles, config):
     """
     Build RSS feed model.
     """
@@ -553,7 +558,7 @@ def build_rss_model(articles, config, temp_dir: Path):
 # Sitemap
 # ------------------------------------------------------------
 
-def build_sitemap_model(articles, config, temp_dir: Path):
+def build_sitemap_model(articles, config):
     """
     Build sitemap model.
     """
@@ -576,7 +581,7 @@ def build_sitemap_model(articles, config, temp_dir: Path):
 # Search Index (JSON)
 # ------------------------------------------------------------
 
-def build_search_model(articles, config, temp_dir: Path):
+def build_search_model(articles, config):
     """
     Build search index model.
     """
@@ -796,7 +801,7 @@ def build_index_section(articles, config, saxonc_bin, cache, dry_run):
     engine = config["engines"]["index"]
     force = config["build"]["force_full_build"]
 
-    models = build_index_models(articles, config, output_dir)
+    models = build_index_models(articles, config)
 
     for model in models:
         xml_temp = output_dir / f"temp/index-{model['page']}.xml"
@@ -850,7 +855,7 @@ def build_tags_section(articles, config, saxonc_bin, cache, dry_run):
     engine = config["engines"]["tags"]
     force = config["build"]["force_full_build"]
 
-    models = build_tags_models(articles, config, output_dir)
+    models = build_tags_models(articles, config)
 
     for model in models:
         tag = model["tag"]
@@ -906,7 +911,7 @@ def build_rss_section(articles, config, saxonc_bin, cache, dry_run):
     engine = config["engines"]["rss"]
     force = config["build"]["force_full_build"]
 
-    model = build_rss_model(articles, config, output_dir)
+    model = build_rss_model(articles, config)
 
     xml_temp = output_dir / "temp/rss.xml"
     xml_temp.parent.mkdir(parents=True, exist_ok=True)
@@ -960,7 +965,7 @@ def build_sitemap_section(articles, config, saxonc_bin, cache, dry_run):
     engine = config["engines"]["sitemap"]
     force = config["build"]["force_full_build"]
 
-    model = build_sitemap_model(articles, config, output_dir)
+    model = build_sitemap_model(articles, config)
 
     xml_temp = output_dir / "temp/sitemap.xml"
     xml_temp.parent.mkdir(parents=True, exist_ok=True)
@@ -1002,16 +1007,15 @@ def build_sitemap_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — Search Index
 # ------------------------------------------------------------
 
-def build_search_section(articles, config, saxonc_bin, cache, dry_run):
+def build_search_section(articles, config, cache, dry_run):
     """
     Build search.json.
     """
     tasks = []
     output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["search"]
     force = config["build"]["force_full_build"]
 
-    model = build_search_model(articles, config, output_dir)
+    model = build_search_model(articles, config)
 
     output_path = output_dir / model["output_path"]
 
@@ -1043,7 +1047,9 @@ def run_build(cli: CliOptions, config, project_root: Path):
 
     content_dir = Path(config["paths"]["content_dir"])
     output_dir = Path(config["paths"]["output_dir"])
-    cache_path = project_root / config["build"]["cache_file"]
+    # Reduce user-controlled config to a bare filename to prevent path traversal.
+    cache_file_name = Path(config["build"]["cache_file"]).name
+    cache_path = project_root / cache_file_name
 
     # Load cache
     cache = load_cache(cache_path)
@@ -1052,7 +1058,7 @@ def run_build(cli: CliOptions, config, project_root: Path):
     saxonc_bin = configure_saxonc(config)
 
     # Load articles
-    articles = load_articles(content_dir, config)
+    articles = load_articles(content_dir)
 
     # Build tasks
     tasks = []
@@ -1073,7 +1079,7 @@ def run_build(cli: CliOptions, config, project_root: Path):
         tasks += build_sitemap_section(articles, config, saxonc_bin, cache, cli.dry_run)
 
     if not cli.only_sections or "search" in cli.only_sections:
-        tasks += build_search_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_search_section(articles, config, cache, cli.dry_run)
 
     # Run tasks in parallel
     if tasks:

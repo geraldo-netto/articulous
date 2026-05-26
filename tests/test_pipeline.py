@@ -11,7 +11,6 @@ from articulous.articles import Article
 from articulous.config import DEFAULT_CONFIG
 from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.pipeline import (
-    BuildCtx,
     SECTION_NAMES,
     _article_url_builder,
     _article_xml,
@@ -313,7 +312,8 @@ def test_build_articles_section_skips_cached(tmp_path):
     a = dataclasses.replace(_art("a"), source_path=art_xml)
     cache = {}
     tasks = build_articles_section([a], ctx, cache)
-    for t in tasks: t()
+    for t in tasks:
+        t()
     assert build_articles_section([a], ctx, cache) == []
 
 
@@ -331,7 +331,8 @@ def test_build_index_section_cached(tmp_path):
     arts = [_art("a")]
     cache = {}
     tasks = build_index_section(arts, "en", ctx, cache)
-    for t in tasks: t()
+    for t in tasks:
+        t()
     assert build_index_section(arts, "en", ctx, cache) == []
 
 
@@ -348,7 +349,8 @@ def test_build_tags_section_cached(tmp_path):
     arts = [_art("a", tags=("news",))]
     cache = {}
     tasks = build_tags_section(arts, "en", ctx, cache)
-    for t in tasks: t()
+    for t in tasks:
+        t()
     assert build_tags_section(arts, "en", ctx, cache) == []
 
 

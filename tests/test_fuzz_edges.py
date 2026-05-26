@@ -108,7 +108,7 @@ def test_empty_title_falls_back_to_path_stem(tmp_path):
         '<description>d</description></article>'
     )
     a = parse_article_xml(
-        p, default_lang="en", url_builder=lambda l, s: f"/{l}/{s}/",
+        p, default_lang="en", url_builder=lambda lang, slug: f"/{lang}/{slug}/",
     )
     assert a is not None
     assert a.slug == "the-stem"

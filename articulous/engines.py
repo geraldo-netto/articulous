@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Optional, Union
 
-from lxml import etree
+from lxml import etree  # type: ignore[attr-defined]
 
 
 SECTION_XSL = {

@@ -14,7 +14,7 @@ any object with the right attributes will do.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import quote
@@ -23,12 +23,28 @@ from .articles import normalize_slug
 
 
 class SiteModelCtx(Protocol):
-    """Structural view of the bits of build context the models need."""
-    base_url: str
-    languages: list
-    per_page: int
-    rss_items: int
-    url_patterns: dict
+    """
+    Structural view of the bits of build context the models need.
+
+    Declared as read-only properties so the protocol is satisfied by
+    frozen-dataclass implementations (e.g. :class:`BuildCtx`) without
+    static-type warnings about writability.
+    """
+    @property
+    def base_url(self) -> str:
+        ...
+    @property
+    def languages(self) -> list:
+        ...
+    @property
+    def per_page(self) -> int:
+        ...
+    @property
+    def rss_items(self) -> int:
+        ...
+    @property
+    def url_patterns(self) -> dict:
+        ...
 
 
 # ------------------------------------------------------------

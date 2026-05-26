@@ -1,5 +1,4 @@
 """Subprocess-driven smoke test of the full build pipeline."""
-from pathlib import Path
 
 
 def test_full_build_via_cli(site_root, run_sitegen):

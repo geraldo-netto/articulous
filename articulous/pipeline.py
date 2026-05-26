@@ -41,6 +41,7 @@ from .models import (
     build_url_from_pattern,
 )
 from .runtime import (
+    WorkerCount,
     file_hash,
     load_cache,
     run_parallel_tasks,
@@ -73,7 +74,7 @@ class BuildCtx:
     # build flags
     force: bool = False
     dry_run: bool = False
-    parallelism: object = "auto"
+    parallelism: WorkerCount = "auto"
     cache_file: str = ".build-cache.json"
     # engine map: section name -> TransformEngine
     engines: dict = field(default_factory=dict)
@@ -583,7 +584,7 @@ def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
     return project_root / ctx.cache_file
 
 
-def _resolve_parallelism(ctx: BuildCtx) -> object:
+def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     """
     Pick a sensible ``max_workers`` for ``run_parallel_tasks``.
 

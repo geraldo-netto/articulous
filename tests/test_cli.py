@@ -1,7 +1,5 @@
 """Unit tests for articulous.cli."""
 import logging
-import sys
-from pathlib import Path
 
 import pytest
 

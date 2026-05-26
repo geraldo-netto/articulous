@@ -2,12 +2,10 @@
 import json
 import logging
 import threading
-from pathlib import Path
 
 import pytest
 
 from articulous.runtime import (
-    _cache_lock,
     _ensure_parent_dir,
     file_hash,
     load_cache,
@@ -163,8 +161,10 @@ def test_update_cache_thread_safe():
         update_cache(cache, f"k{i}", (str(i), "s"))
 
     threads = [threading.Thread(target=writer, args=(i,)) for i in range(200)]
-    for t in threads: t.start()
-    for t in threads: t.join()
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
     assert len(cache) == 200
 
 

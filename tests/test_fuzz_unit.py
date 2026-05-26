@@ -17,7 +17,6 @@ from datetime import datetime
 from pathlib import Path
 
 import lxml.etree as etree
-import pytest
 
 from articulous.articles import (
     Article,
@@ -27,7 +26,6 @@ from articulous.articles import (
 from articulous.pipeline import (
     BuildCtx,
     _article_xml,
-    _encode_xml,
     _make_xslt_task,
     _rss_item_xml,
     _sitemap_url_xml,
@@ -119,7 +117,7 @@ def test_parse_article_xml_never_crashes_on_garbled_input(tmp_path):
         # Should always return either Article or None, never raise.
         result = parse_article_xml(
             p, default_lang="en",
-            url_builder=lambda l, s: f"/{l}/{s}/",
+            url_builder=lambda lang, slug: f"/{lang}/{slug}/",
             allowed_langs=frozenset({"en", "fr"}),
         )
         assert result is None or isinstance(result, Article)
@@ -137,7 +135,8 @@ MINIMAL_XSLT = (
 
 
 def test_make_xslt_task_random_bytes_hashes_consistently(tmp_path):
-    xsl = tmp_path / "x.xsl"; xsl.write_bytes(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_bytes(MINIMAL_XSLT)
     xsl_hash = file_hash(xsl)
     ctx = BuildCtx(
         content_dir=tmp_path, xsl_dir=tmp_path,

@@ -54,22 +54,26 @@ def test_safe_xml_parser_is_xxe_safe(tmp_path):
 # --- LxmlEngine ---
 
 def test_lxml_engine_runs_with_path(tmp_path):
-    xml = tmp_path / "x.xml"; xml.write_text("<root/>")
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xml = tmp_path / "x.xml"
+    xml.write_text("<root/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     LxmlEngine().run(xml, xsl, out)
     assert out.exists()
 
 
 def test_lxml_engine_runs_with_bytes(tmp_path):
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     LxmlEngine().run(b"<root/>", xsl, out)
     assert out.exists()
 
 
 def test_lxml_engine_dry_run_with_path_label(tmp_path, caplog):
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with caplog.at_level(logging.DEBUG):
         LxmlEngine().run(tmp_path / "x.xml", xsl, out, dry_run=True)
@@ -78,7 +82,8 @@ def test_lxml_engine_dry_run_with_path_label(tmp_path, caplog):
 
 
 def test_lxml_engine_dry_run_with_bytes_label(tmp_path, caplog):
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with caplog.at_level(logging.DEBUG):
         LxmlEngine().run(b"<root/>", xsl, out, dry_run=True)
@@ -86,14 +91,16 @@ def test_lxml_engine_dry_run_with_bytes_label(tmp_path, caplog):
 
 
 def test_lxml_engine_creates_parent_dir(tmp_path):
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "deep" / "nested" / "out.html"
     LxmlEngine().run(b"<root/>", xsl, out)
     assert out.exists()
 
 
 def test_lxml_engine_propagates_xslt_parse_error(tmp_path, caplog):
-    xsl = tmp_path / "bad.xsl"; xsl.write_text("<not-a-stylesheet/>")
+    xsl = tmp_path / "bad.xsl"
+    xsl.write_text("<not-a-stylesheet/>")
     out = tmp_path / "out.html"
     with caplog.at_level(logging.ERROR):
         with pytest.raises(Exception):
@@ -127,8 +134,10 @@ def test_saxon_engine_rejects_leading_dash_path(tmp_path):
 
 def test_saxon_engine_invokes_subprocess(tmp_path):
     e = SaxonCEngine(tmp_path / "Transform")
-    xml = tmp_path / "x.xml"; xml.write_text("<r/>")
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xml = tmp_path / "x.xml"
+    xml.write_text("<r/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with mock.patch("articulous.engines.subprocess.run") as run_mock:
         run_mock.return_value = mock.Mock(returncode=0)
@@ -143,7 +152,8 @@ def test_saxon_engine_invokes_subprocess(tmp_path):
 
 def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
     e = SaxonCEngine(tmp_path / "Transform")
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     captured = {}
 
@@ -164,8 +174,10 @@ def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
 
 def test_saxon_engine_propagates_subprocess_failure(tmp_path, caplog):
     e = SaxonCEngine(tmp_path / "Transform")
-    xml = tmp_path / "x.xml"; xml.write_text("<r/>")
-    xsl = tmp_path / "x.xsl"; xsl.write_text(MINIMAL_XSLT)
+    xml = tmp_path / "x.xml"
+    xml.write_text("<r/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with mock.patch(
         "articulous.engines.subprocess.run",

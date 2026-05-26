@@ -16,7 +16,9 @@ import threading
 import time
 from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
+
+WorkerCount = Union[int, str]  # int or the sentinel "auto"
 
 
 # ================================================================
@@ -124,20 +126,24 @@ def timed(label: str, fn: Callable) -> Callable:
     return wrapped
 
 
-def run_parallel_tasks(tasks, max_workers="auto"):
+def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto"):
     """
     Run a list of callables in parallel.
+
+    ``max_workers`` accepts either a positive ``int`` or the sentinel
+    string ``"auto"`` (resolves to ``max(4, cpu_count())``).
 
     On failure: cancel any tasks that have not yet started, drain the
     rest, log every error, and re-raise. Raises the original exception
     when only one task failed, or an :class:`ExceptionGroup` if more.
     """
-    if max_workers == "auto":
-        max_workers = max(4, os.cpu_count() or 4)
+    workers: int = (
+        max(4, os.cpu_count() or 4) if max_workers == "auto" else int(max_workers)
+    )
 
     results = []
     errors = []
-    pool = ThreadPoolExecutor(max_workers=max_workers)
+    pool = ThreadPoolExecutor(max_workers=workers)
     try:
         futures = {pool.submit(fn): fn for fn in tasks}
         for fut in as_completed(futures):

@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
-from lxml import etree
+from lxml import etree  # type: ignore[attr-defined]
 
 from .engines import safe_xml_parser
 

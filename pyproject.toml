@@ -2,6 +2,15 @@
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.ruff]
+target-version = "py311"
+
+[tool.pyright]
+# lxml is a C extension with no inline type info; use the library
+# source rather than flagging every "from lxml import etree" line.
+useLibraryCodeForTypes = true
+reportMissingTypeStubs = "none"
+
 [tool.coverage.run]
 source = ["articulous"]
 branch = true

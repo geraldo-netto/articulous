@@ -1,4 +1,4 @@
-# tests/test_fuzzing.py
+"""Section-order fuzz tests driving the full pipeline via the CLI."""
 import os
 import random
 
@@ -7,23 +7,26 @@ from conftest import xml_files
 SECTIONS = ["articles", "index", "tags", "rss", "sitemap", "search"]
 
 
-def test_partial_build_fuzz(run_sitegen):
+def test_partial_build_fuzz(site_root, run_sitegen):
+    rnd = random.Random(0xC0FFEE)
     for _ in range(5):
-        section = random.choice(SECTIONS)
+        section = rnd.choice(SECTIONS)
         run_sitegen(["--verbose", "--only", section])
 
 
-def test_random_order_fuzz(run_sitegen):
+def test_random_order_fuzz(site_root, run_sitegen):
+    rnd = random.Random(42)
     for _ in range(3):
         order = SECTIONS[:]
-        random.shuffle(order)
+        rnd.shuffle(order)
         for section in order:
             run_sitegen(["--verbose", "--only", section])
 
 
-def test_file_touch_fuzz(run_sitegen):
-    files = xml_files()
+def test_file_touch_fuzz(site_root, run_sitegen):
+    files = xml_files(site_root / "content")
+    rnd = random.Random(7)
     for _ in range(5):
-        f = random.choice(files)
+        f = rnd.choice(files)
         os.utime(f, None)
         run_sitegen(["--verbose"])

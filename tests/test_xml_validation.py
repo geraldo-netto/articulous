@@ -1,30 +1,34 @@
-# tests/test_xml_validation.py
-import os
+"""Fixture XML files are well-formed and carry the required fields."""
 import subprocess
+from pathlib import Path
 
-from conftest import xml_files
+FIXTURE_CONTENT = Path(__file__).parent / "fixtures" / "site" / "content"
+
+
+def _xml_files():
+    return list(FIXTURE_CONTENT.rglob("*.xml"))
 
 
 def test_no_empty_xml_files():
-    empty = [f for f in xml_files() if os.path.getsize(f) == 0]
-    assert not empty, f"Empty XML files found: {empty}"
+    empty = [f for f in _xml_files() if f.stat().st_size == 0]
+    assert not empty, f"Empty XML files: {empty}"
 
 
 def test_xml_is_well_formed():
-    for f in xml_files():
-        result = subprocess.run(
+    for f in _xml_files():
+        r = subprocess.run(
             ["xmllint", "--noout", str(f)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        assert result.returncode == 0, (
-            f"Malformed XML: {f}\n{result.stderr.decode()}"
+        assert r.returncode == 0, (
+            f"Malformed XML: {f}\n{r.stderr.decode()}"
         )
 
 
 def test_required_fields_exist():
     required = ["<title>", "<date>", "<description>"]
-    for f in xml_files():
-        text = open(f, "r", encoding="utf-8").read()
+    for f in _xml_files():
+        text = f.read_text(encoding="utf-8")
         for tag in required:
             assert tag in text, f"Missing {tag} in {f}"

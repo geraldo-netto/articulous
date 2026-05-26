@@ -1,0 +1,38 @@
+{
+  "paths": {
+    "content_dir": "content",
+    "output_dir": "output",
+    "xsl_dir": "xsl",
+    "assets_dir": "assets"
+  },
+  "engines": {
+    "articles": "lxml",
+    "index": "lxml",
+    "tags": "lxml",
+    "rss": "lxml",
+    "sitemap": "lxml",
+    "search": "lxml"
+  },
+  "saxonc": {"home": null},
+  "site": {
+    "site_name": "Articulous Test Site",
+    "base_url": "https://example.test",
+    "languages": ["en", "fr"],
+    "default_language": "en",
+    "pagination": {"per_page": 5, "rss_items": 10}
+  },
+  "urls": {
+    "article": "/{lang}/articles/{slug}/",
+    "index": "/{lang}/page/{page}/",
+    "tag": "/{lang}/tags/{tag}/",
+    "rss": "/rss.xml",
+    "sitemap": "/sitemap.xml",
+    "search": "/search.json"
+  },
+  "build": {
+    "cache_file": ".build-cache.json",
+    "parallelism": 2,
+    "force_full_build": false
+  },
+  "logging": {"level": "WARNING", "file": null}
+}

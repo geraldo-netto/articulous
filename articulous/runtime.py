@@ -14,7 +14,7 @@ import logging
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable
 
@@ -131,6 +131,10 @@ def run_parallel_tasks(tasks, max_workers="auto"):
         for fut in as_completed(futures):
             try:
                 results.append(fut.result())
+            except CancelledError:
+                # Cancellations are how we react to a failure; the real
+                # error is already captured. Don't double-count.
+                continue
             except Exception as e:
                 logging.error(f"Task failed: {e}")
                 errors.append(e)

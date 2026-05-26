@@ -228,18 +228,17 @@ def validate_engines(config) -> None:
 
 def check_dependencies(config, project_root: Path) -> None:
     """
-    Ensure required directories and XSL files exist. Raises
-    :class:`FileNotFoundError` on anything missing.
+    Ensure required *input* directories and XSL files exist. Raises
+    :class:`FileNotFoundError` on anything missing. The output directory
+    is intentionally not checked here — :func:`run_build` creates it.
     """
     paths = config["paths"]
     content_dir = project_root / paths["content_dir"]
     xsl_dir = project_root / paths["xsl_dir"]
-    output_dir = project_root / paths["output_dir"]
 
     for d, name in [
         (content_dir, "content_dir"),
         (xsl_dir, "xsl_dir"),
-        (output_dir, "output_dir"),
     ]:
         if not d.exists():
             raise FileNotFoundError(

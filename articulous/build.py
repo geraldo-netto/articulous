@@ -149,13 +149,20 @@ class BuildCtx:
     the raw config dict. :func:`build_ctx_from_config` is the only
     place that knows the config dict's deep shape.
     """
+    # paths
+    content_dir: Path
     xsl_dir: Path
     output_dir: Path
     assets_dir: Path
     temp_dir: Optional[Path] = None
+    # build flags
     force: bool = False
     dry_run: bool = False
+    parallelism: object = "auto"
+    cache_file: str = ".build-cache.json"
+    # engine map: section name -> TransformEngine
     engines: dict = field(default_factory=dict)
+    # site / URL model
     base_url: str = ""
     languages: list = field(default_factory=list)
     default_language: str = "en"
@@ -181,12 +188,17 @@ def build_ctx_from_config(
         for section, name in config["engines"].items()
     }
     return BuildCtx(
+        content_dir=Path(config["paths"]["content_dir"]),
         xsl_dir=Path(config["paths"]["xsl_dir"]),
         output_dir=Path(config["paths"]["output_dir"]),
         assets_dir=Path(config["paths"]["assets_dir"]),
         temp_dir=None,
         force=config["build"]["force_full_build"],
         dry_run=dry_run,
+        parallelism=config["build"]["parallelism"],
+        # Reduce user-controlled value to a bare filename; the path
+        # prefix is added in _cache_path_for to prevent traversal.
+        cache_file=Path(config["build"]["cache_file"]).name,
         engines=engines,
         base_url=config["site"]["base_url"],
         languages=list(config["site"]["languages"]),
@@ -353,22 +365,22 @@ def build_index_section(articles, ctx: BuildCtx, cache):
     xsl_path = ctx.xsl_for("index")
     engine = ctx.engine_for("index")
 
-    for model in build_index_models(articles, ctx):
+    for page in build_index_models(articles, ctx):
         xml_content = _xml_doc(
-            "index", [_article_xml(a) for a in model["articles"]],
+            "index", [_article_xml(a) for a in page.articles],
         )
         task = _make_xslt_task_with_temp(
-            xml_temp=ctx.temp_dir / f"index-{model['lang']}-{model['page']}.xml",
+            xml_temp=ctx.temp_dir / f"index-{page.lang}-{page.page}.xml",
             xml_content=xml_content,
             xsl_path=xsl_path,
-            output_path=ctx.output_dir / model["output_path"],
+            output_path=ctx.output_dir / page.output_path,
             cache=cache,
-            cache_key=f"index:{model['lang']}:{model['page']}",
+            cache_key=f"index:{page.lang}:{page.page}",
             engine=engine,
             ctx=ctx,
         )
         if task is None:
-            logging.debug(f"Skipping unchanged index page {model['page']}")
+            logging.debug(f"Skipping unchanged index page {page.page}")
             continue
         tasks.append(task)
 
@@ -381,23 +393,24 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
     xsl_path = ctx.xsl_for("tags")
     engine = ctx.engine_for("tags")
 
-    for model in build_tags_models(articles, ctx):
-        lang, tag_slug = model["lang"], model["tag_slug"]
+    for page in build_tags_models(articles, ctx):
         xml_content = _xml_doc(
-            "tag", [_article_xml(a) for a in model["articles"]],
+            "tag", [_article_xml(a) for a in page.articles],
         )
         task = _make_xslt_task_with_temp(
-            xml_temp=ctx.temp_dir / f"tag-{lang}-{tag_slug}.xml",
+            xml_temp=ctx.temp_dir / f"tag-{page.lang}-{page.tag_slug}.xml",
             xml_content=xml_content,
             xsl_path=xsl_path,
-            output_path=ctx.output_dir / model["output_path"],
+            output_path=ctx.output_dir / page.output_path,
             cache=cache,
-            cache_key=f"tag:{lang}:{tag_slug}",
+            cache_key=f"tag:{page.lang}:{page.tag_slug}",
             engine=engine,
             ctx=ctx,
         )
         if task is None:
-            logging.debug(f"Skipping unchanged tag page: {lang}/{tag_slug}")
+            logging.debug(
+                f"Skipping unchanged tag page: {page.lang}/{page.tag_slug}"
+            )
             continue
         tasks.append(task)
 
@@ -406,13 +419,13 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
 
 def build_rss_section(articles, ctx: BuildCtx, cache):
     """Build RSS feed."""
-    model = build_rss_model(articles, ctx)
-    xml_content = _xml_doc("rss", [_rss_item_xml(a) for a in model["articles"]])
+    feed = build_rss_model(articles, ctx)
+    xml_content = _xml_doc("rss", [_rss_item_xml(a) for a in feed.articles])
     task = _make_xslt_task_with_temp(
         xml_temp=ctx.temp_dir / "rss.xml",
         xml_content=xml_content,
         xsl_path=ctx.xsl_for("rss"),
-        output_path=ctx.output_dir / model["output_path"],
+        output_path=ctx.output_dir / feed.output_path,
         cache=cache,
         cache_key="rss",
         engine=ctx.engine_for("rss"),
@@ -426,15 +439,15 @@ def build_rss_section(articles, ctx: BuildCtx, cache):
 
 def build_sitemap_section(articles, ctx: BuildCtx, cache):
     """Build sitemap.xml."""
-    model = build_sitemap_model(articles, ctx)
+    sitemap = build_sitemap_model(articles, ctx)
     xml_content = _xml_doc(
-        "sitemap", [_sitemap_url_xml(u) for u in model["urls"]],
+        "sitemap", [_sitemap_url_xml(u) for u in sitemap.urls],
     )
     task = _make_xslt_task_with_temp(
         xml_temp=ctx.temp_dir / "sitemap.xml",
         xml_content=xml_content,
         xsl_path=ctx.xsl_for("sitemap"),
-        output_path=ctx.output_dir / model["output_path"],
+        output_path=ctx.output_dir / sitemap.output_path,
         cache=cache,
         cache_key="sitemap",
         engine=ctx.engine_for("sitemap"),
@@ -448,16 +461,17 @@ def build_sitemap_section(articles, ctx: BuildCtx, cache):
 
 def build_search_section(articles, ctx: BuildCtx, cache):
     """Build search.json. No XSLT needed; pure JSON write."""
-    model = build_search_model(articles, ctx)
-    items = model["items"]
-    output_path = ctx.output_dir / model["output_path"]
-    json_hash = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
+    index = build_search_model(articles, ctx)
+    output_path = ctx.output_dir / index.output_path
+    json_hash = hashlib.sha256(
+        json.dumps(index.items).encode("utf-8")
+    ).hexdigest()
 
     if not should_rebuild("search", cache, (json_hash, "json"), ctx.force):
         logging.debug("Skipping unchanged search index")
         return []
 
-    def task(output_path=output_path, items=items, json_hash=json_hash):
+    def task(output_path=output_path, items=index.items, json_hash=json_hash):
         write_json(output_path, items, dry_run=ctx.dry_run)
         update_cache(cache, "search", (json_hash, "json"))
     return [task]
@@ -498,10 +512,10 @@ def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections):
     return tasks
 
 
-def _cache_path_for(config, project_root: Path) -> Path:
-    # Reduce user-controlled config to a bare filename to prevent path traversal.
-    cache_file_name = Path(config["build"]["cache_file"]).name
-    return project_root / cache_file_name
+def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
+    """Resolve the cache file path. ``ctx.cache_file`` is already a bare
+    filename (see :func:`build_ctx_from_config`)."""
+    return project_root / ctx.cache_file
 
 
 # ================================================================
@@ -513,11 +527,11 @@ def run_build(cli, config, project_root: Path) -> None:
     logging.info("Starting build...")
 
     validate_engines(config)
-    cache_path = _cache_path_for(config, project_root)
-    cache = load_cache(cache_path)
-
     saxonc_bin = configure_saxonc(config)
     ctx = build_ctx_from_config(config, saxonc_bin, dry_run=cli.dry_run)
+
+    cache_path = _cache_path_for(ctx, project_root)
+    cache = load_cache(cache_path)
 
     copy_assets(ctx)
 
@@ -526,15 +540,14 @@ def run_build(cli, config, project_root: Path) -> None:
     ctx = _dc_replace(ctx, temp_dir=temp_dir)
 
     try:
-        content_dir = Path(config["paths"]["content_dir"])
-        articles = load_articles(content_dir, default_lang=ctx.default_language)
+        articles = load_articles(ctx.content_dir, default_lang=ctx.default_language)
         articles = _filter_articles(articles, cli)
 
         tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
 
         if tasks:
             logging.info(f"Running {len(tasks)} tasks in parallel...")
-            run_parallel_tasks(tasks, config["build"]["parallelism"])
+            run_parallel_tasks(tasks, ctx.parallelism)
         else:
             logging.info("Nothing to build — all pages up to date.")
 

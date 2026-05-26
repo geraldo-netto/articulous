@@ -93,14 +93,7 @@ _(all open items resolved; tracked via git history)_
 
 ## wiring gaps
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| WIRE-01 | open | M | `config["site"]["languages"]` configured + defaulted but no loop ever iterates it. Hardcoded `lang="en"` instead. See REL-01. | sitegen.py:121, 499, 529, 763. |
-| WIRE-02 | open | S | `config["site"]["default_language"]` set in DEFAULT_CONFIG, never read. | sitegen.py:122. |
-| WIRE-03 | open | S | `config["paths"]["assets_dir"]` configured + resolved in `apply_cli_overrides`, never read by any builder (no asset-copy step). | sitegen.py:104, 193. |
-| WIRE-04 | open | S | `cli.only_langs` parsed, never consumed by `run_build`. See REL-02. | sitegen.py:87. |
-| WIRE-05 | open | S | `cli.only_slugs` parsed, never consumed by `run_build`. See REL-02. | sitegen.py:90. |
-| WIRE-06 | open | S | `engines` config supports per-section engine string, but `run_transform` only dispatches on `"saxonc"` vs anything-else (treated as lxml). No validation of engine name. | Validate engine list; fail on unknown. sitegen.py:277. |
+_(all open items resolved; tracked via git history)_
 
 ## unused functions/methods
 

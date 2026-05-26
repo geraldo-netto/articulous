@@ -239,7 +239,27 @@ def setup_logging(config, project_root: Path, verbose=False):
 # ================================================================
 
 import subprocess
+import shutil
 from lxml import etree
+
+VALID_ENGINES = {"saxonc", "lxml"}
+
+
+def validate_engines(config):
+    """
+    Ensure every section's configured engine is one we know how to run.
+    Raises ValueError on unknown engine names.
+    """
+    bad = {
+        section: name
+        for section, name in config["engines"].items()
+        if name not in VALID_ENGINES
+    }
+    if bad:
+        raise ValueError(
+            f"Unknown engine(s) configured: {bad}. "
+            f"Valid engines: {sorted(VALID_ENGINES)}"
+        )
 
 
 def _safe_xml_parser():
@@ -752,6 +772,29 @@ def ensure_parent_dir(path: Path, dry_run=False):
         parent.mkdir(parents=True, exist_ok=True)
 
 
+def copy_assets(config, dry_run=False):
+    """
+    Mirror the configured assets directory into the output tree at
+    ``<output_dir>/assets``. No-op if the assets directory is missing.
+    """
+    assets_dir = Path(config["paths"]["assets_dir"])
+    if not assets_dir.exists():
+        logging.debug(f"Assets directory not present, skipping: {assets_dir}")
+        return
+
+    output_dir = Path(config["paths"]["output_dir"])
+    dest = output_dir / "assets"
+
+    if dry_run:
+        logging.debug(f"[DRY RUN] Would copy assets: {assets_dir} -> {dest}")
+        return
+
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(assets_dir, dest)
+    logging.info(f"Copied assets: {assets_dir} -> {dest}")
+
+
 def write_json(path: Path, data, dry_run=False):
     """
     Write JSON to disk.
@@ -1081,8 +1124,14 @@ def run_build(cli: CliOptions, config, project_root: Path):
     # Load cache
     cache = load_cache(cache_path)
 
+    # Validate engine configuration up front
+    validate_engines(config)
+
     # Configure SaxonC (optional)
     saxonc_bin = configure_saxonc(config)
+
+    # Copy static assets into the output tree
+    copy_assets(config, dry_run=cli.dry_run)
 
     # Load articles
     default_lang = config["site"]["default_language"]

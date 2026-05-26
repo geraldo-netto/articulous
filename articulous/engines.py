@@ -136,11 +136,31 @@ class SaxonCEngine(TransformEngine):
             self._run_saxon(xml_input, xsl_path, output_path)
 
     def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path):
+        # SEC-05 hardening:
+        # 1. Pre-resolve to absolute paths. On every supported platform
+        #    an absolute path starts with a path separator (POSIX) or a
+        #    drive letter (Windows), neither of which can be confused
+        #    with a CLI flag.
+        # 2. Defence-in-depth: explicitly reject any path that, after
+        #    resolution, still begins with '-'. Saxon's "-s:VAL" form
+        #    already consumes the leading dash so this is unreachable
+        #    in practice, but the assertion documents the boundary.
+        resolved = {
+            "xml": xml_path.resolve(),
+            "xsl": xsl_path.resolve(),
+            "output": output_path.resolve(),
+        }
+        for label, p in resolved.items():
+            if str(p).startswith("-"):
+                raise ValueError(
+                    f"SaxonC {label} path begins with '-', which can be "
+                    f"misparsed by the Saxon CLI: {p}"
+                )
         cmd = [
             str(self.saxonc_bin),
-            f"-s:{xml_path}",
-            f"-xsl:{xsl_path}",
-            f"-o:{output_path}",
+            f"-s:{resolved['xml']}",
+            f"-xsl:{resolved['xsl']}",
+            f"-o:{resolved['output']}",
         ]
         logging.debug(f"Running SaxonC: {' '.join(cmd)}")
         try:

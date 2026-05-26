@@ -11,8 +11,6 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-03 | open | S | `load_or_create_config` swallows JSON parse errors and silently returns defaults. Masks tampering or misconfig. | Log warning at minimum; consider hard fail. sitegen.py:173-176. |
-| SEC-04 | open | S | `setup_logging` calls `getattr(logging, level_str)` with no validation. Attacker-controlled config can resolve to arbitrary `logging` module attribute (e.g. `disable`, `shutdown`). | Whitelist `{DEBUG,INFO,WARNING,ERROR,CRITICAL}`. sitegen.py:207. |
 | SEC-05 | open | S | SaxonC subprocess invoked with f-string-prefixed args. If `xml_path` or `output_path` ever starts with `-`, Saxon CLI may parse as flag. Currently low risk (paths controlled), still hardening. | Pre-resolve to abs paths; assert no leading `-`; use `--` separator if supported. sitegen.py:281-291. |
 | SEC-06 | open | S | `tests/test_generator_basic.py` runs `rm -rf output` with no symlink check. Hostile symlink in repo could delete arbitrary tree. | Use `shutil.rmtree(..., onerror=...)` with `realpath` check, or `tmp_path` fixture. tests/test_generator_basic.py:9. |
 
@@ -46,11 +44,7 @@ _(all open items resolved; tracked via git history)_
 
 ## architecture/modularity/SOLID
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| ARC-01 | open | L | `sitegen.py` is 1117 lines, all modules embedded behind `# MODULE N` comments. No real separation. | Split into package: `cli.py`, `config.py`, `transform.py`, `cache.py`, `parallel.py`, `build/{articles,index,tags,rss,sitemap,search}.py`. |
-| ARC-02 | open | M | Transform engines (`saxonc`, `lxml`) selected by string compare inside `run_transform`. Adding a third engine requires editing the function. | Strategy pattern: `class TransformEngine`, `LxmlEngine`, `SaxonEngine`; engine registry. sitegen.py:258-313. |
-| ARC-03 | open | S | `apply_cli_overrides` both mutates `config` in place and returns it. Mixed contract. | Pick one; recommend pure return. sitegen.py:182-197. |
+_(all open items resolved; tracked via git history)_
 
 ## decoupling
 

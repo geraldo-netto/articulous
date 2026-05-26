@@ -499,12 +499,13 @@ def _stream_projections(stream_factory, cli, ctx: BuildCtx):
             "url": art.url,
             "tags": list(art.tags),
         })
-        entry = (art.datetime, seq, art)
-        seq += 1
-        if len(rss_heap) < ctx.rss_items:
-            heapq.heappush(rss_heap, entry)
-        elif entry > rss_heap[0]:
-            heapq.heapreplace(rss_heap, entry)
+        if ctx.rss_items > 0:
+            entry = (art.datetime, seq, art)
+            seq += 1
+            if len(rss_heap) < ctx.rss_items:
+                heapq.heappush(rss_heap, entry)
+            elif entry > rss_heap[0]:
+                heapq.heapreplace(rss_heap, entry)
     return sitemap_urls, search_items, rss_heap, total
 
 

@@ -12,6 +12,7 @@ import os
 import shutil
 import tempfile
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field, replace as _dc_replace
 from pathlib import Path
@@ -278,6 +279,17 @@ def _sitemap_url_xml(url: str) -> str:
 # Shared XSLT task plumbing
 # ================================================================
 
+def _timed(label: str, fn: Callable) -> Callable:
+    """Wrap ``fn`` so every invocation logs its wall-clock duration at DEBUG."""
+    def wrapped():
+        t0 = time.perf_counter()
+        try:
+            return fn()
+        finally:
+            logging.debug(f"task {label} took {time.perf_counter() - t0:.3f}s")
+    return wrapped
+
+
 def _make_xslt_task(
     *,
     xml_path: Path,
@@ -304,7 +316,7 @@ def _make_xslt_task(
         engine.run(xml_path, xsl_path, output_path, dry_run=ctx.dry_run)
         update_cache(cache, cache_key, hashes)
 
-    return task
+    return _timed(cache_key, task)
 
 
 def _make_xslt_task_with_temp(
@@ -493,7 +505,7 @@ def build_search_section(articles, ctx: BuildCtx, cache):
     def task(output_path=output_path, items=index.items, json_hash=json_hash):
         write_json(output_path, items, dry_run=ctx.dry_run)
         update_cache(cache, "search", (json_hash, "json"))
-    return [task]
+    return [_timed("search", task)]
 
 
 # ================================================================
@@ -520,9 +532,11 @@ def _filter_articles(articles, cli):
     return articles
 
 
-def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections):
+def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections) -> dict:
     """
-    Dispatch each requested section to its builder.
+    Dispatch each requested section to its builder and return a
+    ``{section_name: [task, ...]}`` plan. The caller flattens it for
+    parallel execution and uses the per-section counts for logging.
 
     Section order is no longer load-bearing: every section reads
     ``art["url"]`` from the field that :func:`attach_article_urls`
@@ -530,12 +544,12 @@ def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections):
     safe to run.
     """
     wanted = set(only_sections) if only_sections else None
-    tasks = []
+    plan: dict = {}
     for name, builder in SECTION_BUILDERS.items():
         if wanted is not None and name not in wanted:
             continue
-        tasks += builder(articles, ctx, cache)
-    return tasks
+        plan[name] = builder(articles, ctx, cache)
+    return plan
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
@@ -570,11 +584,25 @@ def run_build(cli, config, project_root: Path) -> None:
         articles = _filter_articles(articles, cli)
         attach_article_urls(articles, ctx)
 
-        tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
+        plan = _collect_tasks(articles, ctx, cache, cli.only_sections)
+        flat = [t for tasks in plan.values() for t in tasks]
+        total = len(flat)
 
-        if tasks:
-            logging.info(f"Running {len(tasks)} tasks in parallel...")
-            run_parallel_tasks(tasks, ctx.parallelism)
+        if total:
+            logging.info(
+                f"Build plan: {total} task(s) across {len(plan)} section(s)"
+            )
+            for section, tasks in plan.items():
+                logging.info(f"  {section}: {len(tasks)} task(s)")
+
+            t0 = time.perf_counter()
+            run_parallel_tasks(flat, ctx.parallelism)
+            elapsed = time.perf_counter() - t0
+            logging.info(
+                f"Ran {total} task(s) in {elapsed:.2f}s "
+                f"({total / elapsed:.1f} task/s)"
+                if elapsed > 0 else f"Ran {total} task(s)"
+            )
         else:
             logging.info("Nothing to build — all pages up to date.")
 

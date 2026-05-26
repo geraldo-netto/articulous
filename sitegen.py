@@ -9,7 +9,9 @@ from pathlib import Path
 import json
 import logging
 import sys
-from dataclasses import dataclass, field
+import tempfile
+import threading
+from dataclasses import dataclass, field, replace as _dc_replace
 from datetime import datetime
 from typing import Callable, Optional
 from urllib.parse import quote
@@ -500,9 +502,11 @@ class BuildCtx:
     xsl_dir: Path
     output_dir: Path
     assets_dir: Path
+    # per-build scratch directory; set by run_build after output_dir exists
+    temp_dir: Optional[Path] = None
     # build flags
-    force: bool
-    dry_run: bool
+    force: bool = False
+    dry_run: bool = False
     # engine map: section name -> EngineSpec
     engines: dict = field(default_factory=dict)
     # site / URL model
@@ -535,6 +539,8 @@ def build_ctx_from_config(config, saxonc_bin: Optional[Path], dry_run: bool) -> 
         xsl_dir=Path(config["paths"]["xsl_dir"]),
         output_dir=Path(config["paths"]["output_dir"]),
         assets_dir=Path(config["paths"]["assets_dir"]),
+        # temp_dir is None until run_build allocates a per-build scratch dir.
+        temp_dir=None,
         force=config["build"]["force_full_build"],
         dry_run=dry_run,
         engines=engines,
@@ -763,11 +769,16 @@ def should_rebuild(key: str, cache: dict, new_hashes: tuple, force: bool) -> boo
     return old != list(new_hashes)
 
 
+_cache_lock = threading.Lock()
+
+
 def update_cache(cache: dict, key: str, new_hashes: tuple):
     """
-    Update the cache entry for a given page.
+    Update the cache entry for a given page. Thread-safe: workers
+    commit their own entries on success.
     """
-    cache[key] = list(new_hashes)
+    with _cache_lock:
+        cache[key] = list(new_hashes)
 
 # ================================================================
 # MODULE 9 — PARALLEL EXECUTOR
@@ -779,8 +790,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 def run_parallel_tasks(tasks, max_workers="auto"):
     """
     Run a list of callables in parallel.
-    Each task is a function with no arguments.
-    Returns a list of results.
+
+    On failure: cancel any tasks that have not yet started, drain the
+    rest, log every error, and re-raise. If more than one task failed,
+    raise an ExceptionGroup so no individual error is lost.
     """
 
     if max_workers == "auto":
@@ -788,16 +801,28 @@ def run_parallel_tasks(tasks, max_workers="auto"):
         max_workers = max(4, os.cpu_count() or 4)
 
     results = []
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    errors = []
+    pool = ThreadPoolExecutor(max_workers=max_workers)
+    try:
         futures = {pool.submit(fn): fn for fn in tasks}
-
         for fut in as_completed(futures):
             try:
                 results.append(fut.result())
             except Exception as e:
                 logging.error(f"Task failed: {e}")
-                raise
+                errors.append(e)
+                # Cancel anything still queued; in-flight tasks finish
+                # naturally so their errors are captured too.
+                for other in futures:
+                    if not other.done():
+                        other.cancel()
+    finally:
+        pool.shutdown(wait=True)
 
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        raise ExceptionGroup("parallel task failures", errors)
     return results
 
 # ================================================================
@@ -890,20 +915,23 @@ def _make_xslt_task(
     Build a transform task for an XSLT-driven section.
     Returns None if the cache says the output is up to date.
 
-    All five XSLT sections (articles, index, tags, rss, sitemap) reduce
-    to this same shape: hash sources, consult cache, register a closure
-    that calls run_transform.
+    The cache entry is committed *inside* the task closure, after a
+    successful run_transform call. A failed transform leaves the prior
+    cache entry untouched, so the next build will retry rather than
+    silently skip the broken section.
     """
     xml_hash = file_hash(xml_path)
     xsl_hash = file_hash(xsl_path)
     if not should_rebuild(cache_key, cache, (xml_hash, xsl_hash), ctx.force):
         return None
-    update_cache(cache, cache_key, (xml_hash, xsl_hash))
+
+    hashes = (xml_hash, xsl_hash)
 
     def task(xml_path=xml_path, xsl_path=xsl_path, output_path=output_path):
-        return run_transform(
+        run_transform(
             engine, xml_path, xsl_path, output_path, dry_run=ctx.dry_run,
         )
+        update_cache(cache, cache_key, hashes)
 
     return task
 
@@ -982,7 +1010,7 @@ def build_index_section(articles, ctx: BuildCtx, cache):
             "index", [_article_xml(a) for a in model["articles"]],
         )
         task = _make_xslt_task_with_temp(
-            xml_temp=ctx.output_dir / f"temp/index-{model['lang']}-{model['page']}.xml",
+            xml_temp=ctx.temp_dir / f"index-{model['lang']}-{model['page']}.xml",
             xml_content=xml_content,
             xsl_path=xsl_path,
             output_path=ctx.output_dir / model["output_path"],
@@ -1016,7 +1044,7 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
             "tag", [_article_xml(a) for a in model["articles"]],
         )
         task = _make_xslt_task_with_temp(
-            xml_temp=ctx.output_dir / f"temp/tag-{lang}-{tag_slug}.xml",
+            xml_temp=ctx.temp_dir / f"tag-{lang}-{tag_slug}.xml",
             xml_content=xml_content,
             xsl_path=xsl_path,
             output_path=ctx.output_dir / model["output_path"],
@@ -1044,7 +1072,7 @@ def build_rss_section(articles, ctx: BuildCtx, cache):
     model = build_rss_model(articles, ctx)
     xml_content = _xml_doc("rss", [_rss_item_xml(a) for a in model["articles"]])
     task = _make_xslt_task_with_temp(
-        xml_temp=ctx.output_dir / "temp/rss.xml",
+        xml_temp=ctx.temp_dir / "rss.xml",
         xml_content=xml_content,
         xsl_path=ctx.xsl_for("rss"),
         output_path=ctx.output_dir / model["output_path"],
@@ -1070,7 +1098,7 @@ def build_sitemap_section(articles, ctx: BuildCtx, cache):
     model = build_sitemap_model(articles, ctx)
     xml_content = _xml_doc("sitemap", [_sitemap_url_xml(u) for u in model["urls"]])
     task = _make_xslt_task_with_temp(
-        xml_temp=ctx.output_dir / "temp/sitemap.xml",
+        xml_temp=ctx.temp_dir / "sitemap.xml",
         xml_content=xml_content,
         xsl_path=ctx.xsl_for("sitemap"),
         output_path=ctx.output_dir / model["output_path"],
@@ -1101,10 +1129,10 @@ def build_search_section(articles, ctx: BuildCtx, cache):
     if not should_rebuild("search", cache, (json_hash, "json"), ctx.force):
         logging.debug("Skipping unchanged search index")
         return []
-    update_cache(cache, "search", (json_hash, "json"))
 
-    def task(output_path=output_path, items=items):
-        return write_json(output_path, items, dry_run=ctx.dry_run)
+    def task(output_path=output_path, items=items, json_hash=json_hash):
+        write_json(output_path, items, dry_run=ctx.dry_run)
+        update_cache(cache, "search", (json_hash, "json"))
     return [task]
 
 
@@ -1172,20 +1200,30 @@ def run_build(cli: CliOptions, config, project_root: Path):
 
     copy_assets(ctx)
 
-    content_dir = Path(config["paths"]["content_dir"])
-    articles = load_articles(content_dir, default_lang=ctx.default_language)
-    articles = _filter_articles(articles, cli)
+    # Per-build scratch directory. Allocating under output_dir gives each
+    # concurrent invocation of sitegen its own namespace for model XML
+    # files, so they cannot collide on identical temp paths.
+    ctx.output_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = Path(tempfile.mkdtemp(prefix=".sitegen-", dir=ctx.output_dir))
+    ctx = _dc_replace(ctx, temp_dir=temp_dir)
 
-    tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
+    try:
+        content_dir = Path(config["paths"]["content_dir"])
+        articles = load_articles(content_dir, default_lang=ctx.default_language)
+        articles = _filter_articles(articles, cli)
 
-    if tasks:
-        logging.info(f"Running {len(tasks)} tasks in parallel...")
-        run_parallel_tasks(tasks, config["build"]["parallelism"])
-    else:
-        logging.info("Nothing to build — all pages up to date.")
+        tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
 
-    if not cli.dry_run:
-        save_cache(cache_path, cache)
+        if tasks:
+            logging.info(f"Running {len(tasks)} tasks in parallel...")
+            run_parallel_tasks(tasks, config["build"]["parallelism"])
+        else:
+            logging.info("Nothing to build — all pages up to date.")
+
+        if not cli.dry_run:
+            save_cache(cache_path, cache)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     logging.info("Build complete.")
 

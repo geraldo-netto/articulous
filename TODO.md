@@ -34,11 +34,7 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 ## concurrency
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| CON-01 | open | M | Cache mutated before task runs. `update_cache` called pre-submit; if transform fails, cache claims success and next build skips. | Move `update_cache` into task closure, run on success only. sitegen.py:785, 840, 895, 949, 1001, 1034. |
-| CON-02 | open | S | Temp XML files (`output/temp/index-{n}.xml` etc) shared across concurrent builds of same project; no locking. | Use per-build temp dir (`tempfile.mkdtemp`). |
-| CON-03 | open | S | `run_parallel_tasks` re-raises first exception inside `as_completed` loop. Pending futures keep running; their failures swallowed. | Cancel remaining or collect all errors. sitegen.py:709-714. |
+_(all open items resolved; tracked via git history)_
 
 ## code complexity
 

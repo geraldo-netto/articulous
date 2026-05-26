@@ -23,7 +23,7 @@ from typing import Callable
 # Filesystem helpers
 # ================================================================
 
-def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
+def _ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
     parent = path.parent
     if not parent.exists() and not dry_run:
         parent.mkdir(parents=True, exist_ok=True)
@@ -33,7 +33,7 @@ def write_json(path: Path, data, dry_run: bool = False) -> None:
     if dry_run:
         logging.debug(f"[DRY RUN] Would write JSON: {path}")
         return
-    ensure_parent_dir(path)
+    _ensure_parent_dir(path)
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 

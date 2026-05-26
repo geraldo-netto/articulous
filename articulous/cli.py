@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .config import apply_cli_overrides, load_or_create_config
 from .engines import check_dependencies
+from .pipeline import run_build
 
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
@@ -107,8 +108,6 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
 
 def main(argv=None) -> None:
     """Top-level entrypoint used by sitegen.py and python -m articulous."""
-    from .pipeline import run_build
-
     args = parse_cli_args(argv)
     cli = CliOptions(args)
     project_root = Path.cwd()

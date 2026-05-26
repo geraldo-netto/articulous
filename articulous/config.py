@@ -3,7 +3,7 @@ Configuration loading, defaults, and CLI overrides.
 
 This module is the single source of truth for the raw config dict
 shape. Every other module consumes its output via :class:`BuildCtx`
-(see :mod:`articulous.build`).
+(see :mod:`articulous.pipeline`).
 """
 import json
 import logging

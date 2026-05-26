@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import shutil
 import tempfile
 import time
@@ -24,6 +25,7 @@ from xml.sax.saxutils import escape as _xml_escape
 from .articles import load_articles
 from .engines import (
     SECTION_XSL,
+    SaxonCEngine,
     TransformEngine,
     configure_saxonc,
     make_engine,
@@ -450,6 +452,29 @@ def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
     return project_root / ctx.cache_file
 
 
+def _resolve_parallelism(ctx: BuildCtx) -> object:
+    """
+    Pick a sensible ``max_workers`` for ``run_parallel_tasks``.
+
+    For lxml-only builds, oversubscribing is cheap (each task is a
+    short C call that releases the GIL), so we stay with the previous
+    ``max(4, cpu_count)`` default.
+
+    SaxonC tasks each launch a JVM subprocess; stacking more of those
+    than the machine has cores risks running out of memory long before
+    it runs out of CPU. When any section is configured to use
+    SaxonCEngine, ``"auto"`` resolves to ``cpu_count`` instead.
+
+    Explicit integer/string values in ``ctx.parallelism`` pass through
+    unchanged.
+    """
+    if ctx.parallelism != "auto":
+        return ctx.parallelism
+    cpu = os.cpu_count() or 4
+    has_saxon = any(isinstance(e, SaxonCEngine) for e in ctx.engines.values())
+    return cpu if has_saxon else max(4, cpu)
+
+
 # ================================================================
 # Top-level build pipeline
 # ================================================================
@@ -489,7 +514,7 @@ def run_build(cli, config, project_root: Path) -> None:
                 logging.info(f"  {section}: {len(tasks)} task(s)")
 
             t0 = time.perf_counter()
-            run_parallel_tasks(flat, ctx.parallelism)
+            run_parallel_tasks(flat, _resolve_parallelism(ctx))
             elapsed = time.perf_counter() - t0
             logging.info(
                 f"Ran {total} task(s) in {elapsed:.2f}s "

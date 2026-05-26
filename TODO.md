@@ -19,9 +19,7 @@ _(all open items resolved; tracked via git history)_
 
 ## scalability
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| SCA-01 | parked | M | All articles are held in RAM as :class:`Article` dataclasses. Fine today; a 100k-article site would bloat. Parked until a concrete need surfaces. | Streaming iterator over `content_dir`; sort lazily by chunk. `articulous/articles.py`. |
+_(all open items resolved; tracked via git history)_
 
 ## concurrency
 
@@ -71,7 +69,7 @@ _(all open items resolved; tracked via git history)_
 
 ## Open — parked
 
-- **SCA-01** — Streaming article load. No production site is large enough today for the in-memory list to bite. Reopen if profiling shows article load dominates memory or wall time.
+_(none yet)_
 
 ## Audit picks deliberately rejected
 

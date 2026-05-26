@@ -11,6 +11,7 @@ synthesise per-section model XML and hand it to the shared
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import logging
 import os
@@ -21,7 +22,7 @@ from pathlib import Path
 from typing import Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape
 
-from .articles import load_articles
+from .articles import iter_articles
 from .engines import (
     SECTION_XSL,
     SaxonCEngine,
@@ -248,13 +249,12 @@ def _encode_xml(content: str) -> bytes:
     return content.encode("utf-8")
 
 
-def build_articles_section(articles, ctx: BuildCtx, cache):
+def build_articles_section(lang_articles, ctx: BuildCtx, cache):
     """
-    Build all article pages.
+    Build article pages for one language's article batch.
 
-    Articles arrive with their ``url`` already set by
-    :func:`articulous.articles.load_articles` (using the URL builder
-    returned by :func:`_article_url_builder`).
+    Called once per language by :func:`run_build`; the input is a
+    per-language sorted list, not the global article set.
     """
     tasks = []
     xsl_path = ctx.xsl_for("articles")
@@ -262,7 +262,7 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
     pattern = ctx.url_patterns["article"]
     xsl_hash = file_hash(xsl_path)  # PERF-01: once per section, not per item
 
-    for art in articles:
+    for art in lang_articles:
         output_path = ctx.output_dir / build_rel_path_from_pattern(
             pattern, lang=art.lang, slug=art.slug,
         )
@@ -284,14 +284,14 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_index_section(articles, ctx: BuildCtx, cache):
-    """Build paginated index pages."""
+def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
+    """Build paginated index pages for one language."""
     tasks = []
     xsl_path = ctx.xsl_for("index")
     engine = ctx.engine_for("index")
     xsl_hash = file_hash(xsl_path)
 
-    for page in build_index_models(articles, ctx):
+    for page in build_index_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_xml_doc(
             "index", [_article_xml(a) for a in page.articles],
         ))
@@ -313,14 +313,14 @@ def build_index_section(articles, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_tags_section(articles, ctx: BuildCtx, cache):
-    """Build tag pages."""
+def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
+    """Build tag pages for one language."""
     tasks = []
     xsl_path = ctx.xsl_for("tags")
     engine = ctx.engine_for("tags")
     xsl_hash = file_hash(xsl_path)
 
-    for page in build_tags_models(articles, ctx):
+    for page in build_tags_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_xml_doc(
             "tag", [_article_xml(a) for a in page.articles],
         ))
@@ -344,9 +344,12 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_rss_section(articles, ctx: BuildCtx, cache):
-    """Build RSS feed."""
-    feed = build_rss_model(articles, ctx)
+def build_rss_section(rss_articles, ctx: BuildCtx, cache):
+    """
+    Build the RSS feed. ``rss_articles`` is the already-selected top-N
+    list (newest first) produced by :func:`_stream_projections`.
+    """
+    feed = build_rss_model(rss_articles, ctx)
     xsl_path = ctx.xsl_for("rss")
     xml_bytes = _encode_xml(
         _xml_doc("rss", [_rss_item_xml(a) for a in feed.articles])
@@ -367,9 +370,9 @@ def build_rss_section(articles, ctx: BuildCtx, cache):
     return [task]
 
 
-def build_sitemap_section(articles, ctx: BuildCtx, cache):
-    """Build sitemap.xml."""
-    sitemap = build_sitemap_model(articles, ctx)
+def build_sitemap_section(urls, ctx: BuildCtx, cache):
+    """Build sitemap.xml from a streamed list of URL strings."""
+    sitemap = build_sitemap_model(urls, ctx)
     xsl_path = ctx.xsl_for("sitemap")
     xml_bytes = _encode_xml(
         _xml_doc("sitemap", [_sitemap_url_xml(u) for u in sitemap.urls])
@@ -390,9 +393,9 @@ def build_sitemap_section(articles, ctx: BuildCtx, cache):
     return [task]
 
 
-def build_search_section(articles, ctx: BuildCtx, cache):
-    """Build search.json. No XSLT needed; pure JSON write."""
-    index = build_search_model(articles, ctx)
+def build_search_section(items, ctx: BuildCtx, cache):
+    """Build search.json from a streamed list of pre-projected items."""
+    index = build_search_model(items, ctx)
     output_path = ctx.output_dir / index.output_path
     json_hash = hashlib.sha256(
         json.dumps(index.items).encode("utf-8")
@@ -409,46 +412,138 @@ def build_search_section(articles, ctx: BuildCtx, cache):
 
 
 # ================================================================
-# Section dispatch
+# Streaming dispatch
 # ================================================================
 
-SECTION_BUILDERS = {
-    "articles": build_articles_section,
-    "index": build_index_section,
-    "tags": build_tags_section,
-    "rss": build_rss_section,
-    "sitemap": build_sitemap_section,
-    "search": build_search_section,
-}
+# Section name -> "per-lang" vs "cross-lang" classification. Per-lang
+# builders are called once per configured language with that language's
+# sorted article batch; cross-lang builders are called once with a
+# streaming projection built during phase 1.
+_PER_LANG_SECTIONS = ("articles", "index", "tags")
+_CROSS_LANG_SECTIONS = ("rss", "sitemap", "search")
+
+# Exposed for tests / documentation: the complete section name set.
+SECTION_NAMES = _PER_LANG_SECTIONS + _CROSS_LANG_SECTIONS
+
+
+def _passes_cli_filters(art, cli) -> bool:
+    if cli.only_langs and art.lang not in cli.only_langs:
+        return False
+    if cli.only_slugs and art.slug not in cli.only_slugs:
+        return False
+    return True
 
 
 def _filter_articles(articles, cli):
-    if cli.only_langs:
-        wanted = set(cli.only_langs)
-        articles = [a for a in articles if a.lang in wanted]
-    if cli.only_slugs:
-        wanted = set(cli.only_slugs)
-        articles = [a for a in articles if a.slug in wanted]
-    return articles
+    """List-form filter retained for callers/tests that want it."""
+    return [a for a in articles if _passes_cli_filters(a, cli)]
 
 
-def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections) -> dict:
+def _stream_projections(stream_factory, cli, ctx: BuildCtx):
     """
-    Dispatch each requested section to its builder and return a
-    ``{section_name: [task, ...]}`` plan. The caller flattens it for
-    parallel execution and uses the per-section counts for logging.
+    Phase-1 streaming pass.
 
-    Section order is no longer load-bearing: every section reads
-    ``article.url`` from the field that :func:`load_articles` populated
-    during parse, so any subset of sections (``--only ...``) is safe to
-    run.
+    Iterates the article stream once. Accumulates:
+
+      - ``sitemap_urls`` — list of every article's URL.
+      - ``search_items`` — list of search projection dicts.
+      - ``rss_heap``     — bounded min-heap of (datetime, sequence, art)
+                           keeping the top ``ctx.rss_items`` articles.
+      - ``total``        — articles that survived the CLI filters.
+
+    The sequence number breaks ties when two articles share a datetime
+    so heapq never tries to order :class:`Article` instances directly.
     """
-    wanted = set(only_sections) if only_sections else None
-    plan: dict = {}
-    for name, builder in SECTION_BUILDERS.items():
-        if wanted is not None and name not in wanted:
+    rss_heap: list = []
+    sitemap_urls: list = []
+    search_items: list = []
+    total = 0
+    seq = 0  # monotonic tie-breaker for the heap
+    for art in stream_factory():
+        if not _passes_cli_filters(art, cli):
             continue
-        plan[name] = builder(articles, ctx, cache)
+        total += 1
+        sitemap_urls.append(art.url)
+        search_items.append({
+            "title": art.title,
+            "description": art.description,
+            "url": art.url,
+            "tags": list(art.tags),
+        })
+        entry = (art.datetime, seq, art)
+        seq += 1
+        if len(rss_heap) < ctx.rss_items:
+            heapq.heappush(rss_heap, entry)
+        elif entry > rss_heap[0]:
+            heapq.heapreplace(rss_heap, entry)
+    return sitemap_urls, search_items, rss_heap, total
+
+
+def _rss_sorted_from_heap(rss_heap) -> list:
+    """Newest-first list extracted from the min-heap."""
+    return [art for _, _, art in sorted(rss_heap, reverse=True)]
+
+
+def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache) -> dict:
+    """
+    Stream the article set and dispatch every requested section.
+
+    Returns a ``{section_name: [task, ...]}`` plan ready for parallel
+    execution. Memory peak is bounded to a single language's sorted
+    article batch plus the three cross-language projections, instead
+    of the entire global article list.
+    """
+    wanted = set(cli.only_sections) if cli.only_sections else None
+
+    def want(section: str) -> bool:
+        return wanted is None or section in wanted
+
+    need_cross = any(want(s) for s in _CROSS_LANG_SECTIONS)
+    need_per_lang = any(want(s) for s in _PER_LANG_SECTIONS)
+
+    plan: dict = {}
+
+    # Phase 1: cross-lang projections (one stream pass).
+    if need_cross:
+        sitemap_urls, search_items, rss_heap, total = _stream_projections(
+            stream_factory, cli, ctx,
+        )
+        logging.info(f"Discovered {total} article(s) after filters")
+        if want("rss"):
+            plan["rss"] = build_rss_section(
+                _rss_sorted_from_heap(rss_heap), ctx, cache,
+            )
+        if want("sitemap"):
+            plan["sitemap"] = build_sitemap_section(sitemap_urls, ctx, cache)
+        if want("search"):
+            plan["search"] = build_search_section(search_items, ctx, cache)
+
+    # Phase 2: per-lang sections (one stream pass per requested language).
+    if need_per_lang:
+        for lang in ctx.languages:
+            if cli.only_langs and lang not in cli.only_langs:
+                continue
+            lang_articles = sorted(
+                (a for a in stream_factory()
+                 if a.lang == lang and _passes_cli_filters(a, cli)),
+                key=lambda a: a.datetime, reverse=True,
+            )
+            if not lang_articles:
+                continue
+            if want("articles"):
+                plan.setdefault("articles", []).extend(
+                    build_articles_section(lang_articles, ctx, cache)
+                )
+            if want("index"):
+                plan.setdefault("index", []).extend(
+                    build_index_section(lang_articles, lang, ctx, cache)
+                )
+            if want("tags"):
+                plan.setdefault("tags", []).extend(
+                    build_tags_section(lang_articles, lang, ctx, cache)
+                )
+            # lang_articles goes out of scope here → released between languages.
+
     return plan
 
 
@@ -500,15 +595,25 @@ def run_build(cli, config, project_root: Path) -> None:
     copy_assets(ctx)
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
-    articles = load_articles(
-        ctx.content_dir,
-        default_lang=ctx.default_language,
-        url_builder=_article_url_builder(ctx),
-        allowed_langs=ctx.languages,
-    )
-    articles = _filter_articles(articles, cli)
+    # The stream factory rebuilds the generator on demand. Each
+    # generator instance is consumed exactly once; the pipeline runs
+    # one factory call for phase 1 (cross-lang projections) and one
+    # per language for phase 2 (per-lang sections), bounding peak
+    # memory to a single language's article batch.
+    url_builder = _article_url_builder(ctx)
+    allowed_langs = frozenset(ctx.languages)
+    content_dir = ctx.content_dir
+    default_lang = ctx.default_language
 
-    plan = _collect_tasks(articles, ctx, cache, cli.only_sections)
+    def stream_factory():
+        return iter_articles(
+            content_dir,
+            default_lang=default_lang,
+            url_builder=url_builder,
+            allowed_langs=allowed_langs,
+        )
+
+    plan = _collect_tasks(stream_factory, cli, ctx, cache)
     flat = [t for tasks in plan.values() for t in tasks]
     total = len(flat)
 

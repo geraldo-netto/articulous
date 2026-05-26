@@ -93,54 +93,45 @@ def test_other_page_frozen():
             obj.url = "y"
 
 
-# --- build_index_models ---
+# --- build_index_models (per-lang) ---
 
-def test_build_index_models_paginates_per_lang():
-    arts = [_art(f"a{i}", lang="en") for i in range(5)] + \
-           [_art(f"b{i}", lang="fr") for i in range(3)]
-    pages = build_index_models(arts, _ctx())
-    # en: 5 articles, per_page=2 → 3 pages; fr: 3 → 2 pages
-    en_pages = [p for p in pages if p.lang == "en"]
-    fr_pages = [p for p in pages if p.lang == "fr"]
-    assert len(en_pages) == 3
-    assert len(fr_pages) == 2
-    assert all(p.total_pages == 3 for p in en_pages)
-    assert all(p.total_pages == 2 for p in fr_pages)
+def test_build_index_models_paginates():
+    arts = [_art(f"a{i}", lang="en") for i in range(5)]
+    pages = build_index_models(arts, "en", _ctx())
+    # 5 articles, per_page=2 → 3 pages
+    assert len(pages) == 3
+    assert all(p.total_pages == 3 for p in pages)
+    assert all(p.lang == "en" for p in pages)
 
 
-def test_build_index_models_skips_empty_lang():
-    arts = [_art("a", lang="en")]
-    pages = build_index_models(arts, _ctx())
-    langs = {p.lang for p in pages}
-    assert langs == {"en"}
+def test_build_index_models_empty_returns_empty():
+    assert build_index_models([], "en", _ctx()) == []
 
 
-# --- build_tags_models ---
+# --- build_tags_models (per-lang) ---
 
-def test_build_tags_models_group_by_lang_and_tag():
+def test_build_tags_models_group_by_tag():
     arts = [
         _art("a", lang="en", tags=("news", "intro")),
         _art("b", lang="en", tags=("news",)),
-        _art("c", lang="fr", tags=("news",)),
     ]
-    models = build_tags_models(arts, _ctx())
-    en_tags = sorted(m.tag for m in models if m.lang == "en")
-    fr_tags = [m.tag for m in models if m.lang == "fr"]
-    assert en_tags == ["intro", "news"]
-    assert fr_tags == ["news"]
+    models = build_tags_models(arts, "en", _ctx())
+    tags = sorted(m.tag for m in models)
+    assert tags == ["intro", "news"]
+    assert all(m.lang == "en" for m in models)
 
 
 def test_build_tags_models_skips_empty_slug(caplog):
     arts = [_art("a", tags=("!!!",))]
     with caplog.at_level("WARNING"):
-        models = build_tags_models(arts, _ctx(languages=["en"]))
+        models = build_tags_models(arts, "en", _ctx())
     assert models == []
     assert any("slugifies to empty" in r.message for r in caplog.records)
 
 
-def test_build_tags_models_url_encoded(caplog):
+def test_build_tags_models_url_encoded():
     arts = [_art("a", tags=("Hello World",))]
-    models = build_tags_models(arts, _ctx(languages=["en"]))
+    models = build_tags_models(arts, "en", _ctx())
     assert models[0].tag_slug == "hello-world"
     assert "hello-world" in models[0].url
 
@@ -154,21 +145,23 @@ def test_build_rss_model_respects_limit():
     assert rss.output_path == Path("rss.xml")
 
 
-# --- build_sitemap_model ---
+# --- build_sitemap_model (urls input) ---
 
 def test_build_sitemap_model_collects_urls():
-    arts = [_art("a"), _art("b")]
-    sm = build_sitemap_model(arts, _ctx())
-    assert sm.urls == [arts[0].url, arts[1].url]
+    urls = ["https://e.test/a/", "https://e.test/b/"]
+    sm = build_sitemap_model(urls, _ctx())
+    assert sm.urls == urls
     assert sm.output_path == Path("sitemap.xml")
 
 
-# --- build_search_model ---
+# --- build_search_model (items input) ---
 
 def test_build_search_model_shape():
-    arts = [_art("a", tags=("news",))]
-    idx = build_search_model(arts, _ctx())
-    assert idx.items[0]["title"] == arts[0].title
-    assert idx.items[0]["url"] == arts[0].url
+    items = [{
+        "title": "A", "description": "d",
+        "url": "https://e.test/a/", "tags": ["news"],
+    }]
+    idx = build_search_model(items, _ctx())
+    assert idx.items[0]["title"] == "A"
     assert idx.items[0]["tags"] == ["news"]
     assert idx.output_path == Path("search.json")

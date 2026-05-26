@@ -176,6 +176,40 @@ def _discover_article_files(content_dir: Path):
     return sorted(content_dir.rglob("*.xml"))
 
 
+def iter_articles(
+    content_dir: Path,
+    *,
+    default_lang: str = "en",
+    url_builder: Optional[Callable[[str, str], str]] = None,
+    allowed_langs: Optional[Iterable[str]] = None,
+):
+    """
+    Yield :class:`Article` instances one at a time, in directory-walk
+    order (no sort applied).
+
+    Memory footprint is bounded to a single article — the lxml DOM is
+    released between iterations and the previous ``Article`` is only
+    retained if the caller holds onto it. Use this when memory matters
+    more than throughput; use :func:`load_articles` when you need every
+    article sorted in memory and parallel parse is worth the buffering.
+
+    The pipeline does a phase-1 streaming pass to build cross-language
+    projections (sitemap URLs, search items, RSS top-N heap) and then
+    one phase-2 streaming pass per language for the per-language
+    section builders.
+    """
+    allowed = frozenset(allowed_langs) if allowed_langs is not None else None
+    for path in _discover_article_files(content_dir):
+        art = parse_article_xml(
+            path,
+            default_lang=default_lang,
+            url_builder=url_builder,
+            allowed_langs=allowed,
+        )
+        if art is not None:
+            yield art
+
+
 def load_articles(
     content_dir: Path,
     *,
@@ -185,15 +219,10 @@ def load_articles(
     max_workers: Optional[int] = None,
 ) -> list:
     """
-    Load and parse every article under ``content_dir`` (newest first).
+    Load and parse every article under ``content_dir`` in parallel and
+    return the sorted list (newest first). Memory: O(total articles).
 
-    Files are parsed in parallel — lxml releases the GIL during its
-    C-level parse, so the main thread isn't the bottleneck on large
-    content trees. ``max_workers`` defaults to ``max(4, cpu_count())``.
-
-    The URL is computed once per article during parsing — no separate
-    "attach URLs" pass is needed. Articles whose ``<lang>`` is not in
-    ``allowed_langs`` fall back to ``default_lang`` with a warning.
+    For streaming callers see :func:`iter_articles`.
     """
     allowed = frozenset(allowed_langs) if allowed_langs is not None else None
     files = _discover_article_files(content_dir)

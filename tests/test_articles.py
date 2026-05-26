@@ -9,6 +9,7 @@ from articulous.articles import (
     _discover_article_files,
     _read_article_fields,
     _validated_lang,
+    iter_articles,
     load_articles,
     normalize_slug,
     parse_article_xml,
@@ -245,6 +246,30 @@ def test_load_articles_respects_max_workers(tmp_path):
         url_builder=_url_builder, max_workers=1,
     )
     assert len(arts) == 3
+
+
+# --- iter_articles (streaming) ---
+
+def test_iter_articles_yields_lazily(tmp_path):
+    """Generator surface: yields Article one at a time, skips Nones."""
+    (tmp_path / "good1.xml").write_text(ARTICLE_XML)
+    (tmp_path / "bad.xml").write_text("<not-well-formed")
+    (tmp_path / "good2.xml").write_text(
+        '<article><title>Second</title><date>2025-02-01</date>'
+        '<description>d</description></article>'
+    )
+    out = list(iter_articles(
+        tmp_path, default_lang="en", url_builder=_url_builder,
+    ))
+    slugs = [a.slug for a in out]
+    assert "hello-world" in slugs
+    assert "second" in slugs
+    # Bad article is dropped, not yielded.
+    assert len(out) == 2
+
+
+def test_iter_articles_empty_dir(tmp_path):
+    assert list(iter_articles(tmp_path, default_lang="en")) == []
 
 
 def test_load_articles_allowed_langs_filter(tmp_path):

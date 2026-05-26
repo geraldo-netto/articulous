@@ -12,7 +12,7 @@ from articulous.config import DEFAULT_CONFIG
 from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.pipeline import (
     BuildCtx,
-    SECTION_BUILDERS,
+    SECTION_NAMES,
     _article_url_builder,
     _article_xml,
     _cache_path_for,
@@ -20,9 +20,12 @@ from articulous.pipeline import (
     _encode_xml,
     _filter_articles,
     _make_xslt_task,
+    _passes_cli_filters,
     _resolve_parallelism,
     _rss_item_xml,
+    _rss_sorted_from_heap,
     _sitemap_url_xml,
+    _stream_projections,
     _xml_doc,
     build_articles_section,
     build_ctx_from_config,
@@ -257,10 +260,10 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
     assert "bad" not in cache
 
 
-# --- section builders return SECTION_BUILDERS map ---
+# --- section name set ---
 
-def test_section_builders_keys():
-    assert set(SECTION_BUILDERS.keys()) == {
+def test_section_names_complete():
+    assert set(SECTION_NAMES) == {
         "articles", "index", "tags", "rss", "sitemap", "search",
     }
 
@@ -272,8 +275,7 @@ def test_build_articles_section_returns_tasks(tmp_path):
         '<article><title>A</title><date>2025-01-01</date>'
         '<description>d</description></article>'
     )
-    a = _art("a")
-    a = dataclasses.replace(a, source_path=art_xml)
+    a = dataclasses.replace(_art("a"), source_path=art_xml)
     tasks = build_articles_section([a], ctx, {})
     assert len(tasks) == 1
 
@@ -286,19 +288,16 @@ def test_build_articles_section_skips_cached(tmp_path):
         '<description>d</description></article>'
     )
     a = dataclasses.replace(_art("a"), source_path=art_xml)
-    # Run once to populate cache
     cache = {}
     tasks = build_articles_section([a], ctx, cache)
     for t in tasks: t()
-    # Second build sees cache → skip
-    tasks2 = build_articles_section([a], ctx, cache)
-    assert tasks2 == []
+    assert build_articles_section([a], ctx, cache) == []
 
 
 def test_build_index_section_runs(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a"), _art("b")]
-    tasks = build_index_section(arts, ctx, {})
+    tasks = build_index_section(arts, "en", ctx, {})
     assert len(tasks) == 1
     tasks[0]()
     assert (tmp_path / "output" / "en" / "page" / "1" / "index.html").exists()
@@ -308,15 +307,15 @@ def test_build_index_section_cached(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a")]
     cache = {}
-    tasks = build_index_section(arts, ctx, cache)
+    tasks = build_index_section(arts, "en", ctx, cache)
     for t in tasks: t()
-    assert build_index_section(arts, ctx, cache) == []
+    assert build_index_section(arts, "en", ctx, cache) == []
 
 
 def test_build_tags_section_runs(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a", tags=("news",))]
-    tasks = build_tags_section(arts, ctx, {})
+    tasks = build_tags_section(arts, "en", ctx, {})
     assert len(tasks) == 1
     tasks[0]()
 
@@ -325,9 +324,9 @@ def test_build_tags_section_cached(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a", tags=("news",))]
     cache = {}
-    tasks = build_tags_section(arts, ctx, cache)
+    tasks = build_tags_section(arts, "en", ctx, cache)
     for t in tasks: t()
-    assert build_tags_section(arts, ctx, cache) == []
+    assert build_tags_section(arts, "en", ctx, cache) == []
 
 
 def test_build_rss_section_runs_and_caches(tmp_path):
@@ -342,31 +341,33 @@ def test_build_rss_section_runs_and_caches(tmp_path):
 
 def test_build_sitemap_section_runs_and_caches(tmp_path):
     ctx = _ctx_for(tmp_path)
-    arts = [_art("a")]
+    urls = ["https://e.test/a/"]
     cache = {}
-    tasks = build_sitemap_section(arts, ctx, cache)
+    tasks = build_sitemap_section(urls, ctx, cache)
     assert len(tasks) == 1
     tasks[0]()
-    assert build_sitemap_section(arts, ctx, cache) == []
+    assert build_sitemap_section(urls, ctx, cache) == []
 
 
 def test_build_search_section_runs_and_caches(tmp_path):
     ctx = _ctx_for(tmp_path)
-    arts = [_art("a")]
+    items = [{"title": "A", "description": "d",
+              "url": "https://e.test/a/", "tags": ["news"]}]
     cache = {}
-    tasks = build_search_section(arts, ctx, cache)
+    tasks = build_search_section(items, ctx, cache)
     assert len(tasks) == 1
     tasks[0]()
     assert (tmp_path / "output" / "search.json").exists()
-    assert build_search_section(arts, ctx, cache) == []
+    assert build_search_section(items, ctx, cache) == []
 
 
 # --- _filter_articles ---
 
 class _FakeCLI:
-    def __init__(self, langs=None, slugs=None):
+    def __init__(self, langs=None, slugs=None, sections=None):
         self.only_langs = langs
         self.only_slugs = slugs
+        self.only_sections = sections
 
 
 def test_filter_articles_no_filters():
@@ -386,20 +387,156 @@ def test_filter_articles_by_slug():
     assert [a.slug for a in out] == ["b"]
 
 
+# --- _passes_cli_filters ---
+
+def test_passes_cli_filters_no_constraints():
+    assert _passes_cli_filters(_art("a"), _FakeCLI()) is True
+
+
+def test_passes_cli_filters_lang_reject():
+    assert _passes_cli_filters(
+        _art("a", lang="fr"), _FakeCLI(langs=["en"]),
+    ) is False
+
+
+def test_passes_cli_filters_slug_reject():
+    assert _passes_cli_filters(
+        _art("a"), _FakeCLI(slugs=["b"]),
+    ) is False
+
+
+# --- _stream_projections ---
+
+def test_stream_projections_collects_all_and_bounds_rss(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    ctx = dataclasses.replace(ctx, rss_items=2)
+    articles = [_art(f"a{i}") for i in range(5)]
+    # Datetimes differ so the heap ordering is deterministic
+    articles = [
+        dataclasses.replace(a, datetime=datetime(2025, 1, i + 1))
+        for i, a in enumerate(articles)
+    ]
+    urls, items, heap, total = _stream_projections(
+        lambda: iter(articles), _FakeCLI(), ctx,
+    )
+    assert total == 5
+    assert len(urls) == 5
+    assert len(items) == 5
+    assert len(heap) == 2  # bounded by rss_items
+    # Heap contains the two newest
+    dates = sorted(dt for dt, _, _ in heap)
+    assert dates == [datetime(2025, 1, 4), datetime(2025, 1, 5)]
+
+
+def test_stream_projections_respects_cli_filters(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    articles = [_art("a", lang="en"), _art("b", lang="fr")]
+    urls, items, heap, total = _stream_projections(
+        lambda: iter(articles), _FakeCLI(langs=["en"]), ctx,
+    )
+    assert total == 1
+
+
+def test_rss_sorted_from_heap_newest_first(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    articles = [
+        dataclasses.replace(_art("a"), datetime=datetime(2025, 1, 1)),
+        dataclasses.replace(_art("b"), datetime=datetime(2025, 6, 1)),
+        dataclasses.replace(_art("c"), datetime=datetime(2025, 3, 1)),
+    ]
+    _, _, heap, _ = _stream_projections(
+        lambda: iter(articles), _FakeCLI(), ctx,
+    )
+    out = _rss_sorted_from_heap(heap)
+    assert [a.slug for a in out] == ["b", "c", "a"]
+
+
 # --- _collect_tasks ---
 
 def test_collect_tasks_all_sections(tmp_path):
     ctx = _ctx_for(tmp_path)
-    # Empty article list keeps the test independent of any on-disk
-    # source files; we only care that every section ran its builder.
-    plan = _collect_tasks([], ctx, {}, only_sections=None)
-    assert set(plan.keys()) == set(SECTION_BUILDERS.keys())
+    # Empty stream keeps the test independent of any on-disk source
+    # files; every requested section still runs its builder.
+    plan = _collect_tasks(lambda: iter(()), _FakeCLI(), ctx, {})
+    # Cross-lang builders always run when included; per-lang ones only
+    # run when at least one matching article exists, so empty stream
+    # produces only the cross-lang section entries.
+    assert set(plan.keys()) == {"rss", "sitemap", "search"}
 
 
 def test_collect_tasks_only_subset(tmp_path):
     ctx = _ctx_for(tmp_path)
-    plan = _collect_tasks([], ctx, {}, only_sections=["search"])
+    cli = _FakeCLI()
+    cli.only_sections = ["search"]
+    plan = _collect_tasks(lambda: iter(()), cli, ctx, {})
     assert list(plan.keys()) == ["search"]
+
+
+def test_collect_tasks_per_lang_populated(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    art_xml = tmp_path / "content" / "a.xml"
+    art_xml.write_text(
+        '<article><title>A</title><date>2025-01-01</date>'
+        '<description>d</description></article>'
+    )
+    a = dataclasses.replace(_art("a"), source_path=art_xml)
+    cli = _FakeCLI()
+    cli.only_sections = ["articles"]
+    plan = _collect_tasks(lambda: iter([a]), cli, ctx, {})
+    assert "articles" in plan and len(plan["articles"]) == 1
+
+
+def test_collect_tasks_only_lang_filter(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    art_xml = tmp_path / "content" / "a.xml"
+    art_xml.write_text(
+        '<article><title>A</title><date>2025-01-01</date>'
+        '<description>d</description></article>'
+    )
+    a = dataclasses.replace(_art("a", lang="en"), source_path=art_xml)
+    b = dataclasses.replace(_art("b", lang="fr"), source_path=art_xml)
+    # Configure two languages so the lang-filter has work to skip.
+    ctx_multilang = dataclasses.replace(ctx, languages=["en", "fr"])
+    cli = _FakeCLI(langs=["en"], sections=["articles"])
+    plan = _collect_tasks(lambda: iter([a, b]), cli, ctx_multilang, {})
+    assert len(plan["articles"]) == 1
+
+
+def test_collect_tasks_only_index_subset(tmp_path):
+    """Per-lang sections requested but ``articles`` excluded."""
+    ctx = _ctx_for(tmp_path)
+    a = _art("a")
+    cli = _FakeCLI(sections=["index"])
+    plan = _collect_tasks(lambda: iter([a]), cli, ctx, {})
+    assert "articles" not in plan
+    assert "index" in plan
+
+
+def test_collect_tasks_only_sitemap_subset(tmp_path):
+    """Subset that includes one cross-lang section but skips the others."""
+    ctx = _ctx_for(tmp_path)
+    cli = _FakeCLI(sections=["sitemap"])
+    plan = _collect_tasks(lambda: iter(()), cli, ctx, {})
+    assert list(plan.keys()) == ["sitemap"]
+
+
+def test_stream_projections_replaces_older_top(tmp_path):
+    """Older articles arriving after the heap is full are rejected."""
+    ctx = _ctx_for(tmp_path)
+    ctx = dataclasses.replace(ctx, rss_items=2)
+    # First two seed the heap (newer datetimes), third is older and
+    # must be rejected by the heapq.heapreplace branch's else.
+    arts = [
+        dataclasses.replace(_art("a"), datetime=datetime(2025, 6, 1)),
+        dataclasses.replace(_art("b"), datetime=datetime(2025, 5, 1)),
+        dataclasses.replace(_art("c"), datetime=datetime(2024, 1, 1)),
+    ]
+    _, _, heap, total = _stream_projections(
+        lambda: iter(arts), _FakeCLI(), ctx,
+    )
+    assert total == 3
+    slugs = sorted(art.slug for _, _, art in heap)
+    assert slugs == ["a", "b"]  # the old one didn't make it
 
 
 # --- run_build end-to-end ---

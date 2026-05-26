@@ -67,7 +67,7 @@ def deep_merge(base: dict, override: dict) -> dict:
 def load_or_create_config(path: Path) -> dict:
     """
     Load config from JSON file; fall back to :data:`DEFAULT_CONFIG`
-    if missing or invalid.
+    if missing, malformed, or shaped wrong.
     """
     if not path.exists():
         return json.loads(json.dumps(DEFAULT_CONFIG))
@@ -76,6 +76,13 @@ def load_or_create_config(path: Path) -> dict:
         data = json.loads(path.read_text())
     except json.JSONDecodeError as e:
         logging.warning(f"Invalid config JSON at {path}: {e}. Using defaults.")
+        return json.loads(json.dumps(DEFAULT_CONFIG))
+
+    if not isinstance(data, dict):
+        logging.warning(
+            f"Config at {path} is not a JSON object "
+            f"(got {type(data).__name__}). Using defaults."
+        )
         return json.loads(json.dumps(DEFAULT_CONFIG))
 
     cfg = json.loads(json.dumps(DEFAULT_CONFIG))

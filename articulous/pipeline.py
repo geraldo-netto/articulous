@@ -92,6 +92,22 @@ class BuildCtx:
         return self.engines[section]
 
 
+def _require_positive_int(value, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(
+            f"config {name} must be a positive int, got {value!r}"
+        )
+    return value
+
+
+def _require_non_negative_int(value, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError(
+            f"config {name} must be a non-negative int, got {value!r}"
+        )
+    return value
+
+
 def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     """
     Project the raw config dict into a :class:`BuildCtx`.
@@ -100,6 +116,12 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     dict's deep shape. It also validates the configured engine names
     and resolves the SaxonC binary, so callers downstream see only a
     typed ctx — no config dict, no string-compared engine names.
+
+    Integer fields that the pipeline divides or slices by
+    (``per_page``, ``rss_items``) are bounds-checked here so a malformed
+    value fails loudly at startup instead of producing a
+    ``ZeroDivisionError`` (per_page == 0) or empty-heap ``IndexError``
+    (rss_items < 0) deep inside the build.
     """
     validate_engines(config)
     saxonc_bin = configure_saxonc(config)
@@ -107,6 +129,13 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         section: make_engine(name, saxonc_bin)
         for section, name in config["engines"].items()
     }
+    pagination = config["site"]["pagination"]
+    per_page = _require_positive_int(
+        pagination["per_page"], "site.pagination.per_page",
+    )
+    rss_items = _require_non_negative_int(
+        pagination["rss_items"], "site.pagination.rss_items",
+    )
     return BuildCtx(
         content_dir=Path(config["paths"]["content_dir"]),
         xsl_dir=Path(config["paths"]["xsl_dir"]),
@@ -123,8 +152,8 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         languages=list(config["site"]["languages"]),
         default_language=config["site"]["default_language"],
         url_patterns=dict(config["urls"]),
-        per_page=config["site"]["pagination"]["per_page"],
-        rss_items=config["site"]["pagination"]["rss_items"],
+        per_page=per_page,
+        rss_items=rss_items,
     )
 
 

@@ -197,9 +197,19 @@ def make_engine(name: str, saxonc_bin: Optional[Path]) -> TransformEngine:
     """
     Return the engine instance for a configured engine name.
 
-    Requesting "saxonc" without a usable binary falls back to the
-    lxml engine, matching the historical behaviour.
+    Unknown engine names raise :class:`ValueError` so a typo in the
+    config surfaces at build-context construction rather than as a
+    surprising silent fallback. (The same set of names is enforced
+    earlier by :func:`validate_engines`; the check here protects
+    direct callers.) Requesting ``"saxonc"`` without a usable binary
+    still falls back to the lxml engine, matching the historical
+    behaviour.
     """
+    if name not in VALID_ENGINES:
+        raise ValueError(
+            f"Unknown engine name {name!r}; "
+            f"must be one of {sorted(VALID_ENGINES)}"
+        )
     if name == "saxonc" and saxonc_bin is not None:
         return SaxonCEngine(saxonc_bin)
     return LxmlEngine()

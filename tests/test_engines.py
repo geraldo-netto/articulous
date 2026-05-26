@@ -194,6 +194,16 @@ def test_make_engine_saxon_with_binary():
     assert isinstance(e, SaxonCEngine)
 
 
+def test_make_engine_rejects_unknown_name():
+    with pytest.raises(ValueError, match="Unknown engine"):
+        make_engine("frobnicate", None)
+
+
+def test_make_engine_rejects_none_name():
+    with pytest.raises(ValueError, match="Unknown engine"):
+        make_engine(None, None)
+
+
 def test_configure_saxonc_no_home_returns_none():
     assert configure_saxonc({"saxonc": {"home": None}}) is None
 

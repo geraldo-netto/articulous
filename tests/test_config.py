@@ -61,6 +61,23 @@ def test_load_or_create_config_invalid_json_falls_back(tmp_path, caplog):
     assert any("Invalid config JSON" in r.message for r in caplog.records)
 
 
+def test_load_or_create_config_non_dict_falls_back(tmp_path, caplog):
+    p = tmp_path / "list.json"
+    p.write_text("[1, 2, 3]")
+    with caplog.at_level("WARNING"):
+        cfg = load_or_create_config(p)
+    assert cfg == DEFAULT_CONFIG
+    assert any("not a JSON object" in r.message for r in caplog.records)
+
+
+def test_load_or_create_config_scalar_falls_back(tmp_path, caplog):
+    p = tmp_path / "scalar.json"
+    p.write_text("42")
+    with caplog.at_level("WARNING"):
+        cfg = load_or_create_config(p)
+    assert cfg == DEFAULT_CONFIG
+
+
 def test_load_or_create_config_merges_user_overrides(tmp_path):
     p = tmp_path / "good.json"
     p.write_text(json.dumps({"site": {"site_name": "Custom"}}))

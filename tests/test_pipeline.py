@@ -85,6 +85,29 @@ def test_build_ctx_from_config_validates(tmp_path):
         build_ctx_from_config(cfg, dry_run=False)
 
 
+@pytest.mark.parametrize("bad", [0, -1, "ten", True, 1.5])
+def test_build_ctx_from_config_rejects_bad_per_page(bad):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["site"]["pagination"]["per_page"] = bad
+    with pytest.raises(ValueError, match="per_page"):
+        build_ctx_from_config(cfg, dry_run=False)
+
+
+@pytest.mark.parametrize("bad", [-1, "twenty", True, 1.5])
+def test_build_ctx_from_config_rejects_bad_rss_items(bad):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["site"]["pagination"]["rss_items"] = bad
+    with pytest.raises(ValueError, match="rss_items"):
+        build_ctx_from_config(cfg, dry_run=False)
+
+
+def test_build_ctx_from_config_accepts_rss_items_zero():
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["site"]["pagination"]["rss_items"] = 0
+    ctx = build_ctx_from_config(cfg, dry_run=False)
+    assert ctx.rss_items == 0
+
+
 def test_buildctx_xsl_for_and_engine_for(tmp_path):
     ctx = _ctx_for(tmp_path)
     assert ctx.xsl_for("articles").name == "article.xsl"

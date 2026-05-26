@@ -80,6 +80,11 @@ def test_file_hash_missing_raises(tmp_path):
         file_hash(tmp_path / "ghost")
 
 
+def test_file_hash_directory_raises_value_error(tmp_path):
+    with pytest.raises(ValueError, match="regular file"):
+        file_hash(tmp_path)
+
+
 # --- load_cache / save_cache ---
 
 def test_load_cache_missing_returns_empty(tmp_path):
@@ -112,6 +117,15 @@ def test_save_cache_io_error_logged(tmp_path, caplog):
     with caplog.at_level(logging.ERROR):
         save_cache(p, {"k": [1]})
     assert any("Failed to save cache" in r.message for r in caplog.records)
+
+
+def test_save_cache_non_serialisable_value_logged(tmp_path, caplog):
+    # set() isn't JSON-serialisable; save_cache should log and swallow.
+    p = tmp_path / "c.json"
+    with caplog.at_level(logging.ERROR):
+        save_cache(p, {"k": {1, 2, 3}})
+    assert any("Failed to save cache" in r.message for r in caplog.records)
+    assert not p.exists()
 
 
 # --- should_rebuild + update_cache ---

@@ -47,12 +47,19 @@ _cache_lock = threading.Lock()
 def file_hash(path: Path) -> str:
     """
     SHA-256 hex digest of ``path``. Raises :class:`FileNotFoundError`
-    if the path does not exist.
+    if the path does not exist, or :class:`ValueError` if the path
+    points at a directory (programmer error — file_hash is only
+    meaningful for regular files).
     """
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+    except IsADirectoryError as e:
+        raise ValueError(
+            f"file_hash requires a regular file, got directory: {path}"
+        ) from e
     return h.hexdigest()
 
 
@@ -73,11 +80,16 @@ def load_cache(cache_path: Path) -> dict:
 
 
 def save_cache(cache_path: Path, cache: dict) -> None:
-    """Save the build cache to disk."""
+    """
+    Save the build cache to disk. Logs and swallows both I/O errors
+    (``OSError``) and serialisation errors (``TypeError`` when a cache
+    value sneaks in that ``json.dumps`` can't handle); a broken cache
+    write should never crash the build.
+    """
     try:
         cache_path.write_text(json.dumps(cache, indent=2))
         logging.debug("Cache saved successfully")
-    except OSError as e:
+    except (OSError, TypeError) as e:
         logging.error(f"Failed to save cache: {e}")
 
 

@@ -10,6 +10,7 @@ import json
 import logging
 import sys
 from datetime import datetime
+from urllib.parse import quote
 
 
 def parse_cli_args(argv=None):
@@ -179,9 +180,9 @@ def load_or_create_config(path: Path):
     return deep_merge(cfg, data)
 
 
-def apply_cli_overrides(config, cli: CliOptions, project_root: Path):
+def apply_cli_overrides(config, cli: CliOptions, project_root: Path) -> None:
     """
-    Apply CLI overrides to the loaded config.
+    Apply CLI overrides to the loaded config, in place.
     """
     if cli.force_full_build:
         config["build"]["force_full_build"] = True
@@ -189,37 +190,47 @@ def apply_cli_overrides(config, cli: CliOptions, project_root: Path):
     if cli.verbose:
         config["logging"]["level"] = "DEBUG"
 
-    # Normalize paths relative to project root
     for key in ["content_dir", "output_dir", "xsl_dir", "assets_dir"]:
         p = config["paths"][key]
         config["paths"][key] = str((project_root / p).resolve())
-
-    return config
 
 # ================================================================
 # MODULE 3 — LOGGING SETUP
 # ================================================================
 
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
+_VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+
+
+def _resolve_log_level(level_name: str) -> int:
+    name = (level_name or "INFO").upper()
+    if name not in _VALID_LOG_LEVELS:
+        name = "INFO"
+    return getattr(logging, name)
+
+
 def setup_logging(config, project_root: Path, verbose=False):
     """
-    Configure logging according to config + CLI overrides.
+    Configure logging idempotently. Safe to call multiple times.
     """
-    level = logging.DEBUG if verbose else getattr(logging, config["logging"]["level"])
+    level = logging.DEBUG if verbose else _resolve_log_level(config["logging"]["level"])
 
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
+    root = logging.getLogger()
+    for handler in list(root.handlers):
+        root.removeHandler(handler)
+    root.setLevel(level)
 
-    # Optional file logging
+    stream = logging.StreamHandler(sys.stdout)
+    stream.setFormatter(logging.Formatter(_LOG_FORMAT))
+    root.addHandler(stream)
+
     log_file = config["logging"].get("file")
     if log_file:
         file_path = project_root / log_file
         fh = logging.FileHandler(file_path, encoding="utf-8")
         fh.setLevel(level)
-        fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-        logging.getLogger().addHandler(fh)
+        fh.setFormatter(logging.Formatter(_LOG_FORMAT))
+        root.addHandler(fh)
 
     logging.debug("Logging initialized")
 
@@ -378,23 +389,25 @@ def normalize_slug(text: str) -> str:
     return text.strip("-")
 
 
-def parse_article_xml(path: Path):
+def parse_article_xml(path: Path, default_lang: str = "en"):
     """
     Parse a single article XML file and return a dictionary of metadata.
+    Returns None if the article cannot be parsed or has no usable date.
+
     Expected structure:
 
     <article>
       <title>...</title>
       <date>YYYY-MM-DD</date>
       <description>...</description>
-      <tag>...</tag>
+      <lang>en</lang>          <!-- optional, defaults to default_lang -->
       <tag>...</tag>
     </article>
     """
     try:
         tree = etree.parse(str(path), parser=_safe_xml_parser())
         root = tree.getroot()
-    except Exception as e:
+    except (etree.XMLSyntaxError, OSError) as e:
         logging.error(f"Failed to parse XML: {path} — {e}")
         return None
 
@@ -405,15 +418,18 @@ def parse_article_xml(path: Path):
     title = get_text("title")
     date = get_text("date")
     desc = get_text("description")
+    lang = get_text("lang") or default_lang
 
     tags = [el.text.strip() for el in root.findall("tag") if el.text]
-
     slug = normalize_slug(title) if title else normalize_slug(path.stem)
 
     try:
         dt = datetime.fromisoformat(date)
-    except Exception:
-        dt = datetime.now()
+    except (ValueError, TypeError):
+        logging.warning(
+            f"Article {path} has missing/invalid date '{date}' — skipping"
+        )
+        return None
 
     return {
         "title": title,
@@ -422,6 +438,7 @@ def parse_article_xml(path: Path):
         "description": desc,
         "tags": tags,
         "slug": slug,
+        "lang": lang,
         "source_path": path,
     }
 
@@ -433,17 +450,16 @@ def discover_article_files(content_dir: Path):
     return sorted(content_dir.rglob("*.xml"))
 
 
-def load_articles(content_dir: Path):
+def load_articles(content_dir: Path, default_lang: str = "en"):
     """
     Load and parse all articles from the content directory.
     """
     articles = []
     for xml_file in discover_article_files(content_dir):
-        meta = parse_article_xml(xml_file)
+        meta = parse_article_xml(xml_file, default_lang=default_lang)
         if meta:
             articles.append(meta)
 
-    # Sort newest first
     articles.sort(key=lambda a: a["datetime"], reverse=True)
     return articles
 
@@ -476,30 +492,32 @@ def build_url_from_pattern(base_url: str, pattern: str, **kwargs):
 
 def build_index_models(articles, config):
     """
-    Build paginated index models.
-    Returns a list of dicts, each representing one index page.
+    Build paginated index models, one set per configured language.
     """
     per_page = config["site"]["pagination"]["per_page"]
     base_url = config["site"]["base_url"]
     pattern = config["urls"]["index"]
+    languages = config["site"]["languages"]
 
     pages = []
-    total = len(articles)
-    num_pages = (total + per_page - 1) // per_page
-
-    for page in range(1, num_pages + 1):
-        start = (page - 1) * per_page
-        end = start + per_page
-        subset = articles[start:end]
-
-        model = {
-            "page": page,
-            "total_pages": num_pages,
-            "articles": subset,
-            "output_path": build_rel_path_from_pattern(pattern, lang="en", page=page),
-            "url": build_url_from_pattern(base_url, pattern, lang="en", page=page),
-        }
-        pages.append(model)
+    for lang in languages:
+        lang_articles = [a for a in articles if a["lang"] == lang]
+        total = len(lang_articles)
+        if total == 0:
+            continue
+        num_pages = (total + per_page - 1) // per_page
+        for page in range(1, num_pages + 1):
+            start = (page - 1) * per_page
+            end = start + per_page
+            subset = lang_articles[start:end]
+            pages.append({
+                "lang": lang,
+                "page": page,
+                "total_pages": num_pages,
+                "articles": subset,
+                "output_path": build_rel_path_from_pattern(pattern, lang=lang, page=page),
+                "url": build_url_from_pattern(base_url, pattern, lang=lang, page=page),
+            })
 
     return pages
 
@@ -510,26 +528,35 @@ def build_index_models(articles, config):
 
 def build_tags_models(articles, config):
     """
-    Build tag pages: one page per tag.
+    Build tag pages: one page per (language, tag) pair.
+    Tag values are slugified for filesystem paths and URL-encoded for URLs.
     """
     base_url = config["site"]["base_url"]
     pattern = config["urls"]["tag"]
-
-    # Group by tag
-    tag_map = {}
-    for art in articles:
-        for tag in art.get("tags", []):
-            tag_map.setdefault(tag, []).append(art)
+    languages = config["site"]["languages"]
 
     models = []
-    for tag, items in tag_map.items():
-        model = {
-            "tag": tag,
-            "articles": items,
-            "output_path": build_rel_path_from_pattern(pattern, lang="en", tag=tag),
-            "url": build_url_from_pattern(base_url, pattern, lang="en", tag=tag),
-        }
-        models.append(model)
+    for lang in languages:
+        lang_articles = [a for a in articles if a["lang"] == lang]
+        tag_map = {}
+        for art in lang_articles:
+            for tag in art.get("tags", []):
+                tag_map.setdefault(tag, []).append(art)
+
+        for tag, items in tag_map.items():
+            tag_slug = normalize_slug(tag)
+            if not tag_slug:
+                logging.warning(f"Tag {tag!r} slugifies to empty string — skipping")
+                continue
+            url_tag = quote(tag_slug, safe="")
+            models.append({
+                "lang": lang,
+                "tag": tag,
+                "tag_slug": tag_slug,
+                "articles": items,
+                "output_path": build_rel_path_from_pattern(pattern, lang=lang, tag=tag_slug),
+                "url": build_url_from_pattern(base_url, pattern, lang=lang, tag=url_tag),
+            })
 
     return models
 
@@ -615,15 +642,12 @@ import json
 def file_hash(path: Path) -> str:
     """
     Compute a SHA-256 hash of a file's contents.
-    Returns a hex digest string.
+    Raises FileNotFoundError if the path does not exist.
     """
     h = hashlib.sha256()
-    try:
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(65536), b""):
-                h.update(chunk)
-    except FileNotFoundError:
-        return ""
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 
@@ -757,13 +781,15 @@ def build_articles_section(articles, config, saxonc_bin, cache, dry_run):
         xml_path = art["source_path"]
         xml_hash = file_hash(xml_path)
         xsl_hash = file_hash(xsl_path)
-        key = f"article:{art['slug']}"
+        key = f"article:{art['lang']}:{art['slug']}"
 
-        output_path = output_dir / f"en/articles/{art['slug']}/index.html"
+        output_path = output_dir / build_rel_path_from_pattern(
+            config["urls"]["article"], lang=art["lang"], slug=art["slug"],
+        )
         art["url"] = build_url_from_pattern(
             config["site"]["base_url"],
             config["urls"]["article"],
-            lang="en",
+            lang=art["lang"],
             slug=art["slug"],
         )
 
@@ -804,7 +830,7 @@ def build_index_section(articles, config, saxonc_bin, cache, dry_run):
     models = build_index_models(articles, config)
 
     for model in models:
-        xml_temp = output_dir / f"temp/index-{model['page']}.xml"
+        xml_temp = output_dir / f"temp/index-{model['lang']}-{model['page']}.xml"
         xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
         # Write model XML
@@ -818,7 +844,7 @@ def build_index_section(articles, config, saxonc_bin, cache, dry_run):
 
         xml_hash = file_hash(xml_temp)
         xsl_hash = file_hash(xsl_path)
-        key = f"index:{model['page']}"
+        key = f"index:{model['lang']}:{model['page']}"
 
         output_path = output_dir / model["output_path"]
 
@@ -858,8 +884,9 @@ def build_tags_section(articles, config, saxonc_bin, cache, dry_run):
     models = build_tags_models(articles, config)
 
     for model in models:
-        tag = model["tag"]
-        xml_temp = output_dir / f"temp/tag-{tag}.xml"
+        tag_slug = model["tag_slug"]
+        lang = model["lang"]
+        xml_temp = output_dir / f"temp/tag-{lang}-{tag_slug}.xml"
         xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
         # Write model XML
@@ -873,12 +900,12 @@ def build_tags_section(articles, config, saxonc_bin, cache, dry_run):
 
         xml_hash = file_hash(xml_temp)
         xsl_hash = file_hash(xsl_path)
-        key = f"tag:{tag}"
+        key = f"tag:{lang}:{tag_slug}"
 
         output_path = output_dir / model["output_path"]
 
         if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
-            logging.debug(f"Skipping unchanged tag page: {tag}")
+            logging.debug(f"Skipping unchanged tag page: {lang}/{tag_slug}")
             continue
 
         def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
@@ -1058,7 +1085,15 @@ def run_build(cli: CliOptions, config, project_root: Path):
     saxonc_bin = configure_saxonc(config)
 
     # Load articles
-    articles = load_articles(content_dir)
+    default_lang = config["site"]["default_language"]
+    articles = load_articles(content_dir, default_lang=default_lang)
+
+    if cli.only_langs:
+        wanted_langs = set(cli.only_langs)
+        articles = [a for a in articles if a["lang"] in wanted_langs]
+    if cli.only_slugs:
+        wanted_slugs = set(cli.only_slugs)
+        articles = [a for a in articles if a["slug"] in wanted_slugs]
 
     # Build tasks
     tasks = []
@@ -1106,7 +1141,7 @@ if __name__ == "__main__":
     project_root = Path(__file__).parent.resolve()
 
     config = load_or_create_config(cli.config_path)
-    config = apply_cli_overrides(config, cli, project_root)
+    apply_cli_overrides(config, cli, project_root)
 
     setup_logging(config, project_root, verbose=cli.verbose)
 

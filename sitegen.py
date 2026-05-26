@@ -11,8 +11,9 @@ import logging
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Optional
 from urllib.parse import quote
+from xml.sax.saxutils import escape as _xml_escape
 
 
 def parse_cli_args(argv=None):
@@ -845,6 +846,89 @@ def write_json(path: Path, data, dry_run=False):
 
 
 # ------------------------------------------------------------
+# Shared helpers for XSLT-driven sections
+# ------------------------------------------------------------
+
+def _xml_doc(root_tag: str, children: list) -> str:
+    """
+    Wrap a list of pre-rendered XML fragment strings in a single root
+    element. Children are joined as-is; callers are responsible for
+    escaping leaf text via _article_xml / _rss_item_xml / _sitemap_url_xml.
+    """
+    return f"<{root_tag}>{''.join(children)}</{root_tag}>"
+
+
+def _article_xml(a: dict) -> str:
+    return (
+        f"<article><title>{_xml_escape(a['title'])}</title>"
+        f"<url>{_xml_escape(a['url'])}</url></article>"
+    )
+
+
+def _rss_item_xml(a: dict) -> str:
+    return (
+        f"<item><title>{_xml_escape(a['title'])}</title>"
+        f"<url>{_xml_escape(a['url'])}</url></item>"
+    )
+
+
+def _sitemap_url_xml(url: str) -> str:
+    return f"<url>{_xml_escape(url)}</url>"
+
+
+def _make_xslt_task(
+    *,
+    xml_path: Path,
+    xsl_path: Path,
+    output_path: Path,
+    cache: dict,
+    cache_key: str,
+    engine: EngineSpec,
+    ctx: BuildCtx,
+) -> Optional[Callable]:
+    """
+    Build a transform task for an XSLT-driven section.
+    Returns None if the cache says the output is up to date.
+
+    All five XSLT sections (articles, index, tags, rss, sitemap) reduce
+    to this same shape: hash sources, consult cache, register a closure
+    that calls run_transform.
+    """
+    xml_hash = file_hash(xml_path)
+    xsl_hash = file_hash(xsl_path)
+    if not should_rebuild(cache_key, cache, (xml_hash, xsl_hash), ctx.force):
+        return None
+    update_cache(cache, cache_key, (xml_hash, xsl_hash))
+
+    def task(xml_path=xml_path, xsl_path=xsl_path, output_path=output_path):
+        return run_transform(
+            engine, xml_path, xsl_path, output_path, dry_run=ctx.dry_run,
+        )
+
+    return task
+
+
+def _make_xslt_task_with_temp(
+    *,
+    xml_temp: Path,
+    xml_content: str,
+    ctx: BuildCtx,
+    **kwargs,
+) -> Optional[Callable]:
+    """
+    Variant of _make_xslt_task for sections that synthesise their XML
+    model into a temp file before transforming.
+
+    The temp file is always written (even under dry-run) because
+    hashing the model XML is part of the cache decision. dry_run is
+    enforced inside run_transform, where it skips the actual output.
+    """
+    xml_temp.parent.mkdir(parents=True, exist_ok=True)
+    xml_temp.write_text(xml_content, encoding="utf-8")
+    return _make_xslt_task(xml_path=xml_temp, ctx=ctx, **kwargs)
+
+
+# ------------------------------------------------------------
 # Section Builders — Articles
 # ------------------------------------------------------------
 
@@ -858,29 +942,25 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
     pattern = ctx.url_patterns["article"]
 
     for art in articles:
-        xml_path = art["source_path"]
-        xml_hash = file_hash(xml_path)
-        xsl_hash = file_hash(xsl_path)
-        key = f"article:{art['lang']}:{art['slug']}"
-
-        output_path = ctx.output_dir / build_rel_path_from_pattern(
-            pattern, lang=art["lang"], slug=art["slug"],
-        )
         art["url"] = build_url_from_pattern(
             ctx.base_url, pattern, lang=art["lang"], slug=art["slug"],
         )
-
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
+        output_path = ctx.output_dir / build_rel_path_from_pattern(
+            pattern, lang=art["lang"], slug=art["slug"],
+        )
+        task = _make_xslt_task(
+            xml_path=art["source_path"],
+            xsl_path=xsl_path,
+            output_path=output_path,
+            cache=cache,
+            cache_key=f"article:{art['lang']}:{art['slug']}",
+            engine=engine,
+            ctx=ctx,
+        )
+        if task is None:
             logging.debug(f"Skipping unchanged article: {art['slug']}")
             continue
-
-        def make_task(xml_path=xml_path, xsl_path=xsl_path, output_path=output_path):
-            return lambda: run_transform(
-                engine, xml_path, xsl_path, output_path, dry_run=ctx.dry_run,
-            )
-
-        tasks.append(make_task())
-        update_cache(cache, key, (xml_hash, xsl_hash))
+        tasks.append(task)
 
     return tasks
 
@@ -897,37 +977,24 @@ def build_index_section(articles, ctx: BuildCtx, cache):
     xsl_path = ctx.xsl_for("index")
     engine = ctx.engine_for("index")
 
-    models = build_index_models(articles, ctx)
-
-    for model in models:
-        xml_temp = ctx.output_dir / f"temp/index-{model['lang']}-{model['page']}.xml"
-        xml_temp.parent.mkdir(parents=True, exist_ok=True)
-
-        xml_content = "<index>" + "".join(
-            f"<article><title>{a['title']}</title><url>{a['url']}</url></article>"
-            for a in model["articles"]
-        ) + "</index>"
-
-        if not ctx.dry_run:
-            xml_temp.write_text(xml_content, encoding="utf-8")
-
-        xml_hash = file_hash(xml_temp)
-        xsl_hash = file_hash(xsl_path)
-        key = f"index:{model['lang']}:{model['page']}"
-
-        output_path = ctx.output_dir / model["output_path"]
-
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
+    for model in build_index_models(articles, ctx):
+        xml_content = _xml_doc(
+            "index", [_article_xml(a) for a in model["articles"]],
+        )
+        task = _make_xslt_task_with_temp(
+            xml_temp=ctx.output_dir / f"temp/index-{model['lang']}-{model['page']}.xml",
+            xml_content=xml_content,
+            xsl_path=xsl_path,
+            output_path=ctx.output_dir / model["output_path"],
+            cache=cache,
+            cache_key=f"index:{model['lang']}:{model['page']}",
+            engine=engine,
+            ctx=ctx,
+        )
+        if task is None:
             logging.debug(f"Skipping unchanged index page {model['page']}")
             continue
-
-        def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
-            return lambda: run_transform(
-                engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
-            )
-
-        tasks.append(make_task())
-        update_cache(cache, key, (xml_hash, xsl_hash))
+        tasks.append(task)
 
     return tasks
 
@@ -943,39 +1010,25 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
     xsl_path = ctx.xsl_for("tags")
     engine = ctx.engine_for("tags")
 
-    models = build_tags_models(articles, ctx)
-
-    for model in models:
-        tag_slug = model["tag_slug"]
-        lang = model["lang"]
-        xml_temp = ctx.output_dir / f"temp/tag-{lang}-{tag_slug}.xml"
-        xml_temp.parent.mkdir(parents=True, exist_ok=True)
-
-        xml_content = "<tag>" + "".join(
-            f"<article><title>{a['title']}</title><url>{a['url']}</url></article>"
-            for a in model["articles"]
-        ) + "</tag>"
-
-        if not ctx.dry_run:
-            xml_temp.write_text(xml_content, encoding="utf-8")
-
-        xml_hash = file_hash(xml_temp)
-        xsl_hash = file_hash(xsl_path)
-        key = f"tag:{lang}:{tag_slug}"
-
-        output_path = ctx.output_dir / model["output_path"]
-
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
+    for model in build_tags_models(articles, ctx):
+        lang, tag_slug = model["lang"], model["tag_slug"]
+        xml_content = _xml_doc(
+            "tag", [_article_xml(a) for a in model["articles"]],
+        )
+        task = _make_xslt_task_with_temp(
+            xml_temp=ctx.output_dir / f"temp/tag-{lang}-{tag_slug}.xml",
+            xml_content=xml_content,
+            xsl_path=xsl_path,
+            output_path=ctx.output_dir / model["output_path"],
+            cache=cache,
+            cache_key=f"tag:{lang}:{tag_slug}",
+            engine=engine,
+            ctx=ctx,
+        )
+        if task is None:
             logging.debug(f"Skipping unchanged tag page: {lang}/{tag_slug}")
             continue
-
-        def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
-            return lambda: run_transform(
-                engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
-            )
-
-        tasks.append(make_task())
-        update_cache(cache, key, (xml_hash, xsl_hash))
+        tasks.append(task)
 
     return tasks
 
@@ -988,42 +1041,22 @@ def build_rss_section(articles, ctx: BuildCtx, cache):
     """
     Build RSS feed.
     """
-    tasks = []
-    xsl_path = ctx.xsl_for("rss")
-    engine = ctx.engine_for("rss")
-
     model = build_rss_model(articles, ctx)
-
-    xml_temp = ctx.output_dir / "temp/rss.xml"
-    xml_temp.parent.mkdir(parents=True, exist_ok=True)
-
-    xml_content = "<rss>" + "".join(
-        f"<item><title>{a['title']}</title><url>{a['url']}</url></item>"
-        for a in model["articles"]
-    ) + "</rss>"
-
-    if not ctx.dry_run:
-        xml_temp.write_text(xml_content, encoding="utf-8")
-
-    xml_hash = file_hash(xml_temp)
-    xsl_hash = file_hash(xsl_path)
-    key = "rss"
-
-    output_path = ctx.output_dir / model["output_path"]
-
-    if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
+    xml_content = _xml_doc("rss", [_rss_item_xml(a) for a in model["articles"]])
+    task = _make_xslt_task_with_temp(
+        xml_temp=ctx.output_dir / "temp/rss.xml",
+        xml_content=xml_content,
+        xsl_path=ctx.xsl_for("rss"),
+        output_path=ctx.output_dir / model["output_path"],
+        cache=cache,
+        cache_key="rss",
+        engine=ctx.engine_for("rss"),
+        ctx=ctx,
+    )
+    if task is None:
         logging.debug("Skipping unchanged RSS feed")
-        return tasks
-
-    def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
-        return lambda: run_transform(
-            engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
-        )
-
-    tasks.append(make_task())
-    update_cache(cache, key, (xml_hash, xsl_hash))
-
-    return tasks
+        return []
+    return [task]
 
 
 # ------------------------------------------------------------
@@ -1034,41 +1067,22 @@ def build_sitemap_section(articles, ctx: BuildCtx, cache):
     """
     Build sitemap.xml.
     """
-    tasks = []
-    xsl_path = ctx.xsl_for("sitemap")
-    engine = ctx.engine_for("sitemap")
-
     model = build_sitemap_model(articles, ctx)
-
-    xml_temp = ctx.output_dir / "temp/sitemap.xml"
-    xml_temp.parent.mkdir(parents=True, exist_ok=True)
-
-    xml_content = "<sitemap>" + "".join(
-        f"<url>{u}</url>" for u in model["urls"]
-    ) + "</sitemap>"
-
-    if not ctx.dry_run:
-        xml_temp.write_text(xml_content, encoding="utf-8")
-
-    xml_hash = file_hash(xml_temp)
-    xsl_hash = file_hash(xsl_path)
-    key = "sitemap"
-
-    output_path = ctx.output_dir / model["output_path"]
-
-    if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
+    xml_content = _xml_doc("sitemap", [_sitemap_url_xml(u) for u in model["urls"]])
+    task = _make_xslt_task_with_temp(
+        xml_temp=ctx.output_dir / "temp/sitemap.xml",
+        xml_content=xml_content,
+        xsl_path=ctx.xsl_for("sitemap"),
+        output_path=ctx.output_dir / model["output_path"],
+        cache=cache,
+        cache_key="sitemap",
+        engine=ctx.engine_for("sitemap"),
+        ctx=ctx,
+    )
+    if task is None:
         logging.debug("Skipping unchanged sitemap")
-        return tasks
-
-    def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
-        return lambda: run_transform(
-            engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
-        )
-
-    tasks.append(make_task())
-    update_cache(cache, key, (xml_hash, xsl_hash))
-
-    return tasks
+        return []
+    return [task]
 
 
 # ------------------------------------------------------------

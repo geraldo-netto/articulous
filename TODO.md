@@ -11,8 +11,6 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-01 | open | M | XML injection in model XML writers. `build_index_section`, `build_tags_section`, `build_rss_section`, `build_sitemap_section` concatenate `title`, `url`, `tag` via f-strings into XML without escaping. Titles or URLs containing `<`, `>`, `&`, quotes break parsing or inject elements. | Use `lxml.etree` `SubElement` + `.text =` to build temp XML, or `xml.sax.saxutils.escape`. Affected sites: sitegen.py:811-814, 866-869, 920-923, 973-975. |
-| SEC-02 | open | S | Path traversal via tag value in temp filename. `build_tags_section` writes `output/temp/tag-{tag}.xml` with raw tag. Tag containing `/`, `..`, or `\0` escapes temp dir. | Slugify tag for filename (reuse `normalize_slug`). sitegen.py:862. |
 | SEC-03 | open | S | `load_or_create_config` swallows JSON parse errors and silently returns defaults. Masks tampering or misconfig. | Log warning at minimum; consider hard fail. sitegen.py:173-176. |
 | SEC-04 | open | S | `setup_logging` calls `getattr(logging, level_str)` with no validation. Attacker-controlled config can resolve to arbitrary `logging` module attribute (e.g. `disable`, `shutdown`). | Whitelist `{DEBUG,INFO,WARNING,ERROR,CRITICAL}`. sitegen.py:207. |
 | SEC-05 | open | S | SaxonC subprocess invoked with f-string-prefixed args. If `xml_path` or `output_path` ever starts with `-`, Saxon CLI may parse as flag. Currently low risk (paths controlled), still hardening. | Pre-resolve to abs paths; assert no leading `-`; use `--` separator if supported. sitegen.py:281-291. |
@@ -51,11 +49,7 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 ## code duplication
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| DUP-01 | open | M | Five section builders share identical scaffolding (xsl_path, output_dir, engine, force, xml_temp, hash, should_rebuild, make_task, update_cache). | Extract common runner. See CPX-01. |
-| DUP-02 | open | S | Inline XML construction repeated with minor tag variations across 4 sites. | Single helper `build_xml(root_tag, children)` using lxml. Also fixes SEC-01. |
-| DUP-03 | open | S | Test files re-implement `subprocess.run(..., stdout=PIPE, stderr=PIPE)` boilerplate. | Pytest fixture or helper. tests/test_*. |
+_(all open items resolved; tracked via git history)_
 
 ## architecture/modularity/SOLID
 

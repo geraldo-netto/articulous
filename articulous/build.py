@@ -328,17 +328,36 @@ def _make_xslt_task_with_temp(
 # Section builders
 # ================================================================
 
+def attach_article_urls(articles, ctx: BuildCtx) -> None:
+    """
+    Populate ``art["url"]`` on every article in place.
+
+    URLs used to be assigned as a side effect of
+    :func:`build_articles_section`, which meant any run that skipped the
+    articles section (``--only rss`` etc.) left the URL field unset and
+    broke RSS / sitemap / search downstream. Computing URLs up front
+    breaks that order dependency.
+    """
+    pattern = ctx.url_patterns["article"]
+    for art in articles:
+        art["url"] = build_url_from_pattern(
+            ctx.base_url, pattern, lang=art["lang"], slug=art["slug"],
+        )
+
+
 def build_articles_section(articles, ctx: BuildCtx, cache):
-    """Build all article pages."""
+    """
+    Build all article pages.
+
+    Assumes :func:`attach_article_urls` has already populated ``url``
+    on each article — :func:`run_build` does that for every invocation.
+    """
     tasks = []
     xsl_path = ctx.xsl_for("articles")
     engine = ctx.engine_for("articles")
     pattern = ctx.url_patterns["article"]
 
     for art in articles:
-        art["url"] = build_url_from_pattern(
-            ctx.base_url, pattern, lang=art["lang"], slug=art["slug"],
-        )
         output_path = ctx.output_dir / build_rel_path_from_pattern(
             pattern, lang=art["lang"], slug=art["slug"],
         )
@@ -502,7 +521,14 @@ def _filter_articles(articles, cli):
 
 
 def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections):
-    """Dispatch each requested section to its builder."""
+    """
+    Dispatch each requested section to its builder.
+
+    Section order is no longer load-bearing: every section reads
+    ``art["url"]`` from the field that :func:`attach_article_urls`
+    populated up front, so any subset of sections (``--only ...``) is
+    safe to run.
+    """
     wanted = set(only_sections) if only_sections else None
     tasks = []
     for name, builder in SECTION_BUILDERS.items():
@@ -542,6 +568,7 @@ def run_build(cli, config, project_root: Path) -> None:
     try:
         articles = load_articles(ctx.content_dir, default_lang=ctx.default_language)
         articles = _filter_articles(articles, cli)
+        attach_article_urls(articles, ctx)
 
         tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
 

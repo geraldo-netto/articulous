@@ -67,10 +67,7 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 ## decoupling
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| DCP-01 | open | M | Section builders reach into `config["paths"]["xsl_dir"]`, `config["engines"][...]`, `config["build"]["force_full_build"]`. Tight coupling to config dict shape. | Pass narrow params (xsl_path, engine, force) instead of whole config. |
-| DCP-02 | open | S | `run_transform` accepts both `engine` string and `saxonc_bin`. Caller must keep these in sync. | Engine object encapsulates binary path and dispatch. See ARC-02. |
+_(all open items resolved; tracked via git history)_
 
 ## business/design patterns/DDD
 

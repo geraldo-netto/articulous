@@ -9,7 +9,9 @@ from pathlib import Path
 import json
 import logging
 import sys
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Optional
 from urllib.parse import quote
 
 
@@ -244,6 +246,25 @@ from lxml import etree
 
 VALID_ENGINES = {"saxonc", "lxml"}
 
+SECTION_XSL = {
+    "articles": "article.xsl",
+    "index": "index.xsl",
+    "tags": "tags.xsl",
+    "rss": "rss.xsl",
+    "sitemap": "sitemap.xsl",
+    "search": "search.xsl",
+}
+
+
+@dataclass(frozen=True)
+class EngineSpec:
+    """
+    Pairs an engine name with the resources it needs to run.
+    Replaces the old (engine_str, saxonc_bin) tuple plumbing.
+    """
+    name: str
+    saxonc_bin: Optional[Path] = None
+
 
 def validate_engines(config):
     """
@@ -286,15 +307,11 @@ def configure_saxonc(config):
     return transform_bin
 
 
-def run_transform(engine, saxonc_bin, xml_path, xsl_path, output_path, dry_run=False):
+def run_transform(engine: EngineSpec, xml_path, xsl_path, output_path, dry_run=False):
     """
-    Run an XSLT transformation using either SaxonC or lxml.
-    - engine: "saxonc" or "lxml"
-    - saxonc_bin: path to SaxonC Transform binary (or None)
-    - xml_path: input XML file
-    - xsl_path: XSL stylesheet
-    - output_path: output file path
-    - dry_run: if True, do not write output
+    Run an XSLT transformation using the engine specified by ``engine``.
+    Falls through to the lxml engine when SaxonC was requested but its
+    binary is not available.
     """
 
     xml_path = Path(xml_path)
@@ -305,32 +322,22 @@ def run_transform(engine, saxonc_bin, xml_path, xsl_path, output_path, dry_run=F
         logging.debug(f"[DRY RUN] Would transform {xml_path} using {xsl_path}")
         return
 
-    if engine == "saxonc" and saxonc_bin:
-        # ------------------------------------------------------------
-        # SaxonC execution
-        # ------------------------------------------------------------
+    if engine.name == "saxonc" and engine.saxonc_bin:
         cmd = [
-            str(saxonc_bin),
+            str(engine.saxonc_bin),
             f"-s:{xml_path}",
             f"-xsl:{xsl_path}",
             f"-o:{output_path}",
         ]
-
         logging.debug(f"Running SaxonC: {' '.join(cmd)}")
-
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
             logging.error(f"SaxonC transform failed: {e}")
             raise
-
         return
 
-    # ------------------------------------------------------------
-    # lxml fallback engine
-    # ------------------------------------------------------------
     logging.debug(f"Running lxml transform: {xml_path} -> {output_path}")
-
     try:
         dom = etree.parse(str(xml_path), parser=_safe_xml_parser())
         xslt = etree.XSLT(etree.parse(str(xsl_path), parser=_safe_xml_parser()))
@@ -339,7 +346,6 @@ def run_transform(engine, saxonc_bin, xml_path, xsl_path, output_path, dry_run=F
         logging.error(f"lxml transform failed: {e}")
         raise
 
-    # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(str(result), encoding="utf-8")
 
@@ -347,14 +353,7 @@ def run_transform(engine, saxonc_bin, xml_path, xsl_path, output_path, dry_run=F
 # MODULE 4.5 — DEPENDENCY CHECKER
 # ================================================================
 
-REQUIRED_XSL_FILES = [
-    "article.xsl",
-    "index.xsl",
-    "tags.xsl",
-    "rss.xsl",
-    "sitemap.xsl",
-    "search.xsl",
-]
+REQUIRED_XSL_FILES = sorted(set(SECTION_XSL.values()))
 
 
 def check_dependencies(config, project_root: Path):
@@ -484,8 +483,68 @@ def load_articles(content_dir: Path, default_lang: str = "en"):
     return articles
 
 # ================================================================
-# MODULE 7 — MODEL BUILDERS
+# MODULE 7 — BUILD CONTEXT + MODEL BUILDERS
 # ================================================================
+
+@dataclass(frozen=True)
+class BuildCtx:
+    """
+    Narrow, typed view of the inputs a build step needs.
+
+    Decouples model/section builders from the raw config dict shape:
+    callers see fields with types, not ``config["site"]["pagination"]
+    ["per_page"]`` chains.
+    """
+    # paths
+    xsl_dir: Path
+    output_dir: Path
+    assets_dir: Path
+    # build flags
+    force: bool
+    dry_run: bool
+    # engine map: section name -> EngineSpec
+    engines: dict = field(default_factory=dict)
+    # site / URL model
+    base_url: str = ""
+    languages: list = field(default_factory=list)
+    default_language: str = "en"
+    url_patterns: dict = field(default_factory=dict)
+    per_page: int = 10
+    rss_items: int = 20
+
+    def xsl_for(self, section: str) -> Path:
+        return self.xsl_dir / "pages" / SECTION_XSL[section]
+
+    def engine_for(self, section: str) -> EngineSpec:
+        return self.engines[section]
+
+
+def build_ctx_from_config(config, saxonc_bin: Optional[Path], dry_run: bool) -> BuildCtx:
+    """
+    Project the raw config dict + resolved Saxon binary into a BuildCtx.
+
+    This is the only place that reads the config dict's deep shape; every
+    downstream function works against the BuildCtx fields.
+    """
+    engines = {
+        section: EngineSpec(name=name, saxonc_bin=saxonc_bin)
+        for section, name in config["engines"].items()
+    }
+    return BuildCtx(
+        xsl_dir=Path(config["paths"]["xsl_dir"]),
+        output_dir=Path(config["paths"]["output_dir"]),
+        assets_dir=Path(config["paths"]["assets_dir"]),
+        force=config["build"]["force_full_build"],
+        dry_run=dry_run,
+        engines=engines,
+        base_url=config["site"]["base_url"],
+        languages=list(config["site"]["languages"]),
+        default_language=config["site"]["default_language"],
+        url_patterns=dict(config["urls"]),
+        per_page=config["site"]["pagination"]["per_page"],
+        rss_items=config["site"]["pagination"]["rss_items"],
+    )
+
 
 def build_rel_path_from_pattern(pattern: str, **kwargs):
     """
@@ -510,25 +569,22 @@ def build_url_from_pattern(base_url: str, pattern: str, **kwargs):
 # Index Pages (pagination)
 # ------------------------------------------------------------
 
-def build_index_models(articles, config):
+def build_index_models(articles, ctx: BuildCtx):
     """
     Build paginated index models, one set per configured language.
     """
-    per_page = config["site"]["pagination"]["per_page"]
-    base_url = config["site"]["base_url"]
-    pattern = config["urls"]["index"]
-    languages = config["site"]["languages"]
+    pattern = ctx.url_patterns["index"]
 
     pages = []
-    for lang in languages:
+    for lang in ctx.languages:
         lang_articles = [a for a in articles if a["lang"] == lang]
         total = len(lang_articles)
         if total == 0:
             continue
-        num_pages = (total + per_page - 1) // per_page
+        num_pages = (total + ctx.per_page - 1) // ctx.per_page
         for page in range(1, num_pages + 1):
-            start = (page - 1) * per_page
-            end = start + per_page
+            start = (page - 1) * ctx.per_page
+            end = start + ctx.per_page
             subset = lang_articles[start:end]
             pages.append({
                 "lang": lang,
@@ -536,7 +592,7 @@ def build_index_models(articles, config):
                 "total_pages": num_pages,
                 "articles": subset,
                 "output_path": build_rel_path_from_pattern(pattern, lang=lang, page=page),
-                "url": build_url_from_pattern(base_url, pattern, lang=lang, page=page),
+                "url": build_url_from_pattern(ctx.base_url, pattern, lang=lang, page=page),
             })
 
     return pages
@@ -546,17 +602,15 @@ def build_index_models(articles, config):
 # Tag Pages
 # ------------------------------------------------------------
 
-def build_tags_models(articles, config):
+def build_tags_models(articles, ctx: BuildCtx):
     """
     Build tag pages: one page per (language, tag) pair.
     Tag values are slugified for filesystem paths and URL-encoded for URLs.
     """
-    base_url = config["site"]["base_url"]
-    pattern = config["urls"]["tag"]
-    languages = config["site"]["languages"]
+    pattern = ctx.url_patterns["tag"]
 
     models = []
-    for lang in languages:
+    for lang in ctx.languages:
         lang_articles = [a for a in articles if a["lang"] == lang]
         tag_map = {}
         for art in lang_articles:
@@ -575,7 +629,7 @@ def build_tags_models(articles, config):
                 "tag_slug": tag_slug,
                 "articles": items,
                 "output_path": build_rel_path_from_pattern(pattern, lang=lang, tag=tag_slug),
-                "url": build_url_from_pattern(base_url, pattern, lang=lang, tag=url_tag),
+                "url": build_url_from_pattern(ctx.base_url, pattern, lang=lang, tag=url_tag),
             })
 
     return models
@@ -585,71 +639,57 @@ def build_tags_models(articles, config):
 # RSS Feed
 # ------------------------------------------------------------
 
-def build_rss_model(articles, config):
+def build_rss_model(articles, ctx: BuildCtx):
     """
     Build RSS feed model.
     """
-    limit = config["site"]["pagination"]["rss_items"]
-    base_url = config["site"]["base_url"]
-    pattern = config["urls"]["rss"]
-
-    model = {
-        "articles": articles[:limit],
+    pattern = ctx.url_patterns["rss"]
+    return {
+        "articles": articles[:ctx.rss_items],
         "output_path": Path(pattern.lstrip("/")),
-        "url": build_url_from_pattern(base_url, pattern),
+        "url": build_url_from_pattern(ctx.base_url, pattern),
     }
-    return model
 
 
 # ------------------------------------------------------------
 # Sitemap
 # ------------------------------------------------------------
 
-def build_sitemap_model(articles, config):
+def build_sitemap_model(articles, ctx: BuildCtx):
     """
     Build sitemap model.
     """
-    base_url = config["site"]["base_url"]
-    pattern = config["urls"]["sitemap"]
-
-    urls = []
-    for art in articles:
-        urls.append(art["url"])
-
-    model = {
-        "urls": urls,
+    pattern = ctx.url_patterns["sitemap"]
+    return {
+        "urls": [art["url"] for art in articles],
         "output_path": Path(pattern.lstrip("/")),
-        "url": build_url_from_pattern(base_url, pattern),
+        "url": build_url_from_pattern(ctx.base_url, pattern),
     }
-    return model
 
 
 # ------------------------------------------------------------
 # Search Index (JSON)
 # ------------------------------------------------------------
 
-def build_search_model(articles, config):
+def build_search_model(articles, ctx: BuildCtx):
     """
     Build search index model.
     """
-    base_url = config["site"]["base_url"]
-    pattern = config["urls"]["search"]
-
-    items = []
-    for art in articles:
-        items.append({
+    pattern = ctx.url_patterns["search"]
+    items = [
+        {
             "title": art["title"],
             "description": art["description"],
             "url": art["url"],
             "tags": art["tags"],
-        })
-
-    model = {
+        }
+        for art in articles
+    ]
+    return {
         "items": items,
         "output_path": Path(pattern.lstrip("/")),
-        "url": build_url_from_pattern(base_url, pattern),
+        "url": build_url_from_pattern(ctx.base_url, pattern),
     }
-    return model
 
 # ================================================================
 # MODULE 8 — INCREMENTAL BUILD CACHE
@@ -772,27 +812,25 @@ def ensure_parent_dir(path: Path, dry_run=False):
         parent.mkdir(parents=True, exist_ok=True)
 
 
-def copy_assets(config, dry_run=False):
+def copy_assets(ctx: BuildCtx):
     """
     Mirror the configured assets directory into the output tree at
     ``<output_dir>/assets``. No-op if the assets directory is missing.
     """
-    assets_dir = Path(config["paths"]["assets_dir"])
-    if not assets_dir.exists():
-        logging.debug(f"Assets directory not present, skipping: {assets_dir}")
+    if not ctx.assets_dir.exists():
+        logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
         return
 
-    output_dir = Path(config["paths"]["output_dir"])
-    dest = output_dir / "assets"
+    dest = ctx.output_dir / "assets"
 
-    if dry_run:
-        logging.debug(f"[DRY RUN] Would copy assets: {assets_dir} -> {dest}")
+    if ctx.dry_run:
+        logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
         return
 
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(assets_dir, dest)
-    logging.info(f"Copied assets: {assets_dir} -> {dest}")
+    shutil.copytree(ctx.assets_dir, dest)
+    logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
 
 
 def write_json(path: Path, data, dry_run=False):
@@ -810,15 +848,14 @@ def write_json(path: Path, data, dry_run=False):
 # Section Builders — Articles
 # ------------------------------------------------------------
 
-def build_articles_section(articles, config, saxonc_bin, cache, dry_run):
+def build_articles_section(articles, ctx: BuildCtx, cache):
     """
     Build all article pages.
     """
     tasks = []
-    xsl_path = Path(config["paths"]["xsl_dir"]) / "pages" / "article.xsl"
-    output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["articles"]
-    force = config["build"]["force_full_build"]
+    xsl_path = ctx.xsl_for("articles")
+    engine = ctx.engine_for("articles")
+    pattern = ctx.url_patterns["article"]
 
     for art in articles:
         xml_path = art["source_path"]
@@ -826,28 +863,20 @@ def build_articles_section(articles, config, saxonc_bin, cache, dry_run):
         xsl_hash = file_hash(xsl_path)
         key = f"article:{art['lang']}:{art['slug']}"
 
-        output_path = output_dir / build_rel_path_from_pattern(
-            config["urls"]["article"], lang=art["lang"], slug=art["slug"],
+        output_path = ctx.output_dir / build_rel_path_from_pattern(
+            pattern, lang=art["lang"], slug=art["slug"],
         )
         art["url"] = build_url_from_pattern(
-            config["site"]["base_url"],
-            config["urls"]["article"],
-            lang=art["lang"],
-            slug=art["slug"],
+            ctx.base_url, pattern, lang=art["lang"], slug=art["slug"],
         )
 
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
+        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
             logging.debug(f"Skipping unchanged article: {art['slug']}")
             continue
 
         def make_task(xml_path=xml_path, xsl_path=xsl_path, output_path=output_path):
             return lambda: run_transform(
-                engine,
-                saxonc_bin,
-                xml_path,
-                xsl_path,
-                output_path,
-                dry_run=dry_run,
+                engine, xml_path, xsl_path, output_path, dry_run=ctx.dry_run,
             )
 
         tasks.append(make_task())
@@ -860,49 +889,41 @@ def build_articles_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — Index Pages
 # ------------------------------------------------------------
 
-def build_index_section(articles, config, saxonc_bin, cache, dry_run):
+def build_index_section(articles, ctx: BuildCtx, cache):
     """
     Build paginated index pages.
     """
     tasks = []
-    xsl_path = Path(config["paths"]["xsl_dir"]) / "pages" / "index.xsl"
-    output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["index"]
-    force = config["build"]["force_full_build"]
+    xsl_path = ctx.xsl_for("index")
+    engine = ctx.engine_for("index")
 
-    models = build_index_models(articles, config)
+    models = build_index_models(articles, ctx)
 
     for model in models:
-        xml_temp = output_dir / f"temp/index-{model['lang']}-{model['page']}.xml"
+        xml_temp = ctx.output_dir / f"temp/index-{model['lang']}-{model['page']}.xml"
         xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write model XML
         xml_content = "<index>" + "".join(
             f"<article><title>{a['title']}</title><url>{a['url']}</url></article>"
             for a in model["articles"]
         ) + "</index>"
 
-        if not dry_run:
+        if not ctx.dry_run:
             xml_temp.write_text(xml_content, encoding="utf-8")
 
         xml_hash = file_hash(xml_temp)
         xsl_hash = file_hash(xsl_path)
         key = f"index:{model['lang']}:{model['page']}"
 
-        output_path = output_dir / model["output_path"]
+        output_path = ctx.output_dir / model["output_path"]
 
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
+        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
             logging.debug(f"Skipping unchanged index page {model['page']}")
             continue
 
         def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
             return lambda: run_transform(
-                engine,
-                saxonc_bin,
-                xml_temp,
-                xsl_path,
-                output_path,
-                dry_run=dry_run,
+                engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
             )
 
         tasks.append(make_task())
@@ -914,51 +935,43 @@ def build_index_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — Tags
 # ------------------------------------------------------------
 
-def build_tags_section(articles, config, saxonc_bin, cache, dry_run):
+def build_tags_section(articles, ctx: BuildCtx, cache):
     """
     Build tag pages.
     """
     tasks = []
-    xsl_path = Path(config["paths"]["xsl_dir"]) / "pages" / "tags.xsl"
-    output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["tags"]
-    force = config["build"]["force_full_build"]
+    xsl_path = ctx.xsl_for("tags")
+    engine = ctx.engine_for("tags")
 
-    models = build_tags_models(articles, config)
+    models = build_tags_models(articles, ctx)
 
     for model in models:
         tag_slug = model["tag_slug"]
         lang = model["lang"]
-        xml_temp = output_dir / f"temp/tag-{lang}-{tag_slug}.xml"
+        xml_temp = ctx.output_dir / f"temp/tag-{lang}-{tag_slug}.xml"
         xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write model XML
         xml_content = "<tag>" + "".join(
             f"<article><title>{a['title']}</title><url>{a['url']}</url></article>"
             for a in model["articles"]
         ) + "</tag>"
 
-        if not dry_run:
+        if not ctx.dry_run:
             xml_temp.write_text(xml_content, encoding="utf-8")
 
         xml_hash = file_hash(xml_temp)
         xsl_hash = file_hash(xsl_path)
         key = f"tag:{lang}:{tag_slug}"
 
-        output_path = output_dir / model["output_path"]
+        output_path = ctx.output_dir / model["output_path"]
 
-        if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
+        if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
             logging.debug(f"Skipping unchanged tag page: {lang}/{tag_slug}")
             continue
 
         def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
             return lambda: run_transform(
-                engine,
-                saxonc_bin,
-                xml_temp,
-                xsl_path,
-                output_path,
-                dry_run=dry_run,
+                engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
             )
 
         tasks.append(make_task())
@@ -971,48 +984,40 @@ def build_tags_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — RSS
 # ------------------------------------------------------------
 
-def build_rss_section(articles, config, saxonc_bin, cache, dry_run):
+def build_rss_section(articles, ctx: BuildCtx, cache):
     """
     Build RSS feed.
     """
     tasks = []
-    xsl_path = Path(config["paths"]["xsl_dir"]) / "pages" / "rss.xsl"
-    output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["rss"]
-    force = config["build"]["force_full_build"]
+    xsl_path = ctx.xsl_for("rss")
+    engine = ctx.engine_for("rss")
 
-    model = build_rss_model(articles, config)
+    model = build_rss_model(articles, ctx)
 
-    xml_temp = output_dir / "temp/rss.xml"
+    xml_temp = ctx.output_dir / "temp/rss.xml"
     xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
-    # Write model XML
     xml_content = "<rss>" + "".join(
         f"<item><title>{a['title']}</title><url>{a['url']}</url></item>"
         for a in model["articles"]
     ) + "</rss>"
 
-    if not dry_run:
+    if not ctx.dry_run:
         xml_temp.write_text(xml_content, encoding="utf-8")
 
     xml_hash = file_hash(xml_temp)
     xsl_hash = file_hash(xsl_path)
     key = "rss"
 
-    output_path = output_dir / model["output_path"]
+    output_path = ctx.output_dir / model["output_path"]
 
-    if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
+    if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
         logging.debug("Skipping unchanged RSS feed")
         return tasks
 
     def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
         return lambda: run_transform(
-            engine,
-            saxonc_bin,
-            xml_temp,
-            xsl_path,
-            output_path,
-            dry_run=dry_run,
+            engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
         )
 
     tasks.append(make_task())
@@ -1025,46 +1030,39 @@ def build_rss_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — Sitemap
 # ------------------------------------------------------------
 
-def build_sitemap_section(articles, config, saxonc_bin, cache, dry_run):
+def build_sitemap_section(articles, ctx: BuildCtx, cache):
     """
     Build sitemap.xml.
     """
     tasks = []
-    xsl_path = Path(config["paths"]["xsl_dir"]) / "pages" / "sitemap.xsl"
-    output_dir = Path(config["paths"]["output_dir"])
-    engine = config["engines"]["sitemap"]
-    force = config["build"]["force_full_build"]
+    xsl_path = ctx.xsl_for("sitemap")
+    engine = ctx.engine_for("sitemap")
 
-    model = build_sitemap_model(articles, config)
+    model = build_sitemap_model(articles, ctx)
 
-    xml_temp = output_dir / "temp/sitemap.xml"
+    xml_temp = ctx.output_dir / "temp/sitemap.xml"
     xml_temp.parent.mkdir(parents=True, exist_ok=True)
 
     xml_content = "<sitemap>" + "".join(
         f"<url>{u}</url>" for u in model["urls"]
     ) + "</sitemap>"
 
-    if not dry_run:
+    if not ctx.dry_run:
         xml_temp.write_text(xml_content, encoding="utf-8")
 
     xml_hash = file_hash(xml_temp)
     xsl_hash = file_hash(xsl_path)
     key = "sitemap"
 
-    output_path = output_dir / model["output_path"]
+    output_path = ctx.output_dir / model["output_path"]
 
-    if not should_rebuild(key, cache, (xml_hash, xsl_hash), force):
+    if not should_rebuild(key, cache, (xml_hash, xsl_hash), ctx.force):
         logging.debug("Skipping unchanged sitemap")
         return tasks
 
     def make_task(xml_temp=xml_temp, xsl_path=xsl_path, output_path=output_path):
         return lambda: run_transform(
-            engine,
-            saxonc_bin,
-            xml_temp,
-            xsl_path,
-            output_path,
-            dry_run=dry_run,
+            engine, xml_temp, xsl_path, output_path, dry_run=ctx.dry_run,
         )
 
     tasks.append(make_task())
@@ -1077,28 +1075,23 @@ def build_sitemap_section(articles, config, saxonc_bin, cache, dry_run):
 # Section Builders — Search Index
 # ------------------------------------------------------------
 
-def build_search_section(articles, config, cache, dry_run):
+def build_search_section(articles, ctx: BuildCtx, cache):
     """
-    Build search.json.
+    Build search.json. No XSLT needed; pure JSON write.
     """
     tasks = []
-    output_dir = Path(config["paths"]["output_dir"])
-    force = config["build"]["force_full_build"]
+    model = build_search_model(articles, ctx)
+    output_path = ctx.output_dir / model["output_path"]
 
-    model = build_search_model(articles, config)
-
-    output_path = output_dir / model["output_path"]
-
-    # JSON output — no XSLT needed
     json_hash = hashlib.sha256(json.dumps(model["items"]).encode("utf-8")).hexdigest()
     key = "search"
 
-    if not should_rebuild(key, cache, (json_hash, "json"), force):
+    if not should_rebuild(key, cache, (json_hash, "json"), ctx.force):
         logging.debug("Skipping unchanged search index")
         return tasks
 
     def make_task(output_path=output_path, items=model["items"]):
-        return lambda: write_json(output_path, items, dry_run=dry_run)
+        return lambda: write_json(output_path, items, dry_run=ctx.dry_run)
 
     tasks.append(make_task())
     update_cache(cache, key, (json_hash, "json"))
@@ -1127,15 +1120,15 @@ def run_build(cli: CliOptions, config, project_root: Path):
     # Validate engine configuration up front
     validate_engines(config)
 
-    # Configure SaxonC (optional)
+    # Configure SaxonC (optional) and build the typed context
     saxonc_bin = configure_saxonc(config)
+    ctx = build_ctx_from_config(config, saxonc_bin, dry_run=cli.dry_run)
 
     # Copy static assets into the output tree
-    copy_assets(config, dry_run=cli.dry_run)
+    copy_assets(ctx)
 
     # Load articles
-    default_lang = config["site"]["default_language"]
-    articles = load_articles(content_dir, default_lang=default_lang)
+    articles = load_articles(content_dir, default_lang=ctx.default_language)
 
     if cli.only_langs:
         wanted_langs = set(cli.only_langs)
@@ -1148,22 +1141,22 @@ def run_build(cli: CliOptions, config, project_root: Path):
     tasks = []
 
     if not cli.only_sections or "articles" in cli.only_sections:
-        tasks += build_articles_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_articles_section(articles, ctx, cache)
 
     if not cli.only_sections or "index" in cli.only_sections:
-        tasks += build_index_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_index_section(articles, ctx, cache)
 
     if not cli.only_sections or "tags" in cli.only_sections:
-        tasks += build_tags_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_tags_section(articles, ctx, cache)
 
     if not cli.only_sections or "rss" in cli.only_sections:
-        tasks += build_rss_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_rss_section(articles, ctx, cache)
 
     if not cli.only_sections or "sitemap" in cli.only_sections:
-        tasks += build_sitemap_section(articles, config, saxonc_bin, cache, cli.dry_run)
+        tasks += build_sitemap_section(articles, ctx, cache)
 
     if not cli.only_sections or "search" in cli.only_sections:
-        tasks += build_search_section(articles, config, cache, cli.dry_run)
+        tasks += build_search_section(articles, ctx, cache)
 
     # Run tasks in parallel
     if tasks:

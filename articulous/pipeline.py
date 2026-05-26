@@ -91,12 +91,17 @@ class BuildCtx:
         return self.engines[section]
 
 
-def build_ctx_from_config(
-    config: dict,
-    saxonc_bin: Optional[Path],
-    dry_run: bool,
-) -> BuildCtx:
-    """Project the raw config dict + resolved Saxon binary into a BuildCtx."""
+def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
+    """
+    Project the raw config dict into a :class:`BuildCtx`.
+
+    This is the only function in the package that reads the raw config
+    dict's deep shape. It also validates the configured engine names
+    and resolves the SaxonC binary, so callers downstream see only a
+    typed ctx — no config dict, no string-compared engine names.
+    """
+    validate_engines(config)
+    saxonc_bin = configure_saxonc(config)
     engines = {
         section: make_engine(name, saxonc_bin)
         for section, name in config["engines"].items()
@@ -454,10 +459,7 @@ def run_build(cli, config, project_root: Path) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
 
-    validate_engines(config)
-    saxonc_bin = configure_saxonc(config)
-    ctx = build_ctx_from_config(config, saxonc_bin, dry_run=cli.dry_run)
-
+    ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
     cache = load_cache(cache_path)
 

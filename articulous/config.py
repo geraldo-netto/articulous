@@ -83,12 +83,26 @@ def load_or_create_config(path: Path) -> dict:
 
 
 def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
-    """Apply CLI overrides to the loaded config, in place."""
+    """
+    Apply CLI overrides to the loaded config, in place.
+
+    Each configured directory is resolved relative to ``project_root``
+    and then constrained to live underneath it — a config that sets
+    ``content_dir: "../../etc"`` will be rejected with ValueError
+    instead of silently resolving outside the project tree.
+    """
     if cli.force_full_build:
         config["build"]["force_full_build"] = True
     if cli.verbose:
         config["logging"]["level"] = "DEBUG"
 
+    root_resolved = project_root.resolve()
     for key in ["content_dir", "output_dir", "xsl_dir", "assets_dir"]:
         p = config["paths"][key]
-        config["paths"][key] = str((project_root / p).resolve())
+        resolved = (project_root / p).resolve()
+        if not resolved.is_relative_to(root_resolved):
+            raise ValueError(
+                f"Config path {key}={p!r} resolves outside project root: "
+                f"{resolved} (project_root={root_resolved})"
+            )
+        config["paths"][key] = str(resolved)

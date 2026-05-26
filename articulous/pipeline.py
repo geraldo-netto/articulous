@@ -153,21 +153,19 @@ def copy_assets(ctx: BuildCtx) -> None:
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
 
 
-def attach_article_urls(articles, ctx: BuildCtx) -> None:
+def _article_url_builder(ctx: BuildCtx):
     """
-    Populate ``art["url"]`` on every article in place.
-
-    URLs used to be assigned as a side effect of
-    :func:`build_articles_section`, which meant any run that skipped the
-    articles section (``--only rss`` etc.) left the URL field unset and
-    broke RSS / sitemap / search downstream. Computing URLs up front
-    breaks that order dependency.
+    Return a ``(lang, slug) -> url`` callable bound to ``ctx``. Used by
+    :func:`load_articles` so each :class:`Article` is constructed with
+    its public URL already attached.
     """
     pattern = ctx.url_patterns["article"]
-    for art in articles:
-        art["url"] = build_url_from_pattern(
-            ctx.base_url, pattern, lang=art["lang"], slug=art["slug"],
-        )
+    base_url = ctx.base_url
+
+    def build(lang: str, slug: str) -> str:
+        return build_url_from_pattern(base_url, pattern, lang=lang, slug=slug)
+
+    return build
 
 
 # ================================================================
@@ -178,17 +176,17 @@ def _xml_doc(root_tag: str, children: list) -> str:
     return f"<{root_tag}>{''.join(children)}</{root_tag}>"
 
 
-def _article_xml(a: dict) -> str:
+def _article_xml(a) -> str:
     return (
-        f"<article><title>{_xml_escape(a['title'])}</title>"
-        f"<url>{_xml_escape(a['url'])}</url></article>"
+        f"<article><title>{_xml_escape(a.title)}</title>"
+        f"<url>{_xml_escape(a.url)}</url></article>"
     )
 
 
-def _rss_item_xml(a: dict) -> str:
+def _rss_item_xml(a) -> str:
     return (
-        f"<item><title>{_xml_escape(a['title'])}</title>"
-        f"<url>{_xml_escape(a['url'])}</url></item>"
+        f"<item><title>{_xml_escape(a.title)}</title>"
+        f"<url>{_xml_escape(a.url)}</url></item>"
     )
 
 
@@ -254,8 +252,9 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
     """
     Build all article pages.
 
-    Assumes :func:`attach_article_urls` has already populated ``url``
-    on each article — :func:`run_build` does that for every invocation.
+    Articles arrive with their ``url`` already set by
+    :func:`articulous.articles.load_articles` (using the URL builder
+    returned by :func:`_article_url_builder`).
     """
     tasks = []
     xsl_path = ctx.xsl_for("articles")
@@ -264,19 +263,19 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
 
     for art in articles:
         output_path = ctx.output_dir / build_rel_path_from_pattern(
-            pattern, lang=art["lang"], slug=art["slug"],
+            pattern, lang=art.lang, slug=art.slug,
         )
         task = _make_xslt_task(
-            xml_path=art["source_path"],
+            xml_path=art.source_path,
             xsl_path=xsl_path,
             output_path=output_path,
             cache=cache,
-            cache_key=f"article:{art['lang']}:{art['slug']}",
+            cache_key=f"article:{art.lang}:{art.slug}",
             engine=engine,
             ctx=ctx,
         )
         if task is None:
-            logging.debug(f"Skipping unchanged article: {art['slug']}")
+            logging.debug(f"Skipping unchanged article: {art.slug}")
             continue
         tasks.append(task)
 
@@ -418,10 +417,10 @@ SECTION_BUILDERS = {
 def _filter_articles(articles, cli):
     if cli.only_langs:
         wanted = set(cli.only_langs)
-        articles = [a for a in articles if a["lang"] in wanted]
+        articles = [a for a in articles if a.lang in wanted]
     if cli.only_slugs:
         wanted = set(cli.only_slugs)
-        articles = [a for a in articles if a["slug"] in wanted]
+        articles = [a for a in articles if a.slug in wanted]
     return articles
 
 
@@ -432,9 +431,9 @@ def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections) -> dict:
     parallel execution and uses the per-section counts for logging.
 
     Section order is no longer load-bearing: every section reads
-    ``art["url"]`` from the field that :func:`attach_article_urls`
-    populated up front, so any subset of sections (``--only ...``) is
-    safe to run.
+    ``article.url`` from the field that :func:`load_articles` populated
+    during parse, so any subset of sections (``--only ...``) is safe to
+    run.
     """
     wanted = set(only_sections) if only_sections else None
     plan: dict = {}
@@ -470,9 +469,13 @@ def run_build(cli, config, project_root: Path) -> None:
     ctx = _dc_replace(ctx, temp_dir=temp_dir)
 
     try:
-        articles = load_articles(ctx.content_dir, default_lang=ctx.default_language)
+        articles = load_articles(
+            ctx.content_dir,
+            default_lang=ctx.default_language,
+            url_builder=_article_url_builder(ctx),
+            allowed_langs=ctx.languages,
+        )
         articles = _filter_articles(articles, cli)
-        attach_article_urls(articles, ctx)
 
         plan = _collect_tasks(articles, ctx, cache, cli.only_sections)
         flat = [t for tasks in plan.values() for t in tasks]

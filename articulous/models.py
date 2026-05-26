@@ -101,7 +101,7 @@ def build_index_models(articles, ctx: SiteModelCtx) -> list[IndexPage]:
     pattern = ctx.url_patterns["index"]
     pages: list[IndexPage] = []
     for lang in ctx.languages:
-        lang_articles = [a for a in articles if a["lang"] == lang]
+        lang_articles = [a for a in articles if a.lang == lang]
         total = len(lang_articles)
         if total == 0:
             continue
@@ -132,10 +132,10 @@ def build_tags_models(articles, ctx: SiteModelCtx) -> list[TagPage]:
     pattern = ctx.url_patterns["tag"]
     models: list[TagPage] = []
     for lang in ctx.languages:
-        lang_articles = [a for a in articles if a["lang"] == lang]
+        lang_articles = [a for a in articles if a.lang == lang]
         tag_map: dict = {}
         for art in lang_articles:
-            for tag in art.get("tags", []):
+            for tag in art.tags:
                 tag_map.setdefault(tag, []).append(art)
 
         for tag, items in tag_map.items():
@@ -175,7 +175,7 @@ def build_sitemap_model(articles, ctx: SiteModelCtx) -> Sitemap:
     """Build sitemap model."""
     pattern = ctx.url_patterns["sitemap"]
     return Sitemap(
-        urls=[art["url"] for art in articles],
+        urls=[art.url for art in articles],
         output_path=Path(pattern.lstrip("/")),
         url=build_url_from_pattern(ctx.base_url, pattern),
     )
@@ -186,10 +186,10 @@ def build_search_model(articles, ctx: SiteModelCtx) -> SearchIndex:
     pattern = ctx.url_patterns["search"]
     items = [
         {
-            "title": art["title"],
-            "description": art["description"],
-            "url": art["url"],
-            "tags": art["tags"],
+            "title": art.title,
+            "description": art.description,
+            "url": art.url,
+            "tags": list(art.tags),
         }
         for art in articles
     ]

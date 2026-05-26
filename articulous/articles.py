@@ -74,7 +74,7 @@ def parse_article_xml(path: Path, default_lang: str = "en"):
     }
 
 
-def discover_article_files(content_dir: Path):
+def _discover_article_files(content_dir: Path):
     """Recursively find all .xml files in ``content_dir``."""
     return sorted(content_dir.rglob("*.xml"))
 
@@ -82,7 +82,7 @@ def discover_article_files(content_dir: Path):
 def load_articles(content_dir: Path, default_lang: str = "en"):
     """Load and parse every article under ``content_dir`` (newest first)."""
     articles = []
-    for xml_file in discover_article_files(content_dir):
+    for xml_file in _discover_article_files(content_dir):
         meta = parse_article_xml(xml_file, default_lang=default_lang)
         if meta:
             articles.append(meta)

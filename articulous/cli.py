@@ -107,7 +107,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
 
 def main(argv=None) -> None:
     """Top-level entrypoint used by sitegen.py and python -m articulous."""
-    from .build import run_build  # local import: avoid cycle at import time
+    from .pipeline import run_build
 
     args = parse_cli_args(argv)
     cli = CliOptions(args)

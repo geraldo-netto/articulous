@@ -51,6 +51,8 @@ class TransformEngine(ABC):
     guard, path coercion, and parent-dir creation so every engine
     behaves identically at the call site.
     """
+    # ``name`` is the strategy-registry key (see :func:`make_engine`) and
+    # also identifies the engine in the dry-run debug log.
     name: ClassVar[str]
 
     def run(

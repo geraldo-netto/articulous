@@ -1093,28 +1093,69 @@ def build_search_section(articles, ctx: BuildCtx, cache):
     """
     Build search.json. No XSLT needed; pure JSON write.
     """
-    tasks = []
     model = build_search_model(articles, ctx)
+    items = model["items"]
     output_path = ctx.output_dir / model["output_path"]
+    json_hash = hashlib.sha256(json.dumps(items).encode("utf-8")).hexdigest()
 
-    json_hash = hashlib.sha256(json.dumps(model["items"]).encode("utf-8")).hexdigest()
-    key = "search"
-
-    if not should_rebuild(key, cache, (json_hash, "json"), ctx.force):
+    if not should_rebuild("search", cache, (json_hash, "json"), ctx.force):
         logging.debug("Skipping unchanged search index")
-        return tasks
+        return []
+    update_cache(cache, "search", (json_hash, "json"))
 
-    def make_task(output_path=output_path, items=model["items"]):
-        return lambda: write_json(output_path, items, dry_run=ctx.dry_run)
+    def task(output_path=output_path, items=items):
+        return write_json(output_path, items, dry_run=ctx.dry_run)
+    return [task]
 
-    tasks.append(make_task())
-    update_cache(cache, key, (json_hash, "json"))
 
+# ------------------------------------------------------------
+# Section dispatch table
+# ------------------------------------------------------------
+
+SECTION_BUILDERS = {
+    "articles": build_articles_section,
+    "index": build_index_section,
+    "tags": build_tags_section,
+    "rss": build_rss_section,
+    "sitemap": build_sitemap_section,
+    "search": build_search_section,
+}
+
+
+def _filter_articles(articles, cli: CliOptions):
+    """Apply CLI language/slug filters."""
+    if cli.only_langs:
+        wanted = set(cli.only_langs)
+        articles = [a for a in articles if a["lang"] in wanted]
+    if cli.only_slugs:
+        wanted = set(cli.only_slugs)
+        articles = [a for a in articles if a["slug"] in wanted]
+    return articles
+
+
+def _collect_tasks(articles, ctx: BuildCtx, cache, only_sections):
+    """
+    Dispatch each requested section to its builder and collect the
+    resulting task callables. ``only_sections`` is None (all sections)
+    or an iterable of section names to keep.
+    """
+    wanted = set(only_sections) if only_sections else None
+    tasks = []
+    for name, builder in SECTION_BUILDERS.items():
+        if wanted is not None and name not in wanted:
+            continue
+        tasks += builder(articles, ctx, cache)
     return tasks
 
 # ------------------------------------------------------------
 # Full Build Pipeline
 # ------------------------------------------------------------
+
+def _cache_path_for(config, project_root: Path) -> Path:
+    # Reduce user-controlled config to a bare filename to prevent path traversal.
+    cache_file_name = Path(config["build"]["cache_file"]).name
+    return project_root / cache_file_name
+
 
 def run_build(cli: CliOptions, config, project_root: Path):
     """
@@ -1122,64 +1163,27 @@ def run_build(cli: CliOptions, config, project_root: Path):
     """
     logging.info("Starting build...")
 
-    content_dir = Path(config["paths"]["content_dir"])
-    output_dir = Path(config["paths"]["output_dir"])
-    # Reduce user-controlled config to a bare filename to prevent path traversal.
-    cache_file_name = Path(config["build"]["cache_file"]).name
-    cache_path = project_root / cache_file_name
-
-    # Load cache
+    validate_engines(config)
+    cache_path = _cache_path_for(config, project_root)
     cache = load_cache(cache_path)
 
-    # Validate engine configuration up front
-    validate_engines(config)
-
-    # Configure SaxonC (optional) and build the typed context
     saxonc_bin = configure_saxonc(config)
     ctx = build_ctx_from_config(config, saxonc_bin, dry_run=cli.dry_run)
 
-    # Copy static assets into the output tree
     copy_assets(ctx)
 
-    # Load articles
+    content_dir = Path(config["paths"]["content_dir"])
     articles = load_articles(content_dir, default_lang=ctx.default_language)
+    articles = _filter_articles(articles, cli)
 
-    if cli.only_langs:
-        wanted_langs = set(cli.only_langs)
-        articles = [a for a in articles if a["lang"] in wanted_langs]
-    if cli.only_slugs:
-        wanted_slugs = set(cli.only_slugs)
-        articles = [a for a in articles if a["slug"] in wanted_slugs]
+    tasks = _collect_tasks(articles, ctx, cache, cli.only_sections)
 
-    # Build tasks
-    tasks = []
-
-    if not cli.only_sections or "articles" in cli.only_sections:
-        tasks += build_articles_section(articles, ctx, cache)
-
-    if not cli.only_sections or "index" in cli.only_sections:
-        tasks += build_index_section(articles, ctx, cache)
-
-    if not cli.only_sections or "tags" in cli.only_sections:
-        tasks += build_tags_section(articles, ctx, cache)
-
-    if not cli.only_sections or "rss" in cli.only_sections:
-        tasks += build_rss_section(articles, ctx, cache)
-
-    if not cli.only_sections or "sitemap" in cli.only_sections:
-        tasks += build_sitemap_section(articles, ctx, cache)
-
-    if not cli.only_sections or "search" in cli.only_sections:
-        tasks += build_search_section(articles, ctx, cache)
-
-    # Run tasks in parallel
     if tasks:
         logging.info(f"Running {len(tasks)} tasks in parallel...")
         run_parallel_tasks(tasks, config["build"]["parallelism"])
     else:
         logging.info("Nothing to build — all pages up to date.")
 
-    # Save cache
     if not cli.dry_run:
         save_cache(cache_path, cache)
 

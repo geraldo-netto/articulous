@@ -42,10 +42,7 @@ Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
 ## code complexity
 
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| CPX-01 | open | M | `build_index_section`, `build_tags_section`, `build_rss_section`, `build_sitemap_section` each carry: model build + xml write + hash + cache check + task closure. Single function >40 lines, multiple responsibilities. | Extract `build_xml_section(name, model, xsl_path, …)` helper. sitegen.py:794-1003. |
-| CPX-02 | open | S | `run_build` chains 6 `if not cli.only_sections or "X" in cli.only_sections` conditionals. | Table-drive: `SECTIONS = [("articles", build_articles_section), …]`, iterate. sitegen.py:1066-1082. |
+_(all open items resolved; tracked via git history)_
 
 ## code duplication
 

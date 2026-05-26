@@ -15,9 +15,8 @@ import json
 import logging
 import os
 import shutil
-import tempfile
 import time
-from dataclasses import dataclass, field, replace as _dc_replace
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape
@@ -70,7 +69,6 @@ class BuildCtx:
     xsl_dir: Path
     output_dir: Path
     assets_dir: Path
-    temp_dir: Optional[Path] = None
     # build flags
     force: bool = False
     dry_run: bool = False
@@ -113,7 +111,6 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         xsl_dir=Path(config["paths"]["xsl_dir"]),
         output_dir=Path(config["paths"]["output_dir"]),
         assets_dir=Path(config["paths"]["assets_dir"]),
-        temp_dir=None,
         force=config["build"]["force_full_build"],
         dry_run=dry_run,
         parallelism=config["build"]["parallelism"],
@@ -202,8 +199,9 @@ def _sitemap_url_xml(url: str) -> str:
 
 def _make_xslt_task(
     *,
-    xml_path: Path,
+    xml_input,            # Path on disk (article XML) or bytes (in-memory model)
     xsl_path: Path,
+    xsl_hash: str,        # PERF-01: caller hashes the section's XSL once
     output_path: Path,
     cache: dict,
     cache_key: str,
@@ -212,43 +210,43 @@ def _make_xslt_task(
 ) -> Optional[Callable]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
-    the cache says the output is up to date. The cache entry is
-    committed *inside* the returned task, after a successful transform
-    — failed transforms leave the prior cache entry intact.
+    the cache says the output is up to date.
+
+    ``xml_input`` is either a :class:`Path` (article XML on disk) or
+    :class:`bytes` (a freshly-synthesised model XML). In the bytes case
+    we hash the buffer directly — PERF-02 — instead of writing it to
+    a temp file just so :func:`file_hash` can read it back.
+
+    ``xsl_hash`` is precomputed by the caller so per-section XSL hashing
+    is amortised across every page in that section.
+
+    The cache entry is committed *inside* the returned task, after a
+    successful transform — failed transforms leave the prior cache
+    entry intact.
     """
-    xml_hash = file_hash(xml_path)
-    xsl_hash = file_hash(xsl_path)
+    if isinstance(xml_input, bytes):
+        xml_hash = hashlib.sha256(xml_input).hexdigest()
+    else:
+        xml_hash = file_hash(xml_input)
+
     if not should_rebuild(cache_key, cache, (xml_hash, xsl_hash), ctx.force):
         return None
     hashes = (xml_hash, xsl_hash)
 
-    def task(xml_path=xml_path, xsl_path=xsl_path, output_path=output_path):
-        engine.run(xml_path, xsl_path, output_path, dry_run=ctx.dry_run)
+    def task(xml_input=xml_input, xsl_path=xsl_path, output_path=output_path):
+        engine.run(xml_input, xsl_path, output_path, dry_run=ctx.dry_run)
         update_cache(cache, cache_key, hashes)
 
     return timed(cache_key, task)
 
 
-def _make_xslt_task_with_temp(
-    *,
-    xml_temp: Path,
-    xml_content: str,
-    ctx: BuildCtx,
-    **kwargs,
-) -> Optional[Callable]:
-    """
-    Variant of :func:`_make_xslt_task` for sections that synthesise a
-    model XML file first. Always writes the temp file (even in dry-run)
-    because hashing is part of the cache decision.
-    """
-    xml_temp.parent.mkdir(parents=True, exist_ok=True)
-    xml_temp.write_text(xml_content, encoding="utf-8")
-    return _make_xslt_task(xml_path=xml_temp, ctx=ctx, **kwargs)
-
-
 # ================================================================
 # Section builders
 # ================================================================
+
+def _encode_xml(content: str) -> bytes:
+    return content.encode("utf-8")
+
 
 def build_articles_section(articles, ctx: BuildCtx, cache):
     """
@@ -262,14 +260,16 @@ def build_articles_section(articles, ctx: BuildCtx, cache):
     xsl_path = ctx.xsl_for("articles")
     engine = ctx.engine_for("articles")
     pattern = ctx.url_patterns["article"]
+    xsl_hash = file_hash(xsl_path)  # PERF-01: once per section, not per item
 
     for art in articles:
         output_path = ctx.output_dir / build_rel_path_from_pattern(
             pattern, lang=art.lang, slug=art.slug,
         )
         task = _make_xslt_task(
-            xml_path=art.source_path,
+            xml_input=art.source_path,
             xsl_path=xsl_path,
+            xsl_hash=xsl_hash,
             output_path=output_path,
             cache=cache,
             cache_key=f"article:{art.lang}:{art.slug}",
@@ -289,15 +289,16 @@ def build_index_section(articles, ctx: BuildCtx, cache):
     tasks = []
     xsl_path = ctx.xsl_for("index")
     engine = ctx.engine_for("index")
+    xsl_hash = file_hash(xsl_path)
 
     for page in build_index_models(articles, ctx):
-        xml_content = _xml_doc(
+        xml_bytes = _encode_xml(_xml_doc(
             "index", [_article_xml(a) for a in page.articles],
-        )
-        task = _make_xslt_task_with_temp(
-            xml_temp=ctx.temp_dir / f"index-{page.lang}-{page.page}.xml",
-            xml_content=xml_content,
+        ))
+        task = _make_xslt_task(
+            xml_input=xml_bytes,
             xsl_path=xsl_path,
+            xsl_hash=xsl_hash,
             output_path=ctx.output_dir / page.output_path,
             cache=cache,
             cache_key=f"index:{page.lang}:{page.page}",
@@ -317,15 +318,16 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
     tasks = []
     xsl_path = ctx.xsl_for("tags")
     engine = ctx.engine_for("tags")
+    xsl_hash = file_hash(xsl_path)
 
     for page in build_tags_models(articles, ctx):
-        xml_content = _xml_doc(
+        xml_bytes = _encode_xml(_xml_doc(
             "tag", [_article_xml(a) for a in page.articles],
-        )
-        task = _make_xslt_task_with_temp(
-            xml_temp=ctx.temp_dir / f"tag-{page.lang}-{page.tag_slug}.xml",
-            xml_content=xml_content,
+        ))
+        task = _make_xslt_task(
+            xml_input=xml_bytes,
             xsl_path=xsl_path,
+            xsl_hash=xsl_hash,
             output_path=ctx.output_dir / page.output_path,
             cache=cache,
             cache_key=f"tag:{page.lang}:{page.tag_slug}",
@@ -345,11 +347,14 @@ def build_tags_section(articles, ctx: BuildCtx, cache):
 def build_rss_section(articles, ctx: BuildCtx, cache):
     """Build RSS feed."""
     feed = build_rss_model(articles, ctx)
-    xml_content = _xml_doc("rss", [_rss_item_xml(a) for a in feed.articles])
-    task = _make_xslt_task_with_temp(
-        xml_temp=ctx.temp_dir / "rss.xml",
-        xml_content=xml_content,
-        xsl_path=ctx.xsl_for("rss"),
+    xsl_path = ctx.xsl_for("rss")
+    xml_bytes = _encode_xml(
+        _xml_doc("rss", [_rss_item_xml(a) for a in feed.articles])
+    )
+    task = _make_xslt_task(
+        xml_input=xml_bytes,
+        xsl_path=xsl_path,
+        xsl_hash=file_hash(xsl_path),
         output_path=ctx.output_dir / feed.output_path,
         cache=cache,
         cache_key="rss",
@@ -365,13 +370,14 @@ def build_rss_section(articles, ctx: BuildCtx, cache):
 def build_sitemap_section(articles, ctx: BuildCtx, cache):
     """Build sitemap.xml."""
     sitemap = build_sitemap_model(articles, ctx)
-    xml_content = _xml_doc(
-        "sitemap", [_sitemap_url_xml(u) for u in sitemap.urls],
+    xsl_path = ctx.xsl_for("sitemap")
+    xml_bytes = _encode_xml(
+        _xml_doc("sitemap", [_sitemap_url_xml(u) for u in sitemap.urls])
     )
-    task = _make_xslt_task_with_temp(
-        xml_temp=ctx.temp_dir / "sitemap.xml",
-        xml_content=xml_content,
-        xsl_path=ctx.xsl_for("sitemap"),
+    task = _make_xslt_task(
+        xml_input=xml_bytes,
+        xsl_path=xsl_path,
+        xsl_hash=file_hash(xsl_path),
         output_path=ctx.output_dir / sitemap.output_path,
         cache=cache,
         cache_key="sitemap",
@@ -492,48 +498,42 @@ def run_build(cli, config, project_root: Path) -> None:
     cache_signature = json.dumps(cache, sort_keys=True)
 
     copy_assets(ctx)
-
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    temp_dir = Path(tempfile.mkdtemp(prefix=".sitegen-", dir=ctx.output_dir))
-    ctx = _dc_replace(ctx, temp_dir=temp_dir)
 
-    try:
-        articles = load_articles(
-            ctx.content_dir,
-            default_lang=ctx.default_language,
-            url_builder=_article_url_builder(ctx),
-            allowed_langs=ctx.languages,
+    articles = load_articles(
+        ctx.content_dir,
+        default_lang=ctx.default_language,
+        url_builder=_article_url_builder(ctx),
+        allowed_langs=ctx.languages,
+    )
+    articles = _filter_articles(articles, cli)
+
+    plan = _collect_tasks(articles, ctx, cache, cli.only_sections)
+    flat = [t for tasks in plan.values() for t in tasks]
+    total = len(flat)
+
+    if total:
+        logging.info(
+            f"Build plan: {total} task(s) across {len(plan)} section(s)"
         )
-        articles = _filter_articles(articles, cli)
+        for section, tasks in plan.items():
+            logging.info(f"  {section}: {len(tasks)} task(s)")
 
-        plan = _collect_tasks(articles, ctx, cache, cli.only_sections)
-        flat = [t for tasks in plan.values() for t in tasks]
-        total = len(flat)
+        t0 = time.perf_counter()
+        run_parallel_tasks(flat, _resolve_parallelism(ctx))
+        elapsed = time.perf_counter() - t0
+        logging.info(
+            f"Ran {total} task(s) in {elapsed:.2f}s "
+            f"({total / elapsed:.1f} task/s)"
+            if elapsed > 0 else f"Ran {total} task(s)"
+        )
+    else:
+        logging.info("Nothing to build — all pages up to date.")
 
-        if total:
-            logging.info(
-                f"Build plan: {total} task(s) across {len(plan)} section(s)"
-            )
-            for section, tasks in plan.items():
-                logging.info(f"  {section}: {len(tasks)} task(s)")
-
-            t0 = time.perf_counter()
-            run_parallel_tasks(flat, _resolve_parallelism(ctx))
-            elapsed = time.perf_counter() - t0
-            logging.info(
-                f"Ran {total} task(s) in {elapsed:.2f}s "
-                f"({total / elapsed:.1f} task/s)"
-                if elapsed > 0 else f"Ran {total} task(s)"
-            )
+    if not cli.dry_run:
+        if json.dumps(cache, sort_keys=True) == cache_signature:
+            logging.debug("Cache unchanged — skipping save")
         else:
-            logging.info("Nothing to build — all pages up to date.")
-
-        if not cli.dry_run:
-            if json.dumps(cache, sort_keys=True) == cache_signature:
-                logging.debug("Cache unchanged — skipping save")
-            else:
-                save_cache(cache_path, cache)
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
+            save_cache(cache_path, cache)
 
     logging.info("Build complete.")

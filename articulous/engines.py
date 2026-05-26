@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Union
 
 from lxml import etree
 
@@ -43,6 +44,9 @@ def safe_xml_parser() -> etree.XMLParser:
 # Engine strategy
 # ------------------------------------------------------------
 
+XmlInput = Union[Path, bytes]
+
+
 class TransformEngine(ABC):
     """
     Abstract base class for XSLT transformation engines.
@@ -50,6 +54,12 @@ class TransformEngine(ABC):
     Subclasses implement ``_do_transform``; ``run`` owns the dry-run
     guard, path coercion, and parent-dir creation so every engine
     behaves identically at the call site.
+
+    ``xml_input`` may be a :class:`Path` (existing file on disk) or
+    :class:`bytes` (an in-memory XML document). The latter lets the
+    pipeline hand a freshly-synthesised model XML to lxml without the
+    write-temp-then-re-read round-trip; engines that need a real path
+    (SaxonC) materialise the bytes themselves.
     """
     # ``name`` is the strategy-registry key (see :func:`make_engine`) and
     # also identifies the engine in the dry-run debug log.
@@ -57,36 +67,42 @@ class TransformEngine(ABC):
 
     def run(
         self,
-        xml_path: Path,
+        xml_input: XmlInput,
         xsl_path: Path,
         output_path: Path,
         dry_run: bool = False,
     ) -> None:
-        xml_path = Path(xml_path)
         xsl_path = Path(xsl_path)
         output_path = Path(output_path)
+        normalised: XmlInput = (
+            xml_input if isinstance(xml_input, bytes) else Path(xml_input)
+        )
 
         if dry_run:
-            logging.debug(
-                f"[DRY RUN] {self.name}: {xml_path} -> {output_path}"
-            )
+            label = "<bytes>" if isinstance(normalised, bytes) else normalised
+            logging.debug(f"[DRY RUN] {self.name}: {label} -> {output_path}")
             return
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        self._do_transform(xml_path, xsl_path, output_path)
+        self._do_transform(normalised, xsl_path, output_path)
 
     @abstractmethod
-    def _do_transform(self, xml_path: Path, xsl_path: Path, output_path: Path) -> None:
+    def _do_transform(
+        self, xml_input: XmlInput, xsl_path: Path, output_path: Path,
+    ) -> None:
         ...
 
 
 class LxmlEngine(TransformEngine):
     name = "lxml"
 
-    def _do_transform(self, xml_path, xsl_path, output_path):
-        logging.debug(f"Running lxml transform: {xml_path} -> {output_path}")
+    def _do_transform(self, xml_input, xsl_path, output_path):
+        logging.debug(f"Running lxml transform -> {output_path}")
         try:
-            dom = etree.parse(str(xml_path), parser=safe_xml_parser())
+            if isinstance(xml_input, bytes):
+                dom = etree.fromstring(xml_input, parser=safe_xml_parser())
+            else:
+                dom = etree.parse(str(xml_input), parser=safe_xml_parser())
             xslt = etree.XSLT(
                 etree.parse(str(xsl_path), parser=safe_xml_parser())
             )
@@ -103,7 +119,23 @@ class SaxonCEngine(TransformEngine):
     def __init__(self, saxonc_bin: Path):
         self.saxonc_bin = saxonc_bin
 
-    def _do_transform(self, xml_path, xsl_path, output_path):
+    def _do_transform(self, xml_input, xsl_path, output_path):
+        if isinstance(xml_input, bytes):
+            # SaxonC CLI needs a real path. Materialise to a transient
+            # temp file, clean up afterwards regardless of outcome.
+            with tempfile.NamedTemporaryFile(
+                suffix=".xml", delete=False,
+            ) as f:
+                f.write(xml_input)
+                tmp_path = Path(f.name)
+            try:
+                self._run_saxon(tmp_path, xsl_path, output_path)
+            finally:
+                tmp_path.unlink(missing_ok=True)
+        else:
+            self._run_saxon(xml_input, xsl_path, output_path)
+
+    def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path):
         cmd = [
             str(self.saxonc_bin),
             f"-s:{xml_path}",

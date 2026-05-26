@@ -486,6 +486,10 @@ def run_build(cli, config, project_root: Path) -> None:
     ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
     cache = load_cache(cache_path)
+    # Snapshot for PERF-04: skip the disk write if no worker mutated the
+    # cache. json.dumps with sort_keys gives a stable signature without
+    # the cost of a deep copy.
+    cache_signature = json.dumps(cache, sort_keys=True)
 
     copy_assets(ctx)
 
@@ -525,7 +529,10 @@ def run_build(cli, config, project_root: Path) -> None:
             logging.info("Nothing to build — all pages up to date.")
 
         if not cli.dry_run:
-            save_cache(cache_path, cache)
+            if json.dumps(cache, sort_keys=True) == cache_signature:
+                logging.debug("Cache unchanged — skipping save")
+            else:
+                save_cache(cache_path, cache)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 

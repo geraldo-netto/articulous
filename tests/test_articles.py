@@ -10,7 +10,6 @@ from articulous.articles import (
     _read_article_fields,
     _validated_lang,
     iter_articles,
-    load_articles,
     normalize_slug,
     parse_article_xml,
 )
@@ -203,51 +202,6 @@ def test_discover_article_files_recurses(tmp_path):
     assert names == ["a.xml", "b.xml"]
 
 
-# --- load_articles ---
-
-def test_load_articles_sorts_newest_first(tmp_path):
-    (tmp_path / "old.xml").write_text(
-        "<article><title>Old</title><date>2024-01-01</date>"
-        "<description>d</description></article>"
-    )
-    (tmp_path / "new.xml").write_text(
-        "<article><title>New</title><date>2026-01-01</date>"
-        "<description>d</description></article>"
-    )
-    arts = load_articles(
-        tmp_path, default_lang="en", url_builder=_url_builder,
-    )
-    assert [a.slug for a in arts] == ["new", "old"]
-
-
-def test_load_articles_empty_dir(tmp_path):
-    assert load_articles(tmp_path, default_lang="en") == []
-
-
-def test_load_articles_skips_unparseable(tmp_path, caplog):
-    (tmp_path / "good.xml").write_text(ARTICLE_XML)
-    (tmp_path / "bad.xml").write_text("<article")
-    with caplog.at_level("ERROR"):
-        arts = load_articles(
-            tmp_path, default_lang="en", url_builder=_url_builder,
-        )
-    assert len(arts) == 1
-    assert arts[0].slug == "hello-world"
-
-
-def test_load_articles_respects_max_workers(tmp_path):
-    for i in range(3):
-        (tmp_path / f"a{i}.xml").write_text(
-            f"<article><title>T{i}</title><date>2025-01-{i+1:02d}</date>"
-            f"<description>d</description></article>"
-        )
-    arts = load_articles(
-        tmp_path, default_lang="en",
-        url_builder=_url_builder, max_workers=1,
-    )
-    assert len(arts) == 3
-
-
 # --- iter_articles (streaming) ---
 
 def test_iter_articles_yields_lazily(tmp_path):
@@ -272,16 +226,16 @@ def test_iter_articles_empty_dir(tmp_path):
     assert list(iter_articles(tmp_path, default_lang="en")) == []
 
 
-def test_load_articles_allowed_langs_filter(tmp_path):
+def test_iter_articles_allowed_langs_filter(tmp_path):
     (tmp_path / "a.xml").write_text(
         "<article><title>T</title><date>2025-01-01</date>"
         "<description>d</description><lang>zz</lang></article>"
     )
-    arts = load_articles(
+    arts = list(iter_articles(
         tmp_path, default_lang="en",
         url_builder=_url_builder,
         allowed_langs=["en"],
-    )
+    ))
     # Lang fell back to "en"; URL built with that fallback.
     assert arts[0].lang == "en"
     assert arts[0].url.startswith("/en/")

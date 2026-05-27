@@ -10,9 +10,7 @@ that loophole.
 from __future__ import annotations
 
 import logging
-import os
 import re
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -189,9 +187,7 @@ def iter_articles(
 
     Memory footprint is bounded to a single article — the lxml DOM is
     released between iterations and the previous ``Article`` is only
-    retained if the caller holds onto it. Use this when memory matters
-    more than throughput; use :func:`load_articles` when you need every
-    article sorted in memory and parallel parse is worth the buffering.
+    retained if the caller holds onto it.
 
     The pipeline does a phase-1 streaming pass to build cross-language
     projections (sitemap URLs, search items, RSS top-N heap) and then
@@ -208,39 +204,3 @@ def iter_articles(
         )
         if art is not None:
             yield art
-
-
-def load_articles(
-    content_dir: Path,
-    *,
-    default_lang: str = "en",
-    url_builder: Optional[Callable[[str, str], str]] = None,
-    allowed_langs: Optional[Iterable[str]] = None,
-    max_workers: Optional[int] = None,
-) -> list:
-    """
-    Load and parse every article under ``content_dir`` in parallel and
-    return the sorted list (newest first). Memory: O(total articles).
-
-    For streaming callers see :func:`iter_articles`.
-    """
-    allowed = frozenset(allowed_langs) if allowed_langs is not None else None
-    files = _discover_article_files(content_dir)
-    if not files:
-        return []
-
-    workers = max_workers or max(4, os.cpu_count() or 4)
-
-    def parse(path):
-        return parse_article_xml(
-            path,
-            default_lang=default_lang,
-            url_builder=url_builder,
-            allowed_langs=allowed,
-        )
-
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        articles = [a for a in pool.map(parse, files) if a is not None]
-
-    articles.sort(key=lambda a: a.datetime, reverse=True)
-    return articles

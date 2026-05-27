@@ -188,7 +188,7 @@ def copy_assets(ctx: BuildCtx) -> None:
 def _article_url_builder(ctx: BuildCtx):
     """
     Return a ``(lang, slug) -> url`` callable bound to ``ctx``. Used by
-    :func:`load_articles` so each :class:`Article` is constructed with
+    :func:`iter_articles` so each :class:`Article` is constructed with
     its public URL already attached.
     """
     pattern = ctx.url_patterns["article"]

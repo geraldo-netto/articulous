@@ -79,6 +79,7 @@ class BuildCtx:
     # engine map: section name -> TransformEngine
     engines: dict = field(default_factory=dict)
     # site / URL model
+    site_name: str = ""
     base_url: str = ""
     languages: list = field(default_factory=list)
     default_language: str = "en"
@@ -149,6 +150,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
         engines=engines,
+        site_name=config["site"]["site_name"],
         base_url=config["site"]["base_url"],
         languages=list(config["site"]["languages"]),
         default_language=config["site"]["default_language"],
@@ -229,9 +231,10 @@ def _sitemap_url_xml(url: str) -> str:
 # XML attributes / children so XSL templates can render headers,
 # `<link rel="canonical">`, "page N of M", etc. Without these helpers
 # the model fields would be computed and discarded.
-def _index_doc(page) -> str:
+def _index_doc(page, site_name: str) -> str:
     attrs = (
-        f" lang={_xml_attr(page.lang)} "
+        f" site={_xml_attr(site_name)} "
+        f"lang={_xml_attr(page.lang)} "
         f'page="{page.page}" total="{page.total_pages}" '
         f"self={_xml_attr(page.url)}"
     )
@@ -240,9 +243,10 @@ def _index_doc(page) -> str:
     )
 
 
-def _tag_doc(page) -> str:
+def _tag_doc(page, site_name: str) -> str:
     attrs = (
-        f" lang={_xml_attr(page.lang)} "
+        f" site={_xml_attr(site_name)} "
+        f"lang={_xml_attr(page.lang)} "
         f"slug={_xml_attr(page.tag_slug)} "
         f"self={_xml_attr(page.url)}"
     )
@@ -251,15 +255,15 @@ def _tag_doc(page) -> str:
     return _xml_doc("tag", children, attrs)
 
 
-def _rss_doc(feed) -> str:
-    attrs = f" self={_xml_attr(feed.url)}"
+def _rss_doc(feed, site_name: str) -> str:
+    attrs = f" site={_xml_attr(site_name)} self={_xml_attr(feed.url)}"
     return _xml_doc(
         "rss", [_rss_item_xml(a) for a in feed.articles], attrs,
     )
 
 
-def _sitemap_doc(sitemap) -> str:
-    attrs = f" self={_xml_attr(sitemap.url)}"
+def _sitemap_doc(sitemap, site_name: str) -> str:
+    attrs = f" site={_xml_attr(site_name)} self={_xml_attr(sitemap.url)}"
     return _xml_doc(
         "sitemap", [_sitemap_url_xml(u) for u in sitemap.urls], attrs,
     )
@@ -363,7 +367,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     xsl_hash = file_hash(xsl_path)
 
     for page in build_index_models(lang_articles, lang, ctx):
-        xml_bytes = _encode_xml(_index_doc(page))
+        xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
@@ -390,7 +394,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     xsl_hash = file_hash(xsl_path)
 
     for page in build_tags_models(lang_articles, lang, ctx):
-        xml_bytes = _encode_xml(_tag_doc(page))
+        xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
@@ -418,7 +422,7 @@ def build_rss_section(rss_articles, ctx: BuildCtx, cache):
     """
     feed = build_rss_model(rss_articles, ctx)
     xsl_path = ctx.xsl_for("rss")
-    xml_bytes = _encode_xml(_rss_doc(feed))
+    xml_bytes = _encode_xml(_rss_doc(feed, ctx.site_name))
     task = _make_xslt_task(
         xml_input=xml_bytes,
         xsl_path=xsl_path,
@@ -439,7 +443,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache):
     """Build sitemap.xml from a streamed list of URL strings."""
     sitemap = build_sitemap_model(urls, ctx)
     xsl_path = ctx.xsl_for("sitemap")
-    xml_bytes = _encode_xml(_sitemap_doc(sitemap))
+    xml_bytes = _encode_xml(_sitemap_doc(sitemap, ctx.site_name))
     task = _make_xslt_task(
         xml_input=xml_bytes,
         xsl_path=xsl_path,

@@ -225,8 +225,8 @@ def test_index_doc_attrs():
         articles=[_art("a")], output_path=Path("p"),
         url="https://e.test/en/page/2/",
     )
-    doc = _index_doc(p)
-    assert doc.startswith("<index lang=\"en\" page=\"2\" total=\"5\" ")
+    doc = _index_doc(p, "My Site")
+    assert doc.startswith("<index site=\"My Site\" lang=\"en\" page=\"2\" total=\"5\" ")
     assert "self=\"https://e.test/en/page/2/\"" in doc
     assert "<article>" in doc
 
@@ -237,9 +237,10 @@ def test_tag_doc_includes_display_name():
         articles=[_art("a")], output_path=Path("p"),
         url="https://e.test/en/tags/news-updates/",
     )
-    doc = _tag_doc(p)
+    doc = _tag_doc(p, "My Site")
     assert "<display-name>News &amp; Updates</display-name>" in doc
     assert "slug=\"news-updates\"" in doc
+    assert "site=\"My Site\"" in doc
 
 
 def test_rss_doc_self_attr():
@@ -247,8 +248,8 @@ def test_rss_doc_self_attr():
         articles=[_art("a")], output_path=Path("rss.xml"),
         url="https://e.test/rss.xml",
     )
-    doc = _rss_doc(feed)
-    assert doc.startswith("<rss self=\"https://e.test/rss.xml\">")
+    doc = _rss_doc(feed, "My Site")
+    assert doc.startswith("<rss site=\"My Site\" self=\"https://e.test/rss.xml\">")
 
 
 def test_sitemap_doc_self_attr():
@@ -256,9 +257,25 @@ def test_sitemap_doc_self_attr():
         urls=["https://e.test/a/"], output_path=Path("sitemap.xml"),
         url="https://e.test/sitemap.xml",
     )
-    doc = _sitemap_doc(sm)
-    assert doc.startswith("<sitemap self=\"https://e.test/sitemap.xml\">")
+    doc = _sitemap_doc(sm, "My Site")
+    assert doc.startswith(
+        "<sitemap site=\"My Site\" self=\"https://e.test/sitemap.xml\">"
+    )
     assert "<url>https://e.test/a/</url>" in doc
+
+
+def test_site_name_escaped_in_attrs():
+    """Untrusted site_name characters get attribute-escaped + well-formed."""
+    p = IndexPage(
+        lang="en", page=1, total_pages=1,
+        articles=[], output_path=Path("p"),
+        url="https://e.test/en/page/1/",
+    )
+    doc = _index_doc(p, 'Foo & <Bar>')
+    # &/</> escaped → result parses as XML
+    import lxml.etree as etree
+    root = etree.fromstring(doc.encode())
+    assert root.get("site") == "Foo & <Bar>"
 
 
 # --- _make_xslt_task ---

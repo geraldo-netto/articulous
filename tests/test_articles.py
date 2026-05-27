@@ -124,6 +124,7 @@ def test_parse_article_xml_without_url_builder(tmp_path):
     p = tmp_path / "a.xml"
     p.write_text(ARTICLE_XML)
     art = parse_article_xml(p, default_lang="en")
+    assert art is not None
     assert art.url == ""
 
 
@@ -162,6 +163,7 @@ def test_parse_article_xml_falls_back_to_path_stem_when_no_title(tmp_path):
         "<description>d</description></article>"
     )
     art = parse_article_xml(p, default_lang="en")
+    assert art is not None
     assert art.slug == "my-stem"
 
 
@@ -187,6 +189,7 @@ def test_parse_article_xml_lang_whitelist(tmp_path, caplog):
             p, default_lang="en",
             url_builder=_url_builder, allowed_langs=frozenset({"en"}),
         )
+    assert art is not None
     assert art.lang == "en"
 
 

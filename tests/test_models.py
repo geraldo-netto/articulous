@@ -2,6 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -10,6 +11,7 @@ from articulous.models import (
     IndexPage,
     RssFeed,
     SearchIndex,
+    SiteModelCtx,
     Sitemap,
     TagPage,
     build_index_models,
@@ -38,7 +40,10 @@ def _ctx(**overrides):
         },
     )
     base.update(overrides)
-    return SimpleNamespace(**base)
+    # SimpleNamespace structurally satisfies the SiteModelCtx Protocol
+    # but pyright can't see through its dynamic attrs; cast to keep the
+    # call sites type-clean.
+    return cast(SiteModelCtx, SimpleNamespace(**base))
 
 
 def _art(slug, lang="en", tags=(), url=None):
@@ -77,7 +82,7 @@ def test_index_page_frozen():
         articles=[], output_path=Path("x"), url="u",
     )
     with pytest.raises(Exception):
-        p.page = 2
+        p.page = 2  # type: ignore[misc]
 
 
 def test_other_page_frozen():

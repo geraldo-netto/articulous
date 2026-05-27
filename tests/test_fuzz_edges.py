@@ -18,6 +18,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 
 import lxml.etree as etree
 import pytest
@@ -30,6 +31,7 @@ from articulous.articles import (
 )
 from articulous.engines import LxmlEngine, safe_xml_parser
 from articulous.models import (
+    SiteModelCtx,
     build_index_models,
     build_rss_model,
     build_url_from_pattern,
@@ -70,11 +72,11 @@ def _model_ctx(**overrides):
         url_patterns=URL_PATTERNS,
     )
     base.update(overrides)
-    return SimpleNamespace(**base)
+    return cast(SiteModelCtx, SimpleNamespace(**base))
 
 
 def _art(slug="s", **kw):
-    base = dict(
+    base: dict[str, Any] = dict(
         title=slug, slug=slug, lang="en", date="2025-01-01",
         datetime=datetime(2025, 1, 1), description="d", tags=(),
         source_path=Path(f"/c/{slug}.xml"),
@@ -85,7 +87,10 @@ def _art(slug="s", **kw):
 
 
 def _no_filter_cli():
-    return SimpleNamespace(only_langs=None, only_slugs=None, only_sections=None)
+    return cast(
+        Any,
+        SimpleNamespace(only_langs=None, only_slugs=None, only_sections=None),
+    )
 
 
 XSLT_BYTES = (
@@ -121,6 +126,7 @@ def test_empty_description_field(tmp_path):
         '<description></description></article>'
     )
     a = parse_article_xml(p, default_lang="en")
+    assert a is not None
     assert a.description == ""
 
 
@@ -132,6 +138,7 @@ def test_oversize_description(tmp_path):
         f'<description>{long_desc}</description></article>'
     )
     a = parse_article_xml(p, default_lang="en")
+    assert a is not None
     assert len(a.description) == 100_000
 
 
@@ -145,6 +152,7 @@ def test_oversize_title_yields_oversize_slug(tmp_path):
         f'<description>d</description></article>'
     )
     a = parse_article_xml(p, default_lang="en")
+    assert a is not None
     assert len(a.slug) == 400
 
 
@@ -194,7 +202,7 @@ def test_build_rss_model_rss_items_larger_than_input():
 def test_stream_projections_rss_items_zero(tmp_path):
     arts = [_art("a"), _art("b")]
     urls, items, heap, total = _stream_projections(
-        lambda: iter(arts), _no_filter_cli(), _model_ctx(rss_items=0),
+        lambda: iter(arts), _no_filter_cli(), cast(Any, _model_ctx(rss_items=0)),
     )
     assert heap == []
     assert total == 2
@@ -326,6 +334,7 @@ def test_many_tags_per_article(tmp_path):
         f'<description>d</description>{tags_xml}</article>'
     )
     a = parse_article_xml(p, default_lang="en")
+    assert a is not None
     assert len(a.tags) == 500
 
 
@@ -337,6 +346,7 @@ def test_whitespace_only_tag_filtered(tmp_path):
         '<tag>   </tag><tag>real</tag></article>'
     )
     a = parse_article_xml(p, default_lang="en")
+    assert a is not None
     assert a.tags == ("real",)
 
 

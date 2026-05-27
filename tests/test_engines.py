@@ -126,9 +126,9 @@ def test_saxon_engine_rejects_leading_dash_path(tmp_path):
 
     with pytest.raises(ValueError, match=r"begins with '-'"):
         e._run_saxon(
-            FakePath("-evil.xml"),
-            FakePath("/abs/x.xsl"),
-            FakePath("/abs/o.html"),
+            FakePath("-evil.xml"),  # type: ignore[arg-type]
+            FakePath("/abs/x.xsl"),  # type: ignore[arg-type]
+            FakePath("/abs/o.html"),  # type: ignore[arg-type]
         )
 
 
@@ -213,7 +213,7 @@ def test_make_engine_rejects_unknown_name():
 
 def test_make_engine_rejects_none_name():
     with pytest.raises(ValueError, match="Unknown engine"):
-        make_engine(None, None)
+        make_engine(None, None)  # type: ignore[arg-type]
 
 
 def test_configure_saxonc_no_home_returns_none():
@@ -297,4 +297,4 @@ def test_check_dependencies_missing_xsl_file(tmp_path):
 
 def test_transform_engine_cannot_be_instantiated_directly():
     with pytest.raises(TypeError):
-        TransformEngine()
+        TransformEngine()  # type: ignore[abstract]

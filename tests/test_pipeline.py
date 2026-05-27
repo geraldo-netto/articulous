@@ -342,6 +342,7 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
         cache=cache, cache_key="bad",
         engine=LxmlEngine(), ctx=ctx,
     )
+    assert task is not None
     with pytest.raises(Exception):
         task()
     assert "bad" not in cache

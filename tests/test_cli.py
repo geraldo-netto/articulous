@@ -88,7 +88,7 @@ def test_resolve_log_level_invalid_falls_back():
 
 
 def test_resolve_log_level_none_falls_back():
-    assert _resolve_log_level(None) == logging.INFO
+    assert _resolve_log_level(None) == logging.INFO  # type: ignore[arg-type]
 
 
 # --- setup_logging ---

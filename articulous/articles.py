@@ -131,8 +131,8 @@ def parse_article_xml(
     try:
         tree = etree.parse(str(path), parser=safe_xml_parser())
         root = tree.getroot()
-    except (etree.XMLSyntaxError, OSError) as e:
-        logging.error(f"Failed to parse XML: {path} — {e}")
+    except (etree.XMLSyntaxError, OSError):
+        logging.exception(f"Failed to parse XML: {path}")
         return None
 
     fields = _read_article_fields(root)

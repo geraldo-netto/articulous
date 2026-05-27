@@ -105,7 +105,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
     )
 
     root = logging.getLogger()
-    for handler in list(root.handlers):
+    for handler in root.handlers[:]:
         root.removeHandler(handler)
     root.setLevel(level)
 

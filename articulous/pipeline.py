@@ -547,6 +547,61 @@ def _rss_sorted_from_heap(rss_heap) -> list:
     return [art for _, _, art in sorted(rss_heap, reverse=True)]
 
 
+def _collect_cross_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) -> dict:
+    """Phase-1 streaming pass: cross-language projections (rss / sitemap / search)."""
+    sitemap_urls, search_items, rss_heap, total = _stream_projections(
+        stream_factory, cli, ctx,
+    )
+    logging.info(f"Discovered {total} article(s) after filters")
+    plan: dict = {}
+    if want("rss"):
+        plan["rss"] = build_rss_section(
+            _rss_sorted_from_heap(rss_heap), ctx, cache,
+        )
+    if want("sitemap"):
+        plan["sitemap"] = build_sitemap_section(sitemap_urls, ctx, cache)
+    if want("search"):
+        plan["search"] = build_search_section(search_items, ctx, cache)
+    return plan
+
+
+def _sorted_lang_articles(stream_factory, cli, lang: str) -> list:
+    return sorted(
+        (a for a in stream_factory()
+         if a.lang == lang and _passes_cli_filters(a, cli)),
+        key=lambda a: a.datetime, reverse=True,
+    )
+
+
+def _add_per_lang_tasks(plan: dict, lang_articles, lang, ctx, cache, want) -> None:
+    if want("articles"):
+        plan.setdefault("articles", []).extend(
+            build_articles_section(lang_articles, ctx, cache)
+        )
+    if want("index"):
+        plan.setdefault("index", []).extend(
+            build_index_section(lang_articles, lang, ctx, cache)
+        )
+    if want("tags"):
+        plan.setdefault("tags", []).extend(
+            build_tags_section(lang_articles, lang, ctx, cache)
+        )
+
+
+def _collect_per_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) -> dict:
+    """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
+    plan: dict = {}
+    for lang in ctx.languages:
+        if cli.only_langs and lang not in cli.only_langs:
+            continue
+        lang_articles = _sorted_lang_articles(stream_factory, cli, lang)
+        if not lang_articles:
+            continue
+        _add_per_lang_tasks(plan, lang_articles, lang, ctx, cache, want)
+        # lang_articles goes out of scope here → released between languages.
+    return plan
+
+
 def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache) -> dict:
     """
     Stream the article set and dispatch every requested section.
@@ -561,52 +616,15 @@ def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache) -> dict:
     def want(section: str) -> bool:
         return wanted is None or section in wanted
 
-    need_cross = any(want(s) for s in _CROSS_LANG_SECTIONS)
-    need_per_lang = any(want(s) for s in _PER_LANG_SECTIONS)
-
     plan: dict = {}
-
-    # Phase 1: cross-lang projections (one stream pass).
-    if need_cross:
-        sitemap_urls, search_items, rss_heap, total = _stream_projections(
-            stream_factory, cli, ctx,
+    if any(want(s) for s in _CROSS_LANG_SECTIONS):
+        plan.update(
+            _collect_cross_lang_plan(stream_factory, cli, ctx, cache, want)
         )
-        logging.info(f"Discovered {total} article(s) after filters")
-        if want("rss"):
-            plan["rss"] = build_rss_section(
-                _rss_sorted_from_heap(rss_heap), ctx, cache,
-            )
-        if want("sitemap"):
-            plan["sitemap"] = build_sitemap_section(sitemap_urls, ctx, cache)
-        if want("search"):
-            plan["search"] = build_search_section(search_items, ctx, cache)
-
-    # Phase 2: per-lang sections (one stream pass per requested language).
-    if need_per_lang:
-        for lang in ctx.languages:
-            if cli.only_langs and lang not in cli.only_langs:
-                continue
-            lang_articles = sorted(
-                (a for a in stream_factory()
-                 if a.lang == lang and _passes_cli_filters(a, cli)),
-                key=lambda a: a.datetime, reverse=True,
-            )
-            if not lang_articles:
-                continue
-            if want("articles"):
-                plan.setdefault("articles", []).extend(
-                    build_articles_section(lang_articles, ctx, cache)
-                )
-            if want("index"):
-                plan.setdefault("index", []).extend(
-                    build_index_section(lang_articles, lang, ctx, cache)
-                )
-            if want("tags"):
-                plan.setdefault("tags", []).extend(
-                    build_tags_section(lang_articles, lang, ctx, cache)
-                )
-            # lang_articles goes out of scope here → released between languages.
-
+    if any(want(s) for s in _PER_LANG_SECTIONS):
+        plan.update(
+            _collect_per_lang_plan(stream_factory, cli, ctx, cache, want)
+        )
     return plan
 
 

@@ -91,8 +91,8 @@ def save_cache(cache_path: Path, cache: dict) -> None:
     try:
         cache_path.write_text(json.dumps(cache, indent=2))
         logging.debug("Cache saved successfully")
-    except (OSError, TypeError) as e:
-        logging.error(f"Failed to save cache: {e}")
+    except (OSError, TypeError):
+        logging.exception("Failed to save cache")
 
 
 def should_rebuild(key: str, cache: dict, new_hashes: tuple, force: bool) -> bool:
@@ -126,6 +126,32 @@ def timed(label: str, fn: Callable) -> Callable:
     return wrapped
 
 
+def _cancel_pending(futures) -> None:
+    for other in futures:
+        if not other.done():
+            other.cancel()
+
+
+def _collect_one(fut, results: list, errors: list, futures) -> None:
+    try:
+        results.append(fut.result())
+    except CancelledError:
+        # Cancellations are how we react to a failure; the real
+        # error is already captured. Don't double-count.
+        return
+    except Exception as e:
+        logging.exception("Task failed")
+        errors.append(e)
+        _cancel_pending(futures)
+
+
+def _raise_if_errors(errors: list) -> None:
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        raise ExceptionGroup("parallel task failures", errors)
+
+
 def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto"):
     """
     Run a list of callables in parallel.
@@ -141,29 +167,15 @@ def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto"):
         max(4, os.cpu_count() or 4) if max_workers == "auto" else int(max_workers)
     )
 
-    results = []
-    errors = []
+    results: list = []
+    errors: list = []
     pool = ThreadPoolExecutor(max_workers=workers)
     try:
         futures = {pool.submit(fn): fn for fn in tasks}
         for fut in as_completed(futures):
-            try:
-                results.append(fut.result())
-            except CancelledError:
-                # Cancellations are how we react to a failure; the real
-                # error is already captured. Don't double-count.
-                continue
-            except Exception as e:
-                logging.error(f"Task failed: {e}")
-                errors.append(e)
-                for other in futures:
-                    if not other.done():
-                        other.cancel()
+            _collect_one(fut, results, errors, futures)
     finally:
         pool.shutdown(wait=True)
 
-    if len(errors) == 1:
-        raise errors[0]
-    if errors:
-        raise ExceptionGroup("parallel task failures", errors)
+    _raise_if_errors(errors)
     return results

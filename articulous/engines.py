@@ -36,8 +36,20 @@ VALID_ENGINES = {"saxonc", "lxml"}
 
 
 def safe_xml_parser() -> etree.XMLParser:
-    """XXE-safe parser used by every XML read in the project."""
-    return etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False)
+    """
+    XXE-safe parser used by every XML read in the project.
+
+    Disables external entity resolution, network access, and DTD loading
+    so untrusted article XML cannot exfiltrate files or hit internal
+    endpoints (SonarQube python:S2755).
+    """
+    return etree.XMLParser(
+        resolve_entities=False,
+        no_network=True,
+        load_dtd=False,
+        dtd_validation=False,
+        huge_tree=False,
+    )
 
 
 # ------------------------------------------------------------
@@ -99,16 +111,15 @@ class LxmlEngine(TransformEngine):
     def _do_transform(self, xml_input, xsl_path, output_path):
         logging.debug(f"Running lxml transform -> {output_path}")
         try:
+            parser = safe_xml_parser()
             if isinstance(xml_input, bytes):
-                dom = etree.fromstring(xml_input, parser=safe_xml_parser())
+                dom = etree.fromstring(xml_input, parser=parser)
             else:
-                dom = etree.parse(str(xml_input), parser=safe_xml_parser())
-            xslt = etree.XSLT(
-                etree.parse(str(xsl_path), parser=safe_xml_parser())
-            )
+                dom = etree.parse(str(xml_input), parser=parser)
+            xslt = etree.XSLT(etree.parse(str(xsl_path), parser=safe_xml_parser()))
             result = xslt(dom)
-        except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError) as e:
-            logging.error(f"lxml transform failed: {e}")
+        except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
+            logging.exception("lxml transform failed")
             raise
         output_path.write_text(str(result), encoding="utf-8")
 
@@ -165,8 +176,8 @@ class SaxonCEngine(TransformEngine):
         logging.debug(f"Running SaxonC: {' '.join(cmd)}")
         try:
             subprocess.run(cmd, check=True)
-        except subprocess.CalledProcessError as e:
-            logging.error(f"SaxonC transform failed: {e}")
+        except subprocess.CalledProcessError:
+            logging.exception("SaxonC transform failed")
             raise
 
 

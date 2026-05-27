@@ -17,7 +17,6 @@ from articulous.pipeline import (
     _cache_path_for,
     _collect_tasks,
     _encode_xml,
-    _filter_articles,
     _index_doc,
     _make_xslt_task,
     _passes_cli_filters,
@@ -435,33 +434,13 @@ def test_build_search_section_runs_and_caches(tmp_path):
     assert build_search_section(items, ctx, cache) == []
 
 
-# --- _filter_articles ---
+# --- _passes_cli_filters ---
 
 class _FakeCLI:
     def __init__(self, langs=None, slugs=None, sections=None):
         self.only_langs = langs
         self.only_slugs = slugs
         self.only_sections = sections
-
-
-def test_filter_articles_no_filters():
-    arts = [_art("a"), _art("b")]
-    assert _filter_articles(arts, _FakeCLI()) == arts
-
-
-def test_filter_articles_by_lang():
-    arts = [_art("a", lang="en"), _art("b", lang="fr")]
-    out = _filter_articles(arts, _FakeCLI(langs=["en"]))
-    assert [a.slug for a in out] == ["a"]
-
-
-def test_filter_articles_by_slug():
-    arts = [_art("a"), _art("b")]
-    out = _filter_articles(arts, _FakeCLI(slugs=["b"]))
-    assert [a.slug for a in out] == ["b"]
-
-
-# --- _passes_cli_filters ---
 
 def test_passes_cli_filters_no_constraints():
     assert _passes_cli_filters(_art("a"), _FakeCLI()) is True

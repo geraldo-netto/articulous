@@ -491,11 +491,6 @@ def _passes_cli_filters(art, cli) -> bool:
     return True
 
 
-def _filter_articles(articles, cli):
-    """List-form filter retained for callers/tests that want it."""
-    return [a for a in articles if _passes_cli_filters(a, cli)]
-
-
 def _stream_projections(stream_factory, cli, ctx: BuildCtx):
     """
     Phase-1 streaming pass.

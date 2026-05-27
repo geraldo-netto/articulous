@@ -18,13 +18,17 @@ from articulous.pipeline import (
     _collect_tasks,
     _encode_xml,
     _filter_articles,
+    _index_doc,
     _make_xslt_task,
     _passes_cli_filters,
     _resolve_parallelism,
+    _rss_doc,
     _rss_item_xml,
     _rss_sorted_from_heap,
+    _sitemap_doc,
     _sitemap_url_xml,
     _stream_projections,
+    _tag_doc,
     _xml_doc,
     build_articles_section,
     build_ctx_from_config,
@@ -36,6 +40,7 @@ from articulous.pipeline import (
     copy_assets,
     run_build,
 )
+from articulous.models import IndexPage, RssFeed, Sitemap, TagPage
 
 
 MINIMAL_XSLT = (
@@ -211,6 +216,50 @@ def test_sitemap_url_xml_escapes():
 
 def test_encode_xml():
     assert _encode_xml("<x/>") == b"<x/>"
+
+
+# --- Per-section doc synthesisers ---
+
+def test_index_doc_attrs():
+    p = IndexPage(
+        lang="en", page=2, total_pages=5,
+        articles=[_art("a")], output_path=Path("p"),
+        url="https://e.test/en/page/2/",
+    )
+    doc = _index_doc(p)
+    assert doc.startswith("<index lang=\"en\" page=\"2\" total=\"5\" ")
+    assert "self=\"https://e.test/en/page/2/\"" in doc
+    assert "<article>" in doc
+
+
+def test_tag_doc_includes_display_name():
+    p = TagPage(
+        lang="en", tag="News & Updates", tag_slug="news-updates",
+        articles=[_art("a")], output_path=Path("p"),
+        url="https://e.test/en/tags/news-updates/",
+    )
+    doc = _tag_doc(p)
+    assert "<display-name>News &amp; Updates</display-name>" in doc
+    assert "slug=\"news-updates\"" in doc
+
+
+def test_rss_doc_self_attr():
+    feed = RssFeed(
+        articles=[_art("a")], output_path=Path("rss.xml"),
+        url="https://e.test/rss.xml",
+    )
+    doc = _rss_doc(feed)
+    assert doc.startswith("<rss self=\"https://e.test/rss.xml\">")
+
+
+def test_sitemap_doc_self_attr():
+    sm = Sitemap(
+        urls=["https://e.test/a/"], output_path=Path("sitemap.xml"),
+        url="https://e.test/sitemap.xml",
+    )
+    doc = _sitemap_doc(sm)
+    assert doc.startswith("<sitemap self=\"https://e.test/sitemap.xml\">")
+    assert "<url>https://e.test/a/</url>" in doc
 
 
 # --- _make_xslt_task ---

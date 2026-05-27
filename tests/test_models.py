@@ -81,16 +81,16 @@ def test_index_page_frozen():
 
 
 def test_other_page_frozen():
-    for cls, kwargs in [
+    for cls, kwargs, attr in [
         (TagPage, dict(lang="en", tag="x", tag_slug="x", articles=[],
-                       output_path=Path("p"), url="u")),
-        (RssFeed, dict(articles=[], output_path=Path("p"), url="u")),
-        (Sitemap, dict(urls=[], output_path=Path("p"), url="u")),
-        (SearchIndex, dict(items=[], output_path=Path("p"), url="u")),
+                       output_path=Path("p"), url="u"), "url"),
+        (RssFeed, dict(articles=[], output_path=Path("p"), url="u"), "url"),
+        (Sitemap, dict(urls=[], output_path=Path("p"), url="u"), "url"),
+        (SearchIndex, dict(items=[], output_path=Path("p")), "items"),
     ]:
         obj = cls(**kwargs)
         with pytest.raises(Exception):
-            obj.url = "y"
+            setattr(obj, attr, "y")
 
 
 # --- build_index_models (per-lang) ---

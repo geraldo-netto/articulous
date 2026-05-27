@@ -89,7 +89,6 @@ class Sitemap:
 class SearchIndex:
     items: list
     output_path: Path
-    url: str
 
 
 # ------------------------------------------------------------
@@ -216,10 +215,12 @@ def build_search_model(items, ctx: SiteModelCtx) -> SearchIndex:
     """
     Build search index model from a list of pre-projected dicts
     (``{title, description, url, tags}``).
+
+    Output is JSON; no canonical URL field is attached since there is
+    no shape-preserving place to put it.
     """
     pattern = ctx.url_patterns["search"]
     return SearchIndex(
         items=list(items),
         output_path=Path(pattern.lstrip("/")),
-        url=build_url_from_pattern(ctx.base_url, pattern),
     )

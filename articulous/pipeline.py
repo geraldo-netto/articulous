@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
-from xml.sax.saxutils import escape as _xml_escape
+from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import iter_articles
 from .engines import (
@@ -224,6 +224,41 @@ def _sitemap_url_xml(url: str) -> str:
     return f"<url>{_xml_escape(url)}</url>"
 
 
+# Per-section root-element synthesisers. Each one folds the page-model
+# metadata (canonical URL, pagination counters, display name) into the
+# XML attributes / children so XSL templates can render headers,
+# `<link rel="canonical">`, "page N of M", etc. Without these helpers
+# the model fields would be computed and discarded.
+def _index_doc(page) -> str:
+    body = "".join(_article_xml(a) for a in page.articles)
+    return (
+        f"<index lang={_xml_attr(page.lang)} "
+        f'page="{page.page}" total="{page.total_pages}" '
+        f"self={_xml_attr(page.url)}>{body}</index>"
+    )
+
+
+def _tag_doc(page) -> str:
+    body = "".join(_article_xml(a) for a in page.articles)
+    return (
+        f"<tag lang={_xml_attr(page.lang)} "
+        f"slug={_xml_attr(page.tag_slug)} "
+        f"self={_xml_attr(page.url)}>"
+        f"<display-name>{_xml_escape(page.tag)}</display-name>"
+        f"{body}</tag>"
+    )
+
+
+def _rss_doc(feed) -> str:
+    body = "".join(_rss_item_xml(a) for a in feed.articles)
+    return f"<rss self={_xml_attr(feed.url)}>{body}</rss>"
+
+
+def _sitemap_doc(sitemap) -> str:
+    body = "".join(_sitemap_url_xml(u) for u in sitemap.urls)
+    return f"<sitemap self={_xml_attr(sitemap.url)}>{body}</sitemap>"
+
+
 # ================================================================
 # Shared XSLT task plumbing
 # ================================================================
@@ -322,9 +357,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     xsl_hash = file_hash(xsl_path)
 
     for page in build_index_models(lang_articles, lang, ctx):
-        xml_bytes = _encode_xml(_xml_doc(
-            "index", [_article_xml(a) for a in page.articles],
-        ))
+        xml_bytes = _encode_xml(_index_doc(page))
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
@@ -351,9 +384,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     xsl_hash = file_hash(xsl_path)
 
     for page in build_tags_models(lang_articles, lang, ctx):
-        xml_bytes = _encode_xml(_xml_doc(
-            "tag", [_article_xml(a) for a in page.articles],
-        ))
+        xml_bytes = _encode_xml(_tag_doc(page))
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
@@ -381,9 +412,7 @@ def build_rss_section(rss_articles, ctx: BuildCtx, cache):
     """
     feed = build_rss_model(rss_articles, ctx)
     xsl_path = ctx.xsl_for("rss")
-    xml_bytes = _encode_xml(
-        _xml_doc("rss", [_rss_item_xml(a) for a in feed.articles])
-    )
+    xml_bytes = _encode_xml(_rss_doc(feed))
     task = _make_xslt_task(
         xml_input=xml_bytes,
         xsl_path=xsl_path,
@@ -404,9 +433,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache):
     """Build sitemap.xml from a streamed list of URL strings."""
     sitemap = build_sitemap_model(urls, ctx)
     xsl_path = ctx.xsl_for("sitemap")
-    xml_bytes = _encode_xml(
-        _xml_doc("sitemap", [_sitemap_url_xml(u) for u in sitemap.urls])
-    )
+    xml_bytes = _encode_xml(_sitemap_doc(sitemap))
     task = _make_xslt_task(
         xml_input=xml_bytes,
         xsl_path=xsl_path,

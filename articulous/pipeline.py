@@ -202,8 +202,8 @@ def _article_url_builder(ctx: BuildCtx):
 # XML synthesis helpers
 # ================================================================
 
-def _xml_doc(root_tag: str, children: list) -> str:
-    return f"<{root_tag}>{''.join(children)}</{root_tag}>"
+def _xml_doc(root_tag: str, children: list, attrs: str = "") -> str:
+    return f"<{root_tag}{attrs}>{''.join(children)}</{root_tag}>"
 
 
 def _article_xml(a) -> str:
@@ -230,33 +230,39 @@ def _sitemap_url_xml(url: str) -> str:
 # `<link rel="canonical">`, "page N of M", etc. Without these helpers
 # the model fields would be computed and discarded.
 def _index_doc(page) -> str:
-    body = "".join(_article_xml(a) for a in page.articles)
-    return (
-        f"<index lang={_xml_attr(page.lang)} "
+    attrs = (
+        f" lang={_xml_attr(page.lang)} "
         f'page="{page.page}" total="{page.total_pages}" '
-        f"self={_xml_attr(page.url)}>{body}</index>"
+        f"self={_xml_attr(page.url)}"
+    )
+    return _xml_doc(
+        "index", [_article_xml(a) for a in page.articles], attrs,
     )
 
 
 def _tag_doc(page) -> str:
-    body = "".join(_article_xml(a) for a in page.articles)
-    return (
-        f"<tag lang={_xml_attr(page.lang)} "
+    attrs = (
+        f" lang={_xml_attr(page.lang)} "
         f"slug={_xml_attr(page.tag_slug)} "
-        f"self={_xml_attr(page.url)}>"
-        f"<display-name>{_xml_escape(page.tag)}</display-name>"
-        f"{body}</tag>"
+        f"self={_xml_attr(page.url)}"
     )
+    children = [f"<display-name>{_xml_escape(page.tag)}</display-name>"]
+    children.extend(_article_xml(a) for a in page.articles)
+    return _xml_doc("tag", children, attrs)
 
 
 def _rss_doc(feed) -> str:
-    body = "".join(_rss_item_xml(a) for a in feed.articles)
-    return f"<rss self={_xml_attr(feed.url)}>{body}</rss>"
+    attrs = f" self={_xml_attr(feed.url)}"
+    return _xml_doc(
+        "rss", [_rss_item_xml(a) for a in feed.articles], attrs,
+    )
 
 
 def _sitemap_doc(sitemap) -> str:
-    body = "".join(_sitemap_url_xml(u) for u in sitemap.urls)
-    return f"<sitemap self={_xml_attr(sitemap.url)}>{body}</sitemap>"
+    attrs = f" self={_xml_attr(sitemap.url)}"
+    return _xml_doc(
+        "sitemap", [_sitemap_url_xml(u) for u in sitemap.urls], attrs,
+    )
 
 
 # ================================================================

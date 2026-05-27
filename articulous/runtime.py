@@ -152,7 +152,7 @@ def _raise_if_errors(errors: list) -> None:
         raise ExceptionGroup("parallel task failures", errors)
 
 
-def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto"):
+def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto") -> list:
     """
     Run a list of callables in parallel.
 

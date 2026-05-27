@@ -65,7 +65,7 @@ _(all open items resolved; tracked via git history)_
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DOC-02 | open | S | `TransformEngine.run` (engines.py:68) has no method-level docstring | Template-method dispatch; class docstring covers intent but the method override contract is not stated. Add one line: behaviour, dry-run, return. |
+| DOC-02 | open | S | `TransformEngine.run` (engines.py:80) has no method-level docstring | Template-method dispatch; class docstring covers intent but the method override contract is not stated. Add one line: behaviour, dry-run, return. |
 
 ---
 
@@ -73,7 +73,7 @@ _(all open items resolved; tracked via git history)_
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-01 | parked | S | `_stream_projections` (pipeline.py:504) emits no per-section progress; only final tally logs at pipeline.py:571 | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
+| OBS-01 | parked | S | `_stream_projections` (pipeline.py:504) emits no per-section progress; only final tally logs at pipeline.py:555 | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
 | OBS-02 | parked | S | `timed()` (runtime.py:118) wraps tasks at DEBUG only; production builds see no per-task signal | Same trade-off as OBS-01; bumping to INFO would flood logs for normal builds. |
 | DOC-01 | parked | S | `SiteModelCtx` `@property` members (models.py:33-46) carry no docstrings | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
 
@@ -90,3 +90,5 @@ _(all open items resolved; tracked via git history)_
 | REL-02 | `_stream_projections` skips filter failures; final count reflects post-filter total | Correct by design; the logged "Discovered N" describes what was built. |
 | UNUSED-01 | `deep_merge` (config.py:53) used only by `load_or_create_config` | Internal helper with direct unit tests; keep. |
 | UNUSED-02 | `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) called only from `_collect_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
+| DOC-03 | private helpers `_passes_cli_filters` / `_sorted_lang_articles` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
+| DUP-02 | `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |

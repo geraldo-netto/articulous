@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .config import apply_cli_overrides, load_or_create_config
 from .engines import check_dependencies
-from .pipeline import run_build
+from .pipeline import SECTION_NAMES, run_build
 
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
@@ -61,15 +61,33 @@ class CliOptions:
 
     def __init__(self, args):
         self.config_path = Path(args.config)
-        if args.only:
-            self.only_sections = [s.strip() for s in args.only.split(",") if s.strip()]
-        else:
-            self.only_sections = None
+        self.only_sections = _parse_only_sections(args.only)
         self.only_langs = args.lang if args.lang else None
         self.only_slugs = args.slug if args.slug else None
         self.dry_run = args.dry_run
         self.force_full_build = args.force
         self.verbose = args.verbose
+
+
+def _parse_only_sections(raw):
+    """
+    Split a comma-separated ``--only`` value and validate every name
+    against the known section set. Unknown names previously fell through
+    silently (the dispatcher just skipped them), turning a typo into a
+    no-op build with no diagnostic.
+    """
+    if not raw:
+        return None
+    sections = [s.strip() for s in raw.split(",") if s.strip()]
+    if not sections:
+        return None
+    invalid = [s for s in sections if s not in SECTION_NAMES]
+    if invalid:
+        raise ValueError(
+            f"Unknown section(s) in --only: {invalid}. "
+            f"Valid sections: {sorted(SECTION_NAMES)}"
+        )
+    return sections
 
 
 def _resolve_log_level(level_name: str) -> int:

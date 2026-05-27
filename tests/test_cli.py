@@ -42,6 +42,16 @@ def test_cli_options_only_empty_string_means_none():
     assert cli.only_sections is None
 
 
+def test_cli_options_only_whitespace_only_means_none():
+    cli = CliOptions(parse_cli_args(["--only", " , , "]))
+    assert cli.only_sections is None
+
+
+def test_cli_options_only_rejects_unknown_section():
+    with pytest.raises(ValueError, match="Unknown section"):
+        CliOptions(parse_cli_args(["--only", "articles,rrs"]))
+
+
 def test_cli_options_appendable_flags():
     cli = CliOptions(parse_cli_args(
         ["--lang", "en", "--lang", "fr", "--slug", "a", "--slug", "b"],

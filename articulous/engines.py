@@ -12,6 +12,7 @@ drift apart on which XSL files matter.
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
@@ -84,6 +85,7 @@ class TransformEngine(ABC):
         output_path: Path,
         dry_run: bool = False,
     ) -> None:
+        """Run the transform unless dry-run is set; returns ``None``."""
         xsl_path = Path(xsl_path)
         output_path = Path(output_path)
         normalised: XmlInput = (
@@ -196,8 +198,8 @@ def configure_saxonc(config) -> Optional[Path]:
         return None
 
     transform_bin = Path(saxon_home) / "bin" / "Transform"
-    if not transform_bin.exists():
-        logging.warning(f"SaxonC Transform binary not found at: {transform_bin}")
+    if not transform_bin.is_file() or not os.access(transform_bin, os.X_OK):
+        logging.warning(f"SaxonC Transform binary not executable at: {transform_bin}")
         return None
 
     logging.info(f"SaxonC detected at: {transform_bin}")

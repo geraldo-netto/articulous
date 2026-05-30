@@ -135,6 +135,12 @@ def parse_article_xml(
         logging.exception(f"Failed to parse XML: {path}")
         return None
 
+    if root.tag != "article":
+        logging.warning(
+            f"Article {path} has root tag {root.tag!r}, expected 'article' — skipping"
+        )
+        return None
+
     fields = _read_article_fields(root)
     lang = _validated_lang(fields["lang"], default_lang, allowed_langs, path)
 

@@ -5,67 +5,81 @@ Project review findings, grouped by category per `AGENTS.md`.
 Format: `id | status | effort | description | notes`.
 Statuses: `open`, `in-progress`, `blocked`, `parked`.
 
-Line numbers refer to the `articulous/` package.
+Line numbers refer to repository paths.
 
 ---
 
 ## security
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
+| SEC-02 | open | S | `logging.file` is opened without the project-root containment used for configured content/output paths (`cli.py:116-119`) | Reject absolute/traversing log paths or reuse the same resolver used by `apply_cli_overrides`. |
 
 ## performance
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## scalability
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
+| SCAL-02 | open | M | Per-language planning reparses the entire article tree once per configured language after the cross-language pass (`pipeline.py:725-736`, `articles.py:183-212`) | Current shape keeps memory bounded, but parse cost grows with `languages * article_count`; consider per-language spooling or a bounded partitioning pass. |
 
 ## concurrency
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## code complexity
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## code duplication
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## architecture/modularity/SOLID
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## decoupling
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## business/design patterns/DDD
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## reliability/correctness
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## observability
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## wiring gaps
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## unused functions/methods
 
-_(all open items resolved; tracked via git history)_
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
 
 ## documentation
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DOC-02 | open | S | `TransformEngine.run` (engines.py:80) has no method-level docstring | Template-method dispatch; class docstring covers intent but the method override contract is not stated. Add one line: behaviour, dry-run, return. |
 
 ---
 

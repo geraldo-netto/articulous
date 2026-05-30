@@ -144,6 +144,18 @@ def test_parse_article_xml_missing_file_returns_none(tmp_path, caplog):
     assert art is None
 
 
+def test_parse_article_xml_wrong_root_skipped(tmp_path, caplog):
+    p = tmp_path / "not-article.xml"
+    p.write_text(
+        "<page><title>T</title><date>2025-01-01</date>"
+        "<description>d</description></page>"
+    )
+    with caplog.at_level("WARNING"):
+        art = parse_article_xml(p, default_lang="en")
+    assert art is None
+    assert any("expected 'article'" in r.message for r in caplog.records)
+
+
 def test_parse_article_xml_invalid_date_skipped(tmp_path, caplog):
     p = tmp_path / "a.xml"
     p.write_text(

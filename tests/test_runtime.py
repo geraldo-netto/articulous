@@ -142,6 +142,28 @@ def test_should_rebuild_matching_hashes():
     )
 
 
+def test_should_rebuild_when_output_missing(tmp_path):
+    assert should_rebuild(
+        "k",
+        {"k": ["xml", "xsl"]},
+        ("xml", "xsl"),
+        force=False,
+        output_path=tmp_path / "missing.html",
+    )
+
+
+def test_should_not_rebuild_when_output_exists(tmp_path):
+    output = tmp_path / "out.html"
+    output.write_text("cached")
+    assert not should_rebuild(
+        "k",
+        {"k": ["xml", "xsl"]},
+        ("xml", "xsl"),
+        force=False,
+        output_path=output,
+    )
+
+
 def test_should_rebuild_changed_hashes():
     assert should_rebuild(
         "k", {"k": ["xml", "xsl"]}, ("xml", "new"), force=False,

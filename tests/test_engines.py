@@ -140,7 +140,6 @@ def test_saxon_engine_invokes_subprocess(tmp_path):
     xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with mock.patch("articulous.engines.subprocess.run") as run_mock:
-        run_mock.return_value = mock.Mock(returncode=0)
         e._do_transform(xml, xsl, out)
     assert run_mock.called
     cmd = run_mock.call_args[0][0]
@@ -224,7 +223,19 @@ def test_configure_saxonc_missing_binary_warns(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         result = configure_saxonc({"saxonc": {"home": str(tmp_path)}})
     assert result is None
-    assert any("Transform binary not found" in r.message for r in caplog.records)
+    assert any("Transform binary not executable" in r.message for r in caplog.records)
+
+
+def test_configure_saxonc_non_executable_warns(tmp_path, caplog):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    transform = bin_dir / "Transform"
+    transform.write_text("#!/bin/sh\n")
+    transform.chmod(0o644)
+    with caplog.at_level(logging.WARNING):
+        result = configure_saxonc({"saxonc": {"home": str(tmp_path)}})
+    assert result is None
+    assert any("not executable" in r.message for r in caplog.records)
 
 
 def test_configure_saxonc_finds_binary(tmp_path, caplog):

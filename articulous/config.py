@@ -64,28 +64,35 @@ def deep_merge(base: dict, override: dict) -> dict:
     return base
 
 
+def _default_config_copy() -> dict:
+    return json.loads(json.dumps(DEFAULT_CONFIG))
+
+
 def load_or_create_config(path: Path) -> dict:
     """
     Load config from JSON file; fall back to :data:`DEFAULT_CONFIG`
     if missing, malformed, or shaped wrong.
     """
     if not path.exists():
-        return json.loads(json.dumps(DEFAULT_CONFIG))
+        cfg = _default_config_copy()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        return cfg
 
     try:
         data = json.loads(path.read_text())
     except json.JSONDecodeError as e:
         logging.warning(f"Invalid config JSON at {path}: {e}. Using defaults.")
-        return json.loads(json.dumps(DEFAULT_CONFIG))
+        return _default_config_copy()
 
     if not isinstance(data, dict):
         logging.warning(
             f"Config at {path} is not a JSON object "
             f"(got {type(data).__name__}). Using defaults."
         )
-        return json.loads(json.dumps(DEFAULT_CONFIG))
+        return _default_config_copy()
 
-    cfg = json.loads(json.dumps(DEFAULT_CONFIG))
+    cfg = _default_config_copy()
     return deep_merge(cfg, data)
 
 

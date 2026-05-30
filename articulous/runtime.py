@@ -95,9 +95,17 @@ def save_cache(cache_path: Path, cache: dict) -> None:
         logging.exception("Failed to save cache")
 
 
-def should_rebuild(key: str, cache: dict, new_hashes: tuple, force: bool) -> bool:
+def should_rebuild(
+    key: str,
+    cache: dict,
+    new_hashes: tuple,
+    force: bool,
+    output_path: Path | None = None,
+) -> bool:
     """Decide whether a page should be rebuilt."""
     if force:
+        return True
+    if output_path is not None and not output_path.exists():
         return True
     old = cache.get(key)
     if not old:

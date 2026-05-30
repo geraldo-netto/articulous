@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Unused (search section is JSON, not XSLT) but required by check_dependencies. -->
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:template match="/"/>
+  <xsl:output method="text" encoding="UTF-8"/>
+  <xsl:template match="/search"><xsl:value-of select="json"/></xsl:template>
 </xsl:stylesheet>

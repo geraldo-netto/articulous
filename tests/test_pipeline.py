@@ -1,9 +1,11 @@
 """Unit tests for articulous.pipeline."""
 import copy
 import dataclasses
+import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -20,10 +22,13 @@ from articulous.pipeline import (
     _index_doc,
     _make_xslt_task,
     _passes_cli_filters,
+    _prune_stale_outputs,
     _resolve_parallelism,
     _rss_doc,
     _rss_item_xml,
     _rss_sorted_from_heap,
+    _search_doc,
+    _search_item_xml,
     _sitemap_doc,
     _sitemap_url_xml,
     _stream_projections,
@@ -50,6 +55,15 @@ MINIMAL_XSLT = (
     b"</xsl:stylesheet>"
 )
 
+SEARCH_XSLT = (
+    b'<?xml version="1.0"?>'
+    b'<xsl:stylesheet version="1.0" '
+    b'xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+    b'<xsl:output method="text"/>'
+    b'<xsl:template match="/search"><xsl:value-of select="json"/></xsl:template>'
+    b"</xsl:stylesheet>"
+)
+
 
 def _art(slug, lang="en", url=None, tags=()):
     return Article(
@@ -64,7 +78,8 @@ def _ctx_for(tmp_path, engines=None):
     xsl_pages = tmp_path / "xsl" / "pages"
     xsl_pages.mkdir(parents=True, exist_ok=True)
     for name in ("article", "index", "tags", "rss", "sitemap", "search"):
-        (xsl_pages / f"{name}.xsl").write_bytes(MINIMAL_XSLT)
+        content = SEARCH_XSLT if name == "search" else MINIMAL_XSLT
+        (xsl_pages / f"{name}.xsl").write_bytes(content)
     (tmp_path / "content").mkdir(exist_ok=True)
     (tmp_path / "output").mkdir(exist_ok=True)
     (tmp_path / "assets").mkdir(exist_ok=True)
@@ -109,6 +124,14 @@ def test_build_ctx_from_config_accepts_rss_items_zero():
     cfg["site"]["pagination"]["rss_items"] = 0
     ctx = build_ctx_from_config(cfg, dry_run=False)
     assert ctx.rss_items == 0
+
+
+@pytest.mark.parametrize("bad", [0, -1, "many", True, 1.5])
+def test_build_ctx_from_config_rejects_bad_parallelism(bad):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["build"]["parallelism"] = bad
+    with pytest.raises(ValueError, match="parallelism"):
+        build_ctx_from_config(cfg, dry_run=False)
 
 
 def test_buildctx_xsl_for_and_engine_for(tmp_path):
@@ -182,6 +205,42 @@ def test_copy_assets_copies_and_replaces(tmp_path):
     assert (tmp_path / "output" / "assets" / "x.txt").read_text() == "v2"
 
 
+def test_copy_assets_skips_when_hash_unchanged(tmp_path, caplog):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    dest = tmp_path / "output" / "assets" / "x.txt"
+    (tmp_path / "assets" / "empty").mkdir()
+    src.write_text("v1")
+    copy_assets(ctx, cache)
+    dest.write_text("kept")
+    with caplog.at_level(logging.DEBUG):
+        copy_assets(ctx, cache)
+    assert dest.read_text() == "kept"
+    assert any("Skipping unchanged assets" in r.message for r in caplog.records)
+
+
+def test_copy_assets_recopies_when_hash_changes(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    dest = tmp_path / "output" / "assets" / "x.txt"
+    src.write_text("v1")
+    copy_assets(ctx, cache)
+    src.write_text("v2")
+    copy_assets(ctx, cache)
+    assert dest.read_text() == "v2"
+
+
+def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    assets = tmp_path / "output" / "assets"
+    assets.mkdir(parents=True, exist_ok=True)
+    ctx = dataclasses.replace(ctx, assets_dir=assets)
+    with pytest.raises(ValueError, match="overlap"):
+        copy_assets(ctx, {})
+
+
 # --- URL builder + xml helpers ---
 
 def test_article_url_builder(tmp_path):
@@ -211,6 +270,19 @@ def test_rss_item_xml_escapes():
 
 def test_sitemap_url_xml_escapes():
     assert _sitemap_url_xml("a<b") == "<url>a&lt;b</url>"
+
+
+def test_search_item_xml_escapes():
+    item = {
+        "title": "A&B",
+        "description": "<d>",
+        "url": "https://e.test/?a=1&b=2",
+        "tags": ["x<y"],
+    }
+    out = _search_item_xml(item)
+    assert "A&amp;B" in out
+    assert "&lt;d&gt;" in out
+    assert "x&lt;y" in out
 
 
 def test_encode_xml():
@@ -264,6 +336,16 @@ def test_sitemap_doc_self_attr():
     assert "<url>https://e.test/a/</url>" in doc
 
 
+def test_search_doc_includes_json_and_items():
+    index = SimpleNamespace(
+        items=[{"title": "A", "description": "d", "url": "u", "tags": ["t"]}],
+    )
+    doc = _search_doc(index, "My Site")
+    assert doc.startswith("<search site=\"My Site\">")
+    assert '"title": "A"' in doc
+    assert "<item><title>A</title>" in doc
+
+
 def test_site_name_escaped_in_attrs():
     """Untrusted site_name characters get attribute-escaped + well-formed."""
     p = IndexPage(
@@ -287,7 +369,7 @@ def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     task = _make_xslt_task(
         xml_input=b"<root/>",
         xsl_path=xsl, xsl_hash="abc",
-        output_path=tmp_path / "out.html",
+        output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
     )
@@ -306,7 +388,7 @@ def test_make_xslt_task_path_hashes_file(tmp_path):
     cache = {}
     task = _make_xslt_task(
         xml_input=xml, xsl_path=xsl, xsl_hash="xsl_h",
-        output_path=tmp_path / "out.html",
+        output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
     )
@@ -321,13 +403,30 @@ def test_make_xslt_task_cached_returns_none(tmp_path):
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
     cache = {"k": [pre_xml_hash, "xsl_h"]}
+    output = tmp_path / "output" / "out.html"
+    output.write_text("cached")
     task = _make_xslt_task(
         xml_input=b"<root/>", xsl_path=xsl, xsl_hash="xsl_h",
-        output_path=tmp_path / "out.html",
+        output_path=output,
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
     )
     assert task is None
+
+
+def test_make_xslt_task_rebuilds_when_output_missing(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
+    import hashlib
+    pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
+    cache = {"k": [pre_xml_hash, "xsl_h"]}
+    task = _make_xslt_task(
+        xml_input=b"<root/>", xsl_path=xsl, xsl_hash="xsl_h",
+        output_path=tmp_path / "output" / "missing.html",
+        cache=cache, cache_key="k",
+        engine=LxmlEngine(), ctx=ctx,
+    )
+    assert task is not None
 
 
 def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
@@ -338,7 +437,7 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
     cache = {}
     task = _make_xslt_task(
         xml_input=b"<root/>", xsl_path=broken, xsl_hash="xsl_h",
-        output_path=tmp_path / "out.html",
+        output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="bad",
         engine=LxmlEngine(), ctx=ctx,
     )
@@ -448,7 +547,8 @@ def test_build_search_section_runs_and_caches(tmp_path):
     tasks = build_search_section(items, ctx, cache)
     assert len(tasks) == 1
     tasks[0]()
-    assert (tmp_path / "output" / "search.json").exists()
+    out = tmp_path / "output" / "search.json"
+    assert json.loads(out.read_text())[0]["title"] == "A"
     assert build_search_section(items, ctx, cache) == []
 
 
@@ -591,6 +691,62 @@ def test_collect_tasks_only_sitemap_subset(tmp_path):
     assert list(plan.keys()) == ["sitemap"]
 
 
+def test_collect_tasks_rejects_duplicate_cache_key(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    art_xml = tmp_path / "content" / "a.xml"
+    art_xml.write_text(
+        '<article><title>A</title><date>2025-01-01</date>'
+        '<description>d</description></article>'
+    )
+    a = dataclasses.replace(_art("same"), source_path=art_xml)
+    b = dataclasses.replace(_art("same"), source_path=art_xml)
+    with pytest.raises(ValueError, match="Duplicate generated cache key"):
+        _collect_tasks(lambda: iter([a, b]), _FakeCLI(sections=["articles"]), ctx, {}, {})
+
+
+def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    ctx = dataclasses.replace(
+        ctx,
+        url_patterns={**ctx.url_patterns, "rss": "/feed.xml", "sitemap": "/feed.xml"},
+    )
+    with pytest.raises(ValueError, match="Duplicate generated output path"):
+        _collect_tasks(lambda: iter(()), _FakeCLI(), ctx, {}, {})
+
+
+def test_collect_tasks_rejects_output_escape(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    ctx = dataclasses.replace(
+        ctx,
+        url_patterns={**ctx.url_patterns, "rss": "/../rss.xml"},
+    )
+    with pytest.raises(ValueError, match="escapes output_dir"):
+        _collect_tasks(lambda: iter(()), _FakeCLI(sections=["rss"]), ctx, {}, {})
+
+
+def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
+    ctx = _ctx_for(tmp_path)
+    root_file = tmp_path / "output" / "root.txt"
+    root_file.write_text("old")
+    old_dir = tmp_path / "output" / "old-dir"
+    old_dir.mkdir()
+    missing = tmp_path / "output" / "missing.txt"
+    assert not missing.exists()
+    cache = {"root": ["h"], "dir": ["h"], "missing": ["h"], "bad": ["h"]}
+    old = {
+        "root": "root.txt",
+        "dir": "old-dir",
+        "missing": "missing.txt",
+        "bad": "/tmp/outside.txt",
+    }
+    with caplog.at_level(logging.WARNING):
+        _prune_stale_outputs(ctx, cache, old, {})
+    assert not root_file.exists()
+    assert not old_dir.exists()
+    assert cache == {}
+    assert any("invalid cached output manifest" in r.message for r in caplog.records)
+
+
 def test_stream_projections_replaces_older_top(tmp_path):
     """Older articles arriving after the heap is full are rejected."""
     ctx = _ctx_for(tmp_path)
@@ -652,6 +808,57 @@ def test_run_build_skips_save_when_cache_unchanged(site_root, caplog):
     assert any("Cache unchanged" in r.message for r in caplog.records)
 
 
+def test_run_build_rebuilds_missing_cached_output(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    cfg = load_or_create_config(site_root / "config.json")
+    cli = _CLI(force_full_build=True)
+    apply_cli_overrides(cfg, cli, site_root)
+    run_build(cli, cfg, site_root)
+    rss = site_root / "output" / "rss.xml"
+    rss.unlink()
+
+    cfg2 = load_or_create_config(site_root / "config.json")
+    cli2 = _CLI()
+    apply_cli_overrides(cfg2, cli2, site_root)
+    run_build(cli2, cfg2, site_root)
+    assert rss.exists()
+
+
+def test_run_build_prunes_deleted_article_output(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    cfg = load_or_create_config(site_root / "config.json")
+    cli = _CLI(force_full_build=True)
+    apply_cli_overrides(cfg, cli, site_root)
+    run_build(cli, cfg, site_root)
+    output = site_root / "output" / "en" / "articles" / "first-post" / "index.html"
+    assert output.exists()
+    (site_root / "content" / "en" / "first-post.xml").unlink()
+
+    cfg2 = load_or_create_config(site_root / "config.json")
+    cli2 = _CLI()
+    apply_cli_overrides(cfg2, cli2, site_root)
+    run_build(cli2, cfg2, site_root)
+    cache = json.loads((site_root / ".build-cache.json").read_text())
+    assert not output.exists()
+    assert "article:en:first-post" not in cache
+
+
+def test_run_build_partial_build_does_not_prune(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    cfg = load_or_create_config(site_root / "config.json")
+    cli = _CLI(force_full_build=True)
+    apply_cli_overrides(cfg, cli, site_root)
+    run_build(cli, cfg, site_root)
+    output = site_root / "output" / "en" / "articles" / "first-post" / "index.html"
+    (site_root / "content" / "en" / "first-post.xml").unlink()
+
+    cfg2 = load_or_create_config(site_root / "config.json")
+    cli2 = _CLI(only_sections=["search"])
+    apply_cli_overrides(cfg2, cli2, site_root)
+    run_build(cli2, cfg2, site_root)
+    assert output.exists()
+
+
 def test_run_build_dry_run_skips_save(site_root):
     from articulous.config import apply_cli_overrides, load_or_create_config
     cfg = load_or_create_config(site_root / "config.json")
@@ -667,7 +874,8 @@ def test_run_build_only_one_section(site_root):
     cli = _CLI(force_full_build=True, only_sections=["search"])
     apply_cli_overrides(cfg, cli, site_root)
     run_build(cli, cfg, site_root)
-    assert (site_root / "output" / "search.json").exists()
+    search = site_root / "output" / "search.json"
+    assert json.loads(search.read_text())
     assert not (site_root / "output" / "rss.xml").exists()
 
 

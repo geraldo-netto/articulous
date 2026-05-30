@@ -49,8 +49,11 @@ from .runtime import (
     should_rebuild,
     timed,
     update_cache,
-    write_json,
 )
+
+
+_ASSET_CACHE_KEY = "assets"
+_OUTPUT_MANIFEST_KEY = "__outputs__"
 
 
 # ================================================================
@@ -110,6 +113,16 @@ def _require_non_negative_int(value, name: str) -> int:
     return value
 
 
+def _require_worker_count(value) -> WorkerCount:
+    if value == "auto":
+        return value
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(
+            f"config build.parallelism must be 'auto' or a positive int, got {value!r}"
+        )
+    return value
+
+
 def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     """
     Project the raw config dict into a :class:`BuildCtx`.
@@ -138,6 +151,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     rss_items = _require_non_negative_int(
         pagination["rss_items"], "site.pagination.rss_items",
     )
+    parallelism = _require_worker_count(config["build"]["parallelism"])
     return BuildCtx(
         content_dir=Path(config["paths"]["content_dir"]),
         xsl_dir=Path(config["paths"]["xsl_dir"]),
@@ -145,7 +159,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         assets_dir=Path(config["paths"]["assets_dir"]),
         force=config["build"]["force_full_build"],
         dry_run=dry_run,
-        parallelism=config["build"]["parallelism"],
+        parallelism=parallelism,
         # Reduce user-controlled value to a bare filename; the path
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
@@ -164,7 +178,52 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
 # Asset + URL helpers
 # ================================================================
 
-def copy_assets(ctx: BuildCtx) -> None:
+def _safe_output_path(ctx: BuildCtx, output_path: Path) -> Path:
+    root = ctx.output_dir.resolve()
+    candidate = output_path if output_path.is_absolute() else ctx.output_dir / output_path
+    resolved = candidate.resolve()
+    if not resolved.is_relative_to(root):
+        raise ValueError(
+            f"Generated output path escapes output_dir: {output_path} "
+            f"(output_dir={ctx.output_dir})"
+        )
+    return resolved
+
+
+def _output_relpath(ctx: BuildCtx, output_path: Path) -> str:
+    return _safe_output_path(ctx, output_path).relative_to(
+        ctx.output_dir.resolve()
+    ).as_posix()
+
+
+def _assert_non_overlapping_trees(src: Path, dest: Path) -> None:
+    src_resolved = src.resolve()
+    dest_resolved = dest.resolve()
+    overlaps = (
+        src_resolved == dest_resolved
+        or src_resolved.is_relative_to(dest_resolved)
+        or dest_resolved.is_relative_to(src_resolved)
+    )
+    if overlaps:
+        raise ValueError(
+            f"assets_dir and output assets directory overlap: "
+            f"{src_resolved} <-> {dest_resolved}"
+        )
+
+
+def _tree_hash(root: Path) -> str:
+    h = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        rel = path.relative_to(root).as_posix()
+        if path.is_dir():
+            h.update(f"D\0{rel}\0".encode("utf-8"))
+        else:
+            h.update(f"F\0{rel}\0".encode("utf-8"))
+            h.update(file_hash(path).encode("ascii"))
+    return h.hexdigest()
+
+
+def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     """
     Mirror ``ctx.assets_dir`` into ``<output_dir>/assets``.
     No-op if the source is missing; honours dry-run.
@@ -173,15 +232,25 @@ def copy_assets(ctx: BuildCtx) -> None:
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
         return
 
-    dest = ctx.output_dir / "assets"
+    dest = _safe_output_path(ctx, ctx.output_dir / "assets")
+    _assert_non_overlapping_trees(ctx.assets_dir, dest)
+    assets_hash = _tree_hash(ctx.assets_dir)
 
     if ctx.dry_run:
         logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
         return
 
+    if cache is not None and not should_rebuild(
+        _ASSET_CACHE_KEY, cache, (assets_hash,), ctx.force, output_path=dest,
+    ):
+        logging.debug("Skipping unchanged assets")
+        return
+
     if dest.exists():
         shutil.rmtree(dest)
     shutil.copytree(ctx.assets_dir, dest)
+    if cache is not None:
+        update_cache(cache, _ASSET_CACHE_KEY, (assets_hash,))
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
 
 
@@ -224,6 +293,16 @@ def _rss_item_xml(a) -> str:
 
 def _sitemap_url_xml(url: str) -> str:
     return f"<url>{_xml_escape(url)}</url>"
+
+
+def _search_item_xml(item) -> str:
+    tags = "".join(f"<tag>{_xml_escape(t)}</tag>" for t in item["tags"])
+    return (
+        f"<item><title>{_xml_escape(item['title'])}</title>"
+        f"<description>{_xml_escape(item['description'])}</description>"
+        f"<url>{_xml_escape(item['url'])}</url>"
+        f"<tags>{tags}</tags></item>"
+    )
 
 
 # Per-section root-element synthesisers. Each one folds the page-model
@@ -269,9 +348,45 @@ def _sitemap_doc(sitemap, site_name: str) -> str:
     )
 
 
+def _search_doc(index, site_name: str) -> str:
+    attrs = f" site={_xml_attr(site_name)}"
+    json_text = json.dumps(index.items, indent=2)
+    children = [f"<json>{_xml_escape(json_text)}</json>"]
+    children.extend(_search_item_xml(item) for item in index.items)
+    return _xml_doc("search", children, attrs)
+
+
 # ================================================================
 # Shared XSLT task plumbing
 # ================================================================
+
+def _find_output_owner(manifest: dict, relpath: str) -> Optional[str]:
+    for key, value in manifest.items():
+        if value == relpath:
+            return key
+    return None
+
+
+def _record_planned_output(
+    manifest: Optional[dict],
+    ctx: BuildCtx,
+    cache_key: str,
+    output_path: Path,
+) -> Path:
+    output_path = _safe_output_path(ctx, output_path)
+    if manifest is None:
+        return output_path
+    relpath = _output_relpath(ctx, output_path)
+    if cache_key in manifest:
+        raise ValueError(f"Duplicate generated cache key: {cache_key}")
+    owner = _find_output_owner(manifest, relpath)
+    if owner is not None:
+        raise ValueError(
+            f"Duplicate generated output path: {relpath} "
+            f"for {owner!r} and {cache_key!r}"
+        )
+    manifest[cache_key] = relpath
+    return output_path
 
 def _make_xslt_task(
     *,
@@ -283,6 +398,7 @@ def _make_xslt_task(
     cache_key: str,
     engine: TransformEngine,
     ctx: BuildCtx,
+    manifest: Optional[dict] = None,
 ) -> Optional[Callable]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
@@ -300,12 +416,15 @@ def _make_xslt_task(
     successful transform — failed transforms leave the prior cache
     entry intact.
     """
+    output_path = _record_planned_output(manifest, ctx, cache_key, output_path)
     if isinstance(xml_input, bytes):
         xml_hash = hashlib.sha256(xml_input).hexdigest()
     else:
         xml_hash = file_hash(xml_input)
 
-    if not should_rebuild(cache_key, cache, (xml_hash, xsl_hash), ctx.force):
+    if not should_rebuild(
+        cache_key, cache, (xml_hash, xsl_hash), ctx.force, output_path=output_path,
+    ):
         return None
     hashes = (xml_hash, xsl_hash)
 
@@ -324,7 +443,7 @@ def _encode_xml(content: str) -> bytes:
     return content.encode("utf-8")
 
 
-def build_articles_section(lang_articles, ctx: BuildCtx, cache):
+def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
     """
     Build article pages for one language's article batch.
 
@@ -350,6 +469,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache):
             cache_key=f"article:{art.lang}:{art.slug}",
             engine=engine,
             ctx=ctx,
+            manifest=manifest,
         )
         if task is None:
             logging.debug(f"Skipping unchanged article: {art.slug}")
@@ -359,7 +479,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
+def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
     """Build paginated index pages for one language."""
     tasks = []
     xsl_path = ctx.xsl_for("index")
@@ -377,6 +497,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
             cache_key=f"index:{page.lang}:{page.page}",
             engine=engine,
             ctx=ctx,
+            manifest=manifest,
         )
         if task is None:
             logging.debug(f"Skipping unchanged index page {page.page}")
@@ -386,7 +507,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
+def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
     """Build tag pages for one language."""
     tasks = []
     xsl_path = ctx.xsl_for("tags")
@@ -404,6 +525,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
             cache_key=f"tag:{page.lang}:{page.tag_slug}",
             engine=engine,
             ctx=ctx,
+            manifest=manifest,
         )
         if task is None:
             logging.debug(
@@ -415,7 +537,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache):
     return tasks
 
 
-def build_rss_section(rss_articles, ctx: BuildCtx, cache):
+def build_rss_section(rss_articles, ctx: BuildCtx, cache, manifest=None):
     """
     Build the RSS feed. ``rss_articles`` is the already-selected top-N
     list (newest first) produced by :func:`_stream_projections`.
@@ -432,6 +554,7 @@ def build_rss_section(rss_articles, ctx: BuildCtx, cache):
         cache_key="rss",
         engine=ctx.engine_for("rss"),
         ctx=ctx,
+        manifest=manifest,
     )
     if task is None:
         logging.debug("Skipping unchanged RSS feed")
@@ -439,7 +562,7 @@ def build_rss_section(rss_articles, ctx: BuildCtx, cache):
     return [task]
 
 
-def build_sitemap_section(urls, ctx: BuildCtx, cache):
+def build_sitemap_section(urls, ctx: BuildCtx, cache, manifest=None):
     """Build sitemap.xml from a streamed list of URL strings."""
     sitemap = build_sitemap_model(urls, ctx)
     xsl_path = ctx.xsl_for("sitemap")
@@ -453,6 +576,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache):
         cache_key="sitemap",
         engine=ctx.engine_for("sitemap"),
         ctx=ctx,
+        manifest=manifest,
     )
     if task is None:
         logging.debug("Skipping unchanged sitemap")
@@ -460,22 +584,26 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache):
     return [task]
 
 
-def build_search_section(items, ctx: BuildCtx, cache):
-    """Build search.json from a streamed list of pre-projected items."""
+def build_search_section(items, ctx: BuildCtx, cache, manifest=None):
+    """Build search.json through the configured search XSLT engine."""
     index = build_search_model(items, ctx)
-    output_path = ctx.output_dir / index.output_path
-    json_hash = hashlib.sha256(
-        json.dumps(index.items).encode("utf-8")
-    ).hexdigest()
-
-    if not should_rebuild("search", cache, (json_hash, "json"), ctx.force):
+    xsl_path = ctx.xsl_for("search")
+    xml_bytes = _encode_xml(_search_doc(index, ctx.site_name))
+    task = _make_xslt_task(
+        xml_input=xml_bytes,
+        xsl_path=xsl_path,
+        xsl_hash=file_hash(xsl_path),
+        output_path=ctx.output_dir / index.output_path,
+        cache=cache,
+        cache_key="search",
+        engine=ctx.engine_for("search"),
+        ctx=ctx,
+        manifest=manifest,
+    )
+    if task is None:
         logging.debug("Skipping unchanged search index")
         return []
-
-    def task(output_path=output_path, items=index.items, json_hash=json_hash):
-        write_json(output_path, items, dry_run=ctx.dry_run)
-        update_cache(cache, "search", (json_hash, "json"))
-    return [timed("search", task)]
+    return [task]
 
 
 # ================================================================
@@ -547,7 +675,9 @@ def _rss_sorted_from_heap(rss_heap) -> list:
     return [art for _, _, art in sorted(rss_heap, reverse=True)]
 
 
-def _collect_cross_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) -> dict:
+def _collect_cross_lang_plan(
+    stream_factory, cli, ctx: BuildCtx, cache, want, manifest,
+) -> dict:
     """Phase-1 streaming pass: cross-language projections (rss / sitemap / search)."""
     sitemap_urls, search_items, rss_heap, total = _stream_projections(
         stream_factory, cli, ctx,
@@ -556,12 +686,14 @@ def _collect_cross_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) ->
     plan: dict = {}
     if want("rss"):
         plan["rss"] = build_rss_section(
-            _rss_sorted_from_heap(rss_heap), ctx, cache,
+            _rss_sorted_from_heap(rss_heap), ctx, cache, manifest,
         )
     if want("sitemap"):
-        plan["sitemap"] = build_sitemap_section(sitemap_urls, ctx, cache)
+        plan["sitemap"] = build_sitemap_section(
+            sitemap_urls, ctx, cache, manifest,
+        )
     if want("search"):
-        plan["search"] = build_search_section(search_items, ctx, cache)
+        plan["search"] = build_search_section(search_items, ctx, cache, manifest)
     return plan
 
 
@@ -573,22 +705,26 @@ def _sorted_lang_articles(stream_factory, cli, lang: str) -> list:
     )
 
 
-def _add_per_lang_tasks(plan: dict, lang_articles, lang, ctx, cache, want) -> None:
+def _add_per_lang_tasks(
+    plan: dict, lang_articles, lang, ctx, cache, want, manifest,
+) -> None:
     if want("articles"):
         plan.setdefault("articles", []).extend(
-            build_articles_section(lang_articles, ctx, cache)
+            build_articles_section(lang_articles, ctx, cache, manifest)
         )
     if want("index"):
         plan.setdefault("index", []).extend(
-            build_index_section(lang_articles, lang, ctx, cache)
+            build_index_section(lang_articles, lang, ctx, cache, manifest)
         )
     if want("tags"):
         plan.setdefault("tags", []).extend(
-            build_tags_section(lang_articles, lang, ctx, cache)
+            build_tags_section(lang_articles, lang, ctx, cache, manifest)
         )
 
 
-def _collect_per_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) -> dict:
+def _collect_per_lang_plan(
+    stream_factory, cli, ctx: BuildCtx, cache, want, manifest,
+) -> dict:
     """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
     plan: dict = {}
     for lang in ctx.languages:
@@ -597,12 +733,14 @@ def _collect_per_lang_plan(stream_factory, cli, ctx: BuildCtx, cache, want) -> d
         lang_articles = _sorted_lang_articles(stream_factory, cli, lang)
         if not lang_articles:
             continue
-        _add_per_lang_tasks(plan, lang_articles, lang, ctx, cache, want)
+        _add_per_lang_tasks(
+            plan, lang_articles, lang, ctx, cache, want, manifest,
+        )
         # lang_articles goes out of scope here → released between languages.
     return plan
 
 
-def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache) -> dict:
+def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> dict:
     """
     Stream the article set and dispatch every requested section.
 
@@ -619,11 +757,15 @@ def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache) -> dict:
     plan: dict = {}
     if any(want(s) for s in _CROSS_LANG_SECTIONS):
         plan.update(
-            _collect_cross_lang_plan(stream_factory, cli, ctx, cache, want)
+            _collect_cross_lang_plan(
+                stream_factory, cli, ctx, cache, want, manifest,
+            )
         )
     if any(want(s) for s in _PER_LANG_SECTIONS):
         plan.update(
-            _collect_per_lang_plan(stream_factory, cli, ctx, cache, want)
+            _collect_per_lang_plan(
+                stream_factory, cli, ctx, cache, want, manifest,
+            )
         )
     return plan
 
@@ -657,6 +799,76 @@ def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     return cpu if has_saxon else max(4, cpu)
 
 
+def _load_output_manifest(cache: dict) -> dict:
+    manifest = cache.get(_OUTPUT_MANIFEST_KEY)
+    if not isinstance(manifest, dict):
+        return {}
+    return {
+        str(key): value
+        for key, value in manifest.items()
+        if isinstance(value, str)
+    }
+
+
+def _can_prune_outputs(cli) -> bool:
+    return not (cli.only_sections or cli.only_langs or cli.only_slugs)
+
+
+def _manifest_target(ctx: BuildCtx, relpath: str) -> Path:
+    rel = Path(relpath)
+    if rel.is_absolute():
+        raise ValueError(f"Manifest output path must be relative: {relpath}")
+    return _safe_output_path(ctx, ctx.output_dir / rel)
+
+
+def _remove_empty_parents(path: Path, stop: Path) -> None:
+    parent = path.parent
+    while parent != stop:
+        try:
+            parent.rmdir()
+        except OSError:
+            return
+        parent = parent.parent
+
+
+def _delete_output_file(path: Path, root: Path) -> None:
+    if not path.exists():
+        return
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+    _remove_empty_parents(path, root)
+
+
+def _prune_stale_outputs(
+    ctx: BuildCtx,
+    cache: dict,
+    old_manifest: dict,
+    current_manifest: dict,
+) -> None:
+    stale_keys = sorted(set(old_manifest) - set(current_manifest))
+    root = ctx.output_dir.resolve()
+    for key in stale_keys:
+        try:
+            target = _manifest_target(ctx, old_manifest[key])
+        except ValueError as e:
+            logging.warning(f"Skipping invalid cached output manifest entry: {e}")
+        else:
+            _delete_output_file(target, root)
+        cache.pop(key, None)
+
+
+def _store_output_manifest(
+    cache: dict,
+    old_manifest: dict,
+    current_manifest: dict,
+    replace: bool,
+) -> None:
+    manifest = current_manifest if replace else {**old_manifest, **current_manifest}
+    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(manifest.items()))
+
+
 # ================================================================
 # Top-level build pipeline
 # ================================================================
@@ -668,12 +880,13 @@ def run_build(cli, config, project_root: Path) -> None:
     ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
     cache = load_cache(cache_path)
+    old_manifest = _load_output_manifest(cache)
     # Snapshot for PERF-04: skip the disk write if no worker mutated the
     # cache. json.dumps with sort_keys gives a stable signature without
     # the cost of a deep copy.
     cache_signature = json.dumps(cache, sort_keys=True)
 
-    copy_assets(ctx)
+    copy_assets(ctx, cache)
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
     # The stream factory rebuilds the generator on demand. Each
@@ -694,7 +907,8 @@ def run_build(cli, config, project_root: Path) -> None:
             allowed_langs=allowed_langs,
         )
 
-    plan = _collect_tasks(stream_factory, cli, ctx, cache)
+    current_manifest: dict = {}
+    plan = _collect_tasks(stream_factory, cli, ctx, cache, current_manifest)
     flat = [t for tasks in plan.values() for t in tasks]
     total = len(flat)
 
@@ -717,6 +931,12 @@ def run_build(cli, config, project_root: Path) -> None:
         logging.info("Nothing to build — all pages up to date.")
 
     if not cli.dry_run:
+        replace_manifest = _can_prune_outputs(cli)
+        if replace_manifest:
+            _prune_stale_outputs(ctx, cache, old_manifest, current_manifest)
+        _store_output_manifest(
+            cache, old_manifest, current_manifest, replace_manifest,
+        )
         if json.dumps(cache, sort_keys=True) == cache_signature:
             logging.debug("Cache unchanged — skipping save")
         else:

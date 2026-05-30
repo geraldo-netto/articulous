@@ -47,9 +47,11 @@ def test_deep_merge_override_non_dict_into_dict():
 # --- load_or_create_config ---
 
 def test_load_or_create_config_missing_path_uses_default(tmp_path):
-    cfg = load_or_create_config(tmp_path / "nope.json")
+    path = tmp_path / "missing" / "config.json"
+    cfg = load_or_create_config(path)
     assert cfg == DEFAULT_CONFIG
     assert cfg is not DEFAULT_CONFIG  # deep copy, not shared
+    assert json.loads(path.read_text()) == DEFAULT_CONFIG
 
 
 def test_load_or_create_config_invalid_json_falls_back(tmp_path, caplog):

@@ -2,8 +2,7 @@
 Per-section model builders + URL helpers.
 
 A "model" is the abstract per-page input that the section builder will
-later serialise into a temp XML file and feed to its XSLT stylesheet
-(or, in the case of search, directly to JSON).
+later serialise into XML and feed to its XSLT stylesheet.
 
 Model builders take a :class:`SiteModelCtx` — a structural protocol
 with the fields they actually need — and return typed page dataclasses
@@ -216,8 +215,8 @@ def build_search_model(items, ctx: SiteModelCtx) -> SearchIndex:
     Build search index model from a list of pre-projected dicts
     (``{title, description, url, tags}``).
 
-    Output is JSON; no canonical URL field is attached since there is
-    no shape-preserving place to put it.
+    Output is handled by the configured search XSLT; no canonical URL
+    field is attached since there is no shape-preserving place to put it.
     """
     pattern = ctx.url_patterns["search"]
     return SearchIndex(

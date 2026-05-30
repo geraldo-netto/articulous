@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import random
 import string
+import hashlib
 from datetime import datetime
 from pathlib import Path
 
@@ -123,7 +124,7 @@ def test_parse_article_xml_never_crashes_on_garbled_input(tmp_path):
         assert result is None or isinstance(result, Article)
 
 
-# --- _make_xslt_task fuzz: arbitrary bytes don't crash the helper ---
+# --- _make_xslt_task fuzz: random XML bytes hash consistently ---
 
 MINIMAL_XSLT = (
     b'<?xml version="1.0"?>'
@@ -134,7 +135,7 @@ MINIMAL_XSLT = (
 )
 
 
-def test_make_xslt_task_random_bytes_hashes_consistently(tmp_path):
+def test_make_xslt_task_random_xml_hashes_consistently(tmp_path):
     xsl = tmp_path / "x.xsl"
     xsl.write_bytes(MINIMAL_XSLT)
     xsl_hash = file_hash(xsl)
@@ -143,14 +144,9 @@ def test_make_xslt_task_random_bytes_hashes_consistently(tmp_path):
         output_dir=tmp_path, assets_dir=tmp_path,
     )
     rnd = random.Random(0xABCD)
-    seen_hashes = set()
     for i in range(20):
-        n = rnd.randint(0, 200)
-        payload = bytes(rnd.randint(0, 255) for _ in range(n))
+        payload = f"<root>{rnd.randint(0, 1_000_000)}</root>".encode()
         cache = {}
-        # Either succeeds (yielding a callable) or returns None when
-        # somehow the (random) hash collides with a pre-seeded cache —
-        # never observed with a fresh dict.
         task = _make_xslt_task(
             xml_input=payload, xsl_path=xsl, xsl_hash=xsl_hash,
             output_path=tmp_path / f"o{i}.html",
@@ -158,4 +154,5 @@ def test_make_xslt_task_random_bytes_hashes_consistently(tmp_path):
             engine=LxmlEngine(), ctx=ctx,
         )
         assert task is not None
-        seen_hashes.add(cache.get(f"k{i}", [None])[0] if False else None)
+        task()
+        assert cache[f"k{i}"][0] == hashlib.sha256(payload).hexdigest()

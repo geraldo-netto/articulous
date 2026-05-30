@@ -58,6 +58,8 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| REL-03 | open | M | Misconfigured `site.languages` / `site.default_language` can make RSS, sitemap, and search point at article pages that were never built | `build_ctx_from_config` copies language config without validating a non-empty string list or default membership (`articulous/pipeline.py:167-170`); `_validated_lang` can fall back to a default outside `allowed_langs` (`articulous/articles.py:95-102`); per-language builders only loop `ctx.languages` (`articulous/pipeline.py:737-748`). Add config validation plus tests for empty/non-list languages and default-not-in-languages. |
+| REL-04 | open | M | Removing or disabling the source assets directory leaves stale `output/assets` from a previous build | `copy_assets` returns immediately when `ctx.assets_dir` is missing (`articulous/pipeline.py:226-233`), while output-manifest pruning only tracks generated pages (`articulous/pipeline.py:952-958`). Decide whether a missing assets dir should prune `output/assets` or fail loudly, then add a regression test for delete-after-copy. |
 
 ## observability
 
@@ -78,6 +80,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| DOC-02 | open | S | Local development docs omit the `xmllint` system dependency required by the fixture XML validation test | `README.md:195-198` lists only Python packages, but `tests/test_xml_validation.py:17-24` shells out to `xmllint`; CI installs `libxml2-utils` at `.github/workflows/main.yml:18-21`. Document the system package or make the test skip with a clear message when missing. |
 
 ---
 

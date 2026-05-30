@@ -195,10 +195,9 @@ def iter_articles(
     released between iterations and the previous ``Article`` is only
     retained if the caller holds onto it.
 
-    The pipeline does a phase-1 streaming pass to build cross-language
-    projections (sitemap URLs, search items, RSS top-N heap) and then
-    one phase-2 streaming pass per language for the per-language
-    section builders.
+    The pipeline consumes this generator once per build and partitions
+    the filtered articles by language while building cross-language
+    projections.
     """
     allowed = frozenset(allowed_langs) if allowed_langs is not None else None
     for path in _discover_article_files(content_dir):

@@ -201,12 +201,12 @@ def test_build_rss_model_rss_items_larger_than_input():
 
 def test_stream_projections_rss_items_zero(tmp_path):
     arts = [_art("a"), _art("b")]
-    urls, items, heap, total = _stream_projections(
+    projection = _stream_projections(
         lambda: iter(arts), _no_filter_cli(), cast(Any, _model_ctx(rss_items=0)),
     )
-    assert heap == []
-    assert total == 2
-    assert len(urls) == 2
+    assert projection.rss_heap == []
+    assert projection.total == 2
+    assert len(projection.sitemap_urls) == 2
 
 
 @pytest.mark.parametrize("workers", [0, -1])

@@ -13,7 +13,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-02 | open | S | `logging.file` is opened without the project-root containment used for configured content/output paths (`cli.py:116-119`) | Reject absolute/traversing log paths or reuse the same resolver used by `apply_cli_overrides`. |
 
 ## performance
 
@@ -24,7 +23,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SCAL-02 | open | M | Per-language planning reparses the entire article tree once per configured language after the cross-language pass (`pipeline.py:725-736`, `articles.py:183-212`) | Current shape keeps memory bounded, but parse cost grows with `languages * article_count`; consider per-language spooling or a bounded partitioning pass. |
 
 ## concurrency
 
@@ -87,9 +85,9 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-01 | parked | S | `_stream_projections` (pipeline.py:504) emits no per-section progress; only final tally logs at pipeline.py:555 | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
-| OBS-02 | parked | S | `timed()` (runtime.py:118) wraps tasks at DEBUG only; production builds see no per-task signal | Same trade-off as OBS-01; bumping to INFO would flood logs for normal builds. |
-| DOC-01 | parked | S | `SiteModelCtx` `@property` members (models.py:33-46) carry no docstrings | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
+| OBS-01 | parked | S | `_stream_projections` (pipeline.py:641) emits no per-section progress; only final tally logs at pipeline.py:697 | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
+| OBS-02 | parked | S | `timed()` (runtime.py:126) wraps tasks at DEBUG only; production builds see no per-task signal | Same trade-off as OBS-01; bumping to INFO would flood logs for normal builds. |
+| DOC-01 | parked | S | `SiteModelCtx` `@property` members (models.py:33-45) carry no docstrings | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
 
 ## Audit picks deliberately rejected
 

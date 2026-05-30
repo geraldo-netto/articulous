@@ -97,12 +97,25 @@ def _resolve_log_level(level_name: str) -> int:
     return getattr(logging, name)
 
 
+def _resolve_log_file(project_root: Path, log_file: str) -> Path:
+    root = project_root.resolve()
+    resolved = (project_root / log_file).resolve()
+    if not resolved.is_relative_to(root):
+        raise ValueError(
+            f"logging.file={log_file!r} resolves outside project root: "
+            f"{resolved} (project_root={root})"
+        )
+    return resolved
+
+
 def setup_logging(config, project_root: Path, verbose: bool = False):
     """Configure logging idempotently. Safe to call multiple times."""
     level = (
         logging.DEBUG if verbose
         else _resolve_log_level(config["logging"]["level"])
     )
+    log_file = config["logging"].get("file")
+    file_path = _resolve_log_file(project_root, log_file) if log_file else None
 
     root = logging.getLogger()
     for handler in root.handlers[:]:
@@ -113,9 +126,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
     stream.setFormatter(logging.Formatter(_LOG_FORMAT))
     root.addHandler(stream)
 
-    log_file = config["logging"].get("file")
-    if log_file:
-        file_path = project_root / log_file
+    if file_path is not None:
         fh = logging.FileHandler(file_path, encoding="utf-8")
         fh.setLevel(level)
         fh.setFormatter(logging.Formatter(_LOG_FORMAT))

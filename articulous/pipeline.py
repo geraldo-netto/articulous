@@ -621,6 +621,15 @@ _CROSS_LANG_SECTIONS = ("rss", "sitemap", "search")
 SECTION_NAMES = _PER_LANG_SECTIONS + _CROSS_LANG_SECTIONS
 
 
+@dataclass
+class StreamProjection:
+    sitemap_urls: list
+    search_items: list
+    rss_heap: list
+    total: int
+    articles_by_lang: dict = field(default_factory=dict)
+
+
 def _passes_cli_filters(art, cli) -> bool:
     if cli.only_langs and art.lang not in cli.only_langs:
         return False
@@ -629,45 +638,53 @@ def _passes_cli_filters(art, cli) -> bool:
     return True
 
 
-def _stream_projections(stream_factory, cli, ctx: BuildCtx):
+def _stream_projections(
+    stream_factory,
+    cli,
+    ctx: BuildCtx,
+    *,
+    collect_cross: bool = True,
+    collect_articles: bool = False,
+) -> StreamProjection:
     """
-    Phase-1 streaming pass.
+    Single filtered article pass.
 
-    Iterates the article stream once. Accumulates:
-
-      - ``sitemap_urls`` — list of every article's URL.
-      - ``search_items`` — list of search projection dicts.
-      - ``rss_heap``     — bounded min-heap of (datetime, sequence, art)
-                           keeping the top ``ctx.rss_items`` articles.
-      - ``total``        — articles that survived the CLI filters.
-
-    The sequence number breaks ties when two articles share a datetime
-    so heapq never tries to order :class:`Article` instances directly.
+    Cross-language sections use projected lists/heaps; per-language
+    sections reuse ``articles_by_lang`` so the XML tree is not reparsed
+    once for every configured language.
     """
-    rss_heap: list = []
-    sitemap_urls: list = []
-    search_items: list = []
-    total = 0
+    projection = StreamProjection([], [], [], 0)
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
         if not _passes_cli_filters(art, cli):
             continue
-        total += 1
-        sitemap_urls.append(art.url)
-        search_items.append({
-            "title": art.title,
-            "description": art.description,
-            "url": art.url,
-            "tags": list(art.tags),
-        })
-        if ctx.rss_items > 0:
+        projection.total += 1
+        if collect_articles:
+            projection.articles_by_lang.setdefault(art.lang, []).append(art)
+        if collect_cross:
+            _add_cross_projection(projection, art)
+        if collect_cross and ctx.rss_items > 0:
             entry = (art.datetime, seq, art)
             seq += 1
-            if len(rss_heap) < ctx.rss_items:
-                heapq.heappush(rss_heap, entry)
-            elif entry > rss_heap[0]:
-                heapq.heapreplace(rss_heap, entry)
-    return sitemap_urls, search_items, rss_heap, total
+            _push_rss_entry(projection.rss_heap, entry, ctx.rss_items)
+    return projection
+
+
+def _add_cross_projection(projection: StreamProjection, art) -> None:
+    projection.sitemap_urls.append(art.url)
+    projection.search_items.append({
+        "title": art.title,
+        "description": art.description,
+        "url": art.url,
+        "tags": list(art.tags),
+    })
+
+
+def _push_rss_entry(rss_heap: list, entry: tuple, limit: int) -> None:
+    if len(rss_heap) < limit:
+        heapq.heappush(rss_heap, entry)
+    elif entry > rss_heap[0]:
+        heapq.heapreplace(rss_heap, entry)
 
 
 def _rss_sorted_from_heap(rss_heap) -> list:
@@ -676,33 +693,28 @@ def _rss_sorted_from_heap(rss_heap) -> list:
 
 
 def _collect_cross_lang_plan(
-    stream_factory, cli, ctx: BuildCtx, cache, want, manifest,
+    projection: StreamProjection, ctx, cache, want, manifest,
 ) -> dict:
     """Phase-1 streaming pass: cross-language projections (rss / sitemap / search)."""
-    sitemap_urls, search_items, rss_heap, total = _stream_projections(
-        stream_factory, cli, ctx,
-    )
-    logging.info(f"Discovered {total} article(s) after filters")
+    logging.info(f"Discovered {projection.total} article(s) after filters")
     plan: dict = {}
     if want("rss"):
         plan["rss"] = build_rss_section(
-            _rss_sorted_from_heap(rss_heap), ctx, cache, manifest,
+            _rss_sorted_from_heap(projection.rss_heap), ctx, cache, manifest,
         )
     if want("sitemap"):
         plan["sitemap"] = build_sitemap_section(
-            sitemap_urls, ctx, cache, manifest,
+            projection.sitemap_urls, ctx, cache, manifest,
         )
     if want("search"):
-        plan["search"] = build_search_section(search_items, ctx, cache, manifest)
+        plan["search"] = build_search_section(
+            projection.search_items, ctx, cache, manifest,
+        )
     return plan
 
 
-def _sorted_lang_articles(stream_factory, cli, lang: str) -> list:
-    return sorted(
-        (a for a in stream_factory()
-         if a.lang == lang and _passes_cli_filters(a, cli)),
-        key=lambda a: a.datetime, reverse=True,
-    )
+def _sorted_lang_articles(articles_by_lang: dict, lang: str) -> list:
+    return sorted(articles_by_lang.get(lang, ()), key=lambda a: a.datetime, reverse=True)
 
 
 def _add_per_lang_tasks(
@@ -723,14 +735,14 @@ def _add_per_lang_tasks(
 
 
 def _collect_per_lang_plan(
-    stream_factory, cli, ctx: BuildCtx, cache, want, manifest,
+    articles_by_lang, cli, ctx: BuildCtx, cache, want, manifest,
 ) -> dict:
     """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
     plan: dict = {}
     for lang in ctx.languages:
         if cli.only_langs and lang not in cli.only_langs:
             continue
-        lang_articles = _sorted_lang_articles(stream_factory, cli, lang)
+        lang_articles = _sorted_lang_articles(articles_by_lang, lang)
         if not lang_articles:
             continue
         _add_per_lang_tasks(
@@ -755,16 +767,23 @@ def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> 
         return wanted is None or section in wanted
 
     plan: dict = {}
-    if any(want(s) for s in _CROSS_LANG_SECTIONS):
+    need_cross = any(want(s) for s in _CROSS_LANG_SECTIONS)
+    need_per_lang = any(want(s) for s in _PER_LANG_SECTIONS)
+    projection = _stream_projections(
+        stream_factory,
+        cli,
+        ctx,
+        collect_cross=need_cross,
+        collect_articles=need_per_lang,
+    )
+    if need_cross:
         plan.update(
-            _collect_cross_lang_plan(
-                stream_factory, cli, ctx, cache, want, manifest,
-            )
+            _collect_cross_lang_plan(projection, ctx, cache, want, manifest)
         )
-    if any(want(s) for s in _PER_LANG_SECTIONS):
+    if need_per_lang:
         plan.update(
             _collect_per_lang_plan(
-                stream_factory, cli, ctx, cache, want, manifest,
+                projection.articles_by_lang, cli, ctx, cache, want, manifest,
             )
         )
     return plan

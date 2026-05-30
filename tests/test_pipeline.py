@@ -587,25 +587,43 @@ def test_stream_projections_collects_all_and_bounds_rss(tmp_path):
         dataclasses.replace(a, datetime=datetime(2025, 1, i + 1))
         for i, a in enumerate(articles)
     ]
-    urls, items, heap, total = _stream_projections(
+    projection = _stream_projections(
         lambda: iter(articles), _FakeCLI(), ctx,
     )
-    assert total == 5
-    assert len(urls) == 5
-    assert len(items) == 5
-    assert len(heap) == 2  # bounded by rss_items
+    assert projection.total == 5
+    assert len(projection.sitemap_urls) == 5
+    assert len(projection.search_items) == 5
+    assert len(projection.rss_heap) == 2  # bounded by rss_items
     # Heap contains the two newest
-    dates = sorted(dt for dt, _, _ in heap)
+    dates = sorted(dt for dt, _, _ in projection.rss_heap)
     assert dates == [datetime(2025, 1, 4), datetime(2025, 1, 5)]
 
 
 def test_stream_projections_respects_cli_filters(tmp_path):
     ctx = _ctx_for(tmp_path)
     articles = [_art("a", lang="en"), _art("b", lang="fr")]
-    urls, items, heap, total = _stream_projections(
+    projection = _stream_projections(
         lambda: iter(articles), _FakeCLI(langs=["en"]), ctx,
     )
-    assert total == 1
+    assert projection.total == 1
+    assert projection.sitemap_urls == [articles[0].url]
+
+
+def test_stream_projections_can_partition_without_cross_work(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    articles = [_art("a", lang="en"), _art("b", lang="fr")]
+    projection = _stream_projections(
+        lambda: iter(articles),
+        _FakeCLI(),
+        ctx,
+        collect_cross=False,
+        collect_articles=True,
+    )
+    assert projection.sitemap_urls == []
+    assert projection.search_items == []
+    assert projection.rss_heap == []
+    assert [a.slug for a in projection.articles_by_lang["en"]] == ["a"]
+    assert [a.slug for a in projection.articles_by_lang["fr"]] == ["b"]
 
 
 def test_rss_sorted_from_heap_newest_first(tmp_path):
@@ -615,10 +633,10 @@ def test_rss_sorted_from_heap_newest_first(tmp_path):
         dataclasses.replace(_art("b"), datetime=datetime(2025, 6, 1)),
         dataclasses.replace(_art("c"), datetime=datetime(2025, 3, 1)),
     ]
-    _, _, heap, _ = _stream_projections(
+    projection = _stream_projections(
         lambda: iter(articles), _FakeCLI(), ctx,
     )
-    out = _rss_sorted_from_heap(heap)
+    out = _rss_sorted_from_heap(projection.rss_heap)
     assert [a.slug for a in out] == ["b", "c", "a"]
 
 
@@ -691,6 +709,30 @@ def test_collect_tasks_only_sitemap_subset(tmp_path):
     assert list(plan.keys()) == ["sitemap"]
 
 
+def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    ctx = dataclasses.replace(ctx, languages=["en", "fr"])
+    art_xml = tmp_path / "content" / "a.xml"
+    art_xml.write_text(
+        '<article><title>A</title><date>2025-01-01</date>'
+        '<description>d</description></article>'
+    )
+    articles = [
+        dataclasses.replace(_art("a", lang="en"), source_path=art_xml),
+        dataclasses.replace(_art("b", lang="fr"), source_path=art_xml),
+    ]
+    calls = 0
+
+    def stream_factory():
+        nonlocal calls
+        calls += 1
+        return iter(articles)
+
+    plan = _collect_tasks(stream_factory, _FakeCLI(), ctx, {})
+    assert calls == 1
+    assert {"articles", "index", "rss", "sitemap", "search"}.issubset(plan)
+
+
 def test_collect_tasks_rejects_duplicate_cache_key(tmp_path):
     ctx = _ctx_for(tmp_path)
     art_xml = tmp_path / "content" / "a.xml"
@@ -758,11 +800,11 @@ def test_stream_projections_replaces_older_top(tmp_path):
         dataclasses.replace(_art("b"), datetime=datetime(2025, 5, 1)),
         dataclasses.replace(_art("c"), datetime=datetime(2024, 1, 1)),
     ]
-    _, _, heap, total = _stream_projections(
+    projection = _stream_projections(
         lambda: iter(arts), _FakeCLI(), ctx,
     )
-    assert total == 3
-    slugs = sorted(art.slug for _, _, art in heap)
+    assert projection.total == 3
+    slugs = sorted(art.slug for _, _, art in projection.rss_heap)
     assert slugs == ["a", "b"]  # the old one didn't make it
 
 

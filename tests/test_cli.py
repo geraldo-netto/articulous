@@ -121,6 +121,30 @@ def test_setup_logging_adds_file_handler(tmp_path):
             logging.getLogger().removeHandler(h)
 
 
+def test_setup_logging_rejects_traversing_log_file(tmp_path):
+    cfg = {"logging": {"level": "INFO", "file": "../app.log"}}
+    with pytest.raises(ValueError, match="outside project root"):
+        setup_logging(cfg, tmp_path)
+
+
+def test_setup_logging_rejects_absolute_log_file_outside_root(tmp_path):
+    cfg = {"logging": {"level": "INFO", "file": "/tmp/articulous.log"}}
+    with pytest.raises(ValueError, match="outside project root"):
+        setup_logging(cfg, tmp_path)
+
+
+def test_setup_logging_accepts_absolute_log_file_inside_root(tmp_path):
+    log_file = tmp_path / "inside.log"
+    cfg = {"logging": {"level": "INFO", "file": str(log_file)}}
+    setup_logging(cfg, tmp_path)
+    handlers = logging.getLogger().handlers
+    assert any(isinstance(h, logging.FileHandler) for h in handlers)
+    for h in list(handlers):
+        if isinstance(h, logging.FileHandler):
+            h.close()
+            logging.getLogger().removeHandler(h)
+
+
 # --- main ---
 
 def test_main_invokes_run_build(monkeypatch, site_root):

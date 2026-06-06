@@ -6,15 +6,19 @@ import threading
 import pytest
 
 from articulous.runtime import (
+    TrackedCache,
     _ensure_parent_dir,
+    cache_changed,
     file_hash,
     load_cache,
+    lock_file,
     run_parallel_tasks,
     save_cache,
     should_rebuild,
     timed,
     update_cache,
     write_json,
+    write_text_atomic,
 )
 
 
@@ -52,6 +56,29 @@ def test_write_json_dry_run_skips(tmp_path, caplog):
         write_json(p, {"a": 1}, dry_run=True)
     assert not p.exists()
     assert any("Would write JSON" in r.message for r in caplog.records)
+
+
+def test_write_text_atomic_replaces_existing_file(tmp_path):
+    p = tmp_path / "x.txt"
+    p.write_text("old")
+    write_text_atomic(p, "new")
+    assert p.read_text() == "new"
+
+
+def test_write_text_atomic_cleans_temp_on_replace_error(tmp_path, monkeypatch):
+    p = tmp_path / "x.txt"
+
+    def boom(self, target):
+        if target == p:
+            raise OSError("replace")
+        return original_replace(self, target)
+
+    original_replace = type(p).replace
+    monkeypatch.setattr(type(p), "replace", boom)
+    with pytest.raises(OSError, match="replace"):
+        write_text_atomic(p, "new")
+    assert not p.exists()
+    assert list(tmp_path.iterdir()) == []
 
 
 # --- file_hash ---
@@ -109,9 +136,19 @@ def test_load_cache_non_dict_rejected(tmp_path):
     assert load_cache(p) == {}
 
 
-def test_save_cache_io_error_logged(tmp_path, caplog):
-    # write into a non-existent directory → OSError
+def test_save_cache_parent_created(tmp_path):
     p = tmp_path / "nonexistent_dir" / "c.json"
+    save_cache(p, {"k": [1]})
+    assert json.loads(p.read_text()) == {"k": [1]}
+
+
+def test_save_cache_io_error_logged(tmp_path, caplog, monkeypatch):
+    p = tmp_path / "c.json"
+
+    def boom(path, text, encoding="utf-8"):
+        raise OSError("disk")
+
+    monkeypatch.setattr("articulous.runtime.write_text_atomic", boom)
     with caplog.at_level(logging.ERROR):
         save_cache(p, {"k": [1]})
     assert any("Failed to save cache" in r.message for r in caplog.records)
@@ -174,6 +211,42 @@ def test_update_cache_writes_list_form():
     cache = {}
     update_cache(cache, "k", ("a", "b"))
     assert cache == {"k": ["a", "b"]}
+
+
+def test_tracked_cache_dirty_state():
+    cache = TrackedCache({"k": ["a"]})
+    assert not cache_changed(cache)
+    cache["k"] = ["a"]
+    assert not cache_changed(cache)
+    cache["k"] = ["b"]
+    assert cache_changed(cache)
+    cache.mark_clean()
+    cache.pop("k")
+    assert cache_changed(cache)
+
+
+def test_tracked_cache_mutator_edges():
+    cache = TrackedCache()
+    assert not cache_changed(cache)
+    cache.clear()
+    assert not cache_changed(cache)
+    assert cache.pop("missing", None) is None
+    assert not cache_changed(cache)
+    cache.update({"a": 1})
+    assert cache_changed(cache)
+    cache.mark_clean()
+    cache.clear()
+    assert cache_changed(cache)
+
+
+def test_lock_file_excludes_second_holder(tmp_path):
+    path = tmp_path / "build.lock"
+    with lock_file(path):
+        assert path.exists()
+        with pytest.raises(FileExistsError):
+            with lock_file(path):
+                pass
+    assert not path.exists()
 
 
 def test_update_cache_thread_safe():

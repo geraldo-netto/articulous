@@ -12,8 +12,10 @@ import hashlib
 import json
 import logging
 import os
+import tempfile
 import threading
 import time
+from contextlib import contextmanager
 from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Union
@@ -31,12 +33,25 @@ def _ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
         parent.mkdir(parents=True, exist_ok=True)
 
 
+def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
+    _ensure_parent_dir(path)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding=encoding, dir=path.parent, delete=False,
+    ) as f:
+        f.write(text)
+        tmp_path = Path(f.name)
+    try:
+        tmp_path.replace(path)
+    except OSError:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
 def write_json(path: Path, data, dry_run: bool = False) -> None:
     if dry_run:
         logging.debug(f"[DRY RUN] Would write JSON: {path}")
         return
-    _ensure_parent_dir(path)
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    write_text_atomic(path, json.dumps(data, indent=2))
 
 
 # ================================================================
@@ -44,6 +59,38 @@ def write_json(path: Path, data, dry_run: bool = False) -> None:
 # ================================================================
 
 _cache_lock = threading.Lock()
+
+
+class TrackedCache(dict):
+    def __init__(self, *args, dirty: bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dirty = dirty
+
+    def mark_clean(self) -> None:
+        self.dirty = False
+
+    def __setitem__(self, key, value) -> None:
+        if self.get(key) != value:
+            self.dirty = True
+        super().__setitem__(key, value)
+
+    def pop(self, key, default=None):
+        if key in self:
+            self.dirty = True
+        return super().pop(key, default)
+
+    def clear(self) -> None:
+        if self:
+            self.dirty = True
+        super().clear()
+
+    def update(self, *args, **kwargs) -> None:
+        for key, value in dict(*args, **kwargs).items():
+            self[key] = value
+
+
+def cache_changed(cache: dict) -> bool:
+    return bool(getattr(cache, "dirty", True))
 
 
 def file_hash(path: Path) -> str:
@@ -74,11 +121,11 @@ def load_cache(cache_path: Path) -> dict:
         data = json.loads(cache_path.read_text())
         if isinstance(data, dict):
             logging.debug("Cache loaded successfully")
-            return data
+            return TrackedCache(data)
     except json.JSONDecodeError as e:
         logging.warning(f"Failed to load cache: {e}")
     logging.debug("Cache invalid — starting fresh")
-    return {}
+    return TrackedCache()
 
 
 def save_cache(cache_path: Path, cache: dict) -> None:
@@ -89,7 +136,9 @@ def save_cache(cache_path: Path, cache: dict) -> None:
     write should never crash the build.
     """
     try:
-        cache_path.write_text(json.dumps(cache, indent=2))
+        write_text_atomic(cache_path, json.dumps(cache, indent=2))
+        if isinstance(cache, TrackedCache):
+            cache.mark_clean()
         logging.debug("Cache saved successfully")
     except (OSError, TypeError):
         logging.exception("Failed to save cache")
@@ -117,6 +166,18 @@ def update_cache(cache: dict, key: str, new_hashes: tuple) -> None:
     """Thread-safe cache write. Workers commit their own entries on success."""
     with _cache_lock:
         cache[key] = list(new_hashes)
+
+
+@contextmanager
+def lock_file(path: Path):
+    _ensure_parent_dir(path)
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    try:
+        os.write(fd, str(os.getpid()).encode("ascii"))
+        yield
+    finally:
+        os.close(fd)
+        Path(path).unlink(missing_ok=True)
 
 
 # ================================================================

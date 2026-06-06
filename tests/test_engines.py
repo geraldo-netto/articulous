@@ -16,6 +16,7 @@ from articulous.engines import (
     check_dependencies,
     configure_saxonc,
     make_engine,
+    safe_xslt_access_control,
     safe_xml_parser,
     validate_engines,
 )
@@ -49,6 +50,11 @@ def test_safe_xml_parser_is_xxe_safe(tmp_path):
     )
     root = etree.fromstring(payload.encode(), parser=safe_xml_parser())
     assert (root.text or "") == ""  # entity not expanded
+
+
+def test_safe_xslt_access_control_disables_reads():
+    access = safe_xslt_access_control()
+    assert access is not None
 
 
 # --- LxmlEngine ---
@@ -105,6 +111,23 @@ def test_lxml_engine_propagates_xslt_parse_error(tmp_path, caplog):
     with caplog.at_level(logging.ERROR):
         with pytest.raises(Exception):
             LxmlEngine().run(b"<root/>", xsl, out)
+    assert any("lxml transform failed" in r.message for r in caplog.records)
+
+
+def test_lxml_engine_blocks_xslt_document_reads(tmp_path, caplog):
+    xsl = tmp_path / "doc.xsl"
+    secret = tmp_path / "secret.xml"
+    secret.write_text("<secret>nope</secret>")
+    xsl.write_text(
+        '<xsl:stylesheet version="1.0" '
+        'xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+        '<xsl:template match="/">'
+        f'<xsl:value-of select="document({str(secret)!r})/secret"/>'
+        "</xsl:template></xsl:stylesheet>"
+    )
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(Exception):
+            LxmlEngine().run(b"<root/>", xsl, tmp_path / "out.txt")
     assert any("lxml transform failed" in r.message for r in caplog.records)
 
 
@@ -215,8 +238,18 @@ def test_make_engine_rejects_none_name():
         make_engine(None, None)  # type: ignore[arg-type]
 
 
-def test_configure_saxonc_no_home_returns_none():
+def test_configure_saxonc_no_home_returns_none(monkeypatch):
+    monkeypatch.setattr("articulous.engines.shutil.which", lambda name: None)
     assert configure_saxonc({"saxonc": {"home": None}}) is None
+
+
+def test_configure_saxonc_discovers_path_binary(tmp_path, monkeypatch):
+    transform = tmp_path / "Transform"
+    transform.write_text("#!/bin/sh\n")
+    monkeypatch.setattr(
+        "articulous.engines.shutil.which", lambda name: str(transform)
+    )
+    assert configure_saxonc({"saxonc": {"home": None}}) == transform
 
 
 def test_configure_saxonc_missing_binary_warns(tmp_path, caplog):

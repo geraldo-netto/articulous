@@ -15,6 +15,7 @@ from articulous.models import (
     Sitemap,
     TagPage,
     build_index_models,
+    build_output_path_from_pattern,
     build_rel_path_from_pattern,
     build_rss_model,
     build_search_model,
@@ -65,6 +66,11 @@ def _art(slug, lang="en", tags=(), url=None):
 def test_build_rel_path_from_pattern():
     p = build_rel_path_from_pattern("/{lang}/articles/{slug}/", lang="en", slug="x")
     assert p == Path("en/articles/x/index.html")
+
+
+def test_build_output_path_from_pattern_file_section():
+    p = build_output_path_from_pattern("rss", "/feed.xml")
+    assert p == Path("feed.xml")
 
 
 def test_build_url_from_pattern_strips_slashes():

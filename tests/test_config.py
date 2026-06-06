@@ -54,30 +54,25 @@ def test_load_or_create_config_missing_path_uses_default(tmp_path):
     assert json.loads(path.read_text()) == DEFAULT_CONFIG
 
 
-def test_load_or_create_config_invalid_json_falls_back(tmp_path, caplog):
+def test_load_or_create_config_invalid_json_fails_fast(tmp_path):
     p = tmp_path / "bad.json"
     p.write_text("not-json")
-    with caplog.at_level("WARNING"):
-        cfg = load_or_create_config(p)
-    assert cfg == DEFAULT_CONFIG
-    assert any("Invalid config JSON" in r.message for r in caplog.records)
+    with pytest.raises(ValueError, match="Invalid config JSON"):
+        load_or_create_config(p)
 
 
-def test_load_or_create_config_non_dict_falls_back(tmp_path, caplog):
+def test_load_or_create_config_non_dict_fails_fast(tmp_path):
     p = tmp_path / "list.json"
     p.write_text("[1, 2, 3]")
-    with caplog.at_level("WARNING"):
-        cfg = load_or_create_config(p)
-    assert cfg == DEFAULT_CONFIG
-    assert any("not a JSON object" in r.message for r in caplog.records)
+    with pytest.raises(ValueError, match="not a JSON object"):
+        load_or_create_config(p)
 
 
-def test_load_or_create_config_scalar_falls_back(tmp_path, caplog):
+def test_load_or_create_config_scalar_fails_fast(tmp_path):
     p = tmp_path / "scalar.json"
     p.write_text("42")
-    with caplog.at_level("WARNING"):
-        cfg = load_or_create_config(p)
-    assert cfg == DEFAULT_CONFIG
+    with pytest.raises(ValueError, match="not a JSON object"):
+        load_or_create_config(p)
 
 
 def test_load_or_create_config_merges_user_overrides(tmp_path):

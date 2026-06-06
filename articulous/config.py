@@ -6,8 +6,9 @@ shape. Every other module consumes its output via :class:`BuildCtx`
 (see :mod:`articulous.pipeline`).
 """
 import json
-import logging
 from pathlib import Path
+
+from .sections import SECTION_NAMES
 
 
 DEFAULT_CONFIG = {
@@ -17,14 +18,7 @@ DEFAULT_CONFIG = {
         "xsl_dir": "xsl",
         "assets_dir": "assets",
     },
-    "engines": {
-        "articles": "lxml",
-        "index": "lxml",
-        "tags": "lxml",
-        "rss": "lxml",
-        "sitemap": "lxml",
-        "search": "lxml",
-    },
+    "engines": {section: "lxml" for section in SECTION_NAMES},
     "saxonc": {"home": None},
     "site": {
         "site_name": "My Site",
@@ -70,8 +64,8 @@ def _default_config_copy() -> dict:
 
 def load_or_create_config(path: Path) -> dict:
     """
-    Load config from JSON file; fall back to :data:`DEFAULT_CONFIG`
-    if missing, malformed, or shaped wrong.
+    Load config from JSON file. Missing config creates defaults;
+    malformed existing config fails fast.
     """
     if not path.exists():
         cfg = _default_config_copy()
@@ -82,15 +76,13 @@ def load_or_create_config(path: Path) -> dict:
     try:
         data = json.loads(path.read_text())
     except json.JSONDecodeError as e:
-        logging.warning(f"Invalid config JSON at {path}: {e}. Using defaults.")
-        return _default_config_copy()
+        raise ValueError(f"Invalid config JSON at {path}: {e}") from e
 
     if not isinstance(data, dict):
-        logging.warning(
+        raise ValueError(
             f"Config at {path} is not a JSON object "
-            f"(got {type(data).__name__}). Using defaults."
+            f"(got {type(data).__name__})"
         )
-        return _default_config_copy()
 
     cfg = _default_config_copy()
     return deep_merge(cfg, data)

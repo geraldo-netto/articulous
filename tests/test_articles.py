@@ -6,8 +6,10 @@ import pytest
 
 from articulous.articles import (
     Article,
+    ArticleStats,
     _discover_article_files,
     _read_article_fields,
+    _validated_publication,
     _validated_lang,
     iter_articles,
     normalize_slug,
@@ -48,6 +50,7 @@ def test_read_article_fields_single_pass():
         "description": "D",
         "lang": "fr",
         "tags": ["a", "b"],
+        "publication": "published",
     }
 
 
@@ -59,6 +62,7 @@ def test_read_article_fields_missing_optionals():
     assert fields["description"] == ""
     assert fields["lang"] == ""
     assert fields["tags"] == []
+    assert fields["publication"] == "published"
 
 
 def test_read_article_fields_handles_none_text():
@@ -91,6 +95,18 @@ def test_validated_lang_passes_when_inside_whitelist():
     assert _validated_lang("fr", "en", frozenset({"en", "fr"}), Path("/x")) == "fr"
 
 
+# --- _validated_publication ---
+
+def test_validated_publication_accepts_known_status():
+    assert _validated_publication(" UNLISTED ", Path("/x")) == "unlisted"
+
+
+def test_validated_publication_defaults_unknown(caplog):
+    with caplog.at_level("WARNING"):
+        assert _validated_publication("weird", Path("/x")) == "published"
+    assert any("unknown status" in r.message for r in caplog.records)
+
+
 # --- parse_article_xml ---
 
 ARTICLE_XML = (
@@ -118,6 +134,16 @@ def test_parse_article_xml_happy_path(tmp_path):
     assert art.lang == "en"
     assert art.tags == ("news",)
     assert art.url == "/en/hello-world/"
+    assert art.policy.search is True
+
+
+def test_parse_article_xml_publication_status(tmp_path):
+    p = tmp_path / "a.xml"
+    p.write_text(ARTICLE_XML.replace("</article>", "<status>draft</status></article>"))
+    art = parse_article_xml(p, default_lang="en", url_builder=_url_builder)
+    assert art is not None
+    assert art.publication == "draft"
+    assert art.policy.page is False
 
 
 def test_parse_article_xml_without_url_builder(tmp_path):
@@ -227,17 +253,26 @@ def test_iter_articles_yields_lazily(tmp_path):
         '<article><title>Second</title><date>2025-02-01</date>'
         '<description>d</description></article>'
     )
+    stats = ArticleStats()
     out = list(iter_articles(
-        tmp_path, default_lang="en", url_builder=_url_builder,
+        tmp_path, default_lang="en", url_builder=_url_builder, stats=stats,
     ))
     slugs = [a.slug for a in out]
     assert "hello-world" in slugs
     assert "second" in slugs
     # Bad article is dropped, not yielded.
     assert len(out) == 2
+    assert stats.scanned == 3
+    assert stats.parsed == 2
+    assert stats.skipped == 1
 
 
 def test_iter_articles_empty_dir(tmp_path):
+    assert list(iter_articles(tmp_path, default_lang="en")) == []
+
+
+def test_iter_articles_invalid_without_stats(tmp_path):
+    (tmp_path / "bad.xml").write_text("<not-well-formed")
     assert list(iter_articles(tmp_path, default_lang="en")) == []
 
 

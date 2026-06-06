@@ -159,7 +159,7 @@ are written automatically on first run.
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `paths`       | `content_dir`, `output_dir`, `xsl_dir`, `assets_dir`                                                |
 | `engines`     | per‑section engine (`articles`, `index`, `tags`, `rss`, `sitemap`, `search`) → `"lxml"` or `"saxonc"` |
-| `saxonc`      | `home` — path to the SaxonC install (optional; auto‑detected when null)                             |
+| `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
 | `build`       | `cache_file`, `parallelism` (`"auto"` or an int), `force_full_build`                                |
@@ -168,6 +168,11 @@ are written automatically on first run.
 An unknown engine name in `engines` aborts the build immediately so
 typos surface early. Requesting `"saxonc"` without a usable binary
 silently falls back to the lxml engine.
+
+Article XML may include `<status>published</status>` (default),
+`unlisted`, `draft`, or `private`. `unlisted` pages are generated but
+excluded from index/tag pages, RSS, sitemap, and search; `draft` and
+`private` articles are skipped.
 
 ---
 

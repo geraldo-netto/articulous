@@ -9,7 +9,8 @@ from pathlib import Path
 
 from .config import apply_cli_overrides, load_or_create_config
 from .engines import check_dependencies
-from .pipeline import SECTION_NAMES, run_build
+from .pipeline import run_build
+from .sections import SECTION_NAMES
 
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"

@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from articulous.articles import Article
+from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG
 from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.pipeline import (
@@ -18,9 +18,11 @@ from articulous.pipeline import (
     _article_url_builder,
     _article_xml,
     _cache_path_for,
+    _cleanup_stream_projection,
     _collect_tasks,
     _encode_xml,
     _index_doc,
+    _log_article_stats,
     _make_xslt_task,
     _passes_cli_filters,
     _prune_stale_outputs,
@@ -143,6 +145,20 @@ def test_build_ctx_from_config_rejects_bad_default_language(bad):
         build_ctx_from_config(cfg, dry_run=False)
 
 
+@pytest.mark.parametrize(
+    "key, pattern, message",
+    [
+        ("article", "/{lang}/articles/{slug}.html", "urls.article"),
+        ("rss", "/rss/", "urls.rss"),
+    ],
+)
+def test_build_ctx_from_config_rejects_bad_url_shapes(key, pattern, message):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["urls"][key] = pattern
+    with pytest.raises(ValueError, match=message):
+        build_ctx_from_config(cfg, dry_run=False)
+
+
 @pytest.mark.parametrize("bad", [0, -1, "many", True, 1.5])
 def test_build_ctx_from_config_rejects_bad_parallelism(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
@@ -261,6 +277,20 @@ def test_copy_assets_skips_when_hash_unchanged(tmp_path, caplog):
         copy_assets(ctx, cache)
     assert dest.read_text() == "kept"
     assert any("Skipping unchanged assets" in r.message for r in caplog.records)
+
+
+def test_copy_assets_skips_unchanged_without_content_hash(tmp_path, monkeypatch):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    src.write_text("v1")
+    copy_assets(ctx, cache)
+
+    def fail_hash(path):
+        raise AssertionError(f"unexpected content hash for {path}")
+
+    monkeypatch.setattr("articulous.pipeline.file_hash", fail_hash)
+    copy_assets(ctx, cache)
 
 
 def test_copy_assets_recopies_when_hash_changes(tmp_path):
@@ -649,7 +679,8 @@ def test_stream_projections_respects_cli_filters(tmp_path):
         lambda: iter(articles), _FakeCLI(langs=["en"]), ctx,
     )
     assert projection.total == 1
-    assert projection.sitemap_urls == [articles[0].url]
+    projection.sitemap_urls.flush()
+    assert articles[0].url in projection.sitemap_urls.path.read_text()
 
 
 def test_stream_projections_can_partition_without_cross_work(tmp_path):
@@ -667,6 +698,40 @@ def test_stream_projections_can_partition_without_cross_work(tmp_path):
     assert projection.rss_heap == []
     assert [a.slug for a in projection.articles_by_lang["en"]] == ["a"]
     assert [a.slug for a in projection.articles_by_lang["fr"]] == ["b"]
+
+
+def test_stream_projections_respects_publication_policy(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    articles = [
+        dataclasses.replace(_art("published"), publication="published"),
+        dataclasses.replace(_art("unlisted"), publication="unlisted"),
+        dataclasses.replace(_art("draft"), publication="draft"),
+    ]
+    projection = _stream_projections(
+        lambda: iter(articles), _FakeCLI(), ctx, collect_articles=True,
+    )
+    assert projection.total == 2
+    assert projection.skipped_unpublished == 1
+    assert len(projection.sitemap_urls) == 1
+    assert len(projection.search_items) == 1
+    assert [a.slug for a in projection.articles_by_lang["en"]] == [
+        "published", "unlisted",
+    ]
+    assert [a.slug for a in projection.listings_by_lang["en"]] == ["published"]
+
+
+def test_log_article_stats_includes_unpublished(tmp_path, caplog):
+    ctx = _ctx_for(tmp_path)
+    article = dataclasses.replace(_art("draft"), publication="draft")
+    projection = _stream_projections(lambda: iter([article]), _FakeCLI(), ctx)
+    stats = ArticleStats(scanned=1, parsed=1)
+    with caplog.at_level(logging.INFO):
+        _log_article_stats(stats, projection)
+    assert any("unpublished skipped" in r.message for r in caplog.records)
+
+
+def test_cleanup_stream_projection_accepts_none():
+    _cleanup_stream_projection(None)
 
 
 def test_rss_sorted_from_heap_newest_first(tmp_path):

@@ -16,15 +16,15 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
-from .articles import iter_articles
+from .articles import ArticleStats, iter_articles
 from .engines import (
-    SECTION_XSL,
     SaxonCEngine,
     TransformEngine,
     configure_saxonc,
@@ -42,13 +42,23 @@ from .models import (
 )
 from .runtime import (
     WorkerCount,
+    cache_changed,
     file_hash,
+    lock_file,
     load_cache,
     run_parallel_tasks,
     save_cache,
     should_rebuild,
     timed,
     update_cache,
+)
+from .sections import (
+    CROSS_LANG_SECTIONS,
+    PER_LANG_SECTIONS,
+    SECTION_NAMES,
+    SECTION_XSL,
+    url_key_for_section,
+    validate_url_pattern,
 )
 
 
@@ -89,6 +99,7 @@ class BuildCtx:
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
     rss_items: int = 20
+    temp_files: list = field(default_factory=list)
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -135,6 +146,13 @@ def _require_languages(languages, default_language) -> list:
             "config site.default_language must be present in config site.languages"
         )
     return list(languages)
+
+
+def _validate_url_patterns(patterns: dict) -> dict:
+    for section in SECTION_NAMES:
+        key = url_key_for_section(section)
+        validate_url_pattern(section, patterns[key])
+    return dict(patterns)
 
 
 def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
@@ -185,7 +203,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         base_url=config["site"]["base_url"],
         languages=languages,
         default_language=config["site"]["default_language"],
-        url_patterns=dict(config["urls"]),
+        url_patterns=_validate_url_patterns(config["urls"]),
         per_page=per_page,
         rss_items=rss_items,
     )
@@ -228,16 +246,27 @@ def _assert_non_overlapping_trees(src: Path, dest: Path) -> None:
         )
 
 
-def _tree_hash(root: Path) -> str:
-    h = hashlib.sha256()
+def _asset_manifest(root: Path) -> dict:
+    manifest = {}
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root).as_posix()
+        stat = path.stat()
         if path.is_dir():
-            h.update(f"D\0{rel}\0".encode("utf-8"))
+            manifest[rel] = ["d", stat.st_mtime_ns]
         else:
-            h.update(f"F\0{rel}\0".encode("utf-8"))
-            h.update(file_hash(path).encode("ascii"))
-    return h.hexdigest()
+            manifest[rel] = ["f", stat.st_size, stat.st_mtime_ns]
+    return manifest
+
+
+def _asset_cache_entry(manifest: dict) -> dict:
+    return {"version": 1, "manifest": manifest}
+
+
+def _assets_unchanged(cache: Optional[dict], manifest: dict, ctx: BuildCtx) -> bool:
+    if cache is None or ctx.force:
+        return False
+    entry = cache.get(_ASSET_CACHE_KEY)
+    return isinstance(entry, dict) and entry.get("manifest") == manifest
 
 
 def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict]) -> None:
@@ -263,15 +292,13 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         return
 
     _assert_non_overlapping_trees(ctx.assets_dir, dest)
-    assets_hash = _tree_hash(ctx.assets_dir)
+    manifest = _asset_manifest(ctx.assets_dir)
 
     if ctx.dry_run:
         logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
         return
 
-    if cache is not None and not should_rebuild(
-        _ASSET_CACHE_KEY, cache, (assets_hash,), ctx.force, output_path=dest,
-    ):
+    if dest.exists() and _assets_unchanged(cache, manifest, ctx):
         logging.debug("Skipping unchanged assets")
         return
 
@@ -279,7 +306,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         shutil.rmtree(dest)
     shutil.copytree(ctx.assets_dir, dest)
     if cache is not None:
-        update_cache(cache, _ASSET_CACHE_KEY, (assets_hash,))
+        cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
 
 
@@ -385,6 +412,94 @@ def _search_doc(index, site_name: str) -> str:
     return _xml_doc("search", children, attrs)
 
 
+class FragmentSink:
+    def __init__(self):
+        f = tempfile.NamedTemporaryFile(
+            "w+", encoding="utf-8", delete=False,
+        )
+        self.path = Path(f.name)
+        self._file = f
+        self.count = 0
+
+    def append(self, fragment: str) -> None:
+        self._file.write(fragment)
+        self.count += 1
+
+    def write_raw(self, fragment: str) -> None:
+        self._file.write(fragment)
+        self.count += 1
+
+    def flush(self) -> None:
+        self._file.flush()
+
+    def close(self) -> None:
+        self._file.close()
+
+    def unlink(self) -> None:
+        self.path.unlink(missing_ok=True)
+
+    def __len__(self) -> int:
+        return self.count
+
+    def __eq__(self, other) -> bool:
+        return self.count == 0 and other == []
+
+
+class SearchSink:
+    def __init__(self):
+        self.items = FragmentSink()
+        self.json = FragmentSink()
+
+    def append_item(self, item: dict) -> None:
+        if self.json.count:
+            self.json.write_raw(",\n")
+        self.json.write_raw(_xml_escape(json.dumps(item)))
+        self.items.append(_search_item_xml(item))
+
+    def flush(self) -> None:
+        self.items.flush()
+        self.json.flush()
+
+    def close(self) -> None:
+        self.items.close()
+        self.json.close()
+
+    def unlink(self) -> None:
+        self.items.unlink()
+        self.json.unlink()
+
+    def __len__(self) -> int:
+        return self.items.count
+
+    def __eq__(self, other) -> bool:
+        return self.items.count == 0 and other == []
+
+
+def _write_model_file(root_tag: str, attrs: str, body_path: Path) -> Path:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", delete=False,
+    ) as out:
+        out.write(f"<{root_tag}{attrs}>")
+        with body_path.open(encoding="utf-8") as body:
+            shutil.copyfileobj(body, out)
+        out.write(f"</{root_tag}>")
+        return Path(out.name)
+
+
+def _write_search_model_file(attrs: str, sink: SearchSink) -> Path:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", delete=False,
+    ) as out:
+        out.write(f"<search{attrs}><json>[\n")
+        with sink.json.path.open(encoding="utf-8") as body:
+            shutil.copyfileobj(body, out)
+        out.write("\n]</json>")
+        with sink.items.path.open(encoding="utf-8") as body:
+            shutil.copyfileobj(body, out)
+        out.write("</search>")
+        return Path(out.name)
+
+
 # ================================================================
 # Shared XSLT task plumbing
 # ================================================================
@@ -472,6 +587,18 @@ def _encode_xml(content: str) -> bytes:
     return content.encode("utf-8")
 
 
+def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformEngine]:
+    xsl_path = ctx.xsl_for(section)
+    return xsl_path, file_hash(xsl_path), ctx.engine_for(section)
+
+
+def _append_task(tasks: list, task: Optional[Callable], skip_message: str) -> None:
+    if task is None:
+        logging.debug(skip_message)
+        return
+    tasks.append(task)
+
+
 def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
     """
     Build article pages for one language's article batch.
@@ -480,10 +607,8 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
     per-language sorted list, not the global article set.
     """
     tasks = []
-    xsl_path = ctx.xsl_for("articles")
-    engine = ctx.engine_for("articles")
+    xsl_path, xsl_hash, engine = _section_runtime(ctx, "articles")
     pattern = ctx.url_patterns["article"]
-    xsl_hash = file_hash(xsl_path)  # PERF-01: once per section, not per item
 
     for art in lang_articles:
         output_path = ctx.output_dir / build_rel_path_from_pattern(
@@ -500,10 +625,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
             ctx=ctx,
             manifest=manifest,
         )
-        if task is None:
-            logging.debug(f"Skipping unchanged article: {art.slug}")
-            continue
-        tasks.append(task)
+        _append_task(tasks, task, f"Skipping unchanged article: {art.slug}")
 
     return tasks
 
@@ -511,9 +633,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
 def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
     """Build paginated index pages for one language."""
     tasks = []
-    xsl_path = ctx.xsl_for("index")
-    engine = ctx.engine_for("index")
-    xsl_hash = file_hash(xsl_path)
+    xsl_path, xsl_hash, engine = _section_runtime(ctx, "index")
 
     for page in build_index_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
@@ -528,10 +648,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
             ctx=ctx,
             manifest=manifest,
         )
-        if task is None:
-            logging.debug(f"Skipping unchanged index page {page.page}")
-            continue
-        tasks.append(task)
+        _append_task(tasks, task, f"Skipping unchanged index page {page.page}")
 
     return tasks
 
@@ -539,9 +656,7 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
 def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
     """Build tag pages for one language."""
     tasks = []
-    xsl_path = ctx.xsl_for("tags")
-    engine = ctx.engine_for("tags")
-    xsl_hash = file_hash(xsl_path)
+    xsl_path, xsl_hash, engine = _section_runtime(ctx, "tags")
 
     for page in build_tags_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
@@ -556,12 +671,10 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
             ctx=ctx,
             manifest=manifest,
         )
-        if task is None:
-            logging.debug(
-                f"Skipping unchanged tag page: {page.lang}/{page.tag_slug}"
-            )
-            continue
-        tasks.append(task)
+        _append_task(
+            tasks, task,
+            f"Skipping unchanged tag page: {page.lang}/{page.tag_slug}",
+        )
 
     return tasks
 
@@ -593,11 +706,18 @@ def build_rss_section(rss_articles, ctx: BuildCtx, cache, manifest=None):
 
 def build_sitemap_section(urls, ctx: BuildCtx, cache, manifest=None):
     """Build sitemap.xml from a streamed list of URL strings."""
-    sitemap = build_sitemap_model(urls, ctx)
+    sitemap = build_sitemap_model([], ctx)
     xsl_path = ctx.xsl_for("sitemap")
-    xml_bytes = _encode_xml(_sitemap_doc(sitemap, ctx.site_name))
+    if isinstance(urls, FragmentSink):
+        attrs = f" site={_xml_attr(ctx.site_name)} self={_xml_attr(sitemap.url)}"
+        urls.flush()
+        xml_input = _write_model_file("sitemap", attrs, urls.path)
+        ctx.temp_files.append(xml_input)
+    else:
+        sitemap = build_sitemap_model(urls, ctx)
+        xml_input = _encode_xml(_sitemap_doc(sitemap, ctx.site_name))
     task = _make_xslt_task(
-        xml_input=xml_bytes,
+        xml_input=xml_input,
         xsl_path=xsl_path,
         xsl_hash=file_hash(xsl_path),
         output_path=ctx.output_dir / sitemap.output_path,
@@ -615,11 +735,18 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, manifest=None):
 
 def build_search_section(items, ctx: BuildCtx, cache, manifest=None):
     """Build search.json through the configured search XSLT engine."""
-    index = build_search_model(items, ctx)
+    index = build_search_model([], ctx)
     xsl_path = ctx.xsl_for("search")
-    xml_bytes = _encode_xml(_search_doc(index, ctx.site_name))
+    if isinstance(items, SearchSink):
+        attrs = f" site={_xml_attr(ctx.site_name)}"
+        items.flush()
+        xml_input = _write_search_model_file(attrs, items)
+        ctx.temp_files.append(xml_input)
+    else:
+        index = build_search_model(items, ctx)
+        xml_input = _encode_xml(_search_doc(index, ctx.site_name))
     task = _make_xslt_task(
-        xml_input=xml_bytes,
+        xml_input=xml_input,
         xsl_path=xsl_path,
         xsl_hash=file_hash(xsl_path),
         output_path=ctx.output_dir / index.output_path,
@@ -639,24 +766,21 @@ def build_search_section(items, ctx: BuildCtx, cache, manifest=None):
 # Streaming dispatch
 # ================================================================
 
-# Section name -> "per-lang" vs "cross-lang" classification. Per-lang
-# builders are called once per configured language with that language's
-# sorted article batch; cross-lang builders are called once with a
-# streaming projection built during phase 1.
-_PER_LANG_SECTIONS = ("articles", "index", "tags")
-_CROSS_LANG_SECTIONS = ("rss", "sitemap", "search")
-
-# Exposed for tests / documentation: the complete section name set.
-SECTION_NAMES = _PER_LANG_SECTIONS + _CROSS_LANG_SECTIONS
-
-
 @dataclass
 class StreamProjection:
-    sitemap_urls: list
-    search_items: list
+    sitemap_urls: FragmentSink
+    search_items: SearchSink
     rss_heap: list
     total: int
+    skipped_unpublished: int = 0
     articles_by_lang: dict = field(default_factory=dict)
+    listings_by_lang: dict = field(default_factory=dict)
+
+
+class BuildPlan(dict):
+    def __init__(self, plan: dict, projection: StreamProjection):
+        super().__init__(plan)
+        self.projection = projection
 
 
 def _passes_cli_filters(art, cli) -> bool:
@@ -682,17 +806,22 @@ def _stream_projections(
     sections reuse ``articles_by_lang`` so the XML tree is not reparsed
     once for every configured language.
     """
-    projection = StreamProjection([], [], [], 0)
+    projection = StreamProjection(FragmentSink(), SearchSink(), [], 0)
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
         if not _passes_cli_filters(art, cli):
             continue
+        if not art.policy.page:
+            projection.skipped_unpublished += 1
+            continue
         projection.total += 1
         if collect_articles:
             projection.articles_by_lang.setdefault(art.lang, []).append(art)
+            if art.policy.listing:
+                projection.listings_by_lang.setdefault(art.lang, []).append(art)
         if collect_cross:
             _add_cross_projection(projection, art)
-        if collect_cross and ctx.rss_items > 0:
+        if collect_cross and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
             _push_rss_entry(projection.rss_heap, entry, ctx.rss_items)
@@ -700,13 +829,16 @@ def _stream_projections(
 
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
-    projection.sitemap_urls.append(art.url)
-    projection.search_items.append({
-        "title": art.title,
-        "description": art.description,
-        "url": art.url,
-        "tags": list(art.tags),
-    })
+    if art.policy.sitemap:
+        projection.sitemap_urls.append(_sitemap_url_xml(art.url))
+    if art.policy.search:
+        item = {
+            "title": art.title,
+            "description": art.description,
+            "url": art.url,
+            "tags": list(art.tags),
+        }
+        projection.search_items.append_item(item)
 
 
 def _push_rss_entry(rss_heap: list, entry: tuple, limit: int) -> None:
@@ -747,7 +879,7 @@ def _sorted_lang_articles(articles_by_lang: dict, lang: str) -> list:
 
 
 def _add_per_lang_tasks(
-    plan: dict, lang_articles, lang, ctx, cache, want, manifest,
+    plan: dict, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
 ) -> None:
     if want("articles"):
         plan.setdefault("articles", []).extend(
@@ -755,40 +887,38 @@ def _add_per_lang_tasks(
         )
     if want("index"):
         plan.setdefault("index", []).extend(
-            build_index_section(lang_articles, lang, ctx, cache, manifest)
+            build_index_section(listing_articles, lang, ctx, cache, manifest)
         )
     if want("tags"):
         plan.setdefault("tags", []).extend(
-            build_tags_section(lang_articles, lang, ctx, cache, manifest)
+            build_tags_section(listing_articles, lang, ctx, cache, manifest)
         )
 
 
 def _collect_per_lang_plan(
-    articles_by_lang, cli, ctx: BuildCtx, cache, want, manifest,
+    projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest,
 ) -> dict:
     """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
     plan: dict = {}
     for lang in ctx.languages:
         if cli.only_langs and lang not in cli.only_langs:
             continue
-        lang_articles = _sorted_lang_articles(articles_by_lang, lang)
+        lang_articles = _sorted_lang_articles(projection.articles_by_lang, lang)
         if not lang_articles:
             continue
+        listing_articles = _sorted_lang_articles(projection.listings_by_lang, lang)
         _add_per_lang_tasks(
-            plan, lang_articles, lang, ctx, cache, want, manifest,
+            plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
         )
         # lang_articles goes out of scope here → released between languages.
     return plan
 
 
-def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> dict:
+def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> BuildPlan:
     """
     Stream the article set and dispatch every requested section.
 
-    Returns a ``{section_name: [task, ...]}`` plan ready for parallel
-    execution. Memory peak is bounded to a single language's sorted
-    article batch plus the three cross-language projections, instead
-    of the entire global article list.
+    Returns a dict-like plan ready for parallel execution.
     """
     wanted = set(cli.only_sections) if cli.only_sections else None
 
@@ -796,8 +926,8 @@ def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> 
         return wanted is None or section in wanted
 
     plan: dict = {}
-    need_cross = any(want(s) for s in _CROSS_LANG_SECTIONS)
-    need_per_lang = any(want(s) for s in _PER_LANG_SECTIONS)
+    need_cross = any(want(s) for s in CROSS_LANG_SECTIONS)
+    need_per_lang = any(want(s) for s in PER_LANG_SECTIONS)
     projection = _stream_projections(
         stream_factory,
         cli,
@@ -812,16 +942,74 @@ def _collect_tasks(stream_factory, cli, ctx: BuildCtx, cache, manifest=None) -> 
     if need_per_lang:
         plan.update(
             _collect_per_lang_plan(
-                projection.articles_by_lang, cli, ctx, cache, want, manifest,
+                projection, cli, ctx, cache, want, manifest,
             )
         )
-    return plan
+    return BuildPlan(plan, projection)
+
+
+def _article_stream_factory(ctx: BuildCtx, stats: ArticleStats):
+    url_builder = _article_url_builder(ctx)
+    allowed_langs = frozenset(ctx.languages)
+
+    def stream_factory():
+        return iter_articles(
+            ctx.content_dir,
+            default_lang=ctx.default_language,
+            url_builder=url_builder,
+            allowed_langs=allowed_langs,
+            stats=stats,
+        )
+
+    return stream_factory
+
+
+def _run_plan(plan: dict, ctx: BuildCtx) -> None:
+    flat = [t for tasks in plan.values() for t in tasks]
+    total = len(flat)
+    if not total:
+        logging.info("Nothing to build — all pages up to date.")
+        return
+    logging.info(f"Build plan: {total} task(s) across {len(plan)} section(s)")
+    for section, tasks in plan.items():
+        logging.info(f"  {section}: {len(tasks)} task(s)")
+    t0 = time.perf_counter()
+    run_parallel_tasks(flat, _resolve_parallelism(ctx))
+    elapsed = time.perf_counter() - t0
+    rate = f" ({total / elapsed:.1f} task/s)" if elapsed > 0 else ""
+    logging.info(f"Ran {total} task(s) in {elapsed:.2f}s{rate}")
+
+
+def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> None:
+    logging.info(
+        f"Article scan: {stats.scanned} file(s), {stats.parsed} parsed, "
+        f"{stats.skipped} invalid"
+    )
+    if projection.skipped_unpublished:
+        logging.info(
+            f"Article scan: {projection.skipped_unpublished} unpublished skipped"
+        )
+
+
+def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path) -> None:
+    replace_manifest = _can_prune_outputs(cli)
+    if replace_manifest:
+        _prune_stale_outputs(ctx, cache, old_manifest, current_manifest)
+    _store_output_manifest(cache, old_manifest, current_manifest, replace_manifest)
+    if cache_changed(cache):
+        save_cache(cache_path, cache)
+    else:
+        logging.debug("Cache unchanged — skipping save")
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
     """Resolve the cache file path. ``ctx.cache_file`` is already a bare
     filename (see :func:`build_ctx_from_config`)."""
     return project_root / ctx.cache_file
+
+
+def _lock_path_for(ctx: BuildCtx, project_root: Path) -> Path:
+    return _cache_path_for(ctx, project_root).with_suffix(".lock")
 
 
 def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
@@ -917,6 +1105,20 @@ def _store_output_manifest(
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(manifest.items()))
 
 
+def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
+    if projection is None:
+        return
+    for sink in (projection.sitemap_urls, projection.search_items):
+        sink.close()
+        sink.unlink()
+
+
+def _cleanup_temp_files(ctx: BuildCtx) -> None:
+    for path in ctx.temp_files:
+        Path(path).unlink(missing_ok=True)
+    ctx.temp_files.clear()
+
+
 # ================================================================
 # Top-level build pipeline
 # ================================================================
@@ -927,67 +1129,28 @@ def run_build(cli, config, project_root: Path) -> None:
 
     ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
-    cache = load_cache(cache_path)
-    old_manifest = _load_output_manifest(cache)
-    # Snapshot for PERF-04: skip the disk write if no worker mutated the
-    # cache. json.dumps with sort_keys gives a stable signature without
-    # the cost of a deep copy.
-    cache_signature = json.dumps(cache, sort_keys=True)
-
-    copy_assets(ctx, cache)
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-
-    # The stream factory rebuilds the generator on demand. Each
-    # generator instance is consumed exactly once; the pipeline runs
-    # one factory call for phase 1 (cross-lang projections) and one
-    # per language for phase 2 (per-lang sections), bounding peak
-    # memory to a single language's article batch.
-    url_builder = _article_url_builder(ctx)
-    allowed_langs = frozenset(ctx.languages)
-    content_dir = ctx.content_dir
-    default_lang = ctx.default_language
-
-    def stream_factory():
-        return iter_articles(
-            content_dir,
-            default_lang=default_lang,
-            url_builder=url_builder,
-            allowed_langs=allowed_langs,
-        )
-
-    current_manifest: dict = {}
-    plan = _collect_tasks(stream_factory, cli, ctx, cache, current_manifest)
-    flat = [t for tasks in plan.values() for t in tasks]
-    total = len(flat)
-
-    if total:
-        logging.info(
-            f"Build plan: {total} task(s) across {len(plan)} section(s)"
-        )
-        for section, tasks in plan.items():
-            logging.info(f"  {section}: {len(tasks)} task(s)")
-
-        t0 = time.perf_counter()
-        run_parallel_tasks(flat, _resolve_parallelism(ctx))
-        elapsed = time.perf_counter() - t0
-        logging.info(
-            f"Ran {total} task(s) in {elapsed:.2f}s "
-            f"({total / elapsed:.1f} task/s)"
-            if elapsed > 0 else f"Ran {total} task(s)"
-        )
-    else:
-        logging.info("Nothing to build — all pages up to date.")
-
-    if not cli.dry_run:
-        replace_manifest = _can_prune_outputs(cli)
-        if replace_manifest:
-            _prune_stale_outputs(ctx, cache, old_manifest, current_manifest)
-        _store_output_manifest(
-            cache, old_manifest, current_manifest, replace_manifest,
-        )
-        if json.dumps(cache, sort_keys=True) == cache_signature:
-            logging.debug("Cache unchanged — skipping save")
-        else:
-            save_cache(cache_path, cache)
+    with lock_file(_lock_path_for(ctx, project_root)):
+        projection = None
+        try:
+            cache = load_cache(cache_path)
+            old_manifest = _load_output_manifest(cache)
+            copy_assets(ctx, cache)
+            ctx.output_dir.mkdir(parents=True, exist_ok=True)
+            stats = ArticleStats()
+            stream_factory = _article_stream_factory(ctx, stats)
+            current_manifest: dict = {}
+            plan = _collect_tasks(
+                stream_factory, cli, ctx, cache, current_manifest,
+            )
+            projection = plan.projection
+            _run_plan(plan, ctx)
+            _log_article_stats(stats, projection)
+            if not cli.dry_run:
+                _finalize_cache(
+                    cli, ctx, cache, old_manifest, current_manifest, cache_path,
+                )
+        finally:
+            _cleanup_stream_projection(projection)
+            _cleanup_temp_files(ctx)
 
     logging.info("Build complete.")

@@ -5,14 +5,14 @@ Engines follow a strategy pattern: each concrete engine subclasses
 :class:`TransformEngine` and implements ``_do_transform``. The base
 class owns the dry-run check so engines never duplicate it.
 
-The module also owns the SECTION_XSL map (section name -> XSL file
-basename) so the dependency checker and the build pipeline cannot
-drift apart on which XSL files matter.
+Section-to-XSL metadata lives in :mod:`articulous.sections` so config,
+CLI validation, dependency checks, and the build pipeline cannot drift.
 """
 from __future__ import annotations
 
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
@@ -21,17 +21,21 @@ from typing import ClassVar, Optional, Union
 
 from lxml import etree  # type: ignore[attr-defined]
 
+from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
-SECTION_XSL = {
-    "articles": "article.xsl",
-    "index": "index.xsl",
-    "tags": "tags.xsl",
-    "rss": "rss.xsl",
-    "sitemap": "sitemap.xsl",
-    "search": "search.xsl",
-}
-
-REQUIRED_XSL_FILES = sorted(set(SECTION_XSL.values()))
+__all__ = [
+    "LxmlEngine",
+    "REQUIRED_XSL_FILES",
+    "SECTION_XSL",
+    "SaxonCEngine",
+    "TransformEngine",
+    "check_dependencies",
+    "configure_saxonc",
+    "make_engine",
+    "safe_xml_parser",
+    "safe_xslt_access_control",
+    "validate_engines",
+]
 
 VALID_ENGINES = {"saxonc", "lxml"}
 
@@ -50,6 +54,16 @@ def safe_xml_parser() -> etree.XMLParser:
         load_dtd=False,
         dtd_validation=False,
         huge_tree=False,
+    )
+
+
+def safe_xslt_access_control() -> etree.XSLTAccessControl:
+    return etree.XSLTAccessControl(
+        read_file=False,
+        write_file=False,
+        create_dir=False,
+        read_network=False,
+        write_network=False,
     )
 
 
@@ -118,12 +132,17 @@ class LxmlEngine(TransformEngine):
                 dom = etree.fromstring(xml_input, parser=parser)
             else:
                 dom = etree.parse(str(xml_input), parser=parser)
-            xslt = etree.XSLT(etree.parse(str(xsl_path), parser=safe_xml_parser()))
+            xslt = etree.XSLT(
+                etree.parse(str(xsl_path), parser=safe_xml_parser()),
+                access_control=safe_xslt_access_control(),
+            )
             result = xslt(dom)
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
             logging.exception("lxml transform failed")
             raise
-        output_path.write_text(str(result), encoding="utf-8")
+        from .runtime import write_text_atomic
+
+        write_text_atomic(output_path, str(result))
 
 
 class SaxonCEngine(TransformEngine):
@@ -194,7 +213,11 @@ def configure_saxonc(config) -> Optional[Path]:
     """
     saxon_home = config["saxonc"].get("home")
     if not saxon_home:
-        logging.debug("SaxonC home not configured — using lxml engine")
+        discovered = shutil.which("Transform")
+        if discovered:
+            logging.info(f"SaxonC detected on PATH: {discovered}")
+            return Path(discovered)
+        logging.debug("SaxonC home not configured and Transform not on PATH")
         return None
 
     transform_bin = Path(saxon_home) / "bin" / "Transform"

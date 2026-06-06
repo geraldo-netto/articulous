@@ -22,6 +22,23 @@ from .engines import safe_xml_parser
 
 
 @dataclass(frozen=True)
+class PublicationPolicy:
+    page: bool
+    listing: bool
+    rss: bool
+    sitemap: bool
+    search: bool
+
+
+PUBLICATION_POLICIES = {
+    "published": PublicationPolicy(True, True, True, True, True),
+    "unlisted": PublicationPolicy(True, False, False, False, False),
+    "draft": PublicationPolicy(False, False, False, False, False),
+    "private": PublicationPolicy(False, False, False, False, False),
+}
+
+
+@dataclass(frozen=True)
 class Article:
     """
     Parsed article. Immutable: once produced by :func:`parse_article_xml`,
@@ -36,6 +53,18 @@ class Article:
     tags: tuple
     source_path: Path
     url: str
+    publication: str = "published"
+
+    @property
+    def policy(self) -> PublicationPolicy:
+        return PUBLICATION_POLICIES[self.publication]
+
+
+@dataclass
+class ArticleStats:
+    scanned: int = 0
+    parsed: int = 0
+    skipped: int = 0
 
 
 def normalize_slug(text: str) -> str:
@@ -56,6 +85,7 @@ def _read_article_fields(root) -> dict:
     description = ""
     lang = ""
     tags: list = []
+    publication = "published"
     for child in root:
         tag = child.tag
         text = (child.text or "").strip()
@@ -69,13 +99,26 @@ def _read_article_fields(root) -> dict:
             lang = text
         elif tag == "tag" and text:
             tags.append(text)
+        elif tag == "status" and text:
+            publication = text
     return {
         "title": title,
         "date": date,
         "description": description,
         "lang": lang,
         "tags": tags,
+        "publication": publication,
     }
+
+
+def _validated_publication(raw: str, path: Path) -> str:
+    value = (raw or "published").strip().lower()
+    if value in PUBLICATION_POLICIES:
+        return value
+    logging.warning(
+        f"Article {path} has unknown status {raw!r} — using 'published'"
+    )
+    return "published"
 
 
 def _validated_lang(
@@ -161,6 +204,7 @@ def parse_article_xml(
         return None
 
     url = url_builder(lang, slug) if url_builder is not None else ""
+    publication = _validated_publication(fields["publication"], path)
 
     return Article(
         title=title,
@@ -172,6 +216,7 @@ def parse_article_xml(
         tags=tuple(fields["tags"]),
         source_path=path,
         url=url,
+        publication=publication,
     )
 
 
@@ -186,6 +231,7 @@ def iter_articles(
     default_lang: str = "en",
     url_builder: Optional[Callable[[str, str], str]] = None,
     allowed_langs: Optional[Iterable[str]] = None,
+    stats: Optional[ArticleStats] = None,
 ):
     """
     Yield :class:`Article` instances one at a time, in directory-walk
@@ -201,6 +247,8 @@ def iter_articles(
     """
     allowed = frozenset(allowed_langs) if allowed_langs is not None else None
     for path in _discover_article_files(content_dir):
+        if stats is not None:
+            stats.scanned += 1
         art = parse_article_xml(
             path,
             default_lang=default_lang,
@@ -208,4 +256,8 @@ def iter_articles(
             allowed_langs=allowed,
         )
         if art is not None:
+            if stats is not None:
+                stats.parsed += 1
             yield art
+        elif stats is not None:
+            stats.skipped += 1

@@ -19,6 +19,7 @@ from typing import Protocol
 from urllib.parse import quote
 
 from .articles import normalize_slug
+from .sections import output_path_from_pattern
 
 
 class SiteModelCtx(Protocol):
@@ -96,8 +97,12 @@ class SearchIndex:
 
 def build_rel_path_from_pattern(pattern: str, **kwargs) -> Path:
     """Resolve a URL pattern into a relative ``…/index.html`` path."""
-    url = pattern.format(**kwargs).strip("/")
-    return Path(url) / "index.html"
+    return output_path_from_pattern("articles", pattern, **kwargs)
+
+
+def build_output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path:
+    """Resolve a section URL pattern into its relative output path."""
+    return output_path_from_pattern(section, pattern, **kwargs)
 
 
 def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
@@ -133,8 +138,8 @@ def build_index_models(
             page=page,
             total_pages=num_pages,
             articles=lang_articles[start:end],
-            output_path=build_rel_path_from_pattern(
-                pattern, lang=lang, page=page,
+            output_path=build_output_path_from_pattern(
+                "index", pattern, lang=lang, page=page,
             ),
             url=build_url_from_pattern(
                 ctx.base_url, pattern, lang=lang, page=page,
@@ -170,8 +175,8 @@ def build_tags_models(
             tag=tag,
             tag_slug=tag_slug,
             articles=items,
-            output_path=build_rel_path_from_pattern(
-                pattern, lang=lang, tag=tag_slug,
+            output_path=build_output_path_from_pattern(
+                "tags", pattern, lang=lang, tag=tag_slug,
             ),
             url=build_url_from_pattern(
                 ctx.base_url, pattern, lang=lang, tag=url_tag,
@@ -189,7 +194,7 @@ def build_rss_model(articles, ctx: SiteModelCtx) -> RssFeed:
     pattern = ctx.url_patterns["rss"]
     return RssFeed(
         articles=list(articles[:ctx.rss_items]),
-        output_path=Path(pattern.lstrip("/")),
+        output_path=build_output_path_from_pattern("rss", pattern),
         url=build_url_from_pattern(ctx.base_url, pattern),
     )
 
@@ -205,7 +210,7 @@ def build_sitemap_model(urls, ctx: SiteModelCtx) -> Sitemap:
     pattern = ctx.url_patterns["sitemap"]
     return Sitemap(
         urls=list(urls),
-        output_path=Path(pattern.lstrip("/")),
+        output_path=build_output_path_from_pattern("sitemap", pattern),
         url=build_url_from_pattern(ctx.base_url, pattern),
     )
 
@@ -221,5 +226,5 @@ def build_search_model(items, ctx: SiteModelCtx) -> SearchIndex:
     pattern = ctx.url_patterns["search"]
     return SearchIndex(
         items=list(items),
-        output_path=Path(pattern.lstrip("/")),
+        output_path=build_output_path_from_pattern("search", pattern),
     )

@@ -13,7 +13,10 @@ import pytest
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG
 from articulous.engines import LxmlEngine, SaxonCEngine
+from articulous.filesystem import TempWorkspace
 from articulous.pipeline import (
+    FragmentSink,
+    SearchSink,
     SECTION_NAMES,
     _article_url_builder,
     _article_xml,
@@ -34,6 +37,7 @@ from articulous.pipeline import (
     _search_item_xml,
     _sitemap_doc,
     _sitemap_url_xml,
+    _sorted_store_articles,
     _stream_projections,
     _tag_doc,
     _xml_doc,
@@ -150,6 +154,7 @@ def test_build_ctx_from_config_rejects_bad_default_language(bad):
     [
         ("article", "/{lang}/articles/{slug}.html", "urls.article"),
         ("rss", "/rss/", "urls.rss"),
+        ("article", "/{language}/articles/{slug}/", "placeholders"),
     ],
 )
 def test_build_ctx_from_config_rejects_bad_url_shapes(key, pattern, message):
@@ -303,6 +308,24 @@ def test_copy_assets_recopies_when_hash_changes(tmp_path):
     src.write_text("v2")
     copy_assets(ctx, cache)
     assert dest.read_text() == "v2"
+
+
+def test_copy_assets_delta_removes_stale_and_keeps_unchanged(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    kept = tmp_path / "assets" / "kept.txt"
+    removed = tmp_path / "assets" / "removed.txt"
+    kept.write_text("v1")
+    removed.write_text("bye")
+    copy_assets(ctx, cache)
+    out_kept = tmp_path / "output" / "assets" / "kept.txt"
+    out_kept.write_text("local-edit")
+
+    removed.unlink()
+    copy_assets(ctx, cache)
+
+    assert out_kept.read_text() == "local-edit"
+    assert not (tmp_path / "output" / "assets" / "removed.txt").exists()
 
 
 def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
@@ -625,6 +648,39 @@ def test_build_search_section_runs_and_caches(tmp_path):
     assert build_search_section(items, ctx, cache) == []
 
 
+def test_build_streamed_sitemap_and_search_sections(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    with TempWorkspace() as workspace:
+        urls = FragmentSink(workspace)
+        urls.append(_sitemap_url_xml("https://e.test/a/"))
+        tasks = build_sitemap_section(urls, ctx, cache, workspace)
+        assert len(tasks) == 1
+        tasks[0]()
+
+        items = SearchSink(workspace)
+        items.append_item({
+            "title": "A", "description": "d",
+            "url": "https://e.test/a/", "tags": ["t"],
+        })
+        tasks = build_search_section(items, ctx, cache, workspace)
+        assert len(tasks) == 1
+        tasks[0]()
+
+
+def test_cross_builders_accept_manifest_as_fifth_arg(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    manifest = {}
+    assert build_sitemap_section([], ctx, {}, manifest) != []
+    assert build_search_section([], ctx, {}, manifest) != []
+    assert "sitemap" in manifest
+    assert "search" in manifest
+
+
+def test_sorted_store_articles_none_returns_empty():
+    assert _sorted_store_articles(None, "en") == []
+
+
 # --- _passes_cli_filters ---
 
 class _FakeCLI:
@@ -696,8 +752,9 @@ def test_stream_projections_can_partition_without_cross_work(tmp_path):
     assert projection.sitemap_urls == []
     assert projection.search_items == []
     assert projection.rss_heap == []
-    assert [a.slug for a in projection.articles_by_lang["en"]] == ["a"]
-    assert [a.slug for a in projection.articles_by_lang["fr"]] == ["b"]
+    assert projection.articles_by_lang is not None
+    assert [a.slug for a in projection.articles_by_lang.load("en")] == ["a"]
+    assert [a.slug for a in projection.articles_by_lang.load("fr")] == ["b"]
 
 
 def test_stream_projections_respects_publication_policy(tmp_path):
@@ -711,13 +768,15 @@ def test_stream_projections_respects_publication_policy(tmp_path):
         lambda: iter(articles), _FakeCLI(), ctx, collect_articles=True,
     )
     assert projection.total == 2
-    assert projection.skipped_unpublished == 1
+    assert projection.skipped_by_publication == {"draft": 1}
     assert len(projection.sitemap_urls) == 1
     assert len(projection.search_items) == 1
-    assert [a.slug for a in projection.articles_by_lang["en"]] == [
+    assert projection.articles_by_lang is not None
+    assert projection.listings_by_lang is not None
+    assert [a.slug for a in projection.articles_by_lang.load("en")] == [
         "published", "unlisted",
     ]
-    assert [a.slug for a in projection.listings_by_lang["en"]] == ["published"]
+    assert [a.slug for a in projection.listings_by_lang.load("en")] == ["published"]
 
 
 def test_log_article_stats_includes_unpublished(tmp_path, caplog):
@@ -727,7 +786,7 @@ def test_log_article_stats_includes_unpublished(tmp_path, caplog):
     stats = ArticleStats(scanned=1, parsed=1)
     with caplog.at_level(logging.INFO):
         _log_article_stats(stats, projection)
-    assert any("unpublished skipped" in r.message for r in caplog.records)
+    assert any("draft article(s) skipped" in r.message for r in caplog.records)
 
 
 def test_cleanup_stream_projection_accepts_none():

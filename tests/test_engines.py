@@ -167,9 +167,11 @@ def test_saxon_engine_invokes_subprocess(tmp_path):
     assert run_mock.called
     cmd = run_mock.call_args[0][0]
     assert cmd[0] == str(tmp_path / "Transform")
-    assert cmd[1].startswith("-s:")
-    assert cmd[2].startswith("-xsl:")
-    assert cmd[3].startswith("-o:")
+    assert "-ext:off" in cmd
+    assert "-xi:off" in cmd
+    assert any(arg.startswith("-s:") for arg in cmd)
+    assert any(arg.startswith("-xsl:") for arg in cmd)
+    assert any(arg.startswith("-o:") for arg in cmd)
 
 
 def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):

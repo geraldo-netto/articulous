@@ -8,6 +8,7 @@ shape. Every other module consumes its output via :class:`BuildCtx`
 import json
 from pathlib import Path
 
+from .filesystem import write_text_atomic
 from .sections import SECTION_NAMES
 
 
@@ -70,7 +71,7 @@ def load_or_create_config(path: Path) -> dict:
     if not path.exists():
         cfg = _default_config_copy()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        write_text_atomic(path, json.dumps(cfg, indent=2))
         return cfg
 
     try:

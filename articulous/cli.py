@@ -10,7 +10,7 @@ from pathlib import Path
 from .config import apply_cli_overrides, load_or_create_config
 from .engines import check_dependencies
 from .pipeline import run_build
-from .sections import SECTION_NAMES
+from .sections import SECTION_HELP, SECTION_NAMES
 
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
@@ -28,8 +28,7 @@ def parse_cli_args(argv=None):
     )
     parser.add_argument(
         "--only", type=str, default=None,
-        help="Comma-separated list of sections to build "
-             "(articles,index,tags,rss,sitemap,search)",
+        help=f"Comma-separated list of sections to build ({SECTION_HELP})",
     )
     parser.add_argument(
         "--lang", action="append",

@@ -16,7 +16,6 @@ from articulous.models import (
     TagPage,
     build_index_models,
     build_output_path_from_pattern,
-    build_rel_path_from_pattern,
     build_rss_model,
     build_search_model,
     build_sitemap_model,
@@ -63,8 +62,10 @@ def _art(slug, lang="en", tags=(), url=None):
 
 # --- URL helpers ---
 
-def test_build_rel_path_from_pattern():
-    p = build_rel_path_from_pattern("/{lang}/articles/{slug}/", lang="en", slug="x")
+def test_build_output_path_from_pattern_directory_section():
+    p = build_output_path_from_pattern(
+        "articles", "/{lang}/articles/{slug}/", lang="en", slug="x",
+    )
     assert p == Path("en/articles/x/index.html")
 
 

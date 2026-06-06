@@ -21,6 +21,7 @@ from typing import ClassVar, Optional, Union
 
 from lxml import etree  # type: ignore[attr-defined]
 
+from .filesystem import write_text_atomic
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -140,8 +141,6 @@ class LxmlEngine(TransformEngine):
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
             logging.exception("lxml transform failed")
             raise
-        from .runtime import write_text_atomic
-
         write_text_atomic(output_path, str(result))
 
 
@@ -190,6 +189,8 @@ class SaxonCEngine(TransformEngine):
                 )
         cmd = [
             str(self.saxonc_bin),
+            "-ext:off",
+            "-xi:off",
             f"-s:{resolved['xml']}",
             f"-xsl:{resolved['xsl']}",
             f"-o:{resolved['output']}",

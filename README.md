@@ -167,12 +167,15 @@ are written automatically on first run.
 
 An unknown engine name in `engines` aborts the build immediately so
 typos surface early. Requesting `"saxonc"` without a usable binary
-silently falls back to the lxml engine.
+silently falls back to the lxml engine. SaxonC runs with external
+functions and XInclude disabled.
 
 Article XML may include `<status>published</status>` (default),
-`unlisted`, `draft`, or `private`. `unlisted` pages are generated but
-excluded from index/tag pages, RSS, sitemap, and search; `draft` and
-`private` articles are skipped.
+`unlisted`, `draft`, `private`, or `scheduled`. `unlisted` pages are
+generated but excluded from index/tag pages, RSS, sitemap, and search;
+`draft` and `private` articles are skipped. `scheduled` articles are
+skipped until their optional `<publish-at>YYYY-MM-DDTHH:MM:SS</publish-at>`
+time has passed. Unknown statuses are skipped.
 
 ---
 

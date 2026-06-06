@@ -1,24 +1,29 @@
 """Unit tests for articulous.runtime."""
 import json
 import logging
+import os
 import threading
+import time
 
 import pytest
 
+from articulous.filesystem import (
+    TempWorkspace,
+    _pid_alive,
+    ensure_parent_dir,
+    lock_file,
+    write_text_atomic,
+)
 from articulous.runtime import (
     TrackedCache,
-    _ensure_parent_dir,
     cache_changed,
     file_hash,
     load_cache,
-    lock_file,
     run_parallel_tasks,
     save_cache,
     should_rebuild,
     timed,
     update_cache,
-    write_json,
-    write_text_atomic,
 )
 
 
@@ -26,36 +31,20 @@ from articulous.runtime import (
 
 def test_ensure_parent_dir_creates(tmp_path):
     p = tmp_path / "a" / "b" / "c.txt"
-    _ensure_parent_dir(p)
+    ensure_parent_dir(p)
     assert p.parent.is_dir()
 
 
 def test_ensure_parent_dir_dry_run_noop(tmp_path):
     p = tmp_path / "a" / "b" / "c.txt"
-    _ensure_parent_dir(p, dry_run=True)
+    ensure_parent_dir(p, dry_run=True)
     assert not p.parent.exists()
 
 
 def test_ensure_parent_dir_existing_parent_noop(tmp_path):
     p = tmp_path / "c.txt"
-    _ensure_parent_dir(p)
+    ensure_parent_dir(p)
     assert tmp_path.is_dir()
-
-
-# --- write_json ---
-
-def test_write_json_writes_file(tmp_path):
-    p = tmp_path / "out" / "x.json"
-    write_json(p, {"a": 1})
-    assert json.loads(p.read_text()) == {"a": 1}
-
-
-def test_write_json_dry_run_skips(tmp_path, caplog):
-    p = tmp_path / "x.json"
-    with caplog.at_level(logging.DEBUG):
-        write_json(p, {"a": 1}, dry_run=True)
-    assert not p.exists()
-    assert any("Would write JSON" in r.message for r in caplog.records)
 
 
 def test_write_text_atomic_replaces_existing_file(tmp_path):
@@ -247,6 +236,48 @@ def test_lock_file_excludes_second_holder(tmp_path):
             with lock_file(path):
                 pass
     assert not path.exists()
+
+
+def test_lock_file_recovers_stale_dead_pid(tmp_path):
+    path = tmp_path / "build.lock"
+    path.write_text(json.dumps({"pid": 0, "created": time.time()}))
+    with lock_file(path):
+        assert json.loads(path.read_text())["pid"] == os.getpid()
+    assert not path.exists()
+
+
+def test_lock_file_recovers_malformed_lock(tmp_path):
+    path = tmp_path / "build.lock"
+    path.write_text("not-json")
+    with lock_file(path):
+        assert path.exists()
+
+
+def test_pid_alive_handles_os_errors(monkeypatch):
+    def missing(pid, signal):
+        raise ProcessLookupError
+
+    monkeypatch.setattr("articulous.filesystem.os.kill", missing)
+    assert _pid_alive(123) is False
+
+    def denied(pid, signal):
+        raise PermissionError
+
+    monkeypatch.setattr("articulous.filesystem.os.kill", denied)
+    assert _pid_alive(123) is True
+
+
+def test_temp_workspace_add_and_cleanup(tmp_path):
+    owned = tmp_path / "owned.txt"
+    owned.write_text("x")
+    with TempWorkspace() as workspace:
+        workspace.add(owned)
+        f = workspace.named_file("w+b")
+        f.write(b"x")
+        temp_path = f.name
+        f.close()
+    assert not owned.exists()
+    assert not os.path.exists(temp_path)
 
 
 def test_update_cache_thread_safe():

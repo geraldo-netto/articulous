@@ -1,5 +1,6 @@
 """Unit tests for articulous.articles."""
 from pathlib import Path
+from datetime import datetime, timedelta
 
 import lxml.etree as etree
 import pytest
@@ -7,6 +8,7 @@ import pytest
 from articulous.articles import (
     Article,
     ArticleStats,
+    PublicationState,
     _discover_article_files,
     _read_article_fields,
     _validated_publication,
@@ -51,6 +53,7 @@ def test_read_article_fields_single_pass():
         "lang": "fr",
         "tags": ["a", "b"],
         "publication": "published",
+        "publish_at": "",
     }
 
 
@@ -63,6 +66,7 @@ def test_read_article_fields_missing_optionals():
     assert fields["lang"] == ""
     assert fields["tags"] == []
     assert fields["publication"] == "published"
+    assert fields["publish_at"] == ""
 
 
 def test_read_article_fields_handles_none_text():
@@ -70,6 +74,13 @@ def test_read_article_fields_handles_none_text():
     root = etree.fromstring(b"<article><title/></article>")
     fields = _read_article_fields(root)
     assert fields["title"] == ""
+
+
+def test_read_article_fields_reads_publish_at():
+    root = etree.fromstring(
+        b"<article><publish-at>2025-01-01T00:00:00</publish-at></article>"
+    )
+    assert _read_article_fields(root)["publish_at"] == "2025-01-01T00:00:00"
 
 
 # --- _validated_lang ---
@@ -98,13 +109,32 @@ def test_validated_lang_passes_when_inside_whitelist():
 # --- _validated_publication ---
 
 def test_validated_publication_accepts_known_status():
-    assert _validated_publication(" UNLISTED ", Path("/x")) == "unlisted"
+    state = _validated_publication(" UNLISTED ", "", Path("/x"))
+    assert state is not None
+    assert state.name == "unlisted"
 
 
-def test_validated_publication_defaults_unknown(caplog):
+def test_validated_publication_skips_unknown(caplog):
     with caplog.at_level("WARNING"):
-        assert _validated_publication("weird", Path("/x")) == "published"
+        assert _validated_publication("weird", "", Path("/x")) is None
     assert any("unknown status" in r.message for r in caplog.records)
+
+
+def test_publication_state_scheduled_policy():
+    future = PublicationState("scheduled", datetime.now() + timedelta(days=1))
+    past = PublicationState("scheduled", datetime.now() - timedelta(days=1))
+    unscheduled = PublicationState("scheduled")
+    assert future.policy.page is False
+    assert past.policy.page is True
+    assert unscheduled.policy.page is False
+
+
+def test_validated_publication_invalid_publish_at(caplog):
+    with caplog.at_level("WARNING"):
+        state = _validated_publication("scheduled", "bad-date", Path("/x"))
+    assert state is not None
+    assert state.policy.page is False
+    assert any("invalid publish-at" in r.message for r in caplog.records)
 
 
 # --- parse_article_xml ---
@@ -142,8 +172,16 @@ def test_parse_article_xml_publication_status(tmp_path):
     p.write_text(ARTICLE_XML.replace("</article>", "<status>draft</status></article>"))
     art = parse_article_xml(p, default_lang="en", url_builder=_url_builder)
     assert art is not None
-    assert art.publication == "draft"
+    assert art.publication_state.name == "draft"
     assert art.policy.page is False
+
+
+def test_parse_article_xml_unknown_status_skipped(tmp_path, caplog):
+    p = tmp_path / "a.xml"
+    p.write_text(ARTICLE_XML.replace("</article>", "<status>privte</status></article>"))
+    with caplog.at_level("WARNING"):
+        assert parse_article_xml(p, default_lang="en") is None
+    assert any("unknown status" in r.message for r in caplog.records)
 
 
 def test_parse_article_xml_without_url_builder(tmp_path):

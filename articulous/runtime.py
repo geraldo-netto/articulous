@@ -12,46 +12,15 @@ import hashlib
 import json
 import logging
 import os
-import tempfile
 import threading
 import time
-from contextlib import contextmanager
 from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable, Union
 
+from .filesystem import write_text_atomic
+
 WorkerCount = Union[int, str]  # int or the sentinel "auto"
-
-
-# ================================================================
-# Filesystem helpers
-# ================================================================
-
-def _ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
-    parent = path.parent
-    if not parent.exists() and not dry_run:
-        parent.mkdir(parents=True, exist_ok=True)
-
-
-def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
-    _ensure_parent_dir(path)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding=encoding, dir=path.parent, delete=False,
-    ) as f:
-        f.write(text)
-        tmp_path = Path(f.name)
-    try:
-        tmp_path.replace(path)
-    except OSError:
-        tmp_path.unlink(missing_ok=True)
-        raise
-
-
-def write_json(path: Path, data, dry_run: bool = False) -> None:
-    if dry_run:
-        logging.debug(f"[DRY RUN] Would write JSON: {path}")
-        return
-    write_text_atomic(path, json.dumps(data, indent=2))
 
 
 # ================================================================
@@ -166,18 +135,6 @@ def update_cache(cache: dict, key: str, new_hashes: tuple) -> None:
     """Thread-safe cache write. Workers commit their own entries on success."""
     with _cache_lock:
         cache[key] = list(new_hashes)
-
-
-@contextmanager
-def lock_file(path: Path):
-    _ensure_parent_dir(path)
-    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    try:
-        os.write(fd, str(os.getpid()).encode("ascii"))
-        yield
-    finally:
-        os.close(fd)
-        Path(path).unlink(missing_ok=True)
 
 
 # ================================================================

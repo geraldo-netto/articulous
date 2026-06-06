@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
@@ -30,12 +30,31 @@ class PublicationPolicy:
     search: bool
 
 
-PUBLICATION_POLICIES = {
+_PUBLICATION_POLICIES = {
     "published": PublicationPolicy(True, True, True, True, True),
     "unlisted": PublicationPolicy(True, False, False, False, False),
     "draft": PublicationPolicy(False, False, False, False, False),
     "private": PublicationPolicy(False, False, False, False, False),
+    "scheduled": PublicationPolicy(False, False, False, False, False),
 }
+
+
+@dataclass(frozen=True)
+class PublicationState:
+    name: str = "published"
+    publish_at: Optional[datetime] = None
+
+    @property
+    def policy(self) -> PublicationPolicy:
+        if self.name == "scheduled" and self._published_now():
+            return _PUBLICATION_POLICIES["published"]
+        return _PUBLICATION_POLICIES[self.name]
+
+    def _published_now(self) -> bool:
+        if self.publish_at is None:
+            return False
+        now = datetime.now(tz=self.publish_at.tzinfo)
+        return self.publish_at <= now
 
 
 @dataclass(frozen=True)
@@ -53,11 +72,17 @@ class Article:
     tags: tuple
     source_path: Path
     url: str
-    publication: str = "published"
+    publication: PublicationState | str = PublicationState()
 
     @property
     def policy(self) -> PublicationPolicy:
-        return PUBLICATION_POLICIES[self.publication]
+        return self.publication_state.policy
+
+    @property
+    def publication_state(self) -> PublicationState:
+        if isinstance(self.publication, PublicationState):
+            return self.publication
+        return PublicationState(self.publication)
 
 
 @dataclass
@@ -80,45 +105,54 @@ def _read_article_fields(root) -> dict:
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
-    title = ""
-    date = ""
-    description = ""
-    lang = ""
+    fields = {"title": "", "date": "", "description": "", "lang": ""}
     tags: list = []
     publication = "published"
+    publish_at = ""
     for child in root:
         tag = child.tag
         text = (child.text or "").strip()
-        if tag == "title":
-            title = text
-        elif tag == "date":
-            date = text
-        elif tag == "description":
-            description = text
-        elif tag == "lang":
-            lang = text
+        if tag in fields:
+            fields[tag] = text
         elif tag == "tag" and text:
             tags.append(text)
         elif tag == "status" and text:
             publication = text
+        elif tag == "publish-at" and text:
+            publish_at = text
     return {
-        "title": title,
-        "date": date,
-        "description": description,
-        "lang": lang,
+        "title": fields["title"],
+        "date": fields["date"],
+        "description": fields["description"],
+        "lang": fields["lang"],
         "tags": tags,
         "publication": publication,
+        "publish_at": publish_at,
     }
 
 
-def _validated_publication(raw: str, path: Path) -> str:
+def _parse_publish_at(raw: str, path: Path) -> Optional[datetime]:
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        logging.warning(
+            f"Article {path} has invalid publish-at {raw!r} — treating as scheduled"
+        )
+        return datetime.max.replace(tzinfo=timezone.utc)
+
+
+def _validated_publication(
+    raw: str, publish_at: str, path: Path,
+) -> Optional[PublicationState]:
     value = (raw or "published").strip().lower()
-    if value in PUBLICATION_POLICIES:
-        return value
+    if value in _PUBLICATION_POLICIES:
+        return PublicationState(value, _parse_publish_at(publish_at, path))
     logging.warning(
-        f"Article {path} has unknown status {raw!r} — using 'published'"
+        f"Article {path} has unknown status {raw!r} — skipping"
     )
-    return "published"
+    return None
 
 
 def _validated_lang(
@@ -204,7 +238,11 @@ def parse_article_xml(
         return None
 
     url = url_builder(lang, slug) if url_builder is not None else ""
-    publication = _validated_publication(fields["publication"], path)
+    publication = _validated_publication(
+        fields["publication"], fields["publish_at"], path,
+    )
+    if publication is None:
+        return None
 
     return Article(
         title=title,

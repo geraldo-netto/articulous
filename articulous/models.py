@@ -95,11 +95,6 @@ class SearchIndex:
 # URL helpers
 # ------------------------------------------------------------
 
-def build_rel_path_from_pattern(pattern: str, **kwargs) -> Path:
-    """Resolve a URL pattern into a relative ``…/index.html`` path."""
-    return output_path_from_pattern("articles", pattern, **kwargs)
-
-
 def build_output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path:
     """Resolve a section URL pattern into its relative output path."""
     return output_path_from_pattern(section, pattern, **kwargs)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from string import Formatter
 from pathlib import Path
 
 
@@ -12,15 +13,25 @@ class SectionSpec:
     xsl_file: str
     output_kind: str
     scope: str
+    placeholders: frozenset[str]
 
 
 SECTION_SPECS: tuple[SectionSpec, ...] = (
-    SectionSpec("articles", "article", "article.xsl", "directory", "per-lang"),
-    SectionSpec("index", "index", "index.xsl", "directory", "per-lang"),
-    SectionSpec("tags", "tag", "tags.xsl", "directory", "per-lang"),
-    SectionSpec("rss", "rss", "rss.xsl", "file", "cross-lang"),
-    SectionSpec("sitemap", "sitemap", "sitemap.xsl", "file", "cross-lang"),
-    SectionSpec("search", "search", "search.xsl", "file", "cross-lang"),
+    SectionSpec(
+        "articles", "article", "article.xsl", "directory", "per-lang",
+        frozenset({"lang", "slug"}),
+    ),
+    SectionSpec(
+        "index", "index", "index.xsl", "directory", "per-lang",
+        frozenset({"lang", "page"}),
+    ),
+    SectionSpec(
+        "tags", "tag", "tags.xsl", "directory", "per-lang",
+        frozenset({"lang", "tag"}),
+    ),
+    SectionSpec("rss", "rss", "rss.xsl", "file", "cross-lang", frozenset()),
+    SectionSpec("sitemap", "sitemap", "sitemap.xsl", "file", "cross-lang", frozenset()),
+    SectionSpec("search", "search", "search.xsl", "file", "cross-lang", frozenset()),
 )
 
 SECTION_BY_NAME = {spec.name: spec for spec in SECTION_SPECS}
@@ -31,14 +42,35 @@ CROSS_LANG_SECTIONS = tuple(
 )
 SECTION_XSL = {spec.name: spec.xsl_file for spec in SECTION_SPECS}
 REQUIRED_XSL_FILES = sorted({spec.xsl_file for spec in SECTION_SPECS})
+SECTION_HELP = ",".join(SECTION_NAMES)
 
 
 def url_key_for_section(section: str) -> str:
     return SECTION_BY_NAME[section].url_key
 
 
+def _pattern_fields(pattern: str) -> set[str]:
+    fields = set()
+    for _, field, _, _ in Formatter().parse(pattern):
+        if field:
+            fields.add(field.split(".", 1)[0].split("[", 1)[0])
+    return fields
+
+
+def _validate_placeholders(spec: SectionSpec, pattern: str) -> None:
+    fields = _pattern_fields(pattern)
+    unknown = fields - spec.placeholders
+    missing = spec.placeholders - fields
+    if unknown or missing:
+        raise ValueError(
+            f"config urls.{spec.url_key} placeholders must be "
+            f"{sorted(spec.placeholders)}; got {sorted(fields)}"
+        )
+
+
 def validate_url_pattern(section: str, pattern: str) -> None:
     spec = SECTION_BY_NAME[section]
+    _validate_placeholders(spec, pattern)
     stripped = pattern.format(
         lang="en", slug="slug", page=1, tag="tag",
     ).lstrip("/")

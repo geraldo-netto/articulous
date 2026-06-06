@@ -123,6 +123,20 @@ def _require_worker_count(value) -> WorkerCount:
     return value
 
 
+def _require_languages(languages, default_language) -> list:
+    if not isinstance(languages, list) or not languages:
+        raise ValueError("config site.languages must be a non-empty list of strings")
+    if not all(isinstance(lang, str) and lang for lang in languages):
+        raise ValueError("config site.languages must contain only non-empty strings")
+    if not isinstance(default_language, str) or not default_language:
+        raise ValueError("config site.default_language must be a non-empty string")
+    if default_language not in languages:
+        raise ValueError(
+            "config site.default_language must be present in config site.languages"
+        )
+    return list(languages)
+
+
 def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     """
     Project the raw config dict into a :class:`BuildCtx`.
@@ -152,6 +166,9 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         pagination["rss_items"], "site.pagination.rss_items",
     )
     parallelism = _require_worker_count(config["build"]["parallelism"])
+    languages = _require_languages(
+        config["site"]["languages"], config["site"]["default_language"],
+    )
     return BuildCtx(
         content_dir=Path(config["paths"]["content_dir"]),
         xsl_dir=Path(config["paths"]["xsl_dir"]),
@@ -166,7 +183,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         engines=engines,
         site_name=config["site"]["site_name"],
         base_url=config["site"]["base_url"],
-        languages=list(config["site"]["languages"]),
+        languages=languages,
         default_language=config["site"]["default_language"],
         url_patterns=dict(config["urls"]),
         per_page=per_page,
@@ -223,16 +240,28 @@ def _tree_hash(root: Path) -> str:
     return h.hexdigest()
 
 
+def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict]) -> None:
+    if ctx.dry_run:
+        logging.debug(f"[DRY RUN] Would remove stale assets output: {dest}")
+        return
+    if dest.exists():
+        _delete_output_file(dest, ctx.output_dir.resolve())
+        logging.info(f"Removed stale assets output: {dest}")
+    if cache is not None:
+        cache.pop(_ASSET_CACHE_KEY, None)
+
+
 def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     """
     Mirror ``ctx.assets_dir`` into ``<output_dir>/assets``.
-    No-op if the source is missing; honours dry-run.
+    If the source is missing, remove stale copied assets; honours dry-run.
     """
+    dest = _safe_output_path(ctx, ctx.output_dir / "assets")
     if not ctx.assets_dir.exists():
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
+        _prune_missing_assets(ctx, dest, cache)
         return
 
-    dest = _safe_output_path(ctx, ctx.output_dir / "assets")
     _assert_non_overlapping_trees(ctx.assets_dir, dest)
     assets_hash = _tree_hash(ctx.assets_dir)
 

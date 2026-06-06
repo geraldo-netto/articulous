@@ -3,6 +3,7 @@ import copy
 import dataclasses
 import json
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -126,6 +127,22 @@ def test_build_ctx_from_config_accepts_rss_items_zero():
     assert ctx.rss_items == 0
 
 
+@pytest.mark.parametrize("bad", [[], "en", ("en",), [""], ["en", 7], [True]])
+def test_build_ctx_from_config_rejects_bad_languages(bad):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["site"]["languages"] = bad
+    with pytest.raises(ValueError, match="site.languages"):
+        build_ctx_from_config(cfg, dry_run=False)
+
+
+@pytest.mark.parametrize("bad", ["", None, "fr"])
+def test_build_ctx_from_config_rejects_bad_default_language(bad):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["site"]["default_language"] = bad
+    with pytest.raises(ValueError, match="site.default_language"):
+        build_ctx_from_config(cfg, dry_run=False)
+
+
 @pytest.mark.parametrize("bad", [0, -1, "many", True, 1.5])
 def test_build_ctx_from_config_rejects_bad_parallelism(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
@@ -184,6 +201,32 @@ def test_copy_assets_missing_src_noop(tmp_path):
     ctx = dataclasses.replace(ctx, assets_dir=tmp_path / "assets")
     copy_assets(ctx)
     assert not (tmp_path / "output" / "assets").exists()
+
+
+def test_copy_assets_missing_src_removes_stale_output_and_cache(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    (tmp_path / "assets" / "x.txt").write_text("v1")
+    copy_assets(ctx, cache)
+    assert (tmp_path / "output" / "assets" / "x.txt").exists()
+
+    shutil.rmtree(tmp_path / "assets")
+    copy_assets(ctx, cache)
+
+    assert not (tmp_path / "output" / "assets").exists()
+    assert "assets" not in cache
+
+
+def test_copy_assets_missing_src_dry_run_keeps_stale_output(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    (tmp_path / "assets" / "x.txt").write_text("v1")
+    copy_assets(ctx)
+    shutil.rmtree(tmp_path / "assets")
+
+    ctx = dataclasses.replace(ctx, assets_dir=tmp_path / "assets", dry_run=True)
+    copy_assets(ctx)
+
+    assert (tmp_path / "output" / "assets" / "x.txt").exists()
 
 
 def test_copy_assets_dry_run(tmp_path):

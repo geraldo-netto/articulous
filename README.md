@@ -191,9 +191,11 @@ patterns. Defaults produce:
 The package is covered by a pytest suite with fixture‑based site builds,
 unit tests, and section‑order fuzz tests. Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
+Install `xmllint` first (for example, `libxml2-utils` on Debian/Ubuntu),
+then install the Python test dependencies.
 
 ```sh
-pip install lxml pytest pytest-cov
+pip install -e ".[test]"
 pytest
 ```
 

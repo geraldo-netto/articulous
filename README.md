@@ -3,14 +3,14 @@
 [![Articulous](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml)
 
 A fast, parallel, incremental static site generator powered by **XML + XSLT**.
-Written in Python, with optional SaxonC acceleration for high‑performance builds.
+Written in Python, with optional SaxonC acceleration for high-performance builds.
 
 ---
 
 ## 🚀 Features
 
-- XML‑based article format
-- XSLT‑driven rendering pipeline (per‑section engine choice)
+- XML-based article format
+- XSLT-driven rendering pipeline (per-section engine choice)
 - Streaming, parallel build execution
 - Incremental caching (only rebuilds changed files)
 - Multi‑language sites with per‑article `<lang>`
@@ -49,7 +49,7 @@ your-site/
 │       ├── rss.xsl
 │       ├── sitemap.xsl
 │       └── search.xsl
-├── assets/                 # images, css, js — copied verbatim into output/
+├── assets/                 # images, css, js, mirrored into output/
 └── output/                 # build target (created on first run)
     ├── en/
     │   ├── articles/<slug>/index.html
@@ -62,7 +62,9 @@ your-site/
 ```
 
 The build cache (`.build-cache.json` by default) is written next to
-`sitegen.py` and is safe to delete to force a full rebuild.
+`sitegen.py` and is safe to delete to force a full rebuild. Concurrent
+builds are guarded by `.build-cache.lock`; stale or malformed locks are
+recovered automatically.
 
 ---
 
@@ -77,6 +79,8 @@ Place your articles anywhere inside `content/`. Each file:
   <date>2024-01-01</date>
   <description>My first article.</description>
   <lang>en</lang>           <!-- optional; falls back to site.default_language -->
+  <status>published</status> <!-- optional; default is published -->
+  <publish-at>2024-01-01T00:00:00</publish-at> <!-- only used by scheduled -->
   <tag>intro</tag>
   <tag>welcome</tag>
 </article>
@@ -90,6 +94,13 @@ Notes:
   with a missing or invalid date are skipped with a warning.
 - `<lang>` is validated against `site.languages`; values outside the
   configured set fall back to `site.default_language`.
+- `<status>` may be `published`, `unlisted`, `draft`, `private`, or
+  `scheduled`. Unknown statuses are skipped with a warning.
+- `unlisted` pages are generated but excluded from index/tag pages, RSS,
+  sitemap, and search. `draft` and `private` articles are skipped.
+- `scheduled` articles publish only when `<publish-at>` is present and
+  its ISO-8601 timestamp has passed. A missing timestamp keeps the article
+  skipped; an invalid timestamp is skipped with a warning.
 
 ---
 
@@ -153,7 +164,8 @@ Examples:
 ## 🛠️ Configuration
 
 Configuration lives in `config.json`. If the file is missing, defaults
-are written automatically on first run.
+are written automatically on first run. Malformed existing configuration
+fails fast instead of being overwritten.
 
 | Block         | Keys                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------- |
@@ -167,15 +179,22 @@ are written automatically on first run.
 
 An unknown engine name in `engines` aborts the build immediately so
 typos surface early. Requesting `"saxonc"` without a usable binary
-silently falls back to the lxml engine. SaxonC runs with external
-functions and XInclude disabled.
+silently falls back to the lxml engine. lxml denies XSLT file/network
+access, and SaxonC runs with external functions and XInclude disabled.
 
-Article XML may include `<status>published</status>` (default),
-`unlisted`, `draft`, `private`, or `scheduled`. `unlisted` pages are
-generated but excluded from index/tag pages, RSS, sitemap, and search;
-`draft` and `private` articles are skipped. `scheduled` articles are
-skipped until their optional `<publish-at>YYYY-MM-DDTHH:MM:SS</publish-at>`
-time has passed. Unknown statuses are skipped.
+URL patterns are validated by section:
+
+| URL key   | Required placeholders | Output shape |
+| --------- | --------------------- | ------------ |
+| `article` | `{lang}`, `{slug}`    | Directory-style; `index.html` is appended |
+| `index`   | `{lang}`, `{page}`    | Directory-style; `index.html` is appended |
+| `tag`     | `{lang}`, `{tag}`     | Directory-style; `index.html` is appended |
+| `rss`     | none                  | File-style path, such as `/rss.xml` |
+| `sitemap` | none                  | File-style path, such as `/sitemap.xml` |
+| `search`  | none                  | File-style path, such as `/search.json` |
+
+Directory-style patterns must not end in a file suffix. File-style
+patterns must include one.
 
 ---
 
@@ -187,7 +206,7 @@ patterns. Defaults produce:
 - `output/en/articles/<slug>/index.html`
 - `output/en/page/<n>/index.html`
 - `output/en/tags/<tag>/index.html`
-- `output/assets/...` (verbatim copy of `assets/`)
+- `output/assets/...` (incremental mirror of `assets/`)
 - `output/rss.xml`
 - `output/sitemap.xml`
 - `output/search.json`
@@ -200,11 +219,13 @@ The package is covered by a pytest suite with fixture‑based site builds,
 unit tests, and section‑order fuzz tests. Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
 Install `xmllint` first (for example, `libxml2-utils` on Debian/Ubuntu),
-then install the Python test dependencies.
+then install the Python test dependencies and local lint/type tools.
 
 ```sh
-pip install -e ".[test]"
+pip install -e ".[test]" ruff pyright
 pytest
+ruff check .
+pyright
 ```
 
 Notes:

@@ -23,11 +23,13 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| SCAL-04 | open | M | `ArticleStore.load()` materializes and sorts a full language's article set at once (articulous/pipeline.py:505-511; articulous/pipeline.py:944-950) | Prior spill-to-disk work removed cross-language retention, but a very large single language can still spike memory. Consider chunked/external sort or streaming per-section consumers before claiming unbounded scale. |
 
 ## concurrency
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| CONC-03 | open | M | Stale lock recovery can unlink a lock file after checking stale state but before proving it still owns the same stale file (articulous/filesystem.py:49-67) | Race: another process may replace the stale lock between `_stale_lock()` and `unlink()`. Use an ownership token/inode check or atomic rename-before-delete pattern. |
 
 ## code complexity
 
@@ -38,6 +40,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| DG-03 | open | S | `<status>scheduled</status>` with no `<publish-at>` is skipped indefinitely without a targeted warning (articulous/articles.py:47-57; articulous/articles.py:146-155) | Behavior is now documented, but content owners get no article-specific signal unless `publish-at` is invalid. Add a warning or validation result for missing schedule timestamps. |
 
 ## system design
 
@@ -68,11 +71,13 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| REL-06 | open | M | Asset delta cache treats unchanged `(type, size, mtime_ns)` as unchanged content (articulous/pipeline.py:248-292) | Preserved/restored mtimes with same-size edits can leave stale output assets. Consider a content digest mode, suspicious-file hashing, or always-copy-on-equal-mtime policy for assets. |
 
 ## observability
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| OBS-05 | open | S | Stale or malformed build-lock recovery is silent (articulous/filesystem.py:49-67) | Operators cannot distinguish normal lock acquisition from stale-lock cleanup. Emit a low-volume warning/info when a lock is removed. |
 
 ## wiring gaps
 
@@ -90,9 +95,9 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-01 | parked | S | `_stream_projections` emits no per-section progress; only final tally/plan logs are emitted (articulous/pipeline.py:800-828; articulous/pipeline.py:859-872) | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
-| OBS-02 | parked | S | `timed()` wraps tasks at DEBUG only; production builds see no per-task signal (articulous/runtime.py:187-194) | Same trade-off as OBS-01; bumping to INFO would flood logs for normal builds. |
-| DOC-01 | parked | S | `SiteModelCtx` `@property` members carry no docstrings (articulous/models.py:24-48) | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
+| OBS-01 | parked | S | `_stream_projections` emits no per-section progress; only final tally/plan logs are emitted (articulous/pipeline.py:838-874; articulous/pipeline.py:923-941) | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
+| OBS-02 | parked | S | `timed()` wraps tasks at DEBUG only; production builds see no per-task signal (articulous/runtime.py:144-152) | Same trade-off as OBS-01; bumping to INFO would flood logs for normal builds. |
+| DOC-01 | parked | S | `SiteModelCtx` `@property` members carry no docstrings (articulous/models.py:25-47) | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
 
 ## Audit picks deliberately rejected
 

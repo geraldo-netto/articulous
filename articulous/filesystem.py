@@ -1,7 +1,9 @@
 """Filesystem primitives shared across build layers."""
 from __future__ import annotations
 
+import fcntl
 import json
+import logging
 import os
 import tempfile
 import time
@@ -46,27 +48,47 @@ def _lock_payload() -> str:
     return json.dumps(data, sort_keys=True)
 
 
-def _stale_lock(path: Path, stale_after: float) -> bool:
+def _stale_lock_reason(text: str, stale_after: float) -> str:
+    if not text:
+        return ""
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(text)
         age = time.time() - float(data.get("created", 0))
-        return age > stale_after or not _pid_alive(int(data.get("pid", 0)))
+        if age > stale_after:
+            return "expired"
+        if not _pid_alive(int(data.get("pid", 0))):
+            return "dead process"
+        return ""
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
-        return True
+        return "malformed"
+
+
+def _read_lock(fd: int) -> str:
+    os.lseek(fd, 0, os.SEEK_SET)
+    return os.read(fd, 65536).decode("utf-8", errors="replace")
+
+
+def _write_lock(fd: int) -> None:
+    os.lseek(fd, 0, os.SEEK_SET)
+    os.ftruncate(fd, 0)
+    os.write(fd, _lock_payload().encode("utf-8"))
+    os.fsync(fd)
 
 
 def _acquire_lock(path: Path, stale_after: float) -> int:
     ensure_parent_dir(path)
-    while True:
-        try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-        except FileExistsError:
-            if not _stale_lock(path, stale_after):
-                raise
-            path.unlink(missing_ok=True)
-            continue
-        os.write(fd, _lock_payload().encode("utf-8"))
-        return fd
+    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as e:
+        os.close(fd)
+        raise FileExistsError(path) from e
+
+    reason = _stale_lock_reason(_read_lock(fd), stale_after)
+    if reason:
+        logging.warning(f"Recovering {reason} build lock: {path}")
+    _write_lock(fd)
+    return fd
 
 
 @contextmanager
@@ -75,8 +97,11 @@ def lock_file(path: Path, stale_after: float = 3600):
     try:
         yield
     finally:
-        os.close(fd)
-        Path(path).unlink(missing_ok=True)
+        try:
+            Path(path).unlink(missing_ok=True)
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            os.close(fd)
 
 
 class TempWorkspace:

@@ -19,6 +19,7 @@ import pickle
 import shutil
 import time
 from dataclasses import dataclass, field
+from itertools import islice
 from pathlib import Path
 from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
@@ -64,6 +65,7 @@ from .sections import (
 
 _ASSET_CACHE_KEY = "assets"
 _OUTPUT_MANIFEST_KEY = "__outputs__"
+_SORT_CHUNK_SIZE = 1024
 
 
 # ================================================================
@@ -253,7 +255,7 @@ def _asset_manifest(root: Path) -> dict:
         if path.is_dir():
             manifest[rel] = ["d", stat.st_mtime_ns]
         else:
-            manifest[rel] = ["f", stat.st_size, stat.st_mtime_ns]
+            manifest[rel] = ["f", stat.st_size, stat.st_mtime_ns, file_hash(path)]
     return manifest
 
 
@@ -488,6 +490,40 @@ class SearchSink:
         return self.items.count == 0 and other == []
 
 
+class SortedArticleBatch:
+    def __init__(self, chunks: list[tuple[Path, int]], count: int):
+        self._chunks = chunks
+        self._count = count
+
+    def __iter__(self):
+        streams = (
+            _read_pickled_articles(path, count)
+            for path, count in self._chunks
+        )
+        yield from heapq.merge(
+            *streams, key=lambda a: a.datetime, reverse=True,
+        )
+
+    def __len__(self) -> int:
+        return self._count
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return list(islice(iter(self), item.start, item.stop, item.step))
+        return next(islice(iter(self), item, item + 1))
+
+    def __eq__(self, other) -> bool:
+        return self._count == 0 and other == []
+
+
+def _write_sorted_article_chunk(workspace: TempWorkspace, articles: list) -> tuple[Path, int]:
+    articles.sort(key=lambda a: a.datetime, reverse=True)
+    with workspace.named_file("w+b") as f:
+        for art in articles:
+            pickle.dump(art, f)
+        return Path(f.name), len(articles)
+
+
 class ArticleStore:
     def __init__(self, workspace: TempWorkspace):
         self._workspace = workspace
@@ -502,13 +538,25 @@ class ArticleStore:
         pickle.dump(art, f)
         self.counts[lang] = self.counts.get(lang, 0) + 1
 
-    def load(self, lang: str) -> list:
+    def iter_lang(self, lang: str):
         f = self._files.get(lang)
         if f is None:
-            return []
+            return
         f.flush()
         path = Path(f.name)
-        return list(_read_pickled_articles(path, self.counts[lang]))
+        yield from _read_pickled_articles(path, self.counts[lang])
+
+    def sorted(self, lang: str) -> SortedArticleBatch:
+        chunks: list[tuple[Path, int]] = []
+        chunk = []
+        for art in self.iter_lang(lang):
+            chunk.append(art)
+            if len(chunk) == _SORT_CHUNK_SIZE:
+                chunks.append(_write_sorted_article_chunk(self._workspace, chunk))
+                chunk = []
+        if chunk:
+            chunks.append(_write_sorted_article_chunk(self._workspace, chunk))
+        return SortedArticleBatch(chunks, self.counts.get(lang, 0))
 
     def close(self) -> None:
         for f in self._files.values():
@@ -941,10 +989,10 @@ def _collect_cross_lang_plan(
     return plan
 
 
-def _sorted_store_articles(store: ArticleStore | None, lang: str) -> list:
+def _sorted_store_articles(store: ArticleStore | None, lang: str):
     if store is None:
         return []
-    return sorted(store.load(lang), key=lambda a: a.datetime, reverse=True)
+    return store.sorted(lang)
 
 
 def _add_per_lang_tasks(

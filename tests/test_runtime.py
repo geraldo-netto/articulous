@@ -238,19 +238,49 @@ def test_lock_file_excludes_second_holder(tmp_path):
     assert not path.exists()
 
 
-def test_lock_file_recovers_stale_dead_pid(tmp_path):
+def test_lock_file_recovers_stale_dead_pid(tmp_path, caplog):
     path = tmp_path / "build.lock"
     path.write_text(json.dumps({"pid": 0, "created": time.time()}))
+    with caplog.at_level(logging.WARNING):
+        with lock_file(path):
+            assert json.loads(path.read_text())["pid"] == os.getpid()
+    assert any("dead process build lock" in r.message for r in caplog.records)
+    assert not path.exists()
+
+
+def test_lock_file_recovers_expired_lock(tmp_path, caplog):
+    path = tmp_path / "build.lock"
+    path.write_text(json.dumps({"pid": os.getpid(), "created": 0}))
+    with caplog.at_level(logging.WARNING):
+        with lock_file(path, stale_after=0):
+            assert json.loads(path.read_text())["pid"] == os.getpid()
+    assert any("expired build lock" in r.message for r in caplog.records)
+    assert not path.exists()
+
+
+def test_lock_file_does_not_warn_for_fresh_lock(tmp_path, caplog):
+    path = tmp_path / "build.lock"
+    with caplog.at_level(logging.WARNING):
+        with lock_file(path):
+            assert path.exists()
+    assert not caplog.records
+
+
+def test_lock_file_rewrites_released_fresh_lock(tmp_path):
+    path = tmp_path / "build.lock"
+    path.write_text(json.dumps({"pid": os.getpid(), "created": time.time()}))
     with lock_file(path):
         assert json.loads(path.read_text())["pid"] == os.getpid()
     assert not path.exists()
 
 
-def test_lock_file_recovers_malformed_lock(tmp_path):
+def test_lock_file_recovers_malformed_lock(tmp_path, caplog):
     path = tmp_path / "build.lock"
     path.write_text("not-json")
-    with lock_file(path):
-        assert path.exists()
+    with caplog.at_level(logging.WARNING):
+        with lock_file(path):
+            assert path.exists()
+    assert any("malformed build lock" in r.message for r in caplog.records)
 
 
 def test_pid_alive_handles_os_errors(monkeypatch):

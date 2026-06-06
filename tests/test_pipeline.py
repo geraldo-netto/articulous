@@ -3,6 +3,7 @@ import copy
 import dataclasses
 import json
 import logging
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from articulous.config import DEFAULT_CONFIG
 from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.filesystem import TempWorkspace
 from articulous.pipeline import (
+    ArticleStore,
     FragmentSink,
     SearchSink,
     SECTION_NAMES,
@@ -284,18 +286,22 @@ def test_copy_assets_skips_when_hash_unchanged(tmp_path, caplog):
     assert any("Skipping unchanged assets" in r.message for r in caplog.records)
 
 
-def test_copy_assets_skips_unchanged_without_content_hash(tmp_path, monkeypatch):
+def test_copy_assets_hashes_unchanged_files(tmp_path, monkeypatch):
     ctx = _ctx_for(tmp_path)
     cache = {}
     src = tmp_path / "assets" / "x.txt"
     src.write_text("v1")
     copy_assets(ctx, cache)
 
+    calls = []
+
     def fail_hash(path):
-        raise AssertionError(f"unexpected content hash for {path}")
+        calls.append(path)
+        return "same"
 
     monkeypatch.setattr("articulous.pipeline.file_hash", fail_hash)
     copy_assets(ctx, cache)
+    assert calls == [src]
 
 
 def test_copy_assets_recopies_when_hash_changes(tmp_path):
@@ -307,6 +313,22 @@ def test_copy_assets_recopies_when_hash_changes(tmp_path):
     copy_assets(ctx, cache)
     src.write_text("v2")
     copy_assets(ctx, cache)
+    assert dest.read_text() == "v2"
+
+
+def test_copy_assets_recopies_same_size_same_mtime_change(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    dest = tmp_path / "output" / "assets" / "x.txt"
+    src.write_text("v1")
+    copy_assets(ctx, cache)
+
+    stamp = src.stat()
+    src.write_text("v2")
+    os.utime(src, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+    copy_assets(ctx, cache)
+
     assert dest.read_text() == "v2"
 
 
@@ -681,6 +703,30 @@ def test_sorted_store_articles_none_returns_empty():
     assert _sorted_store_articles(None, "en") == []
 
 
+def test_sorted_store_articles_uses_sorted_chunk_batch(tmp_path, monkeypatch):
+    monkeypatch.setattr("articulous.pipeline._SORT_CHUNK_SIZE", 2)
+    with TempWorkspace() as workspace:
+        store = ArticleStore(workspace)
+        store.append("en", dataclasses.replace(
+            _art("old"), datetime=datetime(2024, 1, 1),
+        ))
+        store.append("en", dataclasses.replace(
+            _art("new"), datetime=datetime(2026, 1, 1),
+        ))
+        store.append("en", dataclasses.replace(
+            _art("mid"), datetime=datetime(2025, 1, 1),
+        ))
+
+        batch = _sorted_store_articles(store, "en")
+
+        assert len(batch) == 3
+        assert [a.slug for a in batch] == ["new", "mid", "old"]
+        assert getattr(batch[0], "slug") == "new"
+        assert [a.slug for a in batch[1:]] == ["mid", "old"]
+        assert batch != []
+        assert _sorted_store_articles(store, "fr") == []
+
+
 # --- _passes_cli_filters ---
 
 class _FakeCLI:
@@ -753,8 +799,8 @@ def test_stream_projections_can_partition_without_cross_work(tmp_path):
     assert projection.search_items == []
     assert projection.rss_heap == []
     assert projection.articles_by_lang is not None
-    assert [a.slug for a in projection.articles_by_lang.load("en")] == ["a"]
-    assert [a.slug for a in projection.articles_by_lang.load("fr")] == ["b"]
+    assert [a.slug for a in projection.articles_by_lang.iter_lang("en")] == ["a"]
+    assert [a.slug for a in projection.articles_by_lang.iter_lang("fr")] == ["b"]
 
 
 def test_stream_projections_respects_publication_policy(tmp_path):
@@ -773,10 +819,12 @@ def test_stream_projections_respects_publication_policy(tmp_path):
     assert len(projection.search_items) == 1
     assert projection.articles_by_lang is not None
     assert projection.listings_by_lang is not None
-    assert [a.slug for a in projection.articles_by_lang.load("en")] == [
+    assert [a.slug for a in projection.articles_by_lang.iter_lang("en")] == [
         "published", "unlisted",
     ]
-    assert [a.slug for a in projection.listings_by_lang.load("en")] == ["published"]
+    assert [a.slug for a in projection.listings_by_lang.iter_lang("en")] == [
+        "published",
+    ]
 
 
 def test_log_article_stats_includes_unpublished(tmp_path, caplog):

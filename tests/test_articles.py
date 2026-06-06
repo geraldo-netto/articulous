@@ -137,6 +137,14 @@ def test_validated_publication_invalid_publish_at(caplog):
     assert any("invalid publish-at" in r.message for r in caplog.records)
 
 
+def test_validated_publication_warns_for_scheduled_without_publish_at(caplog):
+    with caplog.at_level("WARNING"):
+        state = _validated_publication("scheduled", "", Path("/x"))
+    assert state is not None
+    assert state.policy.page is False
+    assert any("scheduled without publish-at" in r.message for r in caplog.records)
+
+
 # --- parse_article_xml ---
 
 ARTICLE_XML = (

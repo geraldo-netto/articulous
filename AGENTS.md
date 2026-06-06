@@ -47,6 +47,8 @@ the behavior defined here when interacting with this workspace.
   - scalability
   - concurrency
   - code complexity
+  - data governance
+  - system design
   - code duplication
   - architecture/modularity/SOLID
   - decoupling

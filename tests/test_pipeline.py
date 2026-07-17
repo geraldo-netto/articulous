@@ -994,7 +994,7 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
         "root": "root.txt",
         "dir": "old-dir",
         "missing": "missing.txt",
-        "bad": "/tmp/outside.txt",
+        "bad": str(tmp_path.parent / "outside.txt"),
     }
     with caplog.at_level(logging.WARNING):
         _prune_stale_outputs(ctx, cache, old, {})

@@ -128,7 +128,8 @@ def test_setup_logging_rejects_traversing_log_file(tmp_path):
 
 
 def test_setup_logging_rejects_absolute_log_file_outside_root(tmp_path):
-    cfg = {"logging": {"level": "INFO", "file": "/tmp/articulous.log"}}
+    outside = tmp_path.parent / "articulous-outside.log"
+    cfg = {"logging": {"level": "INFO", "file": str(outside)}}
     with pytest.raises(ValueError, match="outside project root"):
         setup_logging(cfg, tmp_path)
 

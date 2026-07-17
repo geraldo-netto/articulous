@@ -35,7 +35,9 @@ def test_deep_merge_recurses_into_nested_dicts():
 
 def test_deep_merge_returns_base():
     base = {"a": 1}
-    assert deep_merge(base, {"b": 2}) is base
+    returned = deep_merge(base, {"b": 2})
+    returned["c"] = 3
+    assert base == {"a": 1, "b": 2, "c": 3}
 
 
 def test_deep_merge_override_non_dict_into_dict():

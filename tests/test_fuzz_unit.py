@@ -104,14 +104,14 @@ def test_parse_article_xml_never_crashes_on_garbled_input(tmp_path):
     for i in range(40):
         p = tmp_path / f"a{i}.xml"
         # Mix valid and invalid XML
-        if rnd.random() < 0.3:
+        if rnd.random() < 0.3:  # NOSONAR - deterministic test data, not security-sensitive
             p.write_text(_rand_text(rnd, max_len=80))
         else:
             p.write_text(
                 f"<article><title>{_rand_text(rnd)}</title>"
-                f"<date>{rnd.choice(['2025-01-01', 'nope', ''])}</date>"
+                f"<date>{rnd.choice(['2025-01-01', 'nope', ''])}</date>"  # NOSONAR - deterministic test data
                 f"<description>{_rand_text(rnd)}</description>"
-                f"<lang>{rnd.choice(['en', 'fr', 'zz', '../bad'])}</lang>"
+                f"<lang>{rnd.choice(['en', 'fr', 'zz', '../bad'])}</lang>"  # NOSONAR - deterministic test data
                 f"<tag>{_rand_text(rnd)}</tag>"
                 f"</article>"
             )
@@ -145,7 +145,7 @@ def test_make_xslt_task_random_xml_hashes_consistently(tmp_path):
     )
     rnd = random.Random(0xABCD)
     for i in range(20):
-        payload = f"<root>{rnd.randint(0, 1_000_000)}</root>".encode()
+        payload = f"<root>{rnd.randint(0, 1_000_000)}</root>".encode()  # NOSONAR - deterministic test data
         cache = {}
         task = _make_xslt_task(
             xml_input=payload, xsl_path=xsl, xsl_hash=xsl_hash,

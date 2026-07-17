@@ -2,8 +2,10 @@
 import logging
 import subprocess
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
+import lxml.etree as etree
 import pytest
 
 from articulous.engines import (
@@ -42,7 +44,6 @@ def test_valid_engines_set():
 
 def test_safe_xml_parser_is_xxe_safe(tmp_path):
     """Behavioural check: external entities do not get expanded."""
-    import lxml.etree as etree
     payload = (
         '<?xml version="1.0"?>'
         '<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
@@ -108,9 +109,10 @@ def test_lxml_engine_propagates_xslt_parse_error(tmp_path, caplog):
     xsl = tmp_path / "bad.xsl"
     xsl.write_text("<not-a-stylesheet/>")
     out = tmp_path / "out.html"
+    engine = LxmlEngine()
     with caplog.at_level(logging.ERROR):
-        with pytest.raises(Exception):
-            LxmlEngine().run(b"<root/>", xsl, out)
+        with pytest.raises(etree.XSLTParseError):
+            engine.run(b"<root/>", xsl, out)
     assert any("lxml transform failed" in r.message for r in caplog.records)
 
 
@@ -125,9 +127,11 @@ def test_lxml_engine_blocks_xslt_document_reads(tmp_path, caplog):
         f'<xsl:value-of select="document({str(secret)!r})/secret"/>'
         "</xsl:template></xsl:stylesheet>"
     )
+    engine = LxmlEngine()
+    out = tmp_path / "out.txt"
     with caplog.at_level(logging.ERROR):
-        with pytest.raises(Exception):
-            LxmlEngine().run(b"<root/>", xsl, tmp_path / "out.txt")
+        with pytest.raises(etree.XSLTApplyError):
+            engine.run(b"<root/>", xsl, out)
     assert any("lxml transform failed" in r.message for r in caplog.records)
 
 
@@ -147,12 +151,11 @@ def test_saxon_engine_rejects_leading_dash_path(tmp_path):
         def resolve(self): return self
         def __str__(self): return self.s
 
+    xml_path = cast(Path, FakePath("-evil.xml"))
+    xsl_path = cast(Path, FakePath("/abs/x.xsl"))
+    output_path = cast(Path, FakePath("/abs/o.html"))
     with pytest.raises(ValueError, match=r"begins with '-'"):
-        e._run_saxon(
-            FakePath("-evil.xml"),  # type: ignore[arg-type]
-            FakePath("/abs/x.xsl"),  # type: ignore[arg-type]
-            FakePath("/abs/o.html"),  # type: ignore[arg-type]
-        )
+        e._run_saxon(xml_path, xsl_path, output_path)
 
 
 def test_saxon_engine_invokes_subprocess(tmp_path):
@@ -237,7 +240,7 @@ def test_make_engine_rejects_unknown_name():
 
 def test_make_engine_rejects_none_name():
     with pytest.raises(ValueError, match="Unknown engine"):
-        make_engine(None, None)  # type: ignore[arg-type]
+        make_engine(cast(str, None), None)
 
 
 def test_configure_saxonc_no_home_returns_none(monkeypatch):

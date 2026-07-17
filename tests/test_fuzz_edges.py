@@ -64,24 +64,24 @@ URL_PATTERNS = {
 
 
 def _model_ctx(**overrides):
-    base = dict(
-        base_url="https://e.test",
-        languages=["en"],
-        per_page=10,
-        rss_items=20,
-        url_patterns=URL_PATTERNS,
-    )
+    base = {
+        "base_url": "https://e.test",
+        "languages": ["en"],
+        "per_page": 10,
+        "rss_items": 20,
+        "url_patterns": URL_PATTERNS,
+    }
     base.update(overrides)
     return cast(SiteModelCtx, SimpleNamespace(**base))
 
 
 def _art(slug="s", **kw):
-    base: dict[str, Any] = dict(
-        title=slug, slug=slug, lang="en", date="2025-01-01",
-        datetime=datetime(2025, 1, 1), description="d", tags=(),
-        source_path=Path(f"/c/{slug}.xml"),
-        url=f"https://e.test/en/{slug}/",
-    )
+    base: dict[str, Any] = {
+        "title": slug, "slug": slug, "lang": "en", "date": "2025-01-01",
+        "datetime": datetime(2025, 1, 1), "description": "d", "tags": (),
+        "source_path": Path(f"/c/{slug}.xml"),
+        "url": f"https://e.test/en/{slug}/",
+    }
     base.update(kw)
     return Article(**base)
 
@@ -376,6 +376,6 @@ def test_make_xslt_task_empty_bytes_raises_at_run(tmp_path):
         ctx=ctx,
     )
     assert task is not None
-    with pytest.raises(Exception):
+    with pytest.raises(etree.XMLSyntaxError):
         task()
     assert "k" not in cache

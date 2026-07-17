@@ -1,5 +1,6 @@
 """Unit tests for articulous.cli."""
 import logging
+from typing import cast
 
 import pytest
 
@@ -48,8 +49,9 @@ def test_cli_options_only_whitespace_only_means_none():
 
 
 def test_cli_options_only_rejects_unknown_section():
+    args = parse_cli_args(["--only", "articles,rrs"])
     with pytest.raises(ValueError, match="Unknown section"):
-        CliOptions(parse_cli_args(["--only", "articles,rrs"]))
+        CliOptions(args)
 
 
 def test_cli_options_appendable_flags():
@@ -88,7 +90,7 @@ def test_resolve_log_level_invalid_falls_back():
 
 
 def test_resolve_log_level_none_falls_back():
-    assert _resolve_log_level(None) == logging.INFO  # type: ignore[arg-type]
+    assert _resolve_log_level(cast(str, None)) == logging.INFO
 
 
 # --- setup_logging ---
@@ -115,7 +117,7 @@ def test_setup_logging_adds_file_handler(tmp_path):
     handlers = logging.getLogger().handlers
     assert any(isinstance(h, logging.FileHandler) for h in handlers)
     # close file handlers so tmp_path can be cleaned
-    for h in list(handlers):
+    for h in handlers.copy():
         if isinstance(h, logging.FileHandler):
             h.close()
             logging.getLogger().removeHandler(h)
@@ -140,7 +142,7 @@ def test_setup_logging_accepts_absolute_log_file_inside_root(tmp_path):
     setup_logging(cfg, tmp_path)
     handlers = logging.getLogger().handlers
     assert any(isinstance(h, logging.FileHandler) for h in handlers)
-    for h in list(handlers):
+    for h in handlers.copy():
         if isinstance(h, logging.FileHandler):
             h.close()
             logging.getLogger().removeHandler(h)

@@ -1,4 +1,5 @@
 """Unit tests for articulous.models."""
+from dataclasses import FrozenInstanceError
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,12 +26,12 @@ from articulous.models import (
 
 
 def _ctx(**overrides):
-    base = dict(
-        base_url="https://example.test",
-        languages=["en", "fr"],
-        per_page=2,
-        rss_items=5,
-        url_patterns={
+    base = {
+        "base_url": "https://example.test",
+        "languages": ["en", "fr"],
+        "per_page": 2,
+        "rss_items": 5,
+        "url_patterns": {
             "article": "/{lang}/articles/{slug}/",
             "index": "/{lang}/page/{page}/",
             "tag": "/{lang}/tags/{tag}/",
@@ -38,7 +39,7 @@ def _ctx(**overrides):
             "sitemap": "/sitemap.xml",
             "search": "/search.json",
         },
-    )
+    }
     base.update(overrides)
     # SimpleNamespace structurally satisfies the SiteModelCtx Protocol
     # but pyright can't see through its dynamic attrs; cast to keep the
@@ -88,20 +89,20 @@ def test_index_page_frozen():
         lang="en", page=1, total_pages=1,
         articles=[], output_path=Path("x"), url="u",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         p.page = 2  # type: ignore[misc]
 
 
 def test_other_page_frozen():
     for cls, kwargs, attr in [
-        (TagPage, dict(lang="en", tag="x", tag_slug="x", articles=[],
-                       output_path=Path("p"), url="u"), "url"),
-        (RssFeed, dict(articles=[], output_path=Path("p"), url="u"), "url"),
-        (Sitemap, dict(urls=[], output_path=Path("p"), url="u"), "url"),
-        (SearchIndex, dict(items=[], output_path=Path("p")), "items"),
+        (TagPage, {"lang": "en", "tag": "x", "tag_slug": "x", "articles": [],
+                   "output_path": Path("p"), "url": "u"}, "url"),
+        (RssFeed, {"articles": [], "output_path": Path("p"), "url": "u"}, "url"),
+        (Sitemap, {"urls": [], "output_path": Path("p"), "url": "u"}, "url"),
+        (SearchIndex, {"items": [], "output_path": Path("p")}, "items"),
     ]:
         obj = cls(**kwargs)
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             setattr(obj, attr, "y")
 
 

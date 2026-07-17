@@ -447,10 +447,6 @@ class FragmentSink:
         self._file.write(fragment)
         self.count += 1
 
-    def write_raw(self, fragment: str) -> None:
-        self._file.write(fragment)
-        self.count += 1
-
     def flush(self) -> None:
         self._file.flush()
 
@@ -471,8 +467,8 @@ class SearchSink:
 
     def append_item(self, item: dict) -> None:
         if self.json.count:
-            self.json.write_raw(",\n")
-        self.json.write_raw(_xml_escape(json.dumps(item)))
+            self.json.append(",\n")
+        self.json.append(_xml_escape(json.dumps(item)))
         self.items.append(_search_item_xml(item))
 
     def flush(self) -> None:

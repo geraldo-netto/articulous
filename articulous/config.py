@@ -19,7 +19,7 @@ DEFAULT_CONFIG = {
         "xsl_dir": "xsl",
         "assets_dir": "assets",
     },
-    "engines": {section: "lxml" for section in SECTION_NAMES},
+    "engines": dict.fromkeys(SECTION_NAMES, "lxml"),
     "saxonc": {"home": None},
     "site": {
         "site_name": "My Site",

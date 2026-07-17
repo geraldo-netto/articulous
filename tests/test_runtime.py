@@ -234,7 +234,7 @@ def test_lock_file_excludes_second_holder(tmp_path):
         assert path.exists()
         with pytest.raises(FileExistsError):
             with lock_file(path):
-                pass
+                pytest.fail("second lock holder unexpectedly entered")
     assert not path.exists()
 
 
@@ -334,9 +334,10 @@ def test_timed_logs_duration(caplog):
 
 def test_timed_propagates_exceptions(caplog):
     def boom(): raise ValueError("nope")
+    task = timed("bad", boom)
     with caplog.at_level(logging.DEBUG):
         with pytest.raises(ValueError):
-            timed("bad", boom)()
+            task()
     assert any("task bad took" in r.message for r in caplog.records)
 
 

@@ -8,7 +8,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
+import lxml.etree as etree
 import pytest
 
 from articulous.articles import Article, ArticleStats
@@ -17,6 +19,7 @@ from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.filesystem import TempWorkspace
 from articulous.pipeline import (
     ArticleStore,
+    BuildCtx,
     FragmentSink,
     SearchSink,
     SECTION_NAMES,
@@ -199,20 +202,20 @@ def test_resolve_parallelism_lxml_default(tmp_path):
 
 def test_resolve_parallelism_saxon_caps_at_cpu(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(
+    ctx = cast(BuildCtx, dataclasses.replace(
         ctx,
         engines={
             **ctx.engines,
             "articles": SaxonCEngine(tmp_path / "fake-bin"),
         },
-    )
+    ))
     import os
     assert _resolve_parallelism(ctx) == (os.cpu_count() or 4)
 
 
 def test_resolve_parallelism_passes_through_explicit_value(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(ctx, parallelism=2)
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, parallelism=2))
     assert _resolve_parallelism(ctx) == 2
 
 
@@ -221,7 +224,7 @@ def test_resolve_parallelism_passes_through_explicit_value(tmp_path):
 def test_copy_assets_missing_src_noop(tmp_path):
     ctx = _ctx_for(tmp_path)
     (tmp_path / "assets").rmdir()
-    ctx = dataclasses.replace(ctx, assets_dir=tmp_path / "assets")
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, assets_dir=tmp_path / "assets"))
     copy_assets(ctx)
     assert not (tmp_path / "output" / "assets").exists()
 
@@ -246,7 +249,10 @@ def test_copy_assets_missing_src_dry_run_keeps_stale_output(tmp_path):
     copy_assets(ctx)
     shutil.rmtree(tmp_path / "assets")
 
-    ctx = dataclasses.replace(ctx, assets_dir=tmp_path / "assets", dry_run=True)
+    ctx = cast(
+        BuildCtx,
+        dataclasses.replace(ctx, assets_dir=tmp_path / "assets", dry_run=True),
+    )
     copy_assets(ctx)
 
     assert (tmp_path / "output" / "assets" / "x.txt").exists()
@@ -255,7 +261,7 @@ def test_copy_assets_missing_src_dry_run_keeps_stale_output(tmp_path):
 def test_copy_assets_dry_run(tmp_path):
     ctx = _ctx_for(tmp_path)
     (tmp_path / "assets" / "x.txt").write_text("hi")
-    ctx = dataclasses.replace(ctx, dry_run=True)
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, dry_run=True))
     copy_assets(ctx)
     assert not (tmp_path / "output" / "assets").exists()
 
@@ -354,7 +360,7 @@ def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
     ctx = _ctx_for(tmp_path)
     assets = tmp_path / "output" / "assets"
     assets.mkdir(parents=True, exist_ok=True)
-    ctx = dataclasses.replace(ctx, assets_dir=assets)
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, assets_dir=assets))
     with pytest.raises(ValueError, match="overlap"):
         copy_assets(ctx, {})
 
@@ -560,7 +566,7 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
         engine=LxmlEngine(), ctx=ctx,
     )
     assert task is not None
-    with pytest.raises(Exception):
+    with pytest.raises(etree.XSLTParseError):
         task()
     assert "bad" not in cache
 
@@ -755,7 +761,7 @@ def test_passes_cli_filters_slug_reject():
 
 def test_stream_projections_collects_all_and_bounds_rss(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(ctx, rss_items=2)
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, rss_items=2))
     articles = [_art(f"a{i}") for i in range(5)]
     # Datetimes differ so the heap ordering is deterministic
     articles = [
@@ -900,7 +906,10 @@ def test_collect_tasks_only_lang_filter(tmp_path):
     a = dataclasses.replace(_art("a", lang="en"), source_path=art_xml)
     b = dataclasses.replace(_art("b", lang="fr"), source_path=art_xml)
     # Configure two languages so the lang-filter has work to skip.
-    ctx_multilang = dataclasses.replace(ctx, languages=["en", "fr"])
+    ctx_multilang = cast(
+        BuildCtx,
+        dataclasses.replace(ctx, languages=["en", "fr"]),
+    )
     cli = _FakeCLI(langs=["en"], sections=["articles"])
     plan = _collect_tasks(lambda: iter([a, b]), cli, ctx_multilang, {})
     assert len(plan["articles"]) == 1
@@ -926,7 +935,7 @@ def test_collect_tasks_only_sitemap_subset(tmp_path):
 
 def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(ctx, languages=["en", "fr"])
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, languages=["en", "fr"]))
     art_xml = tmp_path / "content" / "a.xml"
     art_xml.write_text(
         '<article><title>A</title><date>2025-01-01</date>'
@@ -957,28 +966,43 @@ def test_collect_tasks_rejects_duplicate_cache_key(tmp_path):
     )
     a = dataclasses.replace(_art("same"), source_path=art_xml)
     b = dataclasses.replace(_art("same"), source_path=art_xml)
+    cli = _FakeCLI(sections=["articles"])
+
+    def stream_factory():
+        return iter([a, b])
+
     with pytest.raises(ValueError, match="Duplicate generated cache key"):
-        _collect_tasks(lambda: iter([a, b]), _FakeCLI(sections=["articles"]), ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, {})
 
 
 def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(
+    ctx = cast(BuildCtx, dataclasses.replace(
         ctx,
         url_patterns={**ctx.url_patterns, "rss": "/feed.xml", "sitemap": "/feed.xml"},
-    )
+    ))
+    cli = _FakeCLI()
+
+    def stream_factory():
+        return iter(())
+
     with pytest.raises(ValueError, match="Duplicate generated output path"):
-        _collect_tasks(lambda: iter(()), _FakeCLI(), ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, {})
 
 
 def test_collect_tasks_rejects_output_escape(tmp_path):
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(
+    ctx = cast(BuildCtx, dataclasses.replace(
         ctx,
         url_patterns={**ctx.url_patterns, "rss": "/../rss.xml"},
-    )
+    ))
+    cli = _FakeCLI(sections=["rss"])
+
+    def stream_factory():
+        return iter(())
+
     with pytest.raises(ValueError, match="escapes output_dir"):
-        _collect_tasks(lambda: iter(()), _FakeCLI(sections=["rss"]), ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, {})
 
 
 def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
@@ -1007,7 +1031,7 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
 def test_stream_projections_replaces_older_top(tmp_path):
     """Older articles arriving after the heap is full are rejected."""
     ctx = _ctx_for(tmp_path)
-    ctx = dataclasses.replace(ctx, rss_items=2)
+    ctx = cast(BuildCtx, dataclasses.replace(ctx, rss_items=2))
     # First two seed the heap (newer datetimes), third is older and
     # must be rejected by the heapq.heapreplace branch's else.
     arts = [

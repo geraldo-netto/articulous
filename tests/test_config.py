@@ -108,15 +108,17 @@ def test_apply_cli_overrides_resolves_paths(tmp_path):
 def test_apply_cli_overrides_rejects_traversal(tmp_path):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["paths"]["content_dir"] = "../../etc"
+    cli = FakeCLI()
     with pytest.raises(ValueError, match="outside project root"):
-        apply_cli_overrides(cfg, FakeCLI(), tmp_path)
+        apply_cli_overrides(cfg, cli, tmp_path)
 
 
 def test_apply_cli_overrides_rejects_absolute_outside_root(tmp_path):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["paths"]["content_dir"] = "/etc"
+    cli = FakeCLI()
     with pytest.raises(ValueError):
-        apply_cli_overrides(cfg, FakeCLI(), tmp_path)
+        apply_cli_overrides(cfg, cli, tmp_path)
 
 
 def test_apply_cli_overrides_accepts_absolute_inside_root(tmp_path):

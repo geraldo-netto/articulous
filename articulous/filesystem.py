@@ -59,7 +59,7 @@ def _stale_lock_reason(text: str, stale_after: float) -> str:
         if not _pid_alive(int(data.get("pid", 0))):
             return "dead process"
         return ""
-    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+    except (OSError, ValueError, TypeError):
         return "malformed"
 
 

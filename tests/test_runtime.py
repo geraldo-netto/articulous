@@ -230,11 +230,15 @@ def test_tracked_cache_mutator_edges():
 
 def test_lock_file_excludes_second_holder(tmp_path):
     path = tmp_path / "build.lock"
+
+    def acquire_second_lock():
+        with lock_file(path):
+            pytest.fail("second lock holder unexpectedly entered")
+
     with lock_file(path):
         assert path.exists()
         with pytest.raises(FileExistsError):
-            with lock_file(path):
-                pytest.fail("second lock holder unexpectedly entered")
+            acquire_second_lock()
     assert not path.exists()
 
 

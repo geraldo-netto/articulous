@@ -239,8 +239,9 @@ def test_make_engine_rejects_unknown_name():
 
 
 def test_make_engine_rejects_none_name():
+    invalid_name = cast(str, None)
     with pytest.raises(ValueError, match="Unknown engine"):
-        make_engine(cast(str, None), None)
+        make_engine(invalid_name, None)
 
 
 def test_configure_saxonc_no_home_returns_none(monkeypatch):

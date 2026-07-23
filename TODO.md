@@ -51,7 +51,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SYS-01 | open | M | Configuration validation is split across several layers and leaves declared fields/types unchecked (`articulous/config.py:66-115`; `articulous/pipeline.py:159-210`; `articulous/cli.py:93-118`) | Duplicate languages reach planning and fail as duplicate cache keys; non-boolean build flags and malformed `site`, `paths`, or `logging` values fail late or gain truthy semantics. Validate the complete merged schema once before applying side effects. |
 
 ## code duplication
 

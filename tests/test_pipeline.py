@@ -14,7 +14,7 @@ import lxml.etree as etree
 import pytest
 
 from articulous.articles import Article, ArticleStats
-from articulous.config import DEFAULT_CONFIG
+from articulous.config import DEFAULT_CONFIG, validate_config
 from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.filesystem import TempWorkspace
 from articulous.pipeline import (
@@ -22,7 +22,6 @@ from articulous.pipeline import (
     BuildCtx,
     FragmentSink,
     SearchSink,
-    SECTION_NAMES,
     _article_url_builder,
     _article_xml,
     _cache_path_for,
@@ -57,6 +56,7 @@ from articulous.pipeline import (
     run_build,
 )
 from articulous.models import IndexPage, RssFeed, Sitemap, TagPage
+from articulous.sections import SECTION_NAMES
 
 
 MINIMAL_XSLT = (
@@ -108,50 +108,51 @@ def _ctx_for(tmp_path, engines=None):
 
 # --- BuildCtx + factory ---
 
-def test_build_ctx_from_config_validates(tmp_path):
+def test_validate_config_rejects_unknown_engine(tmp_path):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["engines"]["rss"] = "frobnicate"
     with pytest.raises(ValueError):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 @pytest.mark.parametrize("bad", [0, -1, "ten", True, 1.5])
-def test_build_ctx_from_config_rejects_bad_per_page(bad):
+def test_validate_config_rejects_bad_per_page(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["site"]["pagination"]["per_page"] = bad
     with pytest.raises(ValueError, match="per_page"):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 @pytest.mark.parametrize("bad", [-1, "twenty", True, 1.5])
-def test_build_ctx_from_config_rejects_bad_rss_items(bad):
+def test_validate_config_rejects_bad_rss_items(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["site"]["pagination"]["rss_items"] = bad
     with pytest.raises(ValueError, match="rss_items"):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 def test_build_ctx_from_config_accepts_rss_items_zero():
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["site"]["pagination"]["rss_items"] = 0
+    validate_config(cfg)
     ctx = build_ctx_from_config(cfg, dry_run=False)
     assert ctx.rss_items == 0
 
 
 @pytest.mark.parametrize("bad", [[], "en", ("en",), [""], ["en", 7], [True]])
-def test_build_ctx_from_config_rejects_bad_languages(bad):
+def test_validate_config_rejects_bad_languages(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["site"]["languages"] = bad
     with pytest.raises(ValueError, match="site.languages"):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 @pytest.mark.parametrize("bad", ["", None, "fr"])
-def test_build_ctx_from_config_rejects_bad_default_language(bad):
+def test_validate_config_rejects_bad_default_language(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["site"]["default_language"] = bad
     with pytest.raises(ValueError, match="site.default_language"):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 @pytest.mark.parametrize(
@@ -162,19 +163,19 @@ def test_build_ctx_from_config_rejects_bad_default_language(bad):
         ("article", "/{language}/articles/{slug}/", "placeholders"),
     ],
 )
-def test_build_ctx_from_config_rejects_bad_url_shapes(key, pattern, message):
+def test_validate_config_rejects_bad_url_shapes(key, pattern, message):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["urls"][key] = pattern
     with pytest.raises(ValueError, match=message):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 @pytest.mark.parametrize("bad", [0, -1, "many", True, 1.5])
-def test_build_ctx_from_config_rejects_bad_parallelism(bad):
+def test_validate_config_rejects_bad_parallelism(bad):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["build"]["parallelism"] = bad
     with pytest.raises(ValueError, match="parallelism"):
-        build_ctx_from_config(cfg, dry_run=False)
+        validate_config(cfg)
 
 
 def test_buildctx_xsl_for_and_engine_for(tmp_path):

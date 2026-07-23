@@ -8,8 +8,9 @@ shape. Every other module consumes its output via :class:`BuildCtx`
 import json
 from pathlib import Path
 
+from .engines import VALID_ENGINES
 from .filesystem import write_text_atomic
-from .sections import SECTION_NAMES
+from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
 
 
 DEFAULT_CONFIG = {
@@ -44,6 +45,10 @@ DEFAULT_CONFIG = {
     "logging": {"level": "INFO", "file": None},
 }
 
+_CONFIG_KEYS = frozenset(DEFAULT_CONFIG)
+_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
+_URL_KEYS = frozenset(url_key_for_section(section) for section in SECTION_NAMES)
+
 
 def deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge ``override`` into ``base``. ``override`` wins."""
@@ -63,6 +68,151 @@ def _default_config_copy() -> dict:
     return json.loads(json.dumps(DEFAULT_CONFIG))
 
 
+def _require_object(value, name: str) -> dict:
+    if not isinstance(value, dict):
+        raise ValueError(f"config {name} must be an object")
+    return value
+
+
+def _require_exact_keys(value: dict, expected, name: str) -> None:
+    actual = set(value)
+    expected = set(expected)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        unknown = sorted(actual - expected)
+        raise ValueError(
+            f"config {name} keys invalid; missing={missing}, unknown={unknown}"
+        )
+
+
+def _require_string(value, name: str, *, nonempty: bool = False) -> str:
+    if not isinstance(value, str) or (nonempty and not value):
+        qualifier = "non-empty " if nonempty else ""
+        raise ValueError(f"config {name} must be a {qualifier}string")
+    return value
+
+
+def _require_bool(value, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"config {name} must be a boolean")
+    return value
+
+
+def _require_positive_int(value, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"config {name} must be a positive int, got {value!r}")
+    return value
+
+
+def _require_non_negative_int(value, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError(
+            f"config {name} must be a non-negative int, got {value!r}"
+        )
+    return value
+
+
+def _require_block(config: dict, key: str, expected) -> dict:
+    block = _require_object(config[key], key)
+    _require_exact_keys(block, expected, key)
+    return block
+
+
+def _validate_paths(config: dict) -> None:
+    paths = _require_block(config, "paths", DEFAULT_CONFIG["paths"])
+    for key, value in paths.items():
+        _require_string(value, f"paths.{key}", nonempty=True)
+
+
+def _validate_engines(config: dict) -> None:
+    engines = _require_block(config, "engines", SECTION_NAMES)
+    for section, name in engines.items():
+        if name not in VALID_ENGINES:
+            raise ValueError(
+                f"config engines.{section} must be one of {sorted(VALID_ENGINES)}"
+            )
+
+
+def _validate_saxonc(config: dict) -> None:
+    saxonc = _require_block(config, "saxonc", DEFAULT_CONFIG["saxonc"])
+    home = saxonc["home"]
+    if home is not None:
+        _require_string(home, "saxonc.home")
+
+
+def _require_languages(languages, default_language) -> None:
+    if not isinstance(languages, list) or not languages:
+        raise ValueError("config site.languages must be a non-empty list of strings")
+    if not all(isinstance(lang, str) and lang for lang in languages):
+        raise ValueError("config site.languages must contain only non-empty strings")
+    if len(languages) != len(set(languages)):
+        raise ValueError("config site.languages must not contain duplicates")
+    _require_string(default_language, "site.default_language", nonempty=True)
+    if default_language not in languages:
+        raise ValueError(
+            "config site.default_language must be present in config site.languages"
+        )
+
+
+def _validate_site(config: dict) -> None:
+    site = _require_block(config, "site", DEFAULT_CONFIG["site"])
+    _require_string(site["site_name"], "site.site_name")
+    _require_string(site["base_url"], "site.base_url")
+    _require_languages(site["languages"], site["default_language"])
+    pagination = _require_object(site["pagination"], "site.pagination")
+    _require_exact_keys(
+        pagination, DEFAULT_CONFIG["site"]["pagination"], "site.pagination"
+    )
+    _require_positive_int(pagination["per_page"], "site.pagination.per_page")
+    _require_non_negative_int(
+        pagination["rss_items"], "site.pagination.rss_items"
+    )
+
+
+def _validate_urls(config: dict) -> None:
+    urls = _require_block(config, "urls", _URL_KEYS)
+    for section in SECTION_NAMES:
+        key = url_key_for_section(section)
+        pattern = _require_string(urls[key], f"urls.{key}", nonempty=True)
+        validate_url_pattern(section, pattern)
+
+
+def _validate_build(config: dict) -> None:
+    build = _require_block(config, "build", DEFAULT_CONFIG["build"])
+    cache_file = _require_string(build["cache_file"], "build.cache_file", nonempty=True)
+    if not Path(cache_file).name:
+        raise ValueError("config build.cache_file must contain a filename")
+    parallelism = build["parallelism"]
+    if parallelism != "auto":
+        _require_positive_int(parallelism, "build.parallelism")
+    _require_bool(build["force_full_build"], "build.force_full_build")
+
+
+def _validate_logging(config: dict) -> None:
+    logging_config = _require_block(config, "logging", DEFAULT_CONFIG["logging"])
+    level = _require_string(logging_config["level"], "logging.level", nonempty=True)
+    if level.upper() not in _LOG_LEVELS:
+        raise ValueError(f"config logging.level must be one of {sorted(_LOG_LEVELS)}")
+    log_file = logging_config["file"]
+    if log_file is not None:
+        _require_string(log_file, "logging.file")
+
+
+def validate_config(config: dict) -> None:
+    config = _require_object(config, "root")
+    _require_exact_keys(config, _CONFIG_KEYS, "root")
+    for validator in (
+        _validate_paths,
+        _validate_engines,
+        _validate_saxonc,
+        _validate_site,
+        _validate_urls,
+        _validate_build,
+        _validate_logging,
+    ):
+        validator(config)
+
+
 def load_or_create_config(path: Path) -> dict:
     """
     Load config from JSON file. Missing config creates defaults;
@@ -70,6 +220,7 @@ def load_or_create_config(path: Path) -> dict:
     """
     if not path.exists():
         cfg = _default_config_copy()
+        validate_config(cfg)
         path.parent.mkdir(parents=True, exist_ok=True)
         write_text_atomic(path, json.dumps(cfg, indent=2))
         return cfg
@@ -86,7 +237,9 @@ def load_or_create_config(path: Path) -> dict:
         )
 
     cfg = _default_config_copy()
-    return deep_merge(cfg, data)
+    deep_merge(cfg, data)
+    validate_config(cfg)
+    return cfg
 
 
 def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:

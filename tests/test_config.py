@@ -2,6 +2,7 @@
 import copy
 import json
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -10,6 +11,7 @@ from articulous.config import (
     apply_cli_overrides,
     deep_merge,
     load_or_create_config,
+    validate_config,
 )
 
 
@@ -84,6 +86,65 @@ def test_load_or_create_config_merges_user_overrides(tmp_path):
     assert cfg["site"]["site_name"] == "Custom"
     # default values still present
     assert cfg["site"]["base_url"] == DEFAULT_CONFIG["site"]["base_url"]
+
+
+def test_load_or_create_config_rejects_invalid_schema(tmp_path):
+    p = tmp_path / "bad-schema.json"
+    p.write_text(json.dumps({"site": {"languages": ["en", "en"]}}))
+    with pytest.raises(ValueError, match="duplicates"):
+        load_or_create_config(p)
+
+
+def _set_nested(config, path, value):
+    target = config
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+
+
+@pytest.mark.parametrize(
+    "path,value,message",
+    [
+        (("paths",), None, "paths must be an object"),
+        (("paths", "content_dir"), "", "non-empty string"),
+        (("engines",), {"articles": "lxml"}, "engines keys invalid"),
+        (("saxonc", "home"), 7, "saxonc.home"),
+        (("site", "site_name"), 7, "site.site_name"),
+        (("site", "base_url"), 7, "site.base_url"),
+        (("site", "languages"), ["en", "en"], "duplicates"),
+        (("site", "pagination"), None, "site.pagination must be an object"),
+        (("urls", "rss"), None, "urls.rss"),
+        (("build", "cache_file"), "/", "contain a filename"),
+        (("build", "force_full_build"), "false", "must be a boolean"),
+        (("logging", "level"), "TRACE", "logging.level"),
+        (("logging", "file"), 7, "logging.file"),
+    ],
+)
+def test_validate_config_rejects_invalid_fields(path, value, message):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    _set_nested(cfg, path, value)
+    with pytest.raises(ValueError, match=message):
+        validate_config(cfg)
+
+
+def test_validate_config_rejects_non_object_root():
+    with pytest.raises(ValueError, match="root must be an object"):
+        validate_config(cast(dict, []))
+
+
+def test_validate_config_rejects_unknown_root_key():
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["typo"] = True
+    with pytest.raises(ValueError, match=r"unknown=\['typo'\]"):
+        validate_config(cfg)
+
+
+def test_validate_config_accepts_optional_strings():
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["saxonc"]["home"] = "/opt/saxon"
+    cfg["logging"]["level"] = "debug"
+    cfg["logging"]["file"] = ""
+    validate_config(cfg)
 
 
 # --- apply_cli_overrides ---

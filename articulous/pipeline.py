@@ -30,7 +30,6 @@ from .engines import (
     TransformEngine,
     configure_saxonc,
     make_engine,
-    validate_engines,
 )
 from .filesystem import TempWorkspace, lock_file
 from .models import (
@@ -56,10 +55,7 @@ from .runtime import (
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
-    SECTION_NAMES,
     SECTION_XSL,
-    url_key_for_section,
-    validate_url_pattern,
 )
 
 
@@ -109,85 +105,19 @@ class BuildCtx:
         return self.engines[section]
 
 
-def _require_positive_int(value, name: str) -> int:
-    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
-        raise ValueError(
-            f"config {name} must be a positive int, got {value!r}"
-        )
-    return value
-
-
-def _require_non_negative_int(value, name: str) -> int:
-    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-        raise ValueError(
-            f"config {name} must be a non-negative int, got {value!r}"
-        )
-    return value
-
-
-def _require_worker_count(value) -> WorkerCount:
-    if value == "auto":
-        return value
-    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
-        raise ValueError(
-            f"config build.parallelism must be 'auto' or a positive int, got {value!r}"
-        )
-    return value
-
-
-def _require_languages(languages, default_language) -> list:
-    if not isinstance(languages, list) or not languages:
-        raise ValueError("config site.languages must be a non-empty list of strings")
-    if not all(isinstance(lang, str) and lang for lang in languages):
-        raise ValueError("config site.languages must contain only non-empty strings")
-    if not isinstance(default_language, str) or not default_language:
-        raise ValueError("config site.default_language must be a non-empty string")
-    if default_language not in languages:
-        raise ValueError(
-            "config site.default_language must be present in config site.languages"
-        )
-    return list(languages)
-
-
-def _validate_url_patterns(patterns: dict) -> dict:
-    for section in SECTION_NAMES:
-        key = url_key_for_section(section)
-        validate_url_pattern(section, patterns[key])
-    return dict(patterns)
-
-
 def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     """
     Project the raw config dict into a :class:`BuildCtx`.
 
-    This is the only function in the package that reads the raw config
-    dict's deep shape. It also validates the configured engine names
-    and resolves the SaxonC binary, so callers downstream see only a
-    typed ctx — no config dict, no string-compared engine names.
-
-    Integer fields that the pipeline divides or slices by
-    (``per_page``, ``rss_items``) are bounds-checked here so a malformed
-    value fails loudly at startup instead of producing a
-    ``ZeroDivisionError`` (per_page == 0) or empty-heap ``IndexError``
-    (rss_items < 0) deep inside the build.
+    Configuration shape and values have already been validated by
+    :func:`articulous.config.load_or_create_config`.
     """
-    validate_engines(config)
     saxonc_bin = configure_saxonc(config)
     engines = {
         section: make_engine(name, saxonc_bin)
         for section, name in config["engines"].items()
     }
     pagination = config["site"]["pagination"]
-    per_page = _require_positive_int(
-        pagination["per_page"], "site.pagination.per_page",
-    )
-    rss_items = _require_non_negative_int(
-        pagination["rss_items"], "site.pagination.rss_items",
-    )
-    parallelism = _require_worker_count(config["build"]["parallelism"])
-    languages = _require_languages(
-        config["site"]["languages"], config["site"]["default_language"],
-    )
     return BuildCtx(
         content_dir=Path(config["paths"]["content_dir"]),
         xsl_dir=Path(config["paths"]["xsl_dir"]),
@@ -195,18 +125,18 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         assets_dir=Path(config["paths"]["assets_dir"]),
         force=config["build"]["force_full_build"],
         dry_run=dry_run,
-        parallelism=parallelism,
+        parallelism=config["build"]["parallelism"],
         # Reduce user-controlled value to a bare filename; the path
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
         engines=engines,
         site_name=config["site"]["site_name"],
         base_url=config["site"]["base_url"],
-        languages=languages,
+        languages=list(config["site"]["languages"]),
         default_language=config["site"]["default_language"],
-        url_patterns=_validate_url_patterns(config["urls"]),
-        per_page=per_page,
-        rss_items=rss_items,
+        url_patterns=dict(config["urls"]),
+        per_page=pagination["per_page"],
+        rss_items=pagination["rss_items"],
     )
 
 

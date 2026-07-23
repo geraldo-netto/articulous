@@ -97,7 +97,6 @@ Line numbers refer to repository paths.
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
 | WIRE-01 | open | S | Asset cache entries write a schema `version` that no reader checks (`articulous/pipeline.py:262-280`) | Enforce the version in `_assets_unchanged`/`_cached_asset_manifest`, or remove the dead field until a migration policy exists. |
-| WIRE-02 | open | S | Ruff and Pyright are documented project checks but are absent from the CI workflow (`README.md:216-229`; `.github/workflows/main.yml:28-34`) | Add both checks as CI steps so lint/type regressions cannot merge while the test job remains green. |
 
 ## unused functions/methods
 

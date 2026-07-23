@@ -21,6 +21,7 @@ from articulous.pipeline import (
     ArticleStore,
     BuildCtx,
     FragmentSink,
+    OutputManifest,
     SearchSink,
     _article_url_builder,
     _article_xml,
@@ -798,7 +799,7 @@ def test_build_streamed_sitemap_and_search_sections(tmp_path):
 
 def test_cross_builders_accept_manifest_as_fifth_arg(tmp_path):
     ctx = _ctx_for(tmp_path)
-    manifest = {}
+    manifest = OutputManifest()
     assert build_sitemap_section([], ctx, {}, manifest) != []
     assert build_search_section([], ctx, {}, manifest) != []
     assert "sitemap" in manifest
@@ -1072,7 +1073,7 @@ def test_collect_tasks_rejects_duplicate_cache_key(tmp_path):
         return iter([a, b])
 
     with pytest.raises(ValueError, match="Duplicate generated cache key"):
-        _collect_tasks(stream_factory, cli, ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, OutputManifest())
 
 
 def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
@@ -1087,7 +1088,7 @@ def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
         return iter(())
 
     with pytest.raises(ValueError, match="Duplicate generated output path"):
-        _collect_tasks(stream_factory, cli, ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, OutputManifest())
 
 
 def test_collect_tasks_rejects_output_escape(tmp_path):
@@ -1102,7 +1103,7 @@ def test_collect_tasks_rejects_output_escape(tmp_path):
         return iter(())
 
     with pytest.raises(ValueError, match="escapes output_dir"):
-        _collect_tasks(stream_factory, cli, ctx, {}, {})
+        _collect_tasks(stream_factory, cli, ctx, {}, OutputManifest())
 
 
 def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):

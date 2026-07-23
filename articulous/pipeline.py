@@ -535,6 +535,24 @@ class ArticleStore:
             f.close()
 
 
+class OutputManifest(dict):
+    def __init__(self):
+        super().__init__()
+        self._owners: dict[str, str] = {}
+
+    def record(self, cache_key: str, relpath: str) -> None:
+        if cache_key in self:
+            raise ValueError(f"Duplicate generated cache key: {cache_key}")
+        owner = self._owners.get(relpath)
+        if owner is not None:
+            raise ValueError(
+                f"Duplicate generated output path: {relpath} "
+                f"for {owner!r} and {cache_key!r}"
+            )
+        super().__setitem__(cache_key, relpath)
+        self._owners[relpath] = cache_key
+
+
 def _read_pickled_articles(path: Path, count: int):
     with path.open("rb") as f:
         for _ in range(count):
@@ -570,15 +588,8 @@ def _write_search_model_file(
 # Shared XSLT task plumbing
 # ================================================================
 
-def _find_output_owner(manifest: dict, relpath: str) -> Optional[str]:
-    for key, value in manifest.items():
-        if value == relpath:
-            return key
-    return None
-
-
 def _record_planned_output(
-    manifest: Optional[dict],
+    manifest: Optional[OutputManifest],
     ctx: BuildCtx,
     cache_key: str,
     output_path: Path,
@@ -587,15 +598,7 @@ def _record_planned_output(
     if manifest is None:
         return output_path
     relpath = _output_relpath(ctx, output_path)
-    if cache_key in manifest:
-        raise ValueError(f"Duplicate generated cache key: {cache_key}")
-    owner = _find_output_owner(manifest, relpath)
-    if owner is not None:
-        raise ValueError(
-            f"Duplicate generated output path: {relpath} "
-            f"for {owner!r} and {cache_key!r}"
-        )
-    manifest[cache_key] = relpath
+    manifest.record(cache_key, relpath)
     return output_path
 
 def _make_xslt_task(
@@ -608,7 +611,7 @@ def _make_xslt_task(
     cache_key: str,
     engine: TransformEngine,
     ctx: BuildCtx,
-    manifest: Optional[dict] = None,
+    manifest: Optional[OutputManifest] = None,
 ) -> Optional[Callable]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
@@ -1232,7 +1235,7 @@ def run_build(cli, config, project_root: Path) -> None:
                 ctx.output_dir.mkdir(parents=True, exist_ok=True)
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
-                current_manifest: dict = {}
+                current_manifest = OutputManifest()
                 plan = _collect_tasks(
                     stream_factory, cli, ctx, cache, workspace, current_manifest,
                 )

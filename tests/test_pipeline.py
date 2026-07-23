@@ -845,8 +845,6 @@ def test_sorted_store_articles_uses_sorted_chunk_batch(tmp_path, monkeypatch):
 
         assert len(batch) == 3
         assert [a.slug for a in batch] == ["new", "mid", "old"]
-        assert getattr(batch[0], "slug") == "new"
-        assert [a.slug for a in batch[1:]] == ["mid", "old"]
         assert batch != []
         assert _sorted_store_articles(store, "fr") == []
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import quote
@@ -110,6 +111,12 @@ def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
 # Model builders
 # ------------------------------------------------------------
 
+def _page_batches(articles, per_page: int):
+    iterator = iter(articles)
+    while batch := list(islice(iterator, per_page)):
+        yield batch
+
+
 def build_index_models(
     lang_articles, lang: str, ctx: SiteModelCtx,
 ) -> list[IndexPage]:
@@ -125,14 +132,14 @@ def build_index_models(
         return []
     num_pages = (total + ctx.per_page - 1) // ctx.per_page
     pages: list[IndexPage] = []
-    for page in range(1, num_pages + 1):
-        start = (page - 1) * ctx.per_page
-        end = start + ctx.per_page
+    for page, articles in enumerate(
+        _page_batches(lang_articles, ctx.per_page), start=1,
+    ):
         pages.append(IndexPage(
             lang=lang,
             page=page,
             total_pages=num_pages,
-            articles=lang_articles[start:end],
+            articles=articles,
             output_path=build_output_path_from_pattern(
                 "index", pattern, lang=lang, page=page,
             ),

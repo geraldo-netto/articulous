@@ -108,13 +108,31 @@ def test_other_page_frozen():
 
 # --- build_index_models (per-lang) ---
 
+class SinglePassArticles:
+    def __init__(self, articles):
+        self.articles = articles
+        self.iterations = 0
+
+    def __len__(self):
+        return len(self.articles)
+
+    def __iter__(self):
+        self.iterations += 1
+        if self.iterations > 1:
+            raise AssertionError("article stream replayed")
+        yield from self.articles
+
+
 def test_build_index_models_paginates():
     arts = [_art(f"a{i}", lang="en") for i in range(5)]
-    pages = build_index_models(arts, "en", _ctx())
+    stream = SinglePassArticles(arts)
+    pages = build_index_models(stream, "en", _ctx())
     # 5 articles, per_page=2 → 3 pages
     assert len(pages) == 3
     assert all(p.total_pages == 3 for p in pages)
     assert all(p.lang == "en" for p in pages)
+    assert [len(page.articles) for page in pages] == [2, 2, 1]
+    assert stream.iterations == 1
 
 
 def test_build_index_models_empty_returns_empty():

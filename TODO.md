@@ -25,7 +25,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SCAL-03 | open | M | Each paginated index slice restarts the external merge from article zero, so index construction rereads earlier chunks and trends to O(A × pages) (`articulous/models.py:128-142`; `articulous/pipeline.py:494-509`) | Paginate a single merged iterator once, or implement range-aware chunk reads that do not replay prior pages. |
 | SCAL-04 | open | L | Stream sinks move sitemap/search projections to disk, but each generated model is parsed back into one full lxml DOM; search also stores both JSON and item XML (`articulous/pipeline.py:568-590`; `articulous/engines.py:131-140`) | Peak memory still grows with the complete global model. Use streaming serializers for these output formats or an engine path that supports bounded-memory transforms. |
 
 ## concurrency

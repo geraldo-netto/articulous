@@ -19,7 +19,6 @@ import pickle
 import shutil
 import time
 from dataclasses import dataclass, field
-from itertools import islice
 from pathlib import Path
 from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
@@ -479,11 +478,6 @@ class SortedArticleBatch:
 
     def __len__(self) -> int:
         return self._count
-
-    def __getitem__(self, item):
-        if isinstance(item, slice):
-            return list(islice(iter(self), item.start, item.stop, item.step))
-        return next(islice(iter(self), item, item + 1))
 
     def __eq__(self, other) -> bool:
         return self._count == 0 and other == []

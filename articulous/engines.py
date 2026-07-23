@@ -10,6 +10,7 @@ CLI validation, dependency checks, and the build pipeline cannot drift.
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import shutil
@@ -35,10 +36,12 @@ __all__ = [
     "make_engine",
     "safe_xml_parser",
     "safe_xslt_access_control",
+    "stylesheet_hash",
     "validate_engines",
 ]
 
 VALID_ENGINES = {"saxonc", "lxml"}
+_XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
 
 
 def safe_xml_parser() -> etree.XMLParser:
@@ -68,6 +71,29 @@ def safe_xslt_access_control() -> etree.XSLTAccessControl:
     )
 
 
+def _update_stylesheet_hash(path: Path, digest, seen: set[Path]) -> None:
+    resolved = path.resolve()
+    if resolved in seen:
+        return
+    seen.add(resolved)
+    content = resolved.read_bytes()
+    digest.update(len(content).to_bytes(8, "big"))
+    digest.update(content)
+    root = etree.fromstring(content, parser=safe_xml_parser())
+    nodes = root.xpath(
+        "//xsl:include[@href] | //xsl:import[@href]",
+        namespaces=_XSL_NAMESPACE,
+    )
+    for node in nodes:
+        _update_stylesheet_hash(resolved.parent / node.attrib["href"], digest, seen)
+
+
+def stylesheet_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    _update_stylesheet_hash(path, digest, set())
+    return digest.hexdigest()
+
+
 # ------------------------------------------------------------
 # Engine strategy
 # ------------------------------------------------------------
@@ -92,6 +118,11 @@ class TransformEngine(ABC):
     # ``name`` is the strategy-registry key (see :func:`make_engine`) and
     # also identifies the engine in the dry-run debug log.
     name: ClassVar[str]
+
+    @property
+    @abstractmethod
+    def cache_identity(self) -> str:
+        ...
 
     def run(
         self,
@@ -125,6 +156,10 @@ class TransformEngine(ABC):
 class LxmlEngine(TransformEngine):
     name = "lxml"
 
+    @property
+    def cache_identity(self) -> str:
+        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}"
+
     def _do_transform(self, xml_input, xsl_path, output_path):
         logging.debug(f"Running lxml transform -> {output_path}")
         try:
@@ -149,6 +184,16 @@ class SaxonCEngine(TransformEngine):
 
     def __init__(self, saxonc_bin: Path):
         self.saxonc_bin = saxonc_bin
+
+    @property
+    def cache_identity(self) -> str:
+        binary = self.saxonc_bin.resolve()
+        try:
+            stat = binary.stat()
+            revision = f"{stat.st_size}:{stat.st_mtime_ns}"
+        except OSError:
+            revision = "missing"
+        return f"{self.name}:{binary}:{revision}:ext=off:xi=off"
 
     def _do_transform(self, xml_input, xsl_path, output_path):
         if isinstance(xml_input, bytes):

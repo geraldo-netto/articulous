@@ -602,7 +602,7 @@ def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     task()
     import hashlib
     expected = hashlib.sha256(b"<root/>").hexdigest()
-    assert cache["k"] == [expected, "abc"]
+    assert cache["k"] == [expected, "abc", LxmlEngine().cache_identity]
 
 
 def test_make_xslt_task_path_hashes_file(tmp_path):
@@ -627,7 +627,7 @@ def test_make_xslt_task_cached_returns_none(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
-    cache = {"k": [pre_xml_hash, "xsl_h"]}
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
     output = tmp_path / "output" / "out.html"
     output.write_text("cached")
     task = _make_xslt_task(
@@ -644,12 +644,29 @@ def test_make_xslt_task_rebuilds_when_output_missing(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
-    cache = {"k": [pre_xml_hash, "xsl_h"]}
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
     task = _make_xslt_task(
         xml_input=b"<root/>", xsl_path=xsl, xsl_hash="xsl_h",
         output_path=tmp_path / "output" / "missing.html",
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
+    )
+    assert task is not None
+
+
+def test_make_xslt_task_rebuilds_when_engine_changes(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
+    import hashlib
+    pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
+    output = tmp_path / "output" / "out.html"
+    output.write_text("cached")
+    task = _make_xslt_task(
+        xml_input=b"<root/>", xsl_path=xsl, xsl_hash="xsl_h",
+        output_path=output,
+        cache=cache, cache_key="k",
+        engine=SaxonCEngine(tmp_path / "Transform"), ctx=ctx,
     )
     assert task is not None
 

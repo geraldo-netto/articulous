@@ -30,6 +30,7 @@ from .engines import (
     TransformEngine,
     configure_saxonc,
     make_engine,
+    stylesheet_hash,
 )
 from .filesystem import TempWorkspace, lock_file
 from .models import (
@@ -635,15 +636,15 @@ def _make_xslt_task(
     else:
         xml_hash = file_hash(xml_input)
 
+    fingerprint = (xml_hash, xsl_hash, engine.cache_identity)
     if not should_rebuild(
-        cache_key, cache, (xml_hash, xsl_hash), ctx.force, output_path=output_path,
+        cache_key, cache, fingerprint, ctx.force, output_path=output_path,
     ):
         return None
-    hashes = (xml_hash, xsl_hash)
 
     def task(xml_input=xml_input, xsl_path=xsl_path, output_path=output_path):
         engine.run(xml_input, xsl_path, output_path, dry_run=ctx.dry_run)
-        update_cache(cache, cache_key, hashes)
+        update_cache(cache, cache_key, fingerprint)
 
     return timed(cache_key, task)
 
@@ -658,7 +659,7 @@ def _encode_xml(content: str) -> bytes:
 
 def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformEngine]:
     xsl_path = ctx.xsl_for(section)
-    return xsl_path, file_hash(xsl_path), ctx.engine_for(section)
+    return xsl_path, stylesheet_hash(xsl_path), ctx.engine_for(section)
 
 
 def _append_task(tasks: list, task: Optional[Callable], skip_message: str) -> None:

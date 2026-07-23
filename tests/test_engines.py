@@ -21,6 +21,7 @@ from articulous.engines import (
     make_engine,
     safe_xslt_access_control,
     safe_xml_parser,
+    stylesheet_hash,
     validate_engines,
 )
 
@@ -41,6 +42,46 @@ def test_required_xsl_files_match_section_xsl():
 
 def test_valid_engines_set():
     assert VALID_ENGINES == {"saxonc", "lxml"}
+
+
+def test_stylesheet_hash_tracks_transitive_includes(tmp_path):
+    included = tmp_path / "included.xsl"
+    included.write_text(MINIMAL_XSLT)
+    main = tmp_path / "main.xsl"
+    main.write_text(
+        MINIMAL_XSLT.replace(
+            "<xsl:template",
+            '<xsl:include href="included.xsl"/><xsl:template',
+            1,
+        )
+    )
+    first = stylesheet_hash(main)
+    included.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
+    assert stylesheet_hash(main) != first
+
+
+def test_stylesheet_hash_handles_repeated_dependency(tmp_path):
+    included = tmp_path / "included.xsl"
+    included.write_text(MINIMAL_XSLT)
+    main = tmp_path / "main.xsl"
+    main.write_text(
+        MINIMAL_XSLT.replace(
+            "<xsl:template",
+            '<xsl:include href="included.xsl"/>'
+            '<xsl:include href="included.xsl"/>'
+            "<xsl:template",
+            1,
+        )
+    )
+    assert len(stylesheet_hash(main)) == 64
+
+
+def test_engine_cache_identities_include_runtime(tmp_path):
+    binary = tmp_path / "Transform"
+    binary.write_text("binary")
+    assert "libxslt=" in LxmlEngine().cache_identity
+    assert str(binary.resolve()) in SaxonCEngine(binary).cache_identity
+    assert "missing" in SaxonCEngine(tmp_path / "missing").cache_identity
 
 
 def test_safe_xml_parser_is_xxe_safe(tmp_path):

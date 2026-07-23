@@ -12,6 +12,7 @@ import pytest
 
 from articulous.engines import (
     LxmlEngine,
+    NativeEngine,
     REQUIRED_XSL_FILES,
     SECTION_XSL,
     SaxonCEngine,
@@ -42,7 +43,7 @@ def test_required_xsl_files_match_section_xsl():
 
 
 def test_valid_engines_set():
-    assert VALID_ENGINES == {"saxonc", "lxml"}
+    assert VALID_ENGINES == {"saxonc", "lxml", "native"}
 
 
 def test_stylesheet_hash_tracks_transitive_includes(tmp_path):
@@ -305,6 +306,10 @@ def test_make_engine_lxml():
     assert isinstance(e, LxmlEngine)
 
 
+def test_make_engine_native():
+    assert isinstance(make_engine("native", None), NativeEngine)
+
+
 def test_make_engine_saxon_without_binary_falls_back_to_lxml():
     e = make_engine("saxonc", None)
     assert isinstance(e, LxmlEngine)
@@ -374,12 +379,21 @@ def test_configure_saxonc_finds_binary(tmp_path, caplog):
 # --- validate_engines ---
 
 def test_validate_engines_accepts_valid():
-    validate_engines({"engines": {"articles": "lxml", "rss": "saxonc"}})
+    validate_engines({
+        "engines": {
+            "articles": "lxml", "rss": "saxonc", "search": "native",
+        },
+    })
 
 
 def test_validate_engines_rejects_unknown():
     with pytest.raises(ValueError, match="frobnicate"):
         validate_engines({"engines": {"rss": "frobnicate"}})
+
+
+def test_validate_engines_rejects_native_article_renderer():
+    with pytest.raises(ValueError, match="only supported"):
+        validate_engines({"engines": {"articles": "native"}})
 
 
 # --- check_dependencies ---
@@ -400,6 +414,17 @@ def _site(tmp_path):
 
 def test_check_dependencies_passes(tmp_path):
     check_dependencies(_site(tmp_path), tmp_path)
+
+
+def test_check_dependencies_skips_native_xsl_files(tmp_path):
+    cfg = _site(tmp_path)
+    cfg["engines"] = {
+        section: "lxml" for section in SECTION_XSL
+    }
+    cfg["engines"].update({"sitemap": "native", "search": "native"})
+    for section in ("sitemap", "search"):
+        (tmp_path / "xsl" / "pages" / SECTION_XSL[section]).unlink()
+    check_dependencies(cfg, tmp_path)
 
 
 def test_check_dependencies_missing_content_dir(tmp_path):

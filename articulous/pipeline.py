@@ -25,6 +25,7 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleStats, iter_articles
 from .engines import (
+    NativeEngine,
     SaxonCEngine,
     TransformEngine,
     configure_saxonc,
@@ -102,7 +103,7 @@ class BuildCtx:
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
 
-    def engine_for(self, section: str) -> TransformEngine:
+    def engine_for(self, section: str) -> TransformEngine | NativeEngine:
         return self.engines[section]
 
 
@@ -412,16 +413,23 @@ def _search_doc(index, site_name: str) -> str:
     return _xml_doc("search", children, attrs)
 
 
-class FragmentSink:
+class _JsonLinesSink:
     def __init__(self, workspace: TempWorkspace):
         f = workspace.named_file("w+", encoding="utf-8")
         self.path = Path(f.name)
         self._file = f
         self.count = 0
 
-    def append(self, fragment: str) -> None:
-        self._file.write(fragment)
+    def append(self, value) -> None:
+        self._file.write(json.dumps(value, ensure_ascii=False))
+        self._file.write("\n")
         self.count += 1
+
+    def values(self):
+        self.flush()
+        with self.path.open(encoding="utf-8") as source:
+            for line in source:
+                yield json.loads(line)
 
     def flush(self) -> None:
         self._file.flush()
@@ -436,30 +444,14 @@ class FragmentSink:
         return self.count == 0 and other == []
 
 
-class SearchSink:
-    def __init__(self, workspace: TempWorkspace):
-        self.items = FragmentSink(workspace)
-        self.json = FragmentSink(workspace)
+class SitemapSink(_JsonLinesSink):
+    def append_url(self, url: str) -> None:
+        self.append(url)
 
+
+class SearchSink(_JsonLinesSink):
     def append_item(self, item: dict) -> None:
-        if self.json.count:
-            self.json.append(",\n")
-        self.json.append(_xml_escape(json.dumps(item)))
-        self.items.append(_search_item_xml(item))
-
-    def flush(self) -> None:
-        self.items.flush()
-        self.json.flush()
-
-    def close(self) -> None:
-        self.items.close()
-        self.json.close()
-
-    def __len__(self) -> int:
-        return self.items.count
-
-    def __eq__(self, other) -> bool:
-        return self.items.count == 0 and other == []
+        self.append(item)
 
 
 class SortedArticleBatch:
@@ -554,29 +546,77 @@ def _read_pickled_articles(path: Path, count: int):
             yield pickle.load(f)
 
 
-def _write_model_file(
-    workspace: TempWorkspace, root_tag: str, attrs: str, body_path: Path,
+def _write_sitemap_model_file(
+    workspace: TempWorkspace, attrs: str, sink: SitemapSink,
 ) -> Path:
     with workspace.named_file("w", encoding="utf-8") as out:
-        out.write(f"<{root_tag}{attrs}>")
-        with body_path.open(encoding="utf-8") as body:
-            shutil.copyfileobj(body, out)
-        out.write(f"</{root_tag}>")
+        out.write(f"<sitemap{attrs}>")
+        for url in sink.values():
+            out.write(_sitemap_url_xml(url))
+        out.write("</sitemap>")
         return Path(out.name)
+
+
+def _write_search_json_xml(out, sink: SearchSink) -> None:
+    out.write("[\n")
+    for index, item in enumerate(sink.values()):
+        if index:
+            out.write(",\n")
+        out.write(_xml_escape(json.dumps(item, ensure_ascii=False)))
+    out.write("\n]")
 
 
 def _write_search_model_file(
     workspace: TempWorkspace, attrs: str, sink: SearchSink,
 ) -> Path:
     with workspace.named_file("w", encoding="utf-8") as out:
-        out.write(f"<search{attrs}><json>[\n")
-        with sink.json.path.open(encoding="utf-8") as body:
-            shutil.copyfileobj(body, out)
-        out.write("\n]</json>")
-        with sink.items.path.open(encoding="utf-8") as body:
-            shutil.copyfileobj(body, out)
+        out.write(f"<search{attrs}><json>")
+        _write_search_json_xml(out, sink)
+        out.write("</json>")
+        for item in sink.values():
+            out.write(_search_item_xml(item))
         out.write("</search>")
         return Path(out.name)
+
+
+def _source_values(source):
+    if isinstance(source, _JsonLinesSink):
+        return source.values()
+    return iter(source)
+
+
+def _source_hash(source) -> str:
+    if isinstance(source, _JsonLinesSink):
+        source.flush()
+        return file_hash(source.path)
+    digest = hashlib.sha256()
+    for value in source:
+        encoded = json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode()
+        digest.update(encoded)
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _write_native_sitemap(output_path: Path, source) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as out:
+        out.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset>')
+        for url in _source_values(source):
+            out.write(f"<url><loc>{_xml_escape(url)}</loc></url>")
+        out.write("</urlset>")
+
+
+def _write_native_search(output_path: Path, source) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as out:
+        out.write("[\n")
+        for index, item in enumerate(_source_values(source)):
+            if index:
+                out.write(",\n")
+            out.write(json.dumps(item, ensure_ascii=False))
+        out.write("\n]")
 
 
 # ================================================================
@@ -649,6 +689,34 @@ def _make_xslt_task(
     return timed(cache_key, task)
 
 
+def _make_native_task(
+    *,
+    source,
+    output_path: Path,
+    cache: dict,
+    cache_key: str,
+    engine: NativeEngine,
+    writer: Callable,
+    ctx: BuildCtx,
+    manifest: Optional[OutputManifest] = None,
+) -> Optional[Callable]:
+    output_path = _record_planned_output(
+        manifest, ctx, cache_key, output_path,
+    )
+    fingerprint = (_source_hash(source), engine.cache_identity)
+    if not should_rebuild(
+        cache_key, cache, fingerprint, ctx.force, output_path=output_path,
+    ):
+        return None
+
+    def task(output_path=output_path):
+        if not ctx.dry_run:
+            writer(output_path, source)
+        update_cache(cache, cache_key, fingerprint)
+
+    return timed(cache_key, task)
+
+
 # ================================================================
 # Section builders
 # ================================================================
@@ -659,7 +727,9 @@ def _encode_xml(content: str) -> bytes:
 
 def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformEngine]:
     xsl_path = ctx.xsl_for(section)
-    return xsl_path, stylesheet_hash(xsl_path), ctx.engine_for(section)
+    engine = ctx.engine_for(section)
+    assert isinstance(engine, TransformEngine)
+    return xsl_path, stylesheet_hash(xsl_path), engine
 
 
 def _append_task(tasks: list, task: Optional[Callable], skip_message: str) -> None:
@@ -790,17 +860,49 @@ def _single_xslt_section(
     return [task]
 
 
+def _single_native_section(
+    section: str,
+    source,
+    output_path: Path,
+    writer: Callable,
+    ctx: BuildCtx,
+    cache,
+    manifest,
+) -> list:
+    engine = ctx.engine_for(section)
+    assert isinstance(engine, NativeEngine)
+    task = _make_native_task(
+        source=source,
+        output_path=output_path,
+        cache=cache,
+        cache_key=section,
+        engine=engine,
+        writer=writer,
+        ctx=ctx,
+        manifest=manifest,
+    )
+    if task is None:
+        logging.debug(f"Skipping unchanged {section}")
+        return []
+    return [task]
+
+
 def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=None):
     """Build sitemap.xml from a streamed list of URL strings."""
     if isinstance(workspace, dict) and manifest is None:
         manifest = workspace
         workspace = None
     sitemap = build_sitemap_model([], ctx)
-    if isinstance(urls, FragmentSink):
+    if isinstance(ctx.engine_for("sitemap"), NativeEngine):
+        source = urls if isinstance(urls, SitemapSink) else list(urls)
+        return _single_native_section(
+            "sitemap", source, ctx.output_dir / sitemap.output_path,
+            _write_native_sitemap, ctx, cache, manifest,
+        )
+    if isinstance(urls, SitemapSink):
         assert isinstance(workspace, TempWorkspace)
         attrs = f" site={_xml_attr(ctx.site_name)} self={_xml_attr(sitemap.url)}"
-        urls.flush()
-        xml_input = _write_model_file(workspace, "sitemap", attrs, urls.path)
+        xml_input = _write_sitemap_model_file(workspace, attrs, urls)
     else:
         sitemap = build_sitemap_model(urls, ctx)
         xml_input = _encode_xml(_sitemap_doc(sitemap, ctx.site_name))
@@ -816,6 +918,12 @@ def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=N
         manifest = workspace
         workspace = None
     index = build_search_model([], ctx)
+    if isinstance(ctx.engine_for("search"), NativeEngine):
+        source = items if isinstance(items, SearchSink) else list(items)
+        return _single_native_section(
+            "search", source, ctx.output_dir / index.output_path,
+            _write_native_search, ctx, cache, manifest,
+        )
     if isinstance(items, SearchSink):
         assert isinstance(workspace, TempWorkspace)
         attrs = f" site={_xml_attr(ctx.site_name)}"
@@ -836,7 +944,7 @@ def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=N
 
 @dataclass
 class StreamProjection:
-    sitemap_urls: FragmentSink
+    sitemap_urls: SitemapSink
     search_items: SearchSink
     rss_heap: list
     total: int
@@ -879,7 +987,7 @@ def _stream_projections(
     article_store = ArticleStore(workspace) if collect_articles else None
     listing_store = ArticleStore(workspace) if collect_articles else None
     projection = StreamProjection(
-        FragmentSink(workspace), SearchSink(workspace), [], 0,
+        SitemapSink(workspace), SearchSink(workspace), [], 0,
         articles_by_lang=article_store,
         listings_by_lang=listing_store,
     )
@@ -921,7 +1029,7 @@ def _record_projection_article(
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
     if art.policy.sitemap:
-        projection.sitemap_urls.append(_sitemap_url_xml(art.url))
+        projection.sitemap_urls.append_url(art.url)
     if art.policy.search:
         item = {
             "title": art.title,

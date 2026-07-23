@@ -20,9 +20,9 @@ from articulous.filesystem import TempWorkspace
 from articulous.pipeline import (
     ArticleStore,
     BuildCtx,
-    FragmentSink,
     OutputManifest,
     SearchSink,
+    SitemapSink,
     _article_url_builder,
     _article_xml,
     _cache_path_for,
@@ -798,8 +798,8 @@ def test_build_streamed_sitemap_and_search_sections(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}
     with TempWorkspace() as workspace:
-        urls = FragmentSink(workspace)
-        urls.append(_sitemap_url_xml("https://e.test/a/"))
+        urls = SitemapSink(workspace)
+        urls.append_url("https://e.test/a/")
         tasks = build_sitemap_section(urls, ctx, cache, workspace)
         assert len(tasks) == 1
         tasks[0]()
@@ -812,6 +812,43 @@ def test_build_streamed_sitemap_and_search_sections(tmp_path):
         tasks = build_search_section(items, ctx, cache, workspace)
         assert len(tasks) == 1
         tasks[0]()
+    sitemap = tmp_path / "output" / "sitemap.xml"
+    assert etree.parse(str(sitemap)).findtext("url/loc") == "https://e.test/a/"
+    search = tmp_path / "output" / "search.json"
+    assert json.loads(search.read_text())[0]["title"] == "A"
+
+
+def test_build_streamed_cross_sections_with_xslt(tmp_path):
+    ctx = _ctx_for(tmp_path, engines={"sitemap": "lxml", "search": "lxml"})
+    with TempWorkspace() as workspace:
+        urls = SitemapSink(workspace)
+        urls.append_url("https://e.test/a/")
+        sitemap_tasks = build_sitemap_section(urls, ctx, {}, workspace)
+
+        items = SearchSink(workspace)
+        for title in ("A", "B"):
+            items.append_item({
+                "title": title, "description": "d",
+                "url": f"https://e.test/{title.lower()}/", "tags": ["t"],
+            })
+        search_tasks = build_search_section(items, ctx, {}, workspace)
+        sitemap_tasks[0]()
+        search_tasks[0]()
+    search = tmp_path / "output" / "search.json"
+    assert [item["title"] for item in json.loads(search.read_text())] == ["A", "B"]
+
+
+def test_build_in_memory_cross_sections_with_xslt(tmp_path):
+    ctx = _ctx_for(tmp_path, engines={"sitemap": "lxml", "search": "lxml"})
+    sitemap_tasks = build_sitemap_section(["https://e.test/a/"], ctx, {})
+    search_tasks = build_search_section([{
+        "title": "A", "description": "d",
+        "url": "https://e.test/a/", "tags": ["t"],
+    }], ctx, {})
+    sitemap_tasks[0]()
+    search_tasks[0]()
+    search = tmp_path / "output" / "search.json"
+    assert json.loads(search.read_text())[0]["title"] == "A"
 
 
 def test_cross_builders_accept_manifest_as_fifth_arg(tmp_path):

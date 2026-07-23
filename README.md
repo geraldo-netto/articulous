@@ -112,8 +112,10 @@ The generator requires these files inside `xsl/pages/`:
 - `index.xsl`
 - `tags.xsl`
 - `rss.xsl`
-- `sitemap.xsl`
-- `search.xsl`
+
+The default `native` engine writes sitemap and search outputs incrementally,
+so it does not need `sitemap.xsl` or `search.xsl`. Those templates are
+required only when their section is configured with `lxml` or `saxonc`.
 
 ---
 
@@ -181,6 +183,9 @@ An unknown engine name in `engines` aborts the build immediately so
 typos surface early. Requesting `"saxonc"` without a usable binary
 silently falls back to the lxml engine. lxml denies XSLT file/network
 access, and SaxonC runs with external functions and XInclude disabled.
+The `"native"` engine is available only for `sitemap` and `search`; it
+streams those standard formats with bounded memory. Select `lxml` or
+`saxonc` for either section when custom XSLT output is required.
 
 URL patterns are validated by section:
 

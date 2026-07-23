@@ -8,7 +8,7 @@ shape. Every other module consumes its output via :class:`BuildCtx`
 import json
 from pathlib import Path
 
-from .engines import VALID_ENGINES
+from .engines import validate_engines
 from .filesystem import write_text_atomic
 from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
 
@@ -20,7 +20,11 @@ DEFAULT_CONFIG = {
         "xsl_dir": "xsl",
         "assets_dir": "assets",
     },
-    "engines": dict.fromkeys(SECTION_NAMES, "lxml"),
+    "engines": {
+        **dict.fromkeys(SECTION_NAMES, "lxml"),
+        "sitemap": "native",
+        "search": "native",
+    },
     "saxonc": {"home": None},
     "site": {
         "site_name": "My Site",
@@ -125,12 +129,8 @@ def _validate_paths(config: dict) -> None:
 
 
 def _validate_engines(config: dict) -> None:
-    engines = _require_block(config, "engines", SECTION_NAMES)
-    for section, name in engines.items():
-        if name not in VALID_ENGINES:
-            raise ValueError(
-                f"config engines.{section} must be one of {sorted(VALID_ENGINES)}"
-            )
+    _require_block(config, "engines", SECTION_NAMES)
+    validate_engines(config)
 
 
 def _validate_saxonc(config: dict) -> None:

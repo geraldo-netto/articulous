@@ -10,8 +10,8 @@
     "index": "lxml",
     "tags": "lxml",
     "rss": "lxml",
-    "sitemap": "lxml",
-    "search": "lxml"
+    "sitemap": "native",
+    "search": "native"
   },
   "saxonc": {"home": null},
   "site": {

@@ -222,7 +222,7 @@ def build_search_model(items, ctx: SiteModelCtx) -> SearchIndex:
     Build search index model from a list of pre-projected dicts
     (``{title, description, url, tags}``).
 
-    Output is handled by the configured search XSLT; no canonical URL
+    Output is handled by the configured search engine; no canonical URL
     field is attached since there is no shape-preserving place to put it.
     """
     pattern = ctx.url_patterns["search"]

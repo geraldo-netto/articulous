@@ -28,6 +28,7 @@ from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
     "LxmlEngine",
+    "NativeEngine",
     "REQUIRED_XSL_FILES",
     "SECTION_XSL",
     "SaxonCEngine",
@@ -41,7 +42,8 @@ __all__ = [
     "validate_engines",
 ]
 
-VALID_ENGINES = {"saxonc", "lxml"}
+VALID_ENGINES = {"saxonc", "lxml", "native"}
+NATIVE_SECTIONS = {"sitemap", "search"}
 _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
 
 
@@ -159,6 +161,14 @@ class TransformEngine(ABC):
         stylesheet_fingerprint: Optional[str] = None,
     ) -> None:
         ...
+
+
+class NativeEngine:
+    name = "native"
+
+    @property
+    def cache_identity(self) -> str:
+        return "native:v1"
 
 
 class LxmlEngine(TransformEngine):
@@ -307,7 +317,9 @@ def configure_saxonc(config) -> Optional[Path]:
     return transform_bin
 
 
-def make_engine(name: str, saxonc_bin: Optional[Path]) -> TransformEngine:
+def make_engine(
+    name: str, saxonc_bin: Optional[Path],
+) -> TransformEngine | NativeEngine:
     """
     Return the engine instance for a configured engine name.
 
@@ -324,6 +336,8 @@ def make_engine(name: str, saxonc_bin: Optional[Path]) -> TransformEngine:
             f"Unknown engine name {name!r}; "
             f"must be one of {sorted(VALID_ENGINES)}"
         )
+    if name == "native":
+        return NativeEngine()
     if name == "saxonc" and saxonc_bin is not None:
         return SaxonCEngine(saxonc_bin)
     return LxmlEngine()
@@ -343,6 +357,15 @@ def validate_engines(config) -> None:
         raise ValueError(
             f"Unknown engine(s) configured: {bad}. "
             f"Valid engines: {sorted(VALID_ENGINES)}"
+        )
+    invalid_native = sorted(
+        section for section, name in config["engines"].items()
+        if name == "native" and section not in NATIVE_SECTIONS
+    )
+    if invalid_native:
+        raise ValueError(
+            f"Native engine is only supported for "
+            f"{sorted(NATIVE_SECTIONS)}; got {invalid_native}"
         )
 
 
@@ -373,7 +396,15 @@ def check_dependencies(config, project_root: Path) -> None:
     if not pages_dir.is_dir():
         raise FileNotFoundError(f"Missing XSL pages directory: {pages_dir}")
 
-    for fname in REQUIRED_XSL_FILES:
+    configured = config.get("engines")
+    required_xsl = REQUIRED_XSL_FILES
+    if isinstance(configured, dict):
+        required_xsl = sorted(
+            SECTION_XSL[section]
+            for section, name in configured.items()
+            if name != "native"
+        )
+    for fname in required_xsl:
         f = pages_dir / fname
         if not f.is_file():
             raise FileNotFoundError(f"Missing required XSL file: {f}")

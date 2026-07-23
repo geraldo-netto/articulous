@@ -287,18 +287,18 @@ def check_dependencies(config, project_root: Path) -> None:
         (content_dir, "content_dir"),
         (xsl_dir, "xsl_dir"),
     ]:
-        if not d.exists():
+        if not d.is_dir():
             raise FileNotFoundError(
                 f"Required directory '{name}' not found: {d}"
             )
 
     pages_dir = xsl_dir / "pages"
-    if not pages_dir.exists():
+    if not pages_dir.is_dir():
         raise FileNotFoundError(f"Missing XSL pages directory: {pages_dir}")
 
     for fname in REQUIRED_XSL_FILES:
         f = pages_dir / fname
-        if not f.exists():
+        if not f.is_file():
             raise FileNotFoundError(f"Missing required XSL file: {f}")
 
     logging.debug("All dependencies verified successfully.")

@@ -1,5 +1,6 @@
 """Unit tests for articulous.engines."""
 import logging
+import shutil
 import subprocess
 from pathlib import Path
 from typing import cast
@@ -327,11 +328,25 @@ def test_check_dependencies_missing_content_dir(tmp_path):
         check_dependencies(cfg, tmp_path)
 
 
+def test_check_dependencies_rejects_content_file(tmp_path):
+    cfg = _site(tmp_path)
+    (tmp_path / "content").rmdir()
+    (tmp_path / "content").write_text("not a directory")
+    with pytest.raises(FileNotFoundError, match="content_dir"):
+        check_dependencies(cfg, tmp_path)
+
+
 def test_check_dependencies_missing_pages_dir(tmp_path):
     cfg = _site(tmp_path)
-    # remove the pages dir + its contents
-    import shutil
     shutil.rmtree(tmp_path / "xsl" / "pages")
+    with pytest.raises(FileNotFoundError, match="XSL pages directory"):
+        check_dependencies(cfg, tmp_path)
+
+
+def test_check_dependencies_rejects_pages_file(tmp_path):
+    cfg = _site(tmp_path)
+    shutil.rmtree(tmp_path / "xsl" / "pages")
+    (tmp_path / "xsl" / "pages").write_text("not a directory")
     with pytest.raises(FileNotFoundError, match="XSL pages directory"):
         check_dependencies(cfg, tmp_path)
 
@@ -339,6 +354,15 @@ def test_check_dependencies_missing_pages_dir(tmp_path):
 def test_check_dependencies_missing_xsl_file(tmp_path):
     cfg = _site(tmp_path)
     (tmp_path / "xsl" / "pages" / "article.xsl").unlink()
+    with pytest.raises(FileNotFoundError, match="article.xsl"):
+        check_dependencies(cfg, tmp_path)
+
+
+def test_check_dependencies_rejects_xsl_directory(tmp_path):
+    cfg = _site(tmp_path)
+    article_xsl = tmp_path / "xsl" / "pages" / "article.xsl"
+    article_xsl.unlink()
+    article_xsl.mkdir()
     with pytest.raises(FileNotFoundError, match="article.xsl"):
         check_dependencies(cfg, tmp_path)
 

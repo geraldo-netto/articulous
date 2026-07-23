@@ -286,10 +286,9 @@ def test_copy_assets_skips_when_hash_unchanged(tmp_path, caplog):
     (tmp_path / "assets" / "empty").mkdir()
     src.write_text("v1")
     copy_assets(ctx, cache)
-    dest.write_text("kept")
     with caplog.at_level(logging.DEBUG):
         copy_assets(ctx, cache)
-    assert dest.read_text() == "kept"
+    assert dest.read_text() == "v1"
     assert any("Skipping unchanged assets" in r.message for r in caplog.records)
 
 
@@ -308,15 +307,16 @@ def test_copy_assets_rebuilds_invalid_cache_version(tmp_path, invalid_entry):
     assert dest.read_text() == "source"
 
 
-def test_copy_assets_force_bypasses_manifest_skip(tmp_path, caplog):
+def test_copy_assets_force_rebuilds_matching_manifest(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}
     src = tmp_path / "assets" / "x.txt"
+    dest = tmp_path / "output" / "assets" / "x.txt"
     src.write_text("source")
     copy_assets(ctx, cache)
-    with caplog.at_level(logging.DEBUG):
-        copy_assets(dataclasses.replace(ctx, force=True), cache)
-    assert not any("Skipping unchanged assets" in r.message for r in caplog.records)
+    dest.write_text("stale")
+    copy_assets(dataclasses.replace(ctx, force=True), cache)
+    assert dest.read_text() == "source"
 
 
 def test_copy_assets_hashes_unchanged_files(tmp_path, monkeypatch):
@@ -334,7 +334,7 @@ def test_copy_assets_hashes_unchanged_files(tmp_path, monkeypatch):
 
     monkeypatch.setattr("articulous.pipeline.file_hash", fail_hash)
     copy_assets(ctx, cache)
-    assert calls == [src]
+    assert calls == [src, tmp_path / "output" / "assets" / "x.txt"]
 
 
 def test_copy_assets_recopies_when_hash_changes(tmp_path):
@@ -365,7 +365,7 @@ def test_copy_assets_recopies_same_size_same_mtime_change(tmp_path):
     assert dest.read_text() == "v2"
 
 
-def test_copy_assets_delta_removes_stale_and_keeps_unchanged(tmp_path):
+def test_copy_assets_delta_removes_stale_and_restores_changed(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}
     kept = tmp_path / "assets" / "kept.txt"
@@ -379,8 +379,53 @@ def test_copy_assets_delta_removes_stale_and_keeps_unchanged(tmp_path):
     removed.unlink()
     copy_assets(ctx, cache)
 
-    assert out_kept.read_text() == "local-edit"
+    assert out_kept.read_text() == "v1"
     assert not (tmp_path / "output" / "assets" / "removed.txt").exists()
+
+
+def test_copy_assets_restores_deleted_destination(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    source = tmp_path / "assets" / "x.txt"
+    output = tmp_path / "output" / "assets" / "x.txt"
+    source.write_text("source")
+    copy_assets(ctx, cache)
+    output.unlink()
+    copy_assets(ctx, cache)
+    assert output.read_text() == "source"
+
+
+def test_copy_assets_restores_same_size_destination_edit(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    source = tmp_path / "assets" / "x.txt"
+    output = tmp_path / "output" / "assets" / "x.txt"
+    source.write_text("source")
+    copy_assets(ctx, cache)
+    output.write_text("edited")
+    copy_assets(ctx, cache)
+    assert output.read_text() == "source"
+
+
+def test_copy_assets_refreshes_only_mismatched_file(tmp_path, monkeypatch):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    assets = tmp_path / "assets"
+    output = tmp_path / "output" / "assets"
+    (assets / "changed.txt").write_text("source")
+    (assets / "kept.txt").write_text("kept")
+    copy_assets(ctx, cache)
+    (output / "changed.txt").write_text("edited")
+    copied = []
+    real_copy = shutil.copy2
+
+    def track_copy(source, destination):
+        copied.append(source)
+        return real_copy(source, destination)
+
+    monkeypatch.setattr("articulous.pipeline.shutil.copy2", track_copy)
+    copy_assets(ctx, cache)
+    assert copied == [assets / "changed.txt"]
 
 
 def test_copy_assets_replaces_file_with_directory(tmp_path):

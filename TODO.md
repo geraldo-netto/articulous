@@ -75,7 +75,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-04 | open | M | An unchanged source asset manifest skips the entire copy without verifying destination files, so deleted or modified published assets remain missing/corrupt (`articulous/pipeline.py:266-270`, `articulous/pipeline.py:326-331`) | Reproduced by deleting `output/assets/a.txt`; the next build reported assets unchanged and did not restore it. Validate destination type/content or track and check destination fingerprints. |
 | REL-06 | open | M | Transform cache fingerprints omit the engine and transitive `xsl:include`/`xsl:import` dependencies (`articulous/pipeline.py:625-669`, `articulous/pipeline.py:680-682`) | Changing an included stylesheet scheduled no rebuild and left v1 output in place; switching lxml/SaxonC can also reuse output from the other engine. Hash the complete stylesheet dependency graph plus engine identity/version/config. |
 | REL-10 | open | M | CI bypasses the project dependency bounds/lock and tests only Python 3.12 despite declaring Python 3.11+ support (`.github/workflows/main.yml:23-34`; `pyproject.toml:6-17`) | Install the project test extra from the lock/metadata and run a supported-version matrix so CI exercises the actual package contract reproducibly. |
 

@@ -205,11 +205,34 @@ def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
     return entry
 
 
-def _assets_unchanged(cache: Optional[dict], manifest: dict, ctx: BuildCtx) -> bool:
+def _asset_output_matches(path: Path, metadata: list) -> bool:
+    if metadata[0] == "d":
+        return path.is_dir()
+    if not path.is_file():
+        return False
+    stat = path.stat()
+    return stat.st_size == metadata[1] and file_hash(path) == metadata[3]
+
+
+def _asset_output_mismatches(dest: Path, manifest: dict) -> set[str]:
+    return {
+        rel
+        for rel, metadata in manifest.items()
+        if not _asset_output_matches(dest / rel, metadata)
+    }
+
+
+def _assets_unchanged(
+    cache: Optional[dict], manifest: dict, ctx: BuildCtx, mismatches: set[str],
+) -> bool:
     if ctx.force:
         return False
     entry = _validated_asset_cache_entry(cache)
-    return entry is not None and entry.get("manifest") == manifest
+    return (
+        entry is not None
+        and entry.get("manifest") == manifest
+        and not mismatches
+    )
 
 
 def _cached_asset_manifest(cache: Optional[dict]) -> dict:
@@ -228,7 +251,9 @@ def _remove_asset_type_conflicts(
             _delete_output_file(dest / rel, dest)
 
 
-def _copy_asset_delta(src: Path, dest: Path, old: dict, new: dict) -> None:
+def _copy_asset_delta(
+    src: Path, dest: Path, old: dict, new: dict, refresh: set[str],
+) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     for rel in sorted(set(old) - set(new), reverse=True):
         target = dest / rel
@@ -238,7 +263,7 @@ def _copy_asset_delta(src: Path, dest: Path, old: dict, new: dict) -> None:
         target = dest / rel
         if meta[0] == "d":
             target.mkdir(parents=True, exist_ok=True)
-        elif old.get(rel) != meta:
+        elif old.get(rel) != meta or rel in refresh:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src / rel, target)
 
@@ -273,11 +298,13 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         return
 
     old_manifest = _cached_asset_manifest(cache)
-    if dest.exists() and _assets_unchanged(cache, manifest, ctx):
+    mismatches = _asset_output_mismatches(dest, manifest)
+    if dest.exists() and _assets_unchanged(cache, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")
         return
 
-    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest)
+    refresh = set(manifest) if ctx.force else mismatches
+    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, refresh)
     if cache is not None:
         cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")

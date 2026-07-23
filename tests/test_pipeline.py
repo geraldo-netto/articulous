@@ -383,6 +383,34 @@ def test_copy_assets_delta_removes_stale_and_keeps_unchanged(tmp_path):
     assert not (tmp_path / "output" / "assets" / "removed.txt").exists()
 
 
+def test_copy_assets_replaces_file_with_directory(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    source = tmp_path / "assets" / "node"
+    source.write_text("file")
+    copy_assets(ctx, cache)
+    source.unlink()
+    source.mkdir()
+    (source / "child.txt").write_text("child")
+    copy_assets(ctx, cache)
+    assert (tmp_path / "output" / "assets" / "node" / "child.txt").is_file()
+
+
+def test_copy_assets_replaces_directory_with_file(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    source = tmp_path / "assets" / "node"
+    source.mkdir()
+    (source / "child.txt").write_text("child")
+    copy_assets(ctx, cache)
+    output = tmp_path / "output" / "assets" / "node"
+    (output / "untracked.txt").write_text("stale")
+    shutil.rmtree(source)
+    source.write_text("file")
+    copy_assets(ctx, cache)
+    assert output.read_text() == "file"
+
+
 def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
     ctx = _ctx_for(tmp_path)
     assets = tmp_path / "output" / "assets"

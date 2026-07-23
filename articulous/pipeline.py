@@ -220,11 +220,20 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
     return manifest if isinstance(manifest, dict) else {}
 
 
+def _remove_asset_type_conflicts(
+    dest: Path, old: dict, new: dict,
+) -> None:
+    for rel in sorted(set(old) & set(new), reverse=True):
+        if old[rel][0] != new[rel][0]:
+            _delete_output_file(dest / rel, dest)
+
+
 def _copy_asset_delta(src: Path, dest: Path, old: dict, new: dict) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     for rel in sorted(set(old) - set(new), reverse=True):
         target = dest / rel
         _delete_output_file(target, dest)
+    _remove_asset_type_conflicts(dest, old, new)
     for rel, meta in sorted(new.items()):
         target = dest / rel
         if meta[0] == "d":

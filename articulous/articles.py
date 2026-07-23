@@ -100,6 +100,12 @@ def normalize_slug(text: str) -> str:
     return text.strip("-")
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
@@ -135,7 +141,7 @@ def _parse_publish_at(raw: str, path: Path) -> Optional[datetime]:
     if not raw:
         return None
     try:
-        return datetime.fromisoformat(raw)
+        return _as_utc(datetime.fromisoformat(raw))
     except ValueError:
         logging.warning(
             f"Article {path} has invalid publish-at {raw!r} — treating as scheduled"
@@ -226,7 +232,7 @@ def parse_article_xml(
     lang = _validated_lang(fields["lang"], default_lang, allowed_langs, path)
 
     try:
-        dt = datetime.fromisoformat(fields["date"])
+        dt = _as_utc(datetime.fromisoformat(fields["date"]))
     except (ValueError, TypeError):
         logging.warning(
             f"Article {path} has missing/invalid date {fields['date']!r} — skipping"

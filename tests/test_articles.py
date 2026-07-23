@@ -1,6 +1,6 @@
 """Unit tests for articulous.articles."""
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import lxml.etree as etree
 import pytest
@@ -114,6 +114,14 @@ def test_validated_publication_accepts_known_status():
     assert state.name == "unlisted"
 
 
+def test_validated_publication_normalizes_publish_at():
+    state = _validated_publication(
+        "scheduled", "2025-01-01T12:00:00+05:00", Path("/x")
+    )
+    assert state is not None
+    assert state.publish_at == datetime(2025, 1, 1, 7, tzinfo=timezone.utc)
+
+
 def test_validated_publication_skips_unknown(caplog):
     with caplog.at_level("WARNING"):
         assert _validated_publication("weird", "", Path("/x")) is None
@@ -173,6 +181,22 @@ def test_parse_article_xml_happy_path(tmp_path):
     assert art.tags == ("news",)
     assert art.url == "/en/hello-world/"
     assert art.policy.search is True
+
+
+def test_parse_article_xml_normalizes_dates_for_sorting(tmp_path):
+    naive_path = tmp_path / "naive.xml"
+    aware_path = tmp_path / "aware.xml"
+    naive_path.write_text(ARTICLE_XML)
+    aware_path.write_text(
+        ARTICLE_XML.replace("2025-01-15", "2025-01-15T12:00:00+05:00")
+    )
+    articles = [
+        parse_article_xml(naive_path),
+        parse_article_xml(aware_path),
+    ]
+    parsed = [article for article in articles if article is not None]
+    assert all(article.datetime.tzinfo is timezone.utc for article in parsed)
+    assert len(sorted(parsed, key=lambda article: article.datetime)) == 2
 
 
 def test_parse_article_xml_publication_status(tmp_path):

@@ -85,13 +85,13 @@ def load_cache(cache_path: Path) -> dict:
     """Load the build cache from disk; empty dict if missing/invalid."""
     if not cache_path.exists():
         logging.debug("Cache file not found — starting with empty cache")
-        return {}
+        return TrackedCache()
     try:
         data = json.loads(cache_path.read_text())
         if isinstance(data, dict):
             logging.debug("Cache loaded successfully")
             return TrackedCache(data)
-    except json.JSONDecodeError as e:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
         logging.warning(f"Failed to load cache: {e}")
     logging.debug("Cache invalid — starting fresh")
     return TrackedCache()

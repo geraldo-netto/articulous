@@ -102,7 +102,9 @@ def test_file_hash_directory_raises_value_error(tmp_path):
 # --- load_cache / save_cache ---
 
 def test_load_cache_missing_returns_empty(tmp_path):
-    assert load_cache(tmp_path / "no.json") == {}
+    cache = load_cache(tmp_path / "no.json")
+    assert cache == {}
+    assert isinstance(cache, TrackedCache)
 
 
 def test_load_cache_round_trip(tmp_path):
@@ -117,6 +119,27 @@ def test_load_cache_invalid_json_warns(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         assert load_cache(p) == {}
     assert any("Failed to load cache" in r.message for r in caplog.records)
+
+
+def test_load_cache_invalid_encoding_warns(tmp_path, caplog):
+    p = tmp_path / "c.json"
+    p.write_bytes(b"\xff")
+    with caplog.at_level(logging.WARNING):
+        assert load_cache(p) == {}
+    assert any("Failed to load cache" in r.message for r in caplog.records)
+
+
+def test_load_cache_read_error_warns(tmp_path, caplog, monkeypatch):
+    p = tmp_path / "c.json"
+    p.write_text("{}")
+
+    def fail_read(_self):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(type(p), "read_text", fail_read)
+    with caplog.at_level(logging.WARNING):
+        assert load_cache(p) == {}
+    assert any("denied" in r.message for r in caplog.records)
 
 
 def test_load_cache_non_dict_rejected(tmp_path):

@@ -293,6 +293,32 @@ def test_copy_assets_skips_when_hash_unchanged(tmp_path, caplog):
     assert any("Skipping unchanged assets" in r.message for r in caplog.records)
 
 
+@pytest.mark.parametrize("invalid_entry", ["bad", {}, {"version": 0}])
+def test_copy_assets_rebuilds_invalid_cache_version(tmp_path, invalid_entry):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    dest = tmp_path / "output" / "assets" / "x.txt"
+    src.write_text("source")
+    copy_assets(ctx, cache)
+    assert cache["assets"]["version"] == 1
+    dest.write_text("stale")
+    cache["assets"] = invalid_entry
+    copy_assets(ctx, cache)
+    assert dest.read_text() == "source"
+
+
+def test_copy_assets_force_bypasses_manifest_skip(tmp_path, caplog):
+    ctx = _ctx_for(tmp_path)
+    cache = {}
+    src = tmp_path / "assets" / "x.txt"
+    src.write_text("source")
+    copy_assets(ctx, cache)
+    with caplog.at_level(logging.DEBUG):
+        copy_assets(dataclasses.replace(ctx, force=True), cache)
+    assert not any("Skipping unchanged assets" in r.message for r in caplog.records)
+
+
 def test_copy_assets_hashes_unchanged_files(tmp_path, monkeypatch):
     ctx = _ctx_for(tmp_path)
     cache = {}

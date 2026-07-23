@@ -91,7 +91,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| WIRE-01 | open | S | Asset cache entries write a schema `version` that no reader checks (`articulous/pipeline.py:262-280`) | Enforce the version in `_assets_unchanged`/`_cached_asset_manifest`, or remove the dead field until a migration policy exists. |
 
 ## unused functions/methods
 

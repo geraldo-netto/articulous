@@ -60,6 +60,7 @@ from .sections import (
 
 
 _ASSET_CACHE_KEY = "assets"
+_ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
 _SORT_CHUNK_SIZE = 1024
 
@@ -190,21 +191,30 @@ def _asset_manifest(root: Path) -> dict:
 
 
 def _asset_cache_entry(manifest: dict) -> dict:
-    return {"version": 1, "manifest": manifest}
+    return {"version": _ASSET_CACHE_VERSION, "manifest": manifest}
+
+
+def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
+    if cache is None:
+        return None
+    entry = cache.get(_ASSET_CACHE_KEY)
+    if not isinstance(entry, dict):
+        return None
+    if entry.get("version") != _ASSET_CACHE_VERSION:
+        return None
+    return entry
 
 
 def _assets_unchanged(cache: Optional[dict], manifest: dict, ctx: BuildCtx) -> bool:
-    if cache is None or ctx.force:
+    if ctx.force:
         return False
-    entry = cache.get(_ASSET_CACHE_KEY)
-    return isinstance(entry, dict) and entry.get("manifest") == manifest
+    entry = _validated_asset_cache_entry(cache)
+    return entry is not None and entry.get("manifest") == manifest
 
 
 def _cached_asset_manifest(cache: Optional[dict]) -> dict:
-    if cache is None:
-        return {}
-    entry = cache.get(_ASSET_CACHE_KEY)
-    if not isinstance(entry, dict):
+    entry = _validated_asset_cache_entry(cache)
+    if entry is None:
         return {}
     manifest = entry.get("manifest")
     return manifest if isinstance(manifest, dict) else {}

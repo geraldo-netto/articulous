@@ -2,6 +2,7 @@
 import logging
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 from typing import cast
 from unittest import mock
@@ -118,6 +119,45 @@ def test_lxml_engine_runs_with_bytes(tmp_path):
     out = tmp_path / "out.html"
     LxmlEngine().run(b"<root/>", xsl, out)
     assert out.exists()
+
+
+def test_lxml_engine_caches_stylesheet_by_fingerprint(tmp_path):
+    xml = tmp_path / "x.xml"
+    xml.write_text("<root/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
+    out = tmp_path / "out.html"
+    engine = LxmlEngine()
+    real_xslt = etree.XSLT
+    with mock.patch(
+        "articulous.engines.etree.XSLT", side_effect=real_xslt,
+    ) as compile_xslt:
+        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
+        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
+        engine.run(xml, xsl, out, stylesheet_fingerprint="v2")
+    assert compile_xslt.call_count == 2
+
+
+def test_lxml_engine_keeps_thread_local_stylesheets(tmp_path):
+    xml = tmp_path / "x.xml"
+    xml.write_text("<root/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
+    out = tmp_path / "out.html"
+    engine = LxmlEngine()
+    real_xslt = etree.XSLT
+
+    def transform():
+        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
+
+    with mock.patch(
+        "articulous.engines.etree.XSLT", side_effect=real_xslt,
+    ) as compile_xslt:
+        for _ in range(2):
+            thread = threading.Thread(target=transform)
+            thread.start()
+            thread.join()
+    assert compile_xslt.call_count == 2
 
 
 def test_lxml_engine_dry_run_with_path_label(tmp_path, caplog):

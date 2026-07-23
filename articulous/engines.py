@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Optional, Union
@@ -130,6 +131,7 @@ class TransformEngine(ABC):
         xsl_path: Path,
         output_path: Path,
         dry_run: bool = False,
+        stylesheet_fingerprint: Optional[str] = None,
     ) -> None:
         """Run the transform unless dry-run is set; returns ``None``."""
         xsl_path = Path(xsl_path)
@@ -144,11 +146,17 @@ class TransformEngine(ABC):
             return
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        self._do_transform(normalised, xsl_path, output_path)
+        self._do_transform(
+            normalised, xsl_path, output_path, stylesheet_fingerprint
+        )
 
     @abstractmethod
     def _do_transform(
-        self, xml_input: XmlInput, xsl_path: Path, output_path: Path,
+        self,
+        xml_input: XmlInput,
+        xsl_path: Path,
+        output_path: Path,
+        stylesheet_fingerprint: Optional[str] = None,
     ) -> None:
         ...
 
@@ -156,11 +164,34 @@ class TransformEngine(ABC):
 class LxmlEngine(TransformEngine):
     name = "lxml"
 
+    def __init__(self):
+        self._thread_local = threading.local()
+
     @property
     def cache_identity(self) -> str:
         return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}"
 
-    def _do_transform(self, xml_input, xsl_path, output_path):
+    def _stylesheet_cache(self) -> dict:
+        cache = getattr(self._thread_local, "stylesheets", None)
+        if cache is None:
+            cache = {}
+            self._thread_local.stylesheets = cache
+        return cache
+
+    def _compiled_stylesheet(self, xsl_path: Path, fingerprint: Optional[str]):
+        fingerprint = fingerprint or stylesheet_hash(xsl_path)
+        key = (xsl_path.resolve(), fingerprint)
+        cache = self._stylesheet_cache()
+        if key not in cache:
+            cache[key] = etree.XSLT(
+                etree.parse(str(xsl_path), parser=safe_xml_parser()),
+                access_control=safe_xslt_access_control(),
+            )
+        return cache[key]
+
+    def _do_transform(
+        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
+    ):
         logging.debug(f"Running lxml transform -> {output_path}")
         try:
             parser = safe_xml_parser()
@@ -168,9 +199,8 @@ class LxmlEngine(TransformEngine):
                 dom = etree.fromstring(xml_input, parser=parser)
             else:
                 dom = etree.parse(str(xml_input), parser=parser)
-            xslt = etree.XSLT(
-                etree.parse(str(xsl_path), parser=safe_xml_parser()),
-                access_control=safe_xslt_access_control(),
+            xslt = self._compiled_stylesheet(
+                xsl_path, stylesheet_fingerprint,
             )
             result = xslt(dom)
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
@@ -195,7 +225,9 @@ class SaxonCEngine(TransformEngine):
             revision = "missing"
         return f"{self.name}:{binary}:{revision}:ext=off:xi=off"
 
-    def _do_transform(self, xml_input, xsl_path, output_path):
+    def _do_transform(
+        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
+    ):
         if isinstance(xml_input, bytes):
             # SaxonC CLI needs a real path. Materialise to a transient
             # temp file, clean up afterwards regardless of outcome.

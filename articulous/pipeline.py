@@ -643,7 +643,13 @@ def _make_xslt_task(
         return None
 
     def task(xml_input=xml_input, xsl_path=xsl_path, output_path=output_path):
-        engine.run(xml_input, xsl_path, output_path, dry_run=ctx.dry_run)
+        engine.run(
+            xml_input,
+            xsl_path,
+            output_path,
+            dry_run=ctx.dry_run,
+            stylesheet_fingerprint=xsl_hash,
+        )
         update_cache(cache, cache_key, fingerprint)
 
     return timed(cache_key, task)

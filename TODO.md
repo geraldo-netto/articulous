@@ -20,7 +20,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| PERF-03 | open | M | `LxmlEngine` reparses and recompiles the same stylesheet for every output task (`articulous/engines.py:128-140`; `articulous/pipeline.py:680-682`) | A site with N article pages performs N identical XSLT compilations. Cache compiled transforms per thread and stylesheet fingerprint so parallel execution remains safe. |
 
 ## scalability
 

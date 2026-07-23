@@ -1,6 +1,9 @@
 """Fixture XML files are well-formed and carry the required fields."""
-import subprocess
 from pathlib import Path
+
+import lxml.etree as etree
+
+from articulous.engines import safe_xml_parser
 
 FIXTURE_CONTENT = Path(__file__).parent / "fixtures" / "site" / "content"
 
@@ -16,14 +19,7 @@ def test_no_empty_xml_files():
 
 def test_xml_is_well_formed():
     for f in _xml_files():
-        r = subprocess.run(
-            ["xmllint", "--noout", str(f)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        assert r.returncode == 0, (
-            f"Malformed XML: {f}\n{r.stderr.decode()}"
-        )
+        etree.parse(str(f), parser=safe_xml_parser())
 
 
 def test_required_fields_exist():

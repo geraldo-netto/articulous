@@ -262,7 +262,7 @@ def test_lock_file_excludes_second_holder(tmp_path):
         assert path.exists()
         with pytest.raises(FileExistsError):
             acquire_second_lock()
-    assert not path.exists()
+    assert path.exists()
 
 
 def test_lock_file_recovers_stale_dead_pid(tmp_path, caplog):
@@ -272,7 +272,7 @@ def test_lock_file_recovers_stale_dead_pid(tmp_path, caplog):
         with lock_file(path):
             assert json.loads(path.read_text())["pid"] == os.getpid()
     assert any("dead process build lock" in r.message for r in caplog.records)
-    assert not path.exists()
+    assert path.exists()
 
 
 def test_lock_file_recovers_expired_lock(tmp_path, caplog):
@@ -282,7 +282,7 @@ def test_lock_file_recovers_expired_lock(tmp_path, caplog):
         with lock_file(path, stale_after=0):
             assert json.loads(path.read_text())["pid"] == os.getpid()
     assert any("expired build lock" in r.message for r in caplog.records)
-    assert not path.exists()
+    assert path.exists()
 
 
 def test_lock_file_does_not_warn_for_fresh_lock(tmp_path, caplog):
@@ -298,7 +298,15 @@ def test_lock_file_rewrites_released_fresh_lock(tmp_path):
     path.write_text(json.dumps({"pid": os.getpid(), "created": time.time()}))
     with lock_file(path):
         assert json.loads(path.read_text())["pid"] == os.getpid()
-    assert not path.exists()
+    assert path.exists()
+
+
+def test_lock_file_keeps_stable_inode(tmp_path):
+    path = tmp_path / "build.lock"
+    with lock_file(path):
+        inode = path.stat().st_ino
+    with lock_file(path):
+        assert path.stat().st_ino == inode
 
 
 def test_lock_file_recovers_malformed_lock(tmp_path, caplog):

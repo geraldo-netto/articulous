@@ -97,11 +97,8 @@ def lock_file(path: Path, stale_after: float = 3600):
     try:
         yield
     finally:
-        try:
-            Path(path).unlink(missing_ok=True)
-        finally:
-            fcntl.flock(fd, fcntl.LOCK_UN)
-            os.close(fd)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 
 
 class TempWorkspace:

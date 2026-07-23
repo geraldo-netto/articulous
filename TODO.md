@@ -34,7 +34,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| CONC-01 | open | S | `lock_file` unlinks the lock pathname before releasing its flock, allowing another process to create and lock a new inode while the first build still holds the old one (`articulous/filesystem.py:94-104`) | Reproduced deterministically with two threads. Keep a persistent lock file and release/close the flock without unlinking it. |
 
 ## code complexity
 

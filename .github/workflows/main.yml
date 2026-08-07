@@ -26,13 +26,13 @@ jobs:
           version: "0.11.28"
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra test
+        run: uv sync --locked --extra test --no-build --no-install-project
 
       - name: Run Ruff
-        run: uv run ruff check .
+        run: .venv/bin/ruff check .
 
       - name: Run Pyright
-        run: uv run pyright
+        run: .venv/bin/pyright --pythonpath .venv/bin/python
 
       - name: Run pytest suite
-        run: uv run pytest -vv
+        run: .venv/bin/pytest -vv

@@ -71,7 +71,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-10 | open | M | CI bypasses the project dependency bounds/lock and tests only Python 3.12 despite declaring Python 3.11+ support (`.github/workflows/main.yml:23-34`; `pyproject.toml:6-17`) | Install the project test extra from the lock/metadata and run a supported-version matrix so CI exercises the actual package contract reproducibly. |
+| REL-10 | open | M | CI tests only Python 3.12 despite declaring Python 3.11+ support (`.github/workflows/main.yml:23-26`; `pyproject.toml:6`) | Run a supported-version matrix so CI exercises the full package contract. |
 
 ## observability
 

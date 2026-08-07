@@ -128,8 +128,9 @@ def test_validate_config_rejects_invalid_fields(path, value, message):
 
 
 def test_validate_config_rejects_non_object_root():
+    invalid = cast(dict, [])
     with pytest.raises(ValueError, match="root must be an object"):
-        validate_config(cast(dict, []))
+        validate_config(invalid)
 
 
 def test_validate_config_rejects_unknown_root_key():

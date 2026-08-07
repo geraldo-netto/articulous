@@ -1046,7 +1046,8 @@ def test_collect_tasks_per_lang_populated(tmp_path):
     cli = _FakeCLI()
     cli.only_sections = ["articles"]
     plan = _collect_tasks(lambda: iter([a]), cli, ctx, {})
-    assert "articles" in plan and len(plan["articles"]) == 1
+    assert "articles" in plan
+    assert len(plan["articles"]) == 1
 
 
 def test_collect_tasks_only_lang_filter(tmp_path):

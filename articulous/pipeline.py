@@ -1484,13 +1484,14 @@ def _prune_stale_outputs(
         for path in [_manifest_target(ctx, relpath)]
         for ancestor in (path, *path.parents)
     }
+    protected.add(root)
     for key in stale_keys:
         try:
             target = _manifest_target(ctx, old_manifest[key])
         except ValueError as e:
             logging.warning(f"Skipping invalid cached output manifest entry: {e}")
         else:
-            if target not in protected:
+            if target not in protected and not target.is_relative_to(root / "assets"):
                 _delete_output_file(target, root)
         if key not in current_manifest:
             cache.pop(key, None)

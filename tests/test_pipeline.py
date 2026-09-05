@@ -1480,6 +1480,18 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
     assert any("invalid cached output manifest" in r.message for r in caplog.records)
 
 
+@pytest.mark.parametrize("old_path", ["assets/style.css", "assets", "."])
+def test_prune_never_deletes_reserved_assets(tmp_path, old_path):
+    ctx = _ctx_for(tmp_path)
+    asset = ctx.output_dir / "assets/style.css"
+    asset.parent.mkdir()
+    asset.write_text("current asset")
+    cache = {"rss": ["old"]}
+    _prune_stale_outputs(ctx, cache, {"rss": old_path}, {})
+    assert asset.read_text() == "current asset"
+    assert cache == {}
+
+
 def test_stream_projections_replaces_older_top(tmp_path):
     """Older articles arriving after the heap is full are rejected."""
     ctx = _ctx_for(tmp_path)

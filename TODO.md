@@ -13,7 +13,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-02 | open | M | Asset writes follow pre-existing destination symlink components and can overwrite files outside `output_dir` (`articulous/pipeline.py:263-269`, `articulous/pipeline.py:288-308`) | Reproduced with `output/assets/nested -> outside/`: copying `assets/nested/payload.txt` wrote `outside/payload.txt`. Validate every destination component without following links, or stage and atomically replace a symlink-free asset tree. |
 | SEC-07 | open | M | SaxonC receives original article XML and only `-ext:off`/`-xi:off`; external document reads and external DTD/entity access have no explicit restriction (`articulous/engines.py:253-287`, `articulous/pipeline.py:757-758`) | Source/documentation inference; no `Transform` binary was available for runtime reproduction. [Saxon configuration documentation](https://www.saxonica.com/html/documentation12/configuration/config-features.html) separates external-function controls from resource-protocol restrictions. Apply a confined resource policy and disable external entity loading before enabling this backend for untrusted input. |
 
 ## performance

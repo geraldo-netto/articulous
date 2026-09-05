@@ -255,6 +255,33 @@ def test_copy_assets_rejects_special_sources(tmp_path):
         copy_assets(ctx, {})
 
 
+@pytest.mark.parametrize("component", ["assets", "assets/nested", "assets/nested/file.txt"])
+def test_copy_assets_rejects_destination_symlinks(tmp_path, component):
+    ctx = _ctx_for(tmp_path)
+    source = ctx.assets_dir / "nested/file.txt"
+    source.parent.mkdir()
+    source.write_text("replacement")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    marker = outside / "file.txt"
+    marker.write_text("keep")
+    link = ctx.output_dir / component
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(outside)
+    with pytest.raises(ValueError, match="symlink"):
+        copy_assets(ctx, {})
+    assert marker.read_text() == "keep"
+
+
+@pytest.mark.parametrize("rel", ["../outside", "/outside", "."])
+def test_asset_cache_paths_cannot_escape_destination(tmp_path, rel):
+    ctx = _ctx_for(tmp_path)
+    cache = {"assets": {"version": 1, "manifest": {rel: ["d", 0]}}}
+    with pytest.raises(ValueError, match="Invalid asset output path"):
+        copy_assets(ctx, cache)
+    assert not (ctx.output_dir / "assets").exists()
+
+
 def test_copy_assets_missing_src_removes_stale_output_and_cache(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}

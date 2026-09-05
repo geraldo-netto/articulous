@@ -189,6 +189,18 @@ def _asset_cache_entry(manifest: dict) -> dict:
     return {"version": _ASSET_CACHE_VERSION, "manifest": manifest}
 
 
+def _asset_target(root: Path, rel: str) -> Path:
+    relative = Path(rel)
+    if relative.is_absolute() or not relative.parts or ".." in relative.parts:
+        raise ValueError(f"Invalid asset output path: {rel}")
+    target = root / relative
+    for part in (relative, *relative.parents):
+        component = root / part
+        if component.is_symlink():
+            raise ValueError(f"Asset destination contains a symlink: {component}")
+    return target
+
+
 def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
     if cache is None:
         return None
@@ -243,7 +255,7 @@ def _remove_asset_type_conflicts(
 ) -> None:
     for rel in sorted(set(old) & set(new), reverse=True):
         if old[rel][0] != new[rel][0]:
-            _delete_output_file(dest / rel, dest)
+            _delete_output_file(_asset_target(dest, rel), dest)
 
 
 def _copy_asset_delta(
@@ -251,11 +263,11 @@ def _copy_asset_delta(
 ) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     for rel in sorted(set(old) - set(new), reverse=True):
-        target = dest / rel
+        target = _asset_target(dest, rel)
         _delete_output_file(target, dest)
     _remove_asset_type_conflicts(dest, old, new)
     for rel, meta in sorted(new.items()):
-        target = dest / rel
+        target = _asset_target(dest, rel)
         if meta[0] == "d":
             target.mkdir(parents=True, exist_ok=True)
         elif old.get(rel) != meta or rel in refresh:
@@ -279,7 +291,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     Mirror ``ctx.assets_dir`` into ``<output_dir>/assets``.
     If the source is missing, remove stale copied assets; honours dry-run.
     """
-    dest = _safe_output_path(ctx, ctx.output_dir / "assets")
+    dest = _safe_output_path(ctx, _asset_target(ctx.output_dir, "assets"))
     if not ctx.assets_dir.exists():
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
         _prune_missing_assets(ctx, dest, cache)
@@ -293,6 +305,8 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         return
 
     old_manifest = _cached_asset_manifest(cache)
+    for rel in old_manifest.keys() | manifest.keys():
+        _asset_target(dest, rel)
     mismatches = _asset_output_mismatches(dest, manifest)
     if dest.exists() and _assets_unchanged(cache, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")

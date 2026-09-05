@@ -331,6 +331,8 @@ Entries inside the asset source must be regular files or directories;
 destination symlinks and hardlinks are rejected. Asset copies are not
 atomic. For predictable pruning, reserve the output tree for generated
 files and avoid adding symlinks inside it.
+Pruning removes stale generated symlinks themselves, preserving their
+targets. A symlink in a stale path's parent directories aborts pruning.
 
 ---
 

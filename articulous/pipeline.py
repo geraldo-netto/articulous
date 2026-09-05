@@ -1399,7 +1399,7 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
     owners = OutputManifest()
     for key, relpath in retained.items():
         path = _manifest_target(ctx, relpath)
-        owners.record(key, _output_relpath(ctx, path))
+        owners.record(key, path.relative_to(ctx.output_dir.resolve()).as_posix())
     for key, relpath in current_manifest.items():
         owners.record(key, relpath)
 
@@ -1478,9 +1478,13 @@ def _selected_output_key(key: str, cli) -> bool:
 
 def _manifest_target(ctx: BuildCtx, relpath: str) -> Path:
     rel = Path(relpath)
-    if rel.is_absolute():
-        raise ValueError(f"Manifest output path must be relative: {relpath}")
-    return _safe_output_path(ctx, ctx.output_dir / rel)
+    if rel.is_absolute() or ".." in rel.parts:
+        raise ValueError(f"Manifest output path must be relative without traversal: {relpath}")
+    root = ctx.output_dir.resolve()
+    for parent in rel.parents:
+        if (root / parent).is_symlink():
+            raise OSError(f"Manifest output ancestor is a symlink: {root / parent}")
+    return root / rel
 
 
 def _remove_empty_parents(path: Path, stop: Path) -> None:
@@ -1494,7 +1498,7 @@ def _remove_empty_parents(path: Path, stop: Path) -> None:
 
 
 def _delete_output_file(path: Path, root: Path) -> None:
-    if not path.exists():
+    if not path.exists() and not path.is_symlink():
         return
     if path.is_dir() and not path.is_symlink():
         shutil.rmtree(path)

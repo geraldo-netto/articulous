@@ -1553,6 +1553,43 @@ def test_prune_never_deletes_reserved_assets(tmp_path, old_path):
     assert cache == {}
 
 
+@pytest.mark.parametrize("target_kind", ["file", "directory", "missing", "outside"])
+def test_unpublishing_removes_stale_link_without_following_target(site_root, target_kind):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    root = site_root / "output"
+    target = root / "manual.txt"
+    if target_kind == "directory":
+        target.mkdir()
+        (target / "notes.txt").write_text("keep")
+    elif target_kind != "missing":
+        target = site_root / "manual.txt" if target_kind == "outside" else target
+        target.write_text("keep")
+    before = target.stat().st_ino if target.exists() else None
+    page = root / "en/articles/first-post/index.html"
+    page.unlink()
+    page.symlink_to(target)
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not page.is_symlink()
+    assert (target.stat().st_ino if target.exists() else None) == before
+
+
+@pytest.mark.parametrize("outside", [False, True])
+def test_pruning_rejects_symlink_ancestors(tmp_path, outside):
+    ctx = _ctx_for(tmp_path)
+    manual = (tmp_path if outside else ctx.output_dir) / "manual"
+    manual.mkdir()
+    victim = manual / "index.html"
+    victim.write_text("unowned")
+    (ctx.output_dir / "stale").symlink_to(manual, target_is_directory=True)
+    cache = {"old": ["fingerprint"]}
+    with pytest.raises(OSError, match="ancestor is a symlink"):
+        _prune_stale_outputs(ctx, cache, {"old": "stale/index.html"}, {})
+    assert victim.read_text() == "unowned"
+    assert cache == {"old": ["fingerprint"]}
+
+
 def test_stream_projections_replaces_older_top(tmp_path):
     """Older articles arriving after the heap is full are rejected."""
     ctx = _ctx_for(tmp_path)

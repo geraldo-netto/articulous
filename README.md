@@ -347,8 +347,13 @@ intact. Inspect partial output before deploying after a failed build.
 Existing unowned targets enter recovery ownership only after publication
 replaces them; a planned target that was never replaced is preserved.
 
-Assets are an incremental mirror: removed source entries are pruned,
-and a missing assets directory removes the entire mirrored assets tree.
+The entire `output/assets/` subtree belongs to the asset mirror. Every build
+compares its entries with the source: removed source entries and manual
+additions in the destination are pruned, even after cache loss or a failed
+first build. For example, deleting `assets/retired.pdf` removes its public
+copy; adding `output/assets/manual.pdf` without a source copy removes it too.
+Keep files you want published in the source assets directory. A missing
+source assets directory removes the entire mirrored assets tree.
 Destination file/directory mismatches are repaired, including the mirror
 root when the source directory is empty.
 Entries inside the asset source must be regular files or directories;

@@ -580,6 +580,73 @@ def test_asset_mirror_repairs_destination_type_drift(tmp_path, changed):
     assert (ctx.output_dir / "assets/folder/style.css").read_text() == "source"
 
 
+@pytest.mark.parametrize("cache_state", ["kept", "missing", "corrupt"])
+def test_asset_mirror_prunes_extras_independent_of_cache(tmp_path, cache_state):
+    ctx = _ctx_for(tmp_path)
+    source = ctx.assets_dir / "retired.txt"
+    source.write_text("retired")
+    cache = {}
+    copy_assets(ctx, cache)
+    source.unlink()
+    dest = ctx.output_dir / "assets"
+    (dest / "manual").mkdir()
+    (dest / "manual/notes.txt").write_text("also owned by the mirror")
+    (dest / "empty").mkdir()
+    next_cache = {"kept": cache, "missing": {}, "corrupt": {"assets": "invalid"}}[cache_state]
+    copy_assets(ctx, next_cache)
+    assert dest.is_dir()
+    assert list(dest.iterdir()) == []
+
+
+def test_asset_mirror_prunes_extra_even_when_fingerprints_match(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    (ctx.assets_dir / "kept.txt").write_text("kept")
+    cache = {}
+    copy_assets(ctx, cache)
+    extra = ctx.output_dir / "assets/manual.txt"
+    extra.write_text("manual")
+    copy_assets(ctx, cache)
+    assert not extra.exists()
+    assert (ctx.output_dir / "assets/kept.txt").read_text() == "kept"
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+@pytest.mark.parametrize("source_exists", [False, True])
+def test_asset_mirror_rejects_untracked_links(tmp_path, dry_run, source_exists):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), dry_run=dry_run)
+    if not source_exists:
+        ctx.assets_dir.rmdir()
+    target = tmp_path / "manual.txt"
+    target.write_text("keep")
+    dest = ctx.output_dir / "assets"
+    dest.mkdir()
+    (dest / "untracked").symlink_to(target)
+    with pytest.raises(ValueError, match="symlink"):
+        copy_assets(ctx, {})
+    assert target.read_text() == "keep"
+    assert (dest / "untracked").is_symlink()
+
+
+def test_asset_mirror_recovers_after_first_build_failure(site_root, monkeypatch):
+    config = _site_config(site_root)
+    retired = site_root / "assets/retired.txt"
+    retired.write_text("retired")
+
+    def fail_after_assets(*args):
+        raise RuntimeError("after asset publication")
+
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.pipeline._run_plan", fail_after_assets)
+        with pytest.raises(RuntimeError, match="after asset publication"):
+            run_build(_CLI(), config, site_root)
+    assert (site_root / "output/assets/retired.txt").exists()
+    assert not (site_root / ".build-cache.json").exists()
+    retired.unlink()
+    run_build(_CLI(), config, site_root)
+    assert not (site_root / "output/assets/retired.txt").exists()
+    assert (site_root / "output/assets/style.css").exists()
+
+
 def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
     ctx = _ctx_for(tmp_path)
     assets = tmp_path / "output" / "assets"

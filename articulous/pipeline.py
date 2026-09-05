@@ -277,6 +277,15 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
     return entry["manifest"]
 
 
+def _asset_destination_paths(dest: Path) -> set[str]:
+    paths = set()
+    for path in dest.rglob("*"):
+        rel = path.relative_to(dest).as_posix()
+        _asset_target(dest, rel)
+        paths.add(rel)
+    return paths
+
+
 def _prepare_asset_type(path: Path, directory: bool, root: Path) -> None:
     if path.exists() and path.is_dir() != directory:
         _delete_asset_entry(path, root)
@@ -288,11 +297,11 @@ def _remove_asset_type_conflicts(dest: Path, new: dict) -> None:
 
 
 def _copy_asset_delta(
-    src: Path, dest: Path, old: dict, new: dict, refresh: set[str],
+    src: Path, dest: Path, old: dict, new: dict, refresh: set[str], stale: set[str],
 ) -> None:
     _prepare_asset_type(dest, True, dest.parent)
     dest.mkdir(parents=True, exist_ok=True)
-    for rel in sorted(set(old) - set(new), reverse=True):
+    for rel in sorted(stale, reverse=True):
         target = _asset_target(dest, rel)
         _delete_asset_entry(target, dest)
     _remove_asset_type_conflicts(dest, new)
@@ -322,6 +331,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     If the source is missing, remove stale copied assets; honours dry-run.
     """
     dest = _safe_output_path(ctx, _asset_target(ctx.output_dir, "assets"))
+    destination_paths = _asset_destination_paths(dest)
     if not ctx.assets_dir.exists():
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
         _prune_missing_assets(ctx, dest, cache)
@@ -332,18 +342,19 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     old_manifest = _cached_asset_manifest(cache)
     for rel in old_manifest.keys() | manifest.keys():
         _asset_target(dest, rel)
+    stale = (destination_paths | old_manifest.keys()) - manifest.keys()
 
     if ctx.dry_run:
         logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
         return
 
     mismatches = _asset_output_mismatches(dest, manifest)
-    if dest.is_dir() and _assets_unchanged(cache, manifest, ctx, mismatches):
+    if not stale and dest.is_dir() and _assets_unchanged(cache, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")
         return
 
     refresh = set(manifest) if ctx.force else mismatches
-    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, refresh)
+    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, refresh, stale)
     if cache is not None:
         cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")

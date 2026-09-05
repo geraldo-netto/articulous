@@ -60,13 +60,15 @@ def _stale_lock_reason(text: str, stale_after: float) -> str:
         return ""
     try:
         data = json.loads(text)
+        if not isinstance(data, dict):
+            return "malformed"
         age = time.time() - float(data.get("created", 0))
         if age > stale_after:
             return "expired"
         if not _pid_alive(int(data.get("pid", 0))):
             return "dead process"
         return ""
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError, TypeError, OverflowError):
         return "malformed"
 
 
@@ -86,16 +88,18 @@ def _acquire_lock(path: Path, stale_after: float) -> int:
     ensure_parent_dir(path)
     fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError as e:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as e:
+            raise FileExistsError(path) from e
+        reason = _stale_lock_reason(_read_lock(fd), stale_after)
+        if reason:
+            logging.warning(f"Recovering {reason} build lock: {path}")
+        _write_lock(fd)
+        return fd
+    except BaseException:
         os.close(fd)
-        raise FileExistsError(path) from e
-
-    reason = _stale_lock_reason(_read_lock(fd), stale_after)
-    if reason:
-        logging.warning(f"Recovering {reason} build lock: {path}")
-    _write_lock(fd)
-    return fd
+        raise
 
 
 @contextmanager

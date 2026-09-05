@@ -324,6 +324,21 @@ def test_lock_file_rewrites_released_fresh_lock(tmp_path):
     assert path.exists()
 
 
+def test_failed_lock_initialization_releases_descriptor(tmp_path, monkeypatch):
+    path = tmp_path / "build.lock"
+
+    def fail_write(fd):
+        raise OSError("lock write failed")
+
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.filesystem._write_lock", fail_write)
+        with pytest.raises(OSError, match="lock write failed"):
+            with lock_file(path):
+                pytest.fail("lock initialization unexpectedly succeeded")
+    with lock_file(path):
+        assert json.loads(path.read_text())["pid"] == os.getpid()
+
+
 def test_lock_file_keeps_stable_inode(tmp_path):
     path = tmp_path / "build.lock"
     with lock_file(path):
@@ -332,9 +347,12 @@ def test_lock_file_keeps_stable_inode(tmp_path):
         assert path.stat().st_ino == inode
 
 
-def test_lock_file_recovers_malformed_lock(tmp_path, caplog):
+@pytest.mark.parametrize("payload", [
+    "not-json", "[]", "null", "42", '{"pid": Infinity, "created": Infinity}',
+])
+def test_lock_file_recovers_malformed_lock(tmp_path, caplog, payload):
     path = tmp_path / "build.lock"
-    path.write_text("not-json")
+    path.write_text(payload)
     with caplog.at_level(logging.WARNING):
         with lock_file(path):
             assert path.exists()

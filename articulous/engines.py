@@ -15,7 +15,6 @@ import logging
 import os
 import shutil
 import subprocess
-import tempfile
 import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -25,7 +24,7 @@ from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import atomic_output
+from .filesystem import TempWorkspace, atomic_output
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -251,17 +250,11 @@ class SaxonCEngine(TransformEngine):
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
     ):
         if isinstance(xml_input, bytes):
-            # SaxonC CLI needs a real path. Materialise to a transient
-            # temp file, clean up afterwards regardless of outcome.
-            with tempfile.NamedTemporaryFile(
-                suffix=".xml", delete=False,
-            ) as f:
-                f.write(xml_input)
-                tmp_path = Path(f.name)
-            try:
+            with TempWorkspace() as workspace:
+                with workspace.named_file("w+b", suffix=".xml") as f:
+                    f.write(xml_input)
+                    tmp_path = Path(f.name)
                 self._run_saxon(tmp_path, xsl_path, output_path)
-            finally:
-                tmp_path.unlink(missing_ok=True)
         else:
             self._run_saxon(xml_input, xsl_path, output_path)
 

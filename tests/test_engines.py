@@ -3,6 +3,7 @@ import logging
 import shutil
 import subprocess
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 from unittest import mock
@@ -26,6 +27,7 @@ from articulous.engines import (
     stylesheet_hash,
     validate_engines,
 )
+from articulous.filesystem import TempWorkspace
 
 
 MINIMAL_XSLT = (
@@ -333,6 +335,31 @@ def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
     assert captured["existed_during_run"] is True
     # Cleaned up after the subprocess returned
     assert not captured["tmp"].exists()
+
+
+@pytest.mark.parametrize("operation", ["write", "close"])
+def test_saxon_materialization_failure_cleans_input(tmp_path, monkeypatch, operation):
+    allocated = []
+    real_named_file = TempWorkspace.named_file
+
+    @contextmanager
+    def failing_file(workspace, *args, **kwargs):
+        with real_named_file(workspace, *args, **kwargs) as file:
+            allocated.append(Path(file.name))
+            original_write = file.write
+            def fail(data):
+                original_write(data)
+                raise OSError("materialization failed")
+            if operation == "write":
+                monkeypatch.setattr(file, "write", fail)
+            yield file
+        raise OSError("materialization failed")
+
+    monkeypatch.setattr(TempWorkspace, "named_file", failing_file)
+    with pytest.raises(OSError, match="materialization failed"):
+        SaxonCEngine(tmp_path / "unused").run(b"<root/>", tmp_path / "unused.xsl", tmp_path / "out")
+    assert len(allocated) == 1
+    assert not allocated[0].exists()
 
 
 def test_saxon_engine_propagates_subprocess_failure(tmp_path, caplog):

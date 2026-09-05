@@ -433,6 +433,14 @@ native and lxml backends, and links to generated HTML pages. The RSS fixture
 uses the test site's English first index page as its channel website.
 Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
+
+Seeded fuzz tests mutate configuration types and URL syntax, duplicate XML
+metadata, and out-of-range dates. Boundary probes cover numeric minima,
+platform-sized integers, URL lengths, ports, sitemap resource budgets, and
+the target filesystem's byte limits. Valid boundary cases prevent excessive
+rejection; failing builds must preserve published outputs and cache state.
+Seeds are fixed for reproducibility.
+
 The tests use lxml for XML validation; `xmllint` is not required. In an
 activated virtual environment, install the test extra and run:
 

@@ -21,6 +21,8 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 - Write minimum code that solves problem. No speculative or unneeded changes.
 - Touch only what must. Clean own mess. Leave workspace cleaner than found.
 - Define success criteria before changes. Verify against criteria + iterate until satisfied.
+- Input-handling changes must include reproducible fuzz tests for invalid and
+  out-of-bounds inputs, with valid boundary cases to prevent over-rejection.
 - Keep code complexity <= 10 for any function, class, or method. Applies to all code,
   **including tests**. No exceptions. If logic needs more, split into helpers, table-drive it,
   or restructure until each function is <= 10. Flat lookup `match` (one arm = one mapping, no

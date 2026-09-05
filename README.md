@@ -65,8 +65,14 @@ The build cache (`.build-cache.json` by default) is written next to
 `sitegen.py` and is safe to delete to force a full rebuild. Concurrent
 builds targeting the same output directory share a lock beside that
 directory (`.output.articulous.lock` for the default output), independent
-of the cache filename. Stale or malformed lock metadata is recovered
-automatically; the cache must not use the lock's path.
+of the cache filename. Builds sharing a cache also share a cache lock
+(`..build-cache.json.articulous.lock` by default). Cache entries live under
+`__output_roots__`, keyed by resolved output directory, so each output keeps
+its own fingerprints and pruning manifest. Legacy flat caches bind to the
+output directory used for the first upgraded build; run that build against
+the existing output before changing directories. Stale or malformed lock
+metadata is recovered automatically. Cache, log and lock paths must stay
+separate from configuration, source trees, output trees and each other.
 
 ---
 

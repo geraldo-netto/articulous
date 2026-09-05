@@ -132,10 +132,13 @@ def test_load_cache_missing_returns_empty(tmp_path):
     assert isinstance(cache, TrackedCache)
 
 
-def test_load_cache_round_trip(tmp_path):
+@pytest.mark.parametrize("tracked", [False, True])
+def test_load_cache_round_trip(tmp_path, tracked):
     p = tmp_path / "c.json"
-    save_cache(p, {"k": [1, 2]})
+    cache = TrackedCache({"k": [1, 2]}, dirty=True) if tracked else {"k": [1, 2]}
+    save_cache(p, cache)
     assert load_cache(p) == {"k": [1, 2]}
+    assert cache_changed(cache) is not tracked
 
 
 def test_load_cache_invalid_json_warns(tmp_path, caplog):

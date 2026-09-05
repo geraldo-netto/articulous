@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 from .engines import validate_engines
-from .filesystem import assert_disjoint_trees, write_text_atomic
+from .filesystem import assert_disjoint_trees, cache_lock_path, write_text_atomic
 from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
 
 
@@ -271,7 +271,8 @@ def validate_state_paths(config: dict, cli, project_root: Path) -> None:
     source = root / getattr(cli, "config_path", "config.json")
     trees = [(root / path).resolve() for path in config["paths"].values()]
     output = (root / config["paths"]["output_dir"]).resolve()
-    state = [root / Path(config["build"]["cache_file"]).name,
+    cache = root / Path(config["build"]["cache_file"]).name
+    state = [cache, cache_lock_path(cache),
              output.parent / f".{output.name}.articulous.lock"]
     if log_file := config["logging"].get("file"):
         state.append(root / log_file)

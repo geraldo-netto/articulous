@@ -37,7 +37,7 @@ from .engines import (
     stylesheet_hash,
 )
 from .filesystem import (
-    TempWorkspace, assert_disjoint_trees, atomic_output, lock_file,
+    TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file,
 )
 from .models import (
     build_index_models,
@@ -49,6 +49,7 @@ from .models import (
     build_url_from_pattern,
 )
 from .runtime import (
+    TrackedCache,
     WorkerCount,
     cache_changed,
     file_hash,
@@ -70,6 +71,7 @@ from .sections import (
 _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
+_CACHE_ROOTS_KEY = "__output_roots__"
 _OUTPUT_OWNER = object()
 _SORT_CHUNK_SIZE = 1024
 _SORT_MERGE_FAN_IN = 32
@@ -1369,7 +1371,19 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
         logging.info(f"Article scan: {count} {state} article(s) skipped")
 
 
-def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path) -> None:
+def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache, dict]:
+    stored = load_cache(cache_path)
+    root = str(output_dir.resolve())
+    legacy = _CACHE_ROOTS_KEY not in stored
+    roots = {root: stored} if legacy else stored[_CACHE_ROOTS_KEY]
+    if not isinstance(roots, dict):
+        roots = {}
+    data = roots.get(root, {})
+    cache = TrackedCache(data if isinstance(data, dict) else {}, dirty=legacy)
+    return cache, roots
+
+
+def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
     retained = {} if _can_prune_outputs(cli) else {
         key: path for key, path in old_manifest.items() if not _selected_output_key(key, cli)
     }
@@ -1377,7 +1391,8 @@ def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path)
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(next_manifest.items()))
     if cache_changed(cache):
-        save_cache(cache_path, cache)
+        roots[str(ctx.output_dir.resolve())] = dict(cache)
+        save_cache(cache_path, {_CACHE_ROOTS_KEY: roots})
     else:
         logging.debug("Cache unchanged — skipping save")
 
@@ -1385,7 +1400,7 @@ def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path)
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
     """Resolve the cache file path. ``ctx.cache_file`` is already a bare
     filename (see :func:`build_ctx_from_config`)."""
-    return project_root / ctx.cache_file
+    return (project_root / ctx.cache_file).resolve()
 
 
 def _lock_path_for(ctx: BuildCtx, project_root: Path) -> Path:
@@ -1527,12 +1542,12 @@ def run_build(cli, config, project_root: Path) -> None:
     validate_state_paths(config, cli, project_root)
     ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
-    with lock_file(_lock_path_for(ctx, project_root)):
+    with lock_file(cache_lock_path(cache_path)), lock_file(_lock_path_for(ctx, project_root)):
         with TempWorkspace() as workspace:
             projection = None
             plan: dict = {}
             try:
-                cache = load_cache(cache_path)
+                cache, roots = _load_build_cache(cache_path, ctx.output_dir)
                 old_manifest = _load_output_manifest(cache)
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
@@ -1548,7 +1563,7 @@ def run_build(cli, config, project_root: Path) -> None:
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
                     _finalize_cache(
-                        cli, ctx, cache, old_manifest, current_manifest, cache_path,
+                        cli, ctx, cache, roots, old_manifest, current_manifest, cache_path,
                     )
             finally:
                 _close_task_queues(plan)

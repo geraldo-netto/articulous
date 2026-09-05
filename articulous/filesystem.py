@@ -25,6 +25,11 @@ def assert_disjoint_trees(source: Path, output: Path) -> None:
         raise ValueError(f"Source and output trees overlap: {source} <-> {output}")
 
 
+def cache_lock_path(cache_path: Path) -> Path:
+    cache = cache_path.resolve()
+    return cache.with_name(f".{cache.name}.articulous.lock")
+
+
 @contextmanager
 def open_regular_file(path: Path):
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)

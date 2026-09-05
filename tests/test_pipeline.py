@@ -17,7 +17,7 @@ import pytest
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG, validate_config
 from articulous.engines import LxmlEngine, SaxonCEngine
-from articulous.filesystem import TempWorkspace, lock_file
+from articulous.filesystem import TempWorkspace, cache_lock_path, lock_file
 from articulous.pipeline import (
     ArticleStore,
     BuildCtx,
@@ -31,6 +31,7 @@ from articulous.pipeline import (
     _collect_tasks,
     _encode_xml,
     _index_doc,
+    _load_build_cache,
     _log_article_stats,
     _lock_path_for,
     _make_xslt_task,
@@ -1626,6 +1627,62 @@ def test_output_lock_excludes_builds_with_other_cache_names(site_root):
     assert not (site_root / "output").exists()
 
 
+@pytest.mark.parametrize("alias", [False, True])
+def test_cache_lock_excludes_builds_with_other_outputs(site_root, alias):
+    config = _site_config(site_root)
+    cache_path = site_root / ".build-cache.json"
+    cache_path.write_text("{}")
+    if alias:
+        (site_root / "alias.json").symlink_to(cache_path)
+        config["build"]["cache_file"] = "alias.json"
+    config["paths"]["output_dir"] = str(site_root / "other-output")
+    with lock_file(cache_lock_path(cache_path)):
+        with pytest.raises(FileExistsError):
+            run_build(_CLI(), config, site_root)
+    assert cache_path.read_text() == "{}"
+    assert not (site_root / "other-output").exists()
+
+
+def test_shared_cache_preserves_each_output_manifest(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    other = copy.deepcopy(config)
+    other["paths"]["output_dir"] = str(site_root / "other-output")
+    other["urls"]["article"] = "/{lang}/posts/{slug}/"
+    run_build(_CLI(), other, site_root)
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+    assert (site_root / "other-output/en/posts/first-post/index.html").exists()
+    run_build(_CLI(), other, site_root)
+    assert not (site_root / "other-output/en/posts/first-post/index.html").exists()
+    roots = json.loads((site_root / ".build-cache.json").read_text())["__output_roots__"]
+    assert set(roots) == {str(site_root / "output"), str(site_root / "other-output")}
+
+
+def test_legacy_cache_migration_keeps_pruning_ownership(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    path = site_root / ".build-cache.json"
+    legacy = json.loads(path.read_text())["__output_roots__"][str(site_root / "output")]
+    path.write_text(json.dumps(legacy))
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+    assert "__output_roots__" in json.loads(path.read_text())
+
+
+@pytest.mark.parametrize("roots", [None, "invalid", {"output": []}])
+def test_invalid_cache_namespaces_start_empty(tmp_path, roots):
+    path = tmp_path / "cache.json"
+    output = tmp_path / "output"
+    if isinstance(roots, dict):
+        roots = {str(output): []}
+    path.write_text(json.dumps({"__output_roots__": roots}))
+    cache, _ = _load_build_cache(path, output)
+    assert cache == {}
+
+
 def test_cache_cannot_alias_output_lock(tmp_path):
     ctx = dataclasses.replace(_ctx_for(tmp_path), cache_file=".output.articulous.lock")
     with pytest.raises(ValueError, match="alias"):
@@ -1707,7 +1764,7 @@ def test_run_build_prunes_deleted_article_output(site_root):
     cli2 = _CLI()
     apply_cli_overrides(cfg2, cli2, site_root)
     run_build(cli2, cfg2, site_root)
-    cache = json.loads((site_root / ".build-cache.json").read_text())
+    cache, _ = _load_build_cache(site_root / ".build-cache.json", site_root / "output")
     assert not output.exists()
     assert "article:en:first-post" not in cache
 

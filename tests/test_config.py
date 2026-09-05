@@ -23,6 +23,13 @@ class FakeCLI:
         self.config_path = Path("config.json")
 
 
+def test_log_cannot_alias_cache_lock(tmp_path):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["logging"]["file"] = "..build-cache.json.articulous.lock"
+    with pytest.raises(ValueError, match="alias each other"):
+        apply_cli_overrides(config, FakeCLI(), tmp_path)
+
+
 # --- deep_merge ---
 
 def test_deep_merge_shallow():

@@ -19,7 +19,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| PERF-03 | open | M | Section-limited builds still spool and sort data for unrequested sections because collection switches cover whole section groups (`articulous/pipeline.py:986-1005`, `articulous/pipeline.py:1016-1040`, `articulous/pipeline.py:1107-1112`, `articulous/pipeline.py:1138-1146`) | Reproduced `--only rss` populating sitemap and search sinks, and `--only articles` retaining listing articles that are then sorted. Pass requested-section needs into projection and sorting so only consumed stores, sinks, and RSS heap entries are produced. |
 
 ## scalability
 

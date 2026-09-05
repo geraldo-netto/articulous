@@ -426,14 +426,21 @@ def _search_doc(index, site_name: str) -> str:
 
 class _JsonLinesSink:
     def __init__(self, workspace: TempWorkspace):
-        f = workspace.named_file("w+", encoding="utf-8")
-        self.path = Path(f.name)
-        self._file = f
+        self._workspace = workspace
+        self._file: Any = None
         self.count = 0
 
+    def _open_file(self):
+        if self._file is None:
+            self._file = self._workspace.named_file("w+", encoding="utf-8")
+        return self._file
+
+    @property
+    def path(self) -> Path:
+        return Path(self._open_file().name)
+
     def append(self, value) -> None:
-        self._file.write(json.dumps(value, ensure_ascii=False))
-        self._file.write("\n")
+        self._open_file().write(json.dumps(value, ensure_ascii=False) + "\n")
         self.count += 1
 
     def values(self):
@@ -443,10 +450,12 @@ class _JsonLinesSink:
                 yield json.loads(line)
 
     def flush(self) -> None:
-        self._file.flush()
+        if self._file is not None:
+            self._file.flush()
 
     def close(self) -> None:
-        self._file.close()
+        if self._file is not None:
+            self._file.close()
 
     def __len__(self) -> int:
         return self.count
@@ -1000,6 +1009,7 @@ class StreamProjection:
     skipped_by_publication: dict = field(default_factory=dict)
     articles_by_lang: ArticleStore | None = None
     listings_by_lang: ArticleStore | None = None
+    sections: frozenset[str] = field(default_factory=lambda: frozenset(SECTION_NAMES))
 
 
 class BuildPlan(dict):
@@ -1014,6 +1024,15 @@ def _passes_cli_filters(art, cli) -> bool:
     if cli.only_slugs and art.slug not in cli.only_slugs:
         return False
     return True
+
+
+def _projection_sections(cli, collect_cross: bool, collect_articles: bool) -> frozenset[str]:
+    enabled = set()
+    if collect_cross:
+        enabled.update(CROSS_LANG_SECTIONS)
+    if collect_articles:
+        enabled.update(PER_LANG_SECTIONS)
+    return frozenset(enabled.intersection(cli.only_sections or SECTION_NAMES))
 
 
 def _stream_projections(
@@ -1033,12 +1052,14 @@ def _stream_projections(
     once for every configured language.
     """
     workspace = workspace or TempWorkspace()
-    article_store = ArticleStore(workspace) if collect_articles else None
-    listing_store = ArticleStore(workspace) if collect_articles else None
+    sections = _projection_sections(cli, collect_cross, collect_articles)
+    article_store = ArticleStore(workspace) if "articles" in sections else None
+    listing_store = ArticleStore(workspace) if sections.intersection({"index", "tags"}) else None
     projection = StreamProjection(
         SitemapSink(workspace), SearchSink(workspace), [], 0,
         articles_by_lang=article_store,
         listings_by_lang=listing_store,
+        sections=sections,
     )
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
@@ -1047,8 +1068,8 @@ def _stream_projections(
         if not art.policy.page:
             _record_skipped_publication(projection, art)
             continue
-        _record_projection_article(projection, art, collect_articles, collect_cross)
-        if collect_cross and ctx.rss_items > 0 and art.policy.rss:
+        _record_projection_article(projection, art)
+        if "rss" in sections and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
             _push_rss_entry(projection.rss_heap, entry, ctx.rss_items)
@@ -1062,24 +1083,19 @@ def _record_skipped_publication(projection: StreamProjection, art) -> None:
     )
 
 
-def _record_projection_article(
-    projection: StreamProjection, art, collect_articles: bool, collect_cross: bool,
-) -> None:
+def _record_projection_article(projection: StreamProjection, art) -> None:
     projection.total += 1
-    if collect_articles:
-        assert projection.articles_by_lang is not None
-        assert projection.listings_by_lang is not None
+    if projection.articles_by_lang is not None:
         projection.articles_by_lang.append(art.lang, art)
-        if art.policy.listing:
-            projection.listings_by_lang.append(art.lang, art)
-    if collect_cross:
-        _add_cross_projection(projection, art)
+    if projection.listings_by_lang is not None and art.policy.listing:
+        projection.listings_by_lang.append(art.lang, art)
+    _add_cross_projection(projection, art)
 
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
-    if art.policy.sitemap:
+    if "sitemap" in projection.sections and art.policy.sitemap:
         projection.sitemap_urls.append_url(art.url)
-    if art.policy.search:
+    if "search" in projection.sections and art.policy.search:
         item = {
             "title": art.title,
             "description": art.description,
@@ -1154,9 +1170,9 @@ def _collect_per_lang_plan(
         if cli.only_langs and lang not in cli.only_langs:
             continue
         lang_articles = _sorted_store_articles(projection.articles_by_lang, lang)
-        if not lang_articles:
-            continue
         listing_articles = _sorted_store_articles(projection.listings_by_lang, lang)
+        if not (lang_articles or listing_articles):
+            continue
         _add_per_lang_tasks(
             plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
         )

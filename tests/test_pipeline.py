@@ -1146,6 +1146,43 @@ def test_rss_sorted_from_heap_newest_first(tmp_path):
 
 # --- _collect_tasks ---
 
+@pytest.mark.parametrize("section,expected", [
+    ("articles", (True, False, 0, 0, 0)),
+    ("index", (False, True, 0, 0, 0)),
+    ("tags", (False, True, 0, 0, 0)),
+    ("rss", (False, False, 0, 0, 1)),
+    ("sitemap", (False, False, 1, 0, 0)),
+    ("search", (False, False, 0, 1, 0)),
+])
+def test_section_build_collects_only_consumed_projections(tmp_path, section, expected):
+    ctx = _ctx_for(tmp_path)
+    source = ctx.content_dir / "a.xml"
+    source.write_text("<article><title>a</title><date>2024-01-01</date></article>")
+    article = dataclasses.replace(_art("a", tags=("tag",)), source_path=source)
+    with TempWorkspace() as workspace:
+        plan = _collect_tasks(lambda: iter([article]), _FakeCLI(sections=[section]), ctx, {}, workspace)
+        projection = plan.projection
+        observed = (
+            projection.articles_by_lang is not None,
+            projection.listings_by_lang is not None,
+            len(projection.sitemap_urls), len(projection.search_items), len(projection.rss_heap),
+        )
+        assert observed == expected
+        assert len(plan[section]) == 1
+        _cleanup_stream_projection(projection)
+
+
+def test_rss_only_build_does_not_spool_unused_projections(tmp_path, monkeypatch):
+    ctx = _ctx_for(tmp_path)
+    with TempWorkspace() as workspace:
+        def unexpected_spool(*args, **kwargs):
+            pytest.fail("RSS-only planning must not create projection files")
+        monkeypatch.setattr(workspace, "named_file", unexpected_spool)
+        plan = _collect_tasks(lambda: iter([_art("a")]), _FakeCLI(sections=["rss"]), ctx, {}, workspace)
+        assert len(plan["rss"]) == 1
+        _cleanup_stream_projection(plan.projection)
+
+
 def test_collect_tasks_all_sections(tmp_path):
     ctx = _ctx_for(tmp_path)
     # Empty stream keeps the test independent of any on-disk source

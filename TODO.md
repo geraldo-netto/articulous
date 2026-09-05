@@ -23,7 +23,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SCAL-05 | open | M | Stream article-file discovery instead of sorting the entire recursive result in memory (`articulous/articles.py:271`, `articulous/articles.py:297`). | Medium. A synthetic 20,000-path walk is fully consumed and retained before the first article is parsed. Preserve deterministic traversal with bounded buffering; the current single-article memory claim excludes this global path list. |
 
 ## concurrency
 

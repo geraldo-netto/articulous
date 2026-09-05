@@ -1,5 +1,7 @@
 """Unit tests for articulous.articles."""
 import os
+import sqlite3
+import tracemalloc
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -345,6 +347,33 @@ def test_discover_article_files_recurses(tmp_path):
     files = _discover_article_files(tmp_path)
     names = [f.name for f in files]
     assert names == ["a.xml", "b.xml"]
+
+
+def test_discovery_bounds_memory_for_wide_directories(tmp_path, monkeypatch):
+    def entries(directory):
+        for index in range(20_000):
+            yield directory + f"/{index:05}.xml".encode(), 0
+    monkeypatch.setattr("articulous.articles._directory_entries", entries)
+    tracemalloc.start()
+    try:
+        paths = _discover_article_files(tmp_path)
+        assert next(paths).name == "00000.xml"
+        _, peak = tracemalloc.get_traced_memory()
+        paths.close()
+    finally:
+        tracemalloc.stop()
+    assert peak < 1_000_000
+
+
+def test_discovery_closes_index_when_stopped_early(tmp_path, monkeypatch):
+    (tmp_path / "article.xml").write_text(ARTICLE_XML)
+    connection = sqlite3.connect("")
+    monkeypatch.setattr("articulous.articles.sqlite3.connect", lambda name: connection)
+    paths = _discover_article_files(tmp_path)
+    assert next(paths).name == "article.xml"
+    paths.close()
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        connection.execute("SELECT 1")
 
 
 # --- iter_articles (streaming) ---

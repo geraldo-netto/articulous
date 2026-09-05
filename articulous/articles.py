@@ -10,7 +10,10 @@ that loophole.
 from __future__ import annotations
 
 import logging
+import os
 import re
+import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -270,9 +273,31 @@ def parse_article_xml(
     )
 
 
+def _directory_entries(directory: bytes):
+    with os.scandir(os.fsdecode(directory)) as entries:
+        for entry in entries:
+            directory_entry = entry.is_dir(follow_symlinks=False)
+            if directory_entry or entry.name.endswith(".xml"):
+                yield os.fsencode(entry.path), int(directory_entry)
+
+
+def _spool_article_paths(database, content_dir: Path) -> None:
+    database.execute("CREATE TABLE paths (path BLOB PRIMARY KEY, directory INTEGER)")
+    database.execute("CREATE INDEX directories ON paths(path) WHERE directory = 1")
+    database.execute("INSERT INTO paths VALUES (?, 1)", (os.fsencode(content_dir),))
+    while row := database.execute("SELECT path FROM paths WHERE directory = 1 LIMIT 1").fetchone():
+        database.execute("DELETE FROM paths WHERE path = ?", row)
+        database.executemany("INSERT INTO paths VALUES (?, ?)", _directory_entries(row[0]))
+
+
 def _discover_article_files(content_dir: Path):
-    """Recursively find all .xml files in ``content_dir``."""
-    return sorted(content_dir.rglob("*.xml"))
+    """Sort discovered paths on disk with a bounded SQLite page cache."""
+    with closing(sqlite3.connect("")) as database:
+        database.execute("PRAGMA temp_store = FILE")
+        database.execute("PRAGMA cache_size = -512")
+        _spool_article_paths(database, content_dir)
+        for (path,) in database.execute("SELECT path FROM paths ORDER BY path"):
+            yield Path(os.fsdecode(path))
 
 
 def iter_articles(
@@ -284,12 +309,11 @@ def iter_articles(
     stats: Optional[ArticleStats] = None,
 ):
     """
-    Yield :class:`Article` instances one at a time, in directory-walk
-    order (no sort applied).
+    Yield :class:`Article` instances one at a time in sorted path order.
 
-    Memory footprint is bounded to a single article — the lxml DOM is
-    released between iterations and the previous ``Article`` is only
-    retained if the caller holds onto it.
+    Discovery uses a temporary disk index; parsing retains one article
+    at a time. The lxml DOM is released between iterations and the
+    previous ``Article`` is only retained if the caller holds onto it.
 
     The pipeline consumes this generator once per build and partitions
     the filtered articles by language while building cross-language

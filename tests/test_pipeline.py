@@ -1171,6 +1171,7 @@ def test_stream_projections_respects_cli_filters(tmp_path):
     assert projection.total == 1
     projection.sitemap_urls.flush()
     assert articles[0].url in projection.sitemap_urls.path.read_text()
+    assert articles[1].url in projection.sitemap_urls.path.read_text()
 
 
 def test_stream_projections_can_partition_without_cross_work(tmp_path):
@@ -1586,6 +1587,48 @@ def test_targeted_unpublishing_preserves_unselected_retired_page(site_root):
     run_build(_CLI(only_sections=["articles"], only_slugs=["first-post"]), config, site_root)
     assert not (site_root / "output/en/articles/first-post/index.html").exists()
     assert (site_root / "output/en/articles/second-post/index.html").exists()
+
+
+@pytest.mark.parametrize("options", [
+    {"only_langs": ["en"]},
+    {"only_slugs": ["first-post"]},
+    {"only_langs": ["en"], "only_slugs": ["first-post"]},
+])
+def test_filtered_rebuild_preserves_complete_shared_outputs(site_root, options):
+    config = _site_config(site_root)
+    config["site"]["pagination"]["per_page"] = 1
+    run_build(_CLI(), config, site_root)
+    root = site_root / "output"
+    cache, _ = _load_build_cache(site_root / ".build-cache.json", root)
+    shared = {path: (root / path).read_bytes()
+              for key, path in cache["__outputs__"].items()
+              if not key.startswith("article:")}
+    french = next(root.glob("fr/articles/*/index.html"))
+    modified = french.stat().st_mtime_ns
+    config["build"]["force_full_build"] = True
+    run_build(_CLI(**options), config, site_root)
+    assert {path: (root / path).read_bytes() for path in shared} == shared
+    assert len(json.loads((root / "search.json").read_text())) == 3
+    assert french.stat().st_mtime_ns == modified
+
+
+@pytest.mark.parametrize("options", [
+    {"only_langs": ["en"]}, {"only_slugs": ["first-post"]},
+])
+def test_filtered_unpublishing_refreshes_and_prunes_shared_outputs(site_root, options):
+    config = _site_config(site_root)
+    config["site"]["pagination"]["per_page"] = 1
+    run_build(_CLI(), config, site_root)
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(**options), config, site_root)
+    root = site_root / "output"
+    assert not (root / "en/page/2/index.html").exists()
+    assert not (root / "en/tags/intro/index.html").exists()
+    assert "Second Post" in (root / "en/page/1/index.html").read_text()
+    assert "Second Post" in (root / "en/tags/news/index.html").read_text()
+    search = json.loads((root / "search.json").read_text())
+    assert len(search) == 2
+    assert all("first-post" not in item["url"] for item in search)
 
 
 @pytest.mark.parametrize("sections", [None, ["articles"]])

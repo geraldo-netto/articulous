@@ -111,6 +111,9 @@ Notes:
   skipped; an invalid timestamp is skipped with a warning.
 - Targeted builds remove retired article pages within their selected
   sections, languages, and slugs while preserving unselected pages.
+- Language and slug filters limit article pages. Selected RSS, sitemap
+  and search sections always use all published articles; selected index
+  and tag sections use complete listings for each selected language.
 
 ---
 

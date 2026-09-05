@@ -38,7 +38,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-05 | open | M | Preserve complete shared feeds and listing pages during language/slug-filtered builds (`articulous/pipeline.py:1075`, `articulous/pipeline.py:1092`, `articulous/pipeline.py:1174`). | Medium. After a full three-article build, `--slug first-post` rewrites global search with one article while other pages remain published; shared RSS, sitemap, index and tag inputs use the same filter. Aggregate complete published inputs for shared outputs, or explicitly exclude shared outputs from targeted updates. |
 
 ## system design
 

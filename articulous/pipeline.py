@@ -1121,7 +1121,7 @@ def _stream_projections(
     collect_articles: bool = False,
 ) -> StreamProjection:
     """
-    Single filtered article pass.
+    Single article pass with complete shared projections.
 
     Cross-language sections use projected lists/heaps; per-language
     sections reuse ``articles_by_lang`` so the XML tree is not reparsed
@@ -1148,12 +1148,11 @@ def _stream_projections(
 def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
-        if not _passes_cli_filters(art, cli):
-            continue
         if not art.policy.page:
-            _record_skipped_publication(projection, art)
+            if _passes_cli_filters(art, cli):
+                _record_skipped_publication(projection, art)
             continue
-        _record_projection_article(projection, art)
+        _record_projection_article(projection, art, cli)
         if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
@@ -1167,13 +1166,16 @@ def _record_skipped_publication(projection: StreamProjection, art) -> None:
     )
 
 
-def _record_projection_article(projection: StreamProjection, art) -> None:
-    projection.total += 1
-    if projection.articles_by_lang is not None:
-        projection.articles_by_lang.append(art.lang, art)
+def _record_projection_article(projection: StreamProjection, art, cli) -> None:
+    if _passes_cli_filters(art, cli):
+        projection.total += 1
+        if projection.articles_by_lang is not None:
+            projection.articles_by_lang.append(art.lang, art)
+    _add_cross_projection(projection, art)
+    if cli.only_langs and art.lang not in cli.only_langs:
+        return
     if projection.listings_by_lang is not None and art.policy.listing:
         projection.listings_by_lang.append(art.lang, art)
-    _add_cross_projection(projection, art)
 
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
@@ -1458,10 +1460,8 @@ def _selected_output_key(key: str, cli) -> bool:
         lang, _, slug = tail.rpartition(":")
         if cli.only_langs and lang not in cli.only_langs:
             return False
-        if cli.only_slugs:
-            return prefix == "article" and slug in cli.only_slugs
-        return True
-    return not (cli.only_langs or cli.only_slugs)
+        return prefix != "article" or not cli.only_slugs or slug in cli.only_slugs
+    return True
 
 
 def _manifest_target(ctx: BuildCtx, relpath: str) -> Path:

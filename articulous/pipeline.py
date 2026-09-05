@@ -17,6 +17,7 @@ import logging
 import os
 import pickle
 import shutil
+import stat
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -174,11 +175,13 @@ def _asset_manifest(root: Path) -> dict:
     manifest = {}
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root).as_posix()
-        stat = path.stat()
-        if path.is_dir():
-            manifest[rel] = ["d", stat.st_mtime_ns]
+        metadata = path.lstat()
+        if stat.S_ISDIR(metadata.st_mode):
+            manifest[rel] = ["d", metadata.st_mtime_ns]
+        elif stat.S_ISREG(metadata.st_mode):
+            manifest[rel] = ["f", metadata.st_size, metadata.st_mtime_ns, file_hash(path)]
         else:
-            manifest[rel] = ["f", stat.st_size, stat.st_mtime_ns, file_hash(path)]
+            raise ValueError(f"Asset symlinks and special files are not supported: {path}")
     return manifest
 
 

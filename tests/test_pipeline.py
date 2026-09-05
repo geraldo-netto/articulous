@@ -232,6 +232,29 @@ def test_copy_assets_missing_src_noop(tmp_path):
     assert not (tmp_path / "output" / "assets").exists()
 
 
+@pytest.mark.parametrize("kind", ["file", "directory", "missing"])
+def test_copy_assets_rejects_source_symlinks(tmp_path, kind):
+    ctx = _ctx_for(tmp_path)
+    target = tmp_path / "outside"
+    makers = {
+        "file": lambda: target.write_text("secret"),
+        "directory": target.mkdir,
+        "missing": lambda: None,
+    }
+    makers[kind]()
+    (ctx.assets_dir / "linked").symlink_to(target)
+    with pytest.raises(ValueError, match="symlinks"):
+        copy_assets(ctx, {})
+    assert not (ctx.output_dir / "assets").exists()
+
+
+def test_copy_assets_rejects_special_sources(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    os.mkfifo(ctx.assets_dir / "pipe")
+    with pytest.raises(ValueError, match="special files"):
+        copy_assets(ctx, {})
+
+
 def test_copy_assets_missing_src_removes_stale_output_and_cache(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}

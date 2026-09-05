@@ -73,14 +73,9 @@ def file_hash(path: Path) -> str:
     meaningful for regular files).
     """
     h = hashlib.sha256()
-    try:
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(65536), b""):
-                h.update(chunk)
-    except IsADirectoryError as e:
-        raise ValueError(
-            f"file_hash requires a regular file, got directory: {path}"
-        ) from e
+    with open_regular_file(path) as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 

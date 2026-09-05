@@ -340,6 +340,9 @@ atomic. For predictable pruning, reserve the output tree for generated
 files and avoid adding symlinks inside it.
 Pruning removes stale generated symlinks themselves, preserving their
 targets. A symlink in a stale path's parent directories aborts pruning.
+If a stale owned file has become a directory, pruning stops and preserves
+the directory and its contents. Move or remove it explicitly before retrying;
+page/feed ownership never authorizes recursive directory deletion.
 
 ---
 

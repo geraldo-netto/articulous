@@ -53,7 +53,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-11 | open | S | Refuse recursive deletion when a previously owned output file has become a directory. | High; articulous/pipeline.py:1489 calls `shutil.rmtree` on a stale file path that is now a directory, although ownership records only the original file. Reproduced: replace a built article's `index.html` with a directory containing an unowned file, make the article private, rebuild; the unowned child is deleted. Reject the type change or remove only independently owned descendants; cover nonempty directories in pruning tests. |
 | DATA-12 | open | M | Reject symlink redirection while planning and publishing live generated outputs. | High; articulous/pipeline.py:165 resolves output symlinks before recording ownership. Reproduced: replace a built article's `index.html` with a symlink to `output/unowned.txt`, then rebuild; the unrelated target is overwritten and adopted into the ownership sidecar. Validate literal leaf and ancestor paths before writing, preserve unrelated targets, and test both leaf and directory symlinks. |
 
 ## system design

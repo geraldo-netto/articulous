@@ -278,7 +278,7 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
 
 def _prepare_asset_type(path: Path, directory: bool, root: Path) -> None:
     if path.exists() and path.is_dir() != directory:
-        _delete_output_file(path, root)
+        _delete_asset_entry(path, root)
 
 
 def _remove_asset_type_conflicts(dest: Path, new: dict) -> None:
@@ -293,7 +293,7 @@ def _copy_asset_delta(
     dest.mkdir(parents=True, exist_ok=True)
     for rel in sorted(set(old) - set(new), reverse=True):
         target = _asset_target(dest, rel)
-        _delete_output_file(target, dest)
+        _delete_asset_entry(target, dest)
     _remove_asset_type_conflicts(dest, new)
     for rel, meta in sorted(new.items()):
         target = _asset_target(dest, rel)
@@ -309,7 +309,7 @@ def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict]) -> N
         logging.debug(f"[DRY RUN] Would remove stale assets output: {dest}")
         return
     if dest.exists():
-        _delete_output_file(dest, ctx.output_dir.resolve())
+        _delete_asset_entry(dest, ctx.output_dir.resolve())
         logging.info(f"Removed stale assets output: {dest}")
     if cache is not None:
         cache.pop(_ASSET_CACHE_KEY, None)
@@ -1486,13 +1486,18 @@ def _remove_empty_parents(path: Path, stop: Path) -> None:
         parent = parent.parent
 
 
-def _delete_output_file(path: Path, root: Path) -> None:
-    if not path.exists() and not path.is_symlink():
-        return
+def _delete_asset_entry(path: Path, root: Path) -> None:
     if path.is_dir() and not path.is_symlink():
         shutil.rmtree(path)
     else:
-        path.unlink()
+        path.unlink(missing_ok=True)
+    _remove_empty_parents(path, root)
+
+
+def _delete_output_file(path: Path, root: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        raise ValueError(f"Owned output file became a directory; refusing deletion: {path}")
+    path.unlink(missing_ok=True)
     _remove_empty_parents(path, root)
 
 

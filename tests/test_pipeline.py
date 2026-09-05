@@ -1523,23 +1523,37 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
     ctx = _ctx_for(tmp_path)
     root_file = tmp_path / "output" / "root.txt"
     root_file.write_text("old")
-    old_dir = tmp_path / "output" / "old-dir"
-    old_dir.mkdir()
     missing = tmp_path / "output" / "missing.txt"
     assert not missing.exists()
-    cache = {"root": ["h"], "dir": ["h"], "missing": ["h"], "bad": ["h"]}
+    cache = {"root": ["h"], "missing": ["h"], "bad": ["h"]}
     old = {
         "root": "root.txt",
-        "dir": "old-dir",
         "missing": "missing.txt",
         "bad": str(tmp_path.parent / "outside.txt"),
     }
     with caplog.at_level(logging.WARNING):
         _prune_stale_outputs(ctx, cache, {path: key for key, path in old.items()}, {})
     assert not root_file.exists()
-    assert not old_dir.exists()
     assert cache == {}
     assert any("invalid cached output manifest" in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize("nonempty", [False, True])
+def test_unpublishing_rejects_owned_file_replaced_by_directory(site_root, nonempty):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    page = site_root / "output/en/articles/first-post/index.html"
+    page.unlink()
+    page.mkdir()
+    unowned = page / "manual.txt"
+    if nonempty:
+        unowned.write_text("keep")
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    with pytest.raises(ValueError, match="Owned output file became a directory"):
+        run_build(_CLI(), config, site_root)
+    assert page.is_dir()
+    if nonempty:
+        assert unowned.read_text() == "keep"
 
 
 @pytest.mark.parametrize("old_path", ["assets/style.css", "assets", "."])

@@ -1135,6 +1135,15 @@ def _stream_projections(
         listings_by_lang=listing_store,
         sections=sections,
     )
+    try:
+        _fill_projection(projection, stream_factory, cli, ctx)
+    except BaseException:
+        _cleanup_stream_projection(projection)
+        raise
+    return projection
+
+
+def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
         if not _passes_cli_filters(art, cli):
@@ -1143,11 +1152,10 @@ def _stream_projections(
             _record_skipped_publication(projection, art)
             continue
         _record_projection_article(projection, art)
-        if "rss" in sections and ctx.rss_items > 0 and art.policy.rss:
+        if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
             _push_rss_entry(projection.rss_heap, entry, ctx.rss_items)
-    return projection
 
 
 def _record_skipped_publication(projection: StreamProjection, art) -> None:

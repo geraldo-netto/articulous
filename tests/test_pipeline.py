@@ -1225,6 +1225,27 @@ def test_cleanup_stream_projection_accepts_none():
     _cleanup_stream_projection(None)
 
 
+def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch):
+    ctx = _ctx_for(tmp_path)
+    handles = []
+    original = TempWorkspace.named_file
+    def track(workspace, *args, **kwargs):
+        file = original(workspace, *args, **kwargs)
+        handles.append(file)
+        return file
+    def fail_stream():
+        yield _art("a")
+        raise OSError("article stream failed")
+    monkeypatch.setattr(TempWorkspace, "named_file", track)
+    with TempWorkspace() as workspace:
+        with pytest.raises(OSError, match="article stream failed") as error:
+            _collect_tasks(fail_stream, _FakeCLI(), ctx, {}, workspace)
+        assert error.value.__traceback__ is not None
+        assert len(handles) == 4
+        assert all(file.closed for file in handles)
+    assert all(not Path(file.name).exists() for file in handles)
+
+
 def test_rss_sorted_from_heap_newest_first(tmp_path):
     ctx = _ctx_for(tmp_path)
     articles = [

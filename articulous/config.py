@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 from .engines import validate_engines
-from .filesystem import write_text_atomic
+from .filesystem import assert_disjoint_trees, write_text_atomic
 from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
 
 
@@ -242,6 +242,12 @@ def load_or_create_config(path: Path) -> dict:
     return cfg
 
 
+def validate_output_layout(paths: dict) -> None:
+    output = Path(paths["output_dir"])
+    for key in ("content_dir", "xsl_dir", "assets_dir"):
+        assert_disjoint_trees(Path(paths[key]), output)
+
+
 def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
     """
     Apply CLI overrides to the loaded config, in place.
@@ -266,3 +272,4 @@ def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
                 f"{resolved} (project_root={root_resolved})"
             )
         config["paths"][key] = str(resolved)
+    validate_output_layout(config["paths"])

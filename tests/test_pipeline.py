@@ -1274,6 +1274,18 @@ def test_run_build_end_to_end(site_root):
     assert (site_root / "output" / "rss.xml").exists()
 
 
+def test_run_build_rejects_source_overlap_before_writes(site_root):
+    from articulous.config import load_or_create_config
+    config = load_or_create_config(site_root / "config.json")
+    config["paths"]["output_dir"] = "content"
+    source = site_root / "content/en/first-post.xml"
+    previous = source.read_bytes()
+    with pytest.raises(ValueError, match="overlap"):
+        run_build(_CLI(), config, site_root)
+    assert source.read_bytes() == previous
+    assert not (site_root / ".build-cache.lock").exists()
+
+
 def test_run_build_skips_save_when_cache_unchanged(site_root, caplog):
     """Second run with no changes should not rewrite the cache file."""
     from articulous.config import apply_cli_overrides, load_or_create_config

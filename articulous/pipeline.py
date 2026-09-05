@@ -24,6 +24,7 @@ from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleStats, iter_articles
+from .config import validate_output_layout
 from .engines import (
     NativeEngine,
     SaxonCEngine,
@@ -32,7 +33,9 @@ from .engines import (
     make_engine,
     stylesheet_hash,
 )
-from .filesystem import TempWorkspace, atomic_output, lock_file
+from .filesystem import (
+    TempWorkspace, assert_disjoint_trees, atomic_output, lock_file,
+)
 from .models import (
     build_index_models,
     build_output_path_from_pattern,
@@ -116,6 +119,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
     Configuration shape and values have already been validated by
     :func:`articulous.config.load_or_create_config`.
     """
+    validate_output_layout(config["paths"])
     saxonc_bin = configure_saxonc(config)
     engines = {
         section: make_engine(name, saxonc_bin)
@@ -164,21 +168,6 @@ def _output_relpath(ctx: BuildCtx, output_path: Path) -> str:
     return _safe_output_path(ctx, output_path).relative_to(
         ctx.output_dir.resolve()
     ).as_posix()
-
-
-def _assert_non_overlapping_trees(src: Path, dest: Path) -> None:
-    src_resolved = src.resolve()
-    dest_resolved = dest.resolve()
-    overlaps = (
-        src_resolved == dest_resolved
-        or src_resolved.is_relative_to(dest_resolved)
-        or dest_resolved.is_relative_to(src_resolved)
-    )
-    if overlaps:
-        raise ValueError(
-            f"assets_dir and output assets directory overlap: "
-            f"{src_resolved} <-> {dest_resolved}"
-        )
 
 
 def _asset_manifest(root: Path) -> dict:
@@ -293,7 +282,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         _prune_missing_assets(ctx, dest, cache)
         return
 
-    _assert_non_overlapping_trees(ctx.assets_dir, dest)
+    assert_disjoint_trees(ctx.assets_dir, dest)
     manifest = _asset_manifest(ctx.assets_dir)
 
     if ctx.dry_run:

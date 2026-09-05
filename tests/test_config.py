@@ -175,6 +175,16 @@ def test_apply_cli_overrides_rejects_traversal(tmp_path):
         apply_cli_overrides(cfg, cli, tmp_path)
 
 
+@pytest.mark.parametrize("source", ["content", "xsl", "assets"])
+@pytest.mark.parametrize("output", ["{source}", "{source}/generated", "."])
+def test_output_layout_rejects_source_overlap(tmp_path, source, output):
+    cfg = copy.deepcopy(DEFAULT_CONFIG)
+    cfg["paths"]["output_dir"] = output.format(source=source)
+    with pytest.raises(ValueError, match="overlap"):
+        apply_cli_overrides(cfg, FakeCLI(), tmp_path)
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_apply_cli_overrides_rejects_absolute_outside_root(tmp_path):
     cfg = copy.deepcopy(DEFAULT_CONFIG)
     cfg["paths"]["content_dir"] = "/etc"

@@ -18,6 +18,13 @@ def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
         parent.mkdir(parents=True, exist_ok=True)
 
 
+def assert_disjoint_trees(source: Path, output: Path) -> None:
+    source = source.resolve()
+    output = output.resolve()
+    if source.is_relative_to(output) or output.is_relative_to(source):
+        raise ValueError(f"Source and output trees overlap: {source} <-> {output}")
+
+
 @contextmanager
 def atomic_output(path: Path):
     ensure_parent_dir(path)

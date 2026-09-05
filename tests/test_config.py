@@ -268,6 +268,23 @@ def test_cache_cannot_alias_active_configuration(tmp_path, kind):
     assert source.read_text() == "configuration"
 
 
+@pytest.mark.parametrize("kind", ["direct", "link_inside", "link_outside"])
+def test_configuration_must_stay_outside_output(tmp_path, kind):
+    output = tmp_path / "output"
+    output.mkdir()
+    inside, outside = output / "search.json", tmp_path / "alternate.json"
+    source = outside if kind == "link_outside" else inside
+    target = outside if kind == "link_inside" else inside
+    target.write_text("configuration")
+    if kind != "direct":
+        source.symlink_to(target)
+    cli = FakeCLI()
+    cli.config_path = source
+    with pytest.raises(ValueError, match="Configuration input must stay outside"):
+        apply_cli_overrides(copy.deepcopy(DEFAULT_CONFIG), cli, tmp_path)
+    assert source.read_text() == "configuration"
+
+
 @pytest.mark.parametrize("log_file,message", [
     ("content/article.xml", "overlaps"), ("output/build.log", "overlaps"),
     ("../external.log", "outside project root"), (".build-cache.json", "alias each other"),

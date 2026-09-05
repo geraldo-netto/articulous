@@ -64,7 +64,8 @@ your-site/
 The project root is the current working directory, regardless of where
 the executable or `--config` file lives. Configured source/output paths
 are resolved beneath that root; output must not overlap a source tree.
-Keep the configuration file outside the output tree.
+The active configuration must stay outside the output tree. Builds reject
+configuration paths inside it, including symlink aliases, before publishing.
 
 The build cache (`.build-cache.json` by default) lives at the project
 root. Only the filename component of `build.cache_file` is used. Entries

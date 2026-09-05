@@ -280,6 +280,8 @@ def validate_state_paths(config: dict, cli, project_root: Path) -> None:
     source = root / getattr(cli, "config_path", "config.json")
     trees = [(root / path).resolve() for path in config["paths"].values()]
     output = (root / config["paths"]["output_dir"]).resolve()
+    if any(path.is_relative_to(output) for path in (source.parent.resolve() / source.name, source.resolve())):
+        raise ValueError(f"Configuration input must stay outside the output tree: {source}")
     cache = root / Path(config["build"]["cache_file"]).name
     state = [cache, cache_lock_path(cache),
              output.parent / f".{output.name}.articulous.lock"]

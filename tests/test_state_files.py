@@ -9,10 +9,24 @@ from pathlib import Path
 
 import pytest
 
-from articulous.cli import setup_logging
+from articulous.cli import main, setup_logging
 from articulous.config import load_or_create_config
 from articulous.filesystem import open_regular_file
 from articulous.runtime import load_cache
+
+
+@pytest.mark.parametrize("flags", [[], ["--dry-run"]])
+def test_cli_preserves_configuration_inside_output(site_root, flags):
+    config = (site_root / "config.json").read_bytes()
+    output = site_root / "output"
+    output.mkdir()
+    source = output / "search.json"
+    source.write_bytes(config)
+    with pytest.raises(ValueError, match="Configuration input must stay outside"):
+        main(["--config", str(source), *flags])
+    assert source.read_bytes() == config
+    assert list(output.iterdir()) == [source]
+    assert not (site_root / ".build-cache.json").exists()
 
 
 def _make_socket(path):

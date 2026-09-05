@@ -35,6 +35,8 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 - ALWAYS report every contradiction encountered, of any kind, and add or update a
   `blocked` item in the `contradictions` table in `TODO.md`. This includes conflicting
   instructions, requirements, code, tests, documentation, and observed behavior.
+  An existing project TODO format always wins over a shared skill's default;
+  this intentional precedence is not a contradiction and must not be logged as one.
   Record both conflicting claims, source references or evidence, impact, and the
   condition needed to resolve the contradiction. Never silently choose a side or
   omit the finding. Follow instruction precedence and continue unaffected work;

@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import time
+from concurrent.futures import Future, ThreadPoolExecutor
 
 import pytest
 
@@ -16,6 +17,7 @@ from articulous.filesystem import (
 )
 from articulous.runtime import (
     TrackedCache,
+    _collect_one,
     cache_changed,
     file_hash,
     load_cache,
@@ -447,6 +449,60 @@ def test_run_parallel_tasks_returns_results():
 
 def test_run_parallel_tasks_empty_list():
     assert run_parallel_tasks([], max_workers=2) == []
+
+
+def test_run_parallel_tasks_bounds_consumption():
+    release = threading.Event()
+    filled = threading.Event()
+    overconsumed = threading.Event()
+
+    def tasks():
+        for index in range(20):
+            if index == 3:
+                filled.set()
+            if index == 4:
+                overconsumed.set()
+            yield release.wait
+
+    with ThreadPoolExecutor(max_workers=1) as caller:
+        result = caller.submit(run_parallel_tasks, tasks(), max_workers=2, collect_results=False)
+        try:
+            assert filled.wait(timeout=2)
+            assert not overconsumed.wait(timeout=0.05)
+        finally:
+            release.set()
+        assert result.result(timeout=2) == []
+    assert overconsumed.is_set()
+
+
+def test_run_parallel_tasks_drains_on_producer_failure():
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+
+    def running():
+        started.set()
+        release.wait(timeout=2)
+        finished.set()
+
+    def tasks():
+        yield running
+        assert started.wait(timeout=2)
+        release.set()
+        raise ValueError("producer failed")
+
+    with pytest.raises(ValueError, match="producer failed"):
+        run_parallel_tasks(tasks(), max_workers=1)
+    assert finished.is_set()
+
+
+def test_collect_one_ignores_cancelled_future():
+    future = Future()
+    future.cancel()
+    errors = []
+    results = []
+    _collect_one(future, results, errors, [future])
+    assert errors == results == []
 
 
 def test_run_parallel_tasks_auto_workers():

@@ -14,7 +14,8 @@ import logging
 import os
 import threading
 import time
-from concurrent.futures import CancelledError, ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, CancelledError, ThreadPoolExecutor, wait
+from itertools import islice
 from pathlib import Path
 from typing import Callable, Union
 
@@ -158,9 +159,11 @@ def _cancel_pending(futures) -> None:
             other.cancel()
 
 
-def _collect_one(fut, results: list, errors: list, futures) -> None:
+def _collect_one(fut, results: list | None, errors: list, futures) -> None:
     try:
-        results.append(fut.result())
+        result = fut.result()
+        if results is not None:
+            results.append(result)
     except CancelledError:
         # Cancellations are how we react to a failure; the real
         # error is already captured. Don't double-count.
@@ -178,9 +181,29 @@ def _raise_if_errors(errors: list) -> None:
         raise ExceptionGroup("parallel task failures", errors)
 
 
-def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto") -> list:
+def _fill_pending(pool, pending: set, tasks, limit: int) -> None:
+    for task in islice(tasks, limit - len(pending)):
+        pending.add(pool.submit(task))
+
+
+def _drain_tasks(pool, pending: set, tasks, limit: int, results, errors) -> None:
+    _fill_pending(pool, pending, tasks, limit)
+    while pending:
+        done, _ = wait(pending, return_when=FIRST_COMPLETED)
+        pending.difference_update(done)
+        for future in done:
+            _collect_one(future, results, errors, pending)
+        if not errors:
+            _fill_pending(pool, pending, tasks, limit)
+
+
+def run_parallel_tasks(
+    tasks, max_workers: WorkerCount = "auto", *, collect_results: bool = True,
+) -> list:
     """
-    Run a list of callables in parallel.
+    Consume callables with at most twice the worker count in flight.
+
+    Set ``collect_results=False`` for tasks whose return values are unused.
 
     ``max_workers`` accepts either a positive ``int`` or the sentinel
     string ``"auto"`` (resolves to ``max(4, cpu_count())``).
@@ -196,10 +219,15 @@ def run_parallel_tasks(tasks, max_workers: WorkerCount = "auto") -> list:
     results: list = []
     errors: list = []
     pool = ThreadPoolExecutor(max_workers=workers)
+    pending: set = set()
     try:
-        futures = {pool.submit(fn): fn for fn in tasks}
-        for fut in as_completed(futures):
-            _collect_one(fut, results, errors, futures)
+        _drain_tasks(
+            pool, pending, iter(tasks), 2 * workers,
+            results if collect_results else None, errors,
+        )
+    except BaseException:
+        _cancel_pending(pending)
+        raise
     finally:
         pool.shutdown(wait=True)
 

@@ -18,8 +18,10 @@ import os
 import pickle
 import shutil
 import stat
+import tempfile
 import time
 from dataclasses import dataclass, field
+from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
@@ -678,6 +680,64 @@ def _write_native_search(output_path: Path, source) -> None:
 # Shared XSLT task plumbing
 # ================================================================
 
+@dataclass(frozen=True)
+class _TransformSpec:
+    xml_input: Path | bytes
+    xsl_path: Path
+    output_path: Path
+    cache_key: str
+    fingerprint: tuple
+
+
+@dataclass(frozen=True)
+class _XsltTask:
+    spec: _TransformSpec
+    engine: TransformEngine
+    ctx: BuildCtx
+    cache: dict
+
+    def __call__(self) -> None:
+        timed(self.spec.cache_key, self._run)()
+
+    def _run(self) -> None:
+        self.engine.run(
+            self.spec.xml_input,
+            self.spec.xsl_path,
+            self.spec.output_path,
+            dry_run=self.ctx.dry_run,
+            stylesheet_fingerprint=self.spec.fingerprint[1],
+        )
+        update_cache(self.cache, self.spec.cache_key, self.spec.fingerprint)
+
+
+class _TaskQueue:
+    def __init__(self, ctx: BuildCtx, cache: dict, engine: TransformEngine):
+        self._ctx = ctx
+        self._cache = cache
+        self._engine = engine
+        self._file = tempfile.TemporaryFile(mode="w+b")
+        self._count = 0
+
+    def append(self, task: _XsltTask) -> None:
+        pickle.dump(task.spec, self._file)
+        self._count += 1
+
+    def __len__(self) -> int:
+        return self._count
+
+    def __iter__(self):
+        try:
+            self._file.seek(0)
+            for _ in range(self._count):
+                spec = pickle.load(self._file)
+                yield _XsltTask(spec, self._engine, self._ctx, self._cache)
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        self._file.close()
+
+
 def _record_planned_output(
     manifest: Optional[OutputManifest],
     ctx: BuildCtx,
@@ -704,7 +764,7 @@ def _make_xslt_task(
     engine: TransformEngine,
     ctx: BuildCtx,
     manifest: Optional[OutputManifest] = None,
-) -> Optional[Callable]:
+) -> Optional[_XsltTask]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
     the cache says the output is up to date.
@@ -733,17 +793,8 @@ def _make_xslt_task(
     ):
         return None
 
-    def task(xml_input=xml_input, xsl_path=xsl_path, output_path=output_path):
-        engine.run(
-            xml_input,
-            xsl_path,
-            output_path,
-            dry_run=ctx.dry_run,
-            stylesheet_fingerprint=xsl_hash,
-        )
-        update_cache(cache, cache_key, fingerprint)
-
-    return timed(cache_key, task)
+    spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint)
+    return _XsltTask(spec, engine, ctx, cache)
 
 
 def _make_native_task(
@@ -790,22 +841,23 @@ def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformE
     return xsl_path, stylesheet_hash(xsl_path), engine
 
 
-def _append_task(tasks: list, task: Optional[Callable], skip_message: str) -> None:
+def _append_task(tasks: _TaskQueue, task: Optional[_XsltTask], skip_message: str) -> None:
     if task is None:
         logging.debug(skip_message)
         return
     tasks.append(task)
 
 
-def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
+def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """
     Build article pages for one language's article batch.
 
     Called once per language by :func:`run_build`; the input is a
     per-language sorted list, not the global article set.
     """
-    tasks = []
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "articles")
+    if tasks is None:
+        tasks = _TaskQueue(ctx, cache, engine)
     pattern = ctx.url_patterns["article"]
 
     for art in lang_articles:
@@ -828,10 +880,11 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None):
     return tasks
 
 
-def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
+def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """Build paginated index pages for one language."""
-    tasks = []
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "index")
+    if tasks is None:
+        tasks = _TaskQueue(ctx, cache, engine)
 
     for page in build_index_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
@@ -851,10 +904,11 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
     return tasks
 
 
-def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None):
+def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """Build tag pages for one language."""
-    tasks = []
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "tags")
+    if tasks is None:
+        tasks = _TaskQueue(ctx, cache, engine)
 
     for page in build_tags_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
@@ -1144,28 +1198,35 @@ def _sorted_store_articles(store: ArticleStore | None, lang: str):
     return store.sorted(lang)
 
 
+def _tasks_for(plan: dict, section: str, ctx: BuildCtx, cache) -> _TaskQueue:
+    if section not in plan:
+        engine = ctx.engine_for(section)
+        assert isinstance(engine, TransformEngine)
+        plan[section] = _TaskQueue(ctx, cache, engine)
+    return plan[section]
+
+
 def _add_per_lang_tasks(
     plan: dict, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
 ) -> None:
     if want("articles"):
-        plan.setdefault("articles", []).extend(
-            build_articles_section(lang_articles, ctx, cache, manifest)
+        build_articles_section(
+            lang_articles, ctx, cache, manifest, _tasks_for(plan, "articles", ctx, cache),
         )
     if want("index"):
-        plan.setdefault("index", []).extend(
-            build_index_section(listing_articles, lang, ctx, cache, manifest)
+        build_index_section(
+            listing_articles, lang, ctx, cache, manifest, _tasks_for(plan, "index", ctx, cache),
         )
     if want("tags"):
-        plan.setdefault("tags", []).extend(
-            build_tags_section(listing_articles, lang, ctx, cache, manifest)
+        build_tags_section(
+            listing_articles, lang, ctx, cache, manifest, _tasks_for(plan, "tags", ctx, cache),
         )
 
 
 def _collect_per_lang_plan(
-    projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest,
-) -> dict:
+    plan: dict, projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest,
+) -> None:
     """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
-    plan: dict = {}
     for lang in ctx.languages:
         if cli.only_langs and lang not in cli.only_langs:
             continue
@@ -1177,7 +1238,6 @@ def _collect_per_lang_plan(
             plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
         )
         # lang_articles goes out of scope here → released between languages.
-    return plan
 
 
 def _collect_tasks(
@@ -1210,16 +1270,19 @@ def _collect_tasks(
         collect_cross=need_cross,
         collect_articles=need_per_lang,
     )
-    if need_cross:
-        plan.update(
-            _collect_cross_lang_plan(projection, ctx, cache, want, workspace, manifest)
-        )
-    if need_per_lang:
-        plan.update(
-            _collect_per_lang_plan(
-                projection, cli, ctx, cache, want, manifest,
+    try:
+        if need_cross:
+            plan.update(
+                _collect_cross_lang_plan(projection, ctx, cache, want, workspace, manifest)
             )
-        )
+        if need_per_lang:
+            _collect_per_lang_plan(
+                plan, projection, cli, ctx, cache, want, manifest,
+            )
+    except BaseException:
+        _close_task_queues(plan)
+        _cleanup_stream_projection(projection)
+        raise
     return BuildPlan(plan, projection)
 
 
@@ -1240,8 +1303,20 @@ def _article_stream_factory(ctx: BuildCtx, stats: ArticleStats):
 
 
 def _run_plan(plan: dict, ctx: BuildCtx) -> None:
-    flat = [t for tasks in plan.values() for t in tasks]
-    total = len(flat)
+    try:
+        _execute_plan(plan, ctx)
+    finally:
+        _close_task_queues(plan)
+
+
+def _close_task_queues(plan: dict) -> None:
+    for tasks in plan.values():
+        if isinstance(tasks, _TaskQueue):
+            tasks.close()
+
+
+def _execute_plan(plan: dict, ctx: BuildCtx) -> None:
+    total = sum(len(tasks) for tasks in plan.values())
     if not total:
         logging.info("Nothing to build — all pages up to date.")
         return
@@ -1249,7 +1324,9 @@ def _run_plan(plan: dict, ctx: BuildCtx) -> None:
     for section, tasks in plan.items():
         logging.info(f"  {section}: {len(tasks)} task(s)")
     t0 = time.perf_counter()
-    run_parallel_tasks(flat, _resolve_parallelism(ctx))
+    run_parallel_tasks(
+        chain.from_iterable(plan.values()), _resolve_parallelism(ctx), collect_results=False,
+    )
     elapsed = time.perf_counter() - t0
     rate = f" ({total / elapsed:.1f} task/s)" if elapsed > 0 else ""
     logging.info(f"Ran {total} task(s) in {elapsed:.2f}s{rate}")
@@ -1423,6 +1500,7 @@ def run_build(cli, config, project_root: Path) -> None:
     with lock_file(_lock_path_for(ctx, project_root)):
         with TempWorkspace() as workspace:
             projection = None
+            plan: dict = {}
             try:
                 cache = load_cache(cache_path)
                 old_manifest = _load_output_manifest(cache)
@@ -1443,6 +1521,7 @@ def run_build(cli, config, project_root: Path) -> None:
                         cli, ctx, cache, old_manifest, current_manifest, cache_path,
                     )
             finally:
+                _close_task_queues(plan)
                 _cleanup_stream_projection(projection)
 
     logging.info("Build complete.")

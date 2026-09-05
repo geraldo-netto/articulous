@@ -175,14 +175,14 @@ def test_normalize_slug_handles_oversize_input():
 
 def test_build_index_models_per_page_one():
     arts = [_art(f"a{i}") for i in range(3)]
-    pages = build_index_models(arts, "en", _model_ctx(per_page=1))
+    pages = list(build_index_models(arts, "en", _model_ctx(per_page=1)))
     assert len(pages) == 3
     assert all(len(p.articles) == 1 for p in pages)
 
 
 def test_build_index_models_per_page_huge():
     arts = [_art(f"a{i}") for i in range(3)]
-    pages = build_index_models(arts, "en", _model_ctx(per_page=10**6))
+    pages = list(build_index_models(arts, "en", _model_ctx(per_page=10**6)))
     assert len(pages) == 1
     assert len(pages[0].articles) == 3
 

@@ -126,7 +126,7 @@ class SinglePassArticles:
 def test_build_index_models_paginates():
     arts = [_art(f"a{i}", lang="en") for i in range(5)]
     stream = SinglePassArticles(arts)
-    pages = build_index_models(stream, "en", _ctx())
+    pages = list(build_index_models(stream, "en", _ctx()))
     # 5 articles, per_page=2 → 3 pages
     assert len(pages) == 3
     assert all(p.total_pages == 3 for p in pages)
@@ -136,7 +136,19 @@ def test_build_index_models_paginates():
 
 
 def test_build_index_models_empty_returns_empty():
-    assert build_index_models([], "en", _ctx()) == []
+    assert list(build_index_models([], "en", _ctx())) == []
+
+
+def test_build_index_models_reads_one_page_at_a_time():
+    articles = SinglePassArticles([_art(f"a{i}") for i in range(5)])
+    pages = build_index_models(articles, "en", _ctx())
+    assert articles.iterations == 0
+    first = next(pages)
+    assert [art.slug for art in first.articles] == ["a0", "a1"]
+    articles.articles[2] = _art("changed-before-next-page")
+    second = next(pages)
+    assert second.articles[0].slug == "changed-before-next-page"
+    assert [page.page for page in pages] == [3]
 
 
 # --- build_tags_models (per-lang) ---

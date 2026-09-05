@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
-from typing import Protocol
+from typing import Iterator, Protocol
 from urllib.parse import quote
 
 from .articles import normalize_slug
@@ -119,7 +119,7 @@ def _page_batches(articles, per_page: int):
 
 def build_index_models(
     lang_articles, lang: str, ctx: SiteModelCtx,
-) -> list[IndexPage]:
+) -> Iterator[IndexPage]:
     """
     Paginate one language's already-sorted article list.
 
@@ -129,13 +129,12 @@ def build_index_models(
     pattern = ctx.url_patterns["index"]
     total = len(lang_articles)
     if total == 0:
-        return []
+        return
     num_pages = (total + ctx.per_page - 1) // ctx.per_page
-    pages: list[IndexPage] = []
     for page, articles in enumerate(
         _page_batches(lang_articles, ctx.per_page), start=1,
     ):
-        pages.append(IndexPage(
+        yield IndexPage(
             lang=lang,
             page=page,
             total_pages=num_pages,
@@ -146,8 +145,7 @@ def build_index_models(
             url=build_url_from_pattern(
                 ctx.base_url, pattern, lang=lang, page=page,
             ),
-        ))
-    return pages
+        )
 
 
 def build_tags_models(

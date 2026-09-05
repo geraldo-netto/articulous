@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import shutil
+import tracemalloc
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -36,6 +37,7 @@ from articulous.pipeline import (
     _passes_cli_filters,
     _prune_stale_outputs,
     _resolve_parallelism,
+    _run_plan,
     _rss_doc,
     _rss_item_xml,
     _rss_sorted_from_heap,
@@ -756,7 +758,7 @@ def test_build_articles_section_returns_tasks(tmp_path):
         '<description>d</description></article>'
     )
     a = dataclasses.replace(_art("a"), source_path=art_xml)
-    tasks = build_articles_section([a], ctx, {})
+    tasks = list(build_articles_section([a], ctx, {}))
     assert len(tasks) == 1
 
 
@@ -769,16 +771,16 @@ def test_build_articles_section_skips_cached(tmp_path):
     )
     a = dataclasses.replace(_art("a"), source_path=art_xml)
     cache = {}
-    tasks = build_articles_section([a], ctx, cache)
+    tasks = list(build_articles_section([a], ctx, cache))
     for t in tasks:
         t()
-    assert build_articles_section([a], ctx, cache) == []
+    assert list(build_articles_section([a], ctx, cache)) == []
 
 
 def test_build_index_section_runs(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a"), _art("b")]
-    tasks = build_index_section(arts, "en", ctx, {})
+    tasks = list(build_index_section(arts, "en", ctx, {}))
     assert len(tasks) == 1
     tasks[0]()
     assert (tmp_path / "output" / "en" / "page" / "1" / "index.html").exists()
@@ -788,16 +790,47 @@ def test_build_index_section_cached(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a")]
     cache = {}
-    tasks = build_index_section(arts, "en", ctx, cache)
+    tasks = list(build_index_section(arts, "en", ctx, cache))
     for t in tasks:
         t()
-    assert build_index_section(arts, "en", ctx, cache) == []
+    assert list(build_index_section(arts, "en", ctx, cache)) == []
+
+
+def test_index_planning_does_not_retain_page_payloads(tmp_path):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), per_page=1)
+    articles = [dataclasses.replace(_art(str(i)), title="x" * 65_536) for i in range(200)]
+    tracemalloc.start()
+    try:
+        tasks = build_index_section(articles, "en", ctx, {})
+        _, peak = tracemalloc.get_traced_memory()
+        tasks.close()
+    finally:
+        tracemalloc.stop()
+    assert len(tasks) == 200
+    assert peak < 2_000_000
+
+
+def test_run_plan_closes_queues_after_failure(tmp_path, monkeypatch):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), per_page=1, parallelism=1)
+    tasks = build_index_section([_art(str(i)) for i in range(10)], "en", ctx, {})
+    calls = []
+
+    def fail(*args, **kwargs):
+        calls.append(args)
+        if len(calls) == 1:
+            raise ValueError("transform failed")
+
+    monkeypatch.setattr(LxmlEngine, "run", fail)
+    with pytest.raises(ValueError, match="transform failed"):
+        _run_plan({"index": tasks}, ctx)
+    assert tasks._file.closed
+    assert len(calls) <= 2
 
 
 def test_build_tags_section_runs(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a", tags=("news",))]
-    tasks = build_tags_section(arts, "en", ctx, {})
+    tasks = list(build_tags_section(arts, "en", ctx, {}))
     assert len(tasks) == 1
     tasks[0]()
 
@@ -806,10 +839,10 @@ def test_build_tags_section_cached(tmp_path):
     ctx = _ctx_for(tmp_path)
     arts = [_art("a", tags=("news",))]
     cache = {}
-    tasks = build_tags_section(arts, "en", ctx, cache)
+    tasks = list(build_tags_section(arts, "en", ctx, cache))
     for t in tasks:
         t()
-    assert build_tags_section(arts, "en", ctx, cache) == []
+    assert list(build_tags_section(arts, "en", ctx, cache)) == []
 
 
 def test_build_rss_section_runs_and_caches(tmp_path):

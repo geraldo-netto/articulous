@@ -49,6 +49,9 @@ from articulous.runtime import (
 )
 
 
+pytestmark = pytest.mark.usefixtures("projection_workspace_cleanup")
+
+
 # ------------------------------------------------------------
 # helpers
 # ------------------------------------------------------------

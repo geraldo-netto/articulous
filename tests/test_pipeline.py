@@ -63,6 +63,9 @@ from articulous.models import IndexPage, RssFeed, Sitemap, TagPage
 from articulous.sections import SECTION_NAMES
 
 
+pytestmark = pytest.mark.usefixtures("projection_workspace_cleanup")
+
+
 MINIMAL_XSLT = (
     b'<?xml version="1.0"?>'
     b'<xsl:stylesheet version="1.0" '

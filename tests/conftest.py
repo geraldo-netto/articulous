@@ -17,14 +17,30 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 
 import pytest
+
+from articulous.filesystem import TempWorkspace
 
 
 FIXTURE_SITE = Path(__file__).parent / "fixtures" / "site"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SITEGEN = str(PROJECT_ROOT / "sitegen.py")
+
+
+@pytest.fixture
+def projection_workspace_cleanup(monkeypatch):
+    original = TempWorkspace.named_file
+    with ExitStack() as cleanup:
+        def managed_file(workspace, *args, **kwargs):
+            file = original(workspace, *args, **kwargs)
+            cleanup.callback(Path(file.name).unlink, missing_ok=True)
+            cleanup.callback(file.close)
+            return file
+        monkeypatch.setattr(TempWorkspace, "named_file", managed_file)
+        yield
 
 
 @pytest.fixture

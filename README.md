@@ -187,6 +187,9 @@ The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.
 
+Native sitemap builds fail before replacing the published file if they
+exceed 50,000 URLs or 50 MiB of uncompressed XML.
+
 URL patterns are validated by section:
 
 | URL key   | Required placeholders | Output shape |

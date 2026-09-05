@@ -30,7 +30,6 @@ Line numbers refer to repository paths.
 |----|--------|--------|-------------|-------|
 | SCAL-02 | open | M | Index planning and execution materialize all page models, XML task payloads, and futures despite disk-backed article storage (`articulous/models.py:129-150`, `articulous/pipeline.py:773-793`, `articulous/pipeline.py:1177-1187`, `articulous/runtime.py:198-202`) | Reproduced `build_index_models` retaining all 20,000 input items across its returned page list. Yield page models/tasks incrementally and bound in-flight work to prevent peak memory growing with every page payload and queued future. |
 | SCAL-03 | open | M | External article sorting merges every chunk at once, opening one descriptor per chunk without a fan-in limit (`articulous/pipeline.py:462-469`, `articulous/pipeline.py:508-518`, `articulous/pipeline.py:543-546`) | Reproduced merging 80 chunks under a 64-descriptor soft limit: `Too many open files` before the first article. Use bounded multi-pass merging or another strategy that caps simultaneously open chunk files. |
-| SCAL-04 | open | M | Native sitemap generation emits a single unlimited document without enforcing the protocol's URL-count or byte-size limits (`articulous/pipeline.py:602-608`, `articulous/pipeline.py:890-901`) | Reproduced 50,001 URLs in one output file. The [Sitemap protocol](https://www.sitemaps.org/protocol.html) limits each file to 50,000 URLs and 52,428,800 uncompressed bytes; split into indexed sitemaps or fail clearly before publishing an oversized document. |
 
 ## concurrency
 

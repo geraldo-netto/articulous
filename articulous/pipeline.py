@@ -64,6 +64,8 @@ _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
 _SORT_CHUNK_SIZE = 1024
+_SITEMAP_MAX_URLS = 50_000
+_SITEMAP_MAX_BYTES = 52_428_800
 
 
 # ================================================================
@@ -601,14 +603,21 @@ def _source_hash(source) -> str:
 
 def _write_native_sitemap(output_path: Path, source) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    header = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    )
+    footer = "</urlset>"
+    size = len((header + footer).encode("utf-8"))
     with output_path.open("w", encoding="utf-8") as out:
-        out.write(
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-        )
-        for url in _source_values(source):
-            out.write(f"<url><loc>{_xml_escape(url)}</loc></url>")
-        out.write("</urlset>")
+        out.write(header)
+        for count, url in enumerate(_source_values(source), start=1):
+            entry = f"<url><loc>{_xml_escape(url)}</loc></url>"
+            size += len(entry.encode("utf-8"))
+            if count > _SITEMAP_MAX_URLS or size > _SITEMAP_MAX_BYTES:
+                raise ValueError("Sitemap exceeds the 50,000 URL or 50 MiB limit")
+            out.write(entry)
+        out.write(footer)
 
 
 def _write_native_search(output_path: Path, source) -> None:

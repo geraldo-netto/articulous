@@ -781,6 +781,30 @@ def test_build_sitemap_section_runs_and_caches(tmp_path):
     assert build_sitemap_section(urls, ctx, cache) == []
 
 
+def test_native_sitemap_enforces_url_limit(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    urls = ["https://e.test/page/"] * 50_000
+    build_sitemap_section(urls, ctx, {})[0]()
+    output = ctx.output_dir / "sitemap.xml"
+    previous = output.read_bytes()
+    with pytest.raises(ValueError, match="50,000 URL"):
+        build_sitemap_section([*urls, "https://e.test/extra/"], ctx, {})[0]()
+    assert output.read_bytes() == previous
+
+
+def test_native_sitemap_counts_utf8_bytes(tmp_path, monkeypatch):
+    ctx = _ctx_for(tmp_path)
+    urls = ["https://e.test/é/"]
+    build_sitemap_section(urls, ctx, {})[0]()
+    output = ctx.output_dir / "sitemap.xml"
+    previous = output.read_bytes()
+    monkeypatch.setattr("articulous.pipeline._SITEMAP_MAX_BYTES", len(previous))
+    build_sitemap_section(urls, ctx, {})[0]()
+    with pytest.raises(ValueError, match="50 MiB"):
+        build_sitemap_section(["https://e.test/éé/"], ctx, {})[0]()
+    assert output.read_bytes() == previous
+
+
 @pytest.mark.parametrize("section,source", [
     ("search", [{"title": "new"}]), ("sitemap", ["https://e.test/new/"]),
 ])

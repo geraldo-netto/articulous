@@ -157,6 +157,24 @@ def test_validate_config_accepts_optional_strings():
     validate_config(cfg)
 
 
+@pytest.mark.parametrize("language", [
+    "en?query", "en#fragment", "en/fr", "en\\fr", ".", "..", "../en",
+    "%2e%2e", "en:us", "en us", "en\n", "en\x7f", "français",
+])
+def test_validate_config_rejects_unsafe_language_segments(language):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["site"].update(languages=[language], default_language=language)
+    with pytest.raises(ValueError, match="site.languages.*ASCII"):
+        validate_config(config)
+
+
+@pytest.mark.parametrize("language", ["en", "pt-BR", "zh-Hant", "es-419", "en_US"])
+def test_validate_config_accepts_safe_language_segments(language):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["site"].update(languages=[language], default_language=language)
+    validate_config(config)
+
+
 @pytest.mark.parametrize("pattern", [
     "/feed.xml?format=rss", "/feed.xml#section", "/my%20feed.xml",
     "/feed\\name.xml", "/feed\nname.xml", "/feed\x7fname.xml",

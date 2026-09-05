@@ -6,6 +6,7 @@ shape. Every other module consumes its output via :class:`BuildCtx`
 (see :mod:`articulous.pipeline`).
 """
 import json
+import re
 from pathlib import Path
 
 from .engines import validate_engines
@@ -143,8 +144,11 @@ def _validate_saxonc(config: dict) -> None:
 def _require_languages(languages, default_language) -> None:
     if not isinstance(languages, list) or not languages:
         raise ValueError("config site.languages must be a non-empty list of strings")
-    if not all(isinstance(lang, str) and lang for lang in languages):
-        raise ValueError("config site.languages must contain only non-empty strings")
+    if not all(isinstance(lang, str) and re.fullmatch(r"[A-Za-z0-9_-]+", lang) for lang in languages):
+        raise ValueError(
+            "config site.languages must contain non-empty identifiers using only "
+            "ASCII letters, digits, hyphens, and underscores"
+        )
     if len(languages) != len(set(languages)):
         raise ValueError("config site.languages must not contain duplicates")
     _require_string(default_language, "site.default_language", nonempty=True)

@@ -249,9 +249,10 @@ defaults. Unknown keys and invalid value types are rejected.
 
 `pagination.per_page` must be positive; `pagination.rss_items` may be
 zero, producing an empty RSS feed. `languages` must be non-empty and
-unique, and must contain `default_language`. Use simple language
-identifiers such as `en`, `fr` or `pt-BR`; reserved URL characters are
-not yet rejected in these values (see [TODO.md](TODO.md)).
+unique, and must contain `default_language`. Language identifiers may
+contain only ASCII letters, digits, hyphens and underscores, such as
+`en`, `fr`, `pt-BR` or `en_US`, so they remain safe URL and filesystem
+segments.
 
 With `parallelism="auto"`, the worker count is `max(4, os.cpu_count() or 4)`
 unless a configured engine resolves to SaxonC, in which case it is

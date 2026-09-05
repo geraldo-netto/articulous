@@ -781,6 +781,28 @@ def test_build_sitemap_section_runs_and_caches(tmp_path):
     assert build_sitemap_section(urls, ctx, cache) == []
 
 
+@pytest.mark.parametrize("section,source", [
+    ("search", [{"title": "new"}]), ("sitemap", ["https://e.test/new/"]),
+])
+def test_native_failure_preserves_published_output(tmp_path, monkeypatch, section, source):
+    ctx = _ctx_for(tmp_path)
+    output = ctx.output_dir / ctx.url_patterns[section].lstrip("/")
+    output.write_text("published")
+    cache = {}
+    builder = {"search": build_search_section, "sitemap": build_sitemap_section}[section]
+    tasks = builder(source, ctx, cache)
+
+    def broken_stream(values):
+        yield values[0]
+        raise OSError("source read failed")
+
+    monkeypatch.setattr("articulous.pipeline._source_values", broken_stream)
+    with pytest.raises(OSError, match="source read failed"):
+        tasks[0]()
+    assert output.read_text() == "published"
+    assert cache == {}
+
+
 def test_build_search_section_runs_and_caches(tmp_path):
     ctx = _ctx_for(tmp_path)
     items = [{"title": "A", "description": "d",

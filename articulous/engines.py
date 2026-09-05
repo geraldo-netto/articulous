@@ -275,20 +275,21 @@ class SaxonCEngine(TransformEngine):
                     f"SaxonC {label} path begins with '-', which can be "
                     f"misparsed by the Saxon CLI: {p}"
                 )
-        cmd = [
-            str(self.saxonc_bin),
-            "-ext:off",
-            "-xi:off",
-            f"-s:{resolved['xml']}",
-            f"-xsl:{resolved['xsl']}",
-            f"-o:{resolved['output']}",
-        ]
-        logging.debug(f"Running SaxonC: {' '.join(cmd)}")
-        try:
-            subprocess.run(cmd, check=True)
-        except subprocess.CalledProcessError:
-            logging.exception("SaxonC transform failed")
-            raise
+        with atomic_output(resolved["output"]) as staged:
+            cmd = [
+                str(self.saxonc_bin),
+                "-ext:off",
+                "-xi:off",
+                f"-s:{resolved['xml']}",
+                f"-xsl:{resolved['xsl']}",
+                f"-o:{staged}",
+            ]
+            logging.debug(f"Running SaxonC: {' '.join(cmd)}")
+            try:
+                subprocess.run(cmd, check=True)
+            except subprocess.CalledProcessError:
+                logging.exception("SaxonC transform failed")
+                raise
 
 
 # ------------------------------------------------------------

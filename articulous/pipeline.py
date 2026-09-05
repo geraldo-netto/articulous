@@ -32,7 +32,7 @@ from .engines import (
     make_engine,
     stylesheet_hash,
 )
-from .filesystem import TempWorkspace, lock_file
+from .filesystem import TempWorkspace, atomic_output, lock_file
 from .models import (
     build_index_models,
     build_output_path_from_pattern,
@@ -711,7 +711,8 @@ def _make_native_task(
 
     def task(output_path=output_path):
         if not ctx.dry_run:
-            writer(output_path, source)
+            with atomic_output(output_path) as staged:
+                writer(staged, source)
         update_cache(cache, cache_key, fingerprint)
 
     return timed(cache_key, task)

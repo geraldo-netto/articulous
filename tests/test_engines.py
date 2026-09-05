@@ -315,6 +315,26 @@ def test_saxon_engine_propagates_subprocess_failure(tmp_path, caplog):
     assert any("SaxonC transform failed" in r.message for r in caplog.records)
 
 
+def test_saxon_partial_failure_preserves_published_output(tmp_path):
+    xml = tmp_path / "x.xml"
+    xml.write_text("<root/>")
+    xsl = tmp_path / "x.xsl"
+    xsl.write_text(MINIMAL_XSLT)
+    output = tmp_path / "page.html"
+    output.write_text("published")
+
+    def fail_transform(cmd, check):
+        staged = Path(next(arg[3:] for arg in cmd if arg.startswith("-o:")))
+        staged.write_text("partial")
+        raise subprocess.CalledProcessError(1, cmd)
+
+    with mock.patch("articulous.engines.subprocess.run", side_effect=fail_transform):
+        with pytest.raises(subprocess.CalledProcessError):
+            SaxonCEngine(tmp_path / "Transform").run(xml, xsl, output)
+    assert output.read_text() == "published"
+    assert len(list(tmp_path.iterdir())) == 3
+
+
 # --- factories ---
 
 def test_make_engine_lxml():

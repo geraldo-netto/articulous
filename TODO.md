@@ -53,7 +53,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-12 | open | M | Reject symlink redirection while planning and publishing live generated outputs. | High; articulous/pipeline.py:165 resolves output symlinks before recording ownership. Reproduced: replace a built article's `index.html` with a symlink to `output/unowned.txt`, then rebuild; the unrelated target is overwritten and adopted into the ownership sidecar. Validate literal leaf and ancestor paths before writing, preserve unrelated targets, and test both leaf and directory symlinks. |
 
 ## system design
 

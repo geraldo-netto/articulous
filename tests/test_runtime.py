@@ -12,6 +12,7 @@ import pytest
 from articulous.filesystem import (
     TempWorkspace,
     _pid_alive,
+    atomic_output,
     ensure_parent_dir,
     lock_file,
     validate_path_length,
@@ -109,6 +110,42 @@ def test_write_text_atomic_preserves_existing_permissions(tmp_path):
     path.chmod(0o640)
     write_text_atomic(path, "new")
     assert path.stat().st_mode & 0o777 == 0o640
+
+
+def test_atomic_output_rejects_link_created_during_render(tmp_path):
+    path = tmp_path / "page.html"
+    target = tmp_path / "manual.txt"
+    target.write_text("keep")
+    with pytest.raises(ValueError, match="Generated output path contains a symlink"):
+        with atomic_output(path, generated=True) as staged:
+            staged.write_text("rendered")
+            path.symlink_to(target)
+    assert target.read_text() == "keep"
+    assert path.is_symlink()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["manual.txt", "page.html"]
+
+
+@pytest.mark.parametrize("linked", [False, True])
+def test_generated_staging_cleanup_stays_in_original_directory(tmp_path, linked):
+    output = tmp_path / "output"
+    output.mkdir()
+    moved = tmp_path / "moved-output"
+    manual = tmp_path / "manual" if linked else output
+    victim = None
+    with pytest.raises(ValueError, match="symlink|directory changed"):
+        with atomic_output(output / "page.html", generated=True) as staged:
+            staged.write_text("rendered")
+            output.rename(moved)
+            manual.mkdir()
+            if linked:
+                output.symlink_to(manual, target_is_directory=True)
+            victim = manual / staged.name
+            victim.write_text("keep")
+            victim.chmod(0o600)
+    assert victim is not None
+    assert victim.read_text() == "keep"
+    assert victim.stat().st_mode & 0o777 == 0o600
+    assert list(moved.iterdir()) == []
 
 
 def test_write_text_atomic_cleans_temp_on_replace_error(tmp_path, monkeypatch):

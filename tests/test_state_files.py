@@ -15,6 +15,16 @@ from articulous.filesystem import open_regular_file
 from articulous.runtime import load_cache
 
 
+def test_config_creation_preserves_symlinked_parent_support(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(real, target_is_directory=True)
+    config = load_or_create_config(alias / "new-config.json")
+    assert json.loads((real / "new-config.json").read_text()) == config
+    assert alias.is_symlink()
+
+
 @pytest.mark.parametrize("flags", [[], ["--dry-run"]])
 def test_cli_preserves_configuration_inside_output(site_root, flags):
     config = (site_root / "config.json").read_bytes()

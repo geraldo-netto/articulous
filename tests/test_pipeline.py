@@ -2100,6 +2100,48 @@ def test_run_build_rebuilds_missing_cached_output(site_root):
     assert rss.exists()
 
 
+def _redirect_page_output(page, target, component):
+    if component == "ancestor":
+        target.mkdir()
+        (target / page.name).write_text("keep")
+        page.parent.rename(page.parent.with_name("original"))
+        page.parent.symlink_to(target, target_is_directory=True)
+        return target / page.name
+    target.write_text("keep")
+    page.unlink()
+    page.symlink_to(target)
+    return target
+
+
+@pytest.mark.parametrize("section", ["articles", "search"])
+@pytest.mark.parametrize("component", ["leaf", "ancestor"])
+@pytest.mark.parametrize("stage", ["planning", "publication"])
+def test_build_rejects_live_output_links(site_root, monkeypatch, section, component, stage):
+    config = _site_config(site_root)
+    config["urls"]["search"] = "/nested/search.json"
+    run_build(_CLI(), config, site_root)
+    rel = {"articles": "en/articles/first-post/index.html", "search": "nested/search.json"}
+    page = site_root / "output" / rel[section]
+    target = site_root / "output/manual"
+    victim = target / page.name if component == "ancestor" else target
+    original_run = _run_plan
+
+    def redirect_then_run(plan, ctx):
+        _redirect_page_output(page, target, component)
+        return original_run(plan, ctx)
+
+    if stage == "planning":
+        _redirect_page_output(page, target, component)
+    else:
+        monkeypatch.setattr("articulous.pipeline._run_plan", redirect_then_run)
+        config["build"]["force_full_build"] = True
+    with pytest.raises(ValueError, match="Generated output path contains a symlink"):
+        run_build(_CLI(only_sections=[section]), config, site_root)
+    assert victim.read_text() == "keep"
+    state = json.loads(ownership_path(site_root / "output").read_text())
+    assert all(not path.startswith("manual") for path in state["paths"])
+
+
 def test_run_build_prunes_deleted_article_output(site_root):
     from articulous.config import apply_cli_overrides, load_or_create_config
     cfg = load_or_create_config(site_root / "config.json")

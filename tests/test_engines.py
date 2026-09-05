@@ -329,6 +329,7 @@ def test_saxon_engine_rejects_leading_dash_path(tmp_path):
     class FakePath:
         def __init__(self, s): self.s = s
         def resolve(self): return self
+        def absolute(self): return self
         def __str__(self): return self.s
 
     xml_path = cast(Path, FakePath("-evil.xml"))

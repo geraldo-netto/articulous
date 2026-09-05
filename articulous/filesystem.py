@@ -6,6 +6,7 @@ import fcntl
 import json
 import logging
 import os
+import secrets
 import stat
 import tempfile
 import time
@@ -80,8 +81,52 @@ def open_regular_file(path: Path):
         yield source
 
 
+def validate_output_path(path: Path) -> None:
+    for component in (path, *path.parents):
+        if component.is_symlink():
+            raise ValueError(f"Generated output path contains a symlink: {component}")
+
+
 @contextmanager
-def atomic_output(path: Path):
+def _generated_staging_file(path: Path, directory_fd: int):
+    name = f".articulous-{secrets.token_hex(16)}"
+    fd = os.open(name, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600, dir_fd=directory_fd)
+    try:
+        yield path.parent / name, fd
+    finally:
+        os.close(fd)
+        try:
+            os.unlink(name, dir_fd=directory_fd)
+        except FileNotFoundError:
+            pass
+
+
+@contextmanager
+def _generated_output(path: Path):
+    validate_output_path(path)
+    ensure_parent_dir(path)
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
+    directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        with _generated_staging_file(path, directory_fd) as (staged, fd):
+            yield staged
+            validate_output_path(path)
+            current = path.parent.stat()
+            original = os.fstat(directory_fd)
+            if (current.st_dev, current.st_ino) != (original.st_dev, original.st_ino):
+                raise ValueError(f"Generated output directory changed during rendering: {path.parent}")
+            os.fchmod(fd, mode)
+            os.replace(staged.name, path.name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+@contextmanager
+def atomic_output(path: Path, *, generated: bool = False):
+    if generated:
+        with _generated_output(path) as staged:
+            yield staged
+        return
     ensure_parent_dir(path)
     mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     fd, name = tempfile.mkstemp(dir=path.parent)

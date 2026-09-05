@@ -321,7 +321,12 @@ rejected before publishing. Defaults produce:
 - `output/search.json`
 
 Generated pages and feeds replace individual files atomically; a whole
-build is not transactional. Before publishing, the ownership file records
+build is not transactional. A live generated target or any parent component
+that is a symlink is rejected. Publication and temporary-file cleanup stay
+anchored to the original destination directory. A directory replacement
+detected after rendering aborts publication; cleanup and permission changes
+use the original directory and file descriptors.
+Before publishing, the ownership file records
 all previously owned and planned paths. Interrupted builds retain this
 record, including old paths from failed URL changes. Retry without
 `--only`, `--lang` or `--slug`: recovery forces a full rebuild and prunes

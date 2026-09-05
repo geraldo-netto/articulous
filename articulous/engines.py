@@ -24,7 +24,7 @@ from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import TempWorkspace, atomic_output, open_regular_file
+from .filesystem import TempWorkspace, atomic_output, open_regular_file, validate_output_path
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -158,6 +158,7 @@ class TransformEngine(ABC):
             logging.debug(f"[DRY RUN] {self.name}: {label} -> {output_path}")
             return
 
+        validate_output_path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self._do_transform(
             normalised, xsl_path, output_path, stylesheet_fingerprint
@@ -227,7 +228,7 @@ class LxmlEngine(TransformEngine):
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
             logging.exception("lxml transform failed")
             raise
-        with atomic_output(output_path) as staged:
+        with atomic_output(output_path, generated=True) as staged:
             staged.write_bytes(bytes(result))
 
 
@@ -264,7 +265,7 @@ class SaxonCEngine(TransformEngine):
         resolved = {
             "xml": xml_path.resolve(),
             "xsl": xsl_path.resolve(),
-            "output": output_path.resolve(),
+            "output": output_path.absolute(),
         }
         for label, p in resolved.items():
             if str(p).startswith("-"):
@@ -272,7 +273,7 @@ class SaxonCEngine(TransformEngine):
                     f"SaxonC {label} path begins with '-', which can be "
                     f"misparsed by the Saxon CLI: {p}"
                 )
-        with atomic_output(resolved["output"]) as staged:
+        with atomic_output(resolved["output"], generated=True) as staged:
             cmd = [
                 str(self.saxonc_bin),
                 "-ext:off",

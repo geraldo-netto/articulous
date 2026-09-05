@@ -38,7 +38,7 @@ from .engines import (
 )
 from .filesystem import (
     TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file,
-    validate_path_length,
+    validate_output_path, validate_path_length,
 )
 from .models import (
     build_index_models,
@@ -165,13 +165,15 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
 def _safe_output_path(ctx: BuildCtx, output_path: Path) -> Path:
     root = ctx.output_dir.resolve()
     candidate = output_path if output_path.is_absolute() else ctx.output_dir / output_path
-    resolved = candidate.resolve()
-    if not resolved.is_relative_to(root):
+    candidate = Path(os.path.abspath(candidate))
+    if not candidate.is_relative_to(root):
         raise ValueError(
             f"Generated output path escapes output_dir: {output_path} "
             f"(output_dir={ctx.output_dir})"
         )
-    return resolved
+    validate_path_length(candidate)
+    validate_output_path(candidate)
+    return candidate
 
 
 def _output_relpath(ctx: BuildCtx, output_path: Path) -> str:
@@ -769,7 +771,6 @@ def _record_planned_output(
     output_path: Path,
 ) -> Path:
     output_path = _safe_output_path(ctx, output_path)
-    validate_path_length(output_path)
     relpath = _output_relpath(ctx, output_path)
     if Path(relpath).parts[:1] == ("assets",):
         raise ValueError(f"Generated output uses the reserved assets directory: {relpath}")
@@ -844,7 +845,7 @@ def _make_native_task(
 
     def task(output_path=output_path):
         if not ctx.dry_run:
-            with atomic_output(output_path) as staged:
+            with atomic_output(output_path, generated=True) as staged:
                 writer(staged, source)
         update_cache(cache, cache_key, fingerprint)
 

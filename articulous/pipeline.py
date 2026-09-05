@@ -70,6 +70,7 @@ _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
 _OUTPUT_OWNER = object()
 _SORT_CHUNK_SIZE = 1024
+_SORT_MERGE_FAN_IN = 32
 _SITEMAP_MAX_URLS = 50_000
 _SITEMAP_MAX_BYTES = 52_428_800
 
@@ -470,13 +471,7 @@ class SortedArticleBatch:
         self._count = count
 
     def __iter__(self):
-        streams = (
-            _read_pickled_articles(path, count)
-            for path, count in self._chunks
-        )
-        yield from heapq.merge(
-            *streams, key=lambda a: a.datetime, reverse=True,
-        )
+        yield from _merge_sorted_chunks(self._chunks)
 
     def __len__(self) -> int:
         return self._count
@@ -491,6 +486,34 @@ def _write_sorted_article_chunk(workspace: TempWorkspace, articles: list) -> tup
         for art in articles:
             pickle.dump(art, f)
         return Path(f.name), len(articles)
+
+
+def _merge_sorted_chunks(chunks):
+    streams = [_read_pickled_articles(path, count) for path, count in chunks]
+    try:
+        yield from heapq.merge(*streams, key=lambda art: art.datetime, reverse=True)
+    finally:
+        for stream in streams:
+            stream.close()
+
+
+def _merge_chunk_group(workspace: TempWorkspace, chunks) -> tuple[Path, int]:
+    with workspace.named_file("w+b") as output:
+        for article in _merge_sorted_chunks(chunks):
+            pickle.dump(article, output)
+        return Path(output.name), sum(count for _, count in chunks)
+
+
+def _consolidate_sorted_chunks(workspace: TempWorkspace, chunks):
+    while len(chunks) > _SORT_MERGE_FAN_IN:
+        merged = [
+            _merge_chunk_group(workspace, chunks[start:start + _SORT_MERGE_FAN_IN])
+            for start in range(0, len(chunks), _SORT_MERGE_FAN_IN)
+        ]
+        for path, _ in chunks:
+            path.unlink()
+        chunks = merged
+    return chunks
 
 
 class ArticleStore:
@@ -525,7 +548,9 @@ class ArticleStore:
                 chunk = []
         if chunk:
             chunks.append(_write_sorted_article_chunk(self._workspace, chunk))
-        return SortedArticleBatch(chunks, self.counts.get(lang, 0))
+        return SortedArticleBatch(
+            _consolidate_sorted_chunks(self._workspace, chunks), self.counts.get(lang, 0),
+        )
 
     def close(self) -> None:
         for f in self._files.values():

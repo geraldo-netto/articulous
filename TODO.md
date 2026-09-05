@@ -26,7 +26,6 @@ Line numbers refer to repository paths.
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
 | SCAL-02 | open | M | Index planning and execution materialize all page models, XML task payloads, and futures despite disk-backed article storage (`articulous/models.py:129-150`, `articulous/pipeline.py:773-793`, `articulous/pipeline.py:1177-1187`, `articulous/runtime.py:198-202`) | Reproduced `build_index_models` retaining all 20,000 input items across its returned page list. Yield page models/tasks incrementally and bound in-flight work to prevent peak memory growing with every page payload and queued future. |
-| SCAL-03 | open | M | External article sorting merges every chunk at once, opening one descriptor per chunk without a fan-in limit (`articulous/pipeline.py:462-469`, `articulous/pipeline.py:508-518`, `articulous/pipeline.py:543-546`) | Reproduced merging 80 chunks under a 64-descriptor soft limit: `Too many open files` before the first article. Use bounded multi-pass merging or another strategy that caps simultaneously open chunk files. |
 
 ## concurrency
 

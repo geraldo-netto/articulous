@@ -963,6 +963,37 @@ def test_sorted_store_articles_none_returns_empty():
     assert _sorted_store_articles(None, "en") == []
 
 
+def test_article_sort_bounds_open_chunks_and_closes_early(tmp_path, monkeypatch):
+    import articulous.pipeline as pipeline
+    monkeypatch.setattr(pipeline, "_SORT_CHUNK_SIZE", 2)
+    monkeypatch.setattr(pipeline, "_SORT_MERGE_FAN_IN", 3)
+    actual_read = pipeline._read_pickled_articles
+    opened = {"current": 0, "peak": 0}
+
+    def tracked_read(path, count):
+        opened["current"] += 1
+        opened["peak"] = max(opened.values())
+        try:
+            yield from actual_read(path, count)
+        finally:
+            opened["current"] -= 1
+
+    monkeypatch.setattr(pipeline, "_read_pickled_articles", tracked_read)
+    with TempWorkspace() as workspace:
+        store = ArticleStore(workspace)
+        articles = [_art(str(index)) for index in range(50)]
+        for article in articles:
+            store.append("en", article)
+        batch = store.sorted("en")
+        assert list(batch) == articles
+        stream = iter(batch)
+        next(stream)
+        stream.close()
+        store.close()
+    assert opened["current"] == 0
+    assert opened["peak"] <= 3
+
+
 def test_sorted_store_articles_uses_sorted_chunk_batch(tmp_path, monkeypatch):
     monkeypatch.setattr("articulous.pipeline._SORT_CHUNK_SIZE", 2)
     with TempWorkspace() as workspace:

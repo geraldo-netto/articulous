@@ -324,6 +324,8 @@ and inspect partial output before deploying after a failed build.
 
 Assets are an incremental mirror: removed source entries are pruned,
 and a missing assets directory removes the entire mirrored assets tree.
+Destination file/directory mismatches are repaired, including the mirror
+root when the source directory is empty.
 Entries inside the asset source must be regular files or directories;
 destination symlinks and hardlinks are rejected. Asset copies are not
 atomic. For predictable pruning, reserve the output tree for generated

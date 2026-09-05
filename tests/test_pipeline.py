@@ -1591,6 +1591,24 @@ def _site_config(site_root):
     return config
 
 
+def test_empty_asset_mirror_repairs_root_after_dry_run(site_root):
+    (site_root / "assets" / "style.css").unlink()
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    cache = site_root / ".build-cache.json"
+    old_cache = cache.read_bytes()
+    destination = site_root / "output" / "assets"
+    destination.rmdir()
+    destination.write_text("wrong type")
+    run_build(_CLI(dry_run=True), config, site_root)
+    assert destination.read_text() == "wrong type"
+    assert cache.read_bytes() == old_cache
+    run_build(_CLI(), config, site_root)
+    assert destination.is_dir()
+    assert list(destination.iterdir()) == []
+    assert cache.read_bytes() == old_cache
+
+
 @pytest.mark.parametrize("key,pattern", [
     ("article", "/{lang}/" + "a" * 256 + "/{slug}/"),
     ("tag", "/{lang}/" + "é" * 128 + "/{tag}/"),

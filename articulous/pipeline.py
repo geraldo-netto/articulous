@@ -336,7 +336,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     for rel in old_manifest.keys() | manifest.keys():
         _asset_target(dest, rel)
     mismatches = _asset_output_mismatches(dest, manifest)
-    if dest.exists() and _assets_unchanged(cache, manifest, ctx, mismatches):
+    if dest.is_dir() and _assets_unchanged(cache, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")
         return
 

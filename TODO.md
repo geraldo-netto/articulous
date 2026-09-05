@@ -72,7 +72,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-33 | open | S | Validate the asset mirror root before taking the unchanged fast path (`articulous/pipeline.py:338`). | Medium. Build with an empty assets directory, replace `output/assets` with a regular file, rebuild: the file remains because both manifests and the mismatch set are empty. Require a directory destination before skipping copy/type repair; add the empty-tree regression. |
 
 ## observability
 

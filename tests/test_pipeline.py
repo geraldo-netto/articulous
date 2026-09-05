@@ -257,6 +257,20 @@ def test_copy_assets_rejects_special_sources(tmp_path):
         copy_assets(ctx, {})
 
 
+def test_invalid_asset_source_preserves_published_mirror(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    (ctx.assets_dir / "style.css").write_text("published")
+    cache = {}
+    copy_assets(ctx, cache)
+    previous_cache = copy.deepcopy(cache)
+    shutil.rmtree(ctx.assets_dir)
+    ctx.assets_dir.write_text("invalid source")
+    with pytest.raises(ValueError, match="must be a directory"):
+        copy_assets(ctx, cache)
+    assert (ctx.output_dir / "assets/style.css").read_text() == "published"
+    assert cache == previous_cache
+
+
 @pytest.mark.parametrize("component", ["assets", "assets/nested", "assets/nested/file.txt"])
 def test_copy_assets_rejects_destination_symlinks(tmp_path, component):
     ctx = _ctx_for(tmp_path)

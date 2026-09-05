@@ -177,6 +177,8 @@ def _output_relpath(ctx: BuildCtx, output_path: Path) -> str:
 
 
 def _asset_manifest(root: Path) -> dict:
+    if not root.is_dir():
+        raise ValueError(f"Asset source must be a directory: {root}")
     manifest = {}
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root).as_posix()

@@ -234,6 +234,8 @@ on every non-dry build, including section-limited builds. `--dry-run`
 still validates dependencies and paths, scans inputs, acquires lock
 files, creates temporary planning files and writes configured logs.
 A missing configuration file is still created with defaults.
+Per-task timings stay at DEBUG; use `--verbose` to inspect individual
+transform durations. INFO logging avoids a timing line for every page.
 Asset destination and cached-path checks run in both modes; a dry run
 rejects the same existing symlinks, hardlinks, and invalid cached paths
 without copying or pruning assets. Filesystem changes after validation

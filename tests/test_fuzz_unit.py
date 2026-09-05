@@ -32,8 +32,7 @@ from articulous.pipeline import (
     _sitemap_url_xml,
     _xml_doc,
 )
-from articulous.engines import LxmlEngine
-from articulous.runtime import file_hash
+from articulous.engines import LxmlEngine, stylesheet_hash
 
 
 # --- normalize_slug fuzz ---
@@ -138,7 +137,7 @@ MINIMAL_XSLT = (
 def test_make_xslt_task_random_xml_hashes_consistently(tmp_path):
     xsl = tmp_path / "x.xsl"
     xsl.write_bytes(MINIMAL_XSLT)
-    xsl_hash = file_hash(xsl)
+    xsl_hash = stylesheet_hash(xsl)
     ctx = BuildCtx(
         content_dir=tmp_path, xsl_dir=tmp_path,
         output_dir=tmp_path, assets_dir=tmp_path,

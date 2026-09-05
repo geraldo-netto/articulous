@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import threading
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, Optional, Union
 from urllib.parse import urljoin, urlsplit
@@ -75,8 +76,8 @@ def safe_xslt_access_control() -> etree.XSLTAccessControl:
     )
 
 
-def _stylesheet_dependency(node) -> Path:
-    uri = urlsplit(urljoin(node.base, node.attrib["href"]))
+def _stylesheet_uri_path(value: str) -> Path:
+    uri = urlsplit(value)
     if uri.scheme != "file" or uri.netloc not in ("", "localhost"):
         raise ValueError("Stylesheet dependencies must use local file URIs")
     if uri.query or uri.fragment:
@@ -84,28 +85,58 @@ def _stylesheet_dependency(node) -> Path:
     return Path(url2pathname(uri.path))
 
 
-def _update_stylesheet_hash(path: Path, digest, seen: set[Path]) -> None:
-    resolved = path.resolve()
-    if resolved in seen:
+@dataclass(frozen=True)
+class _StylesheetSnapshot:
+    root_uri: str
+    documents: tuple[tuple[str, bytes], ...]
+    fingerprint: str
+
+
+def _collect_stylesheets(path: Path, documents: dict, ancestors: frozenset[Path]) -> None:
+    logical = Path(os.path.abspath(path))
+    uri = logical.as_uri()
+    if uri in documents:
         return
-    seen.add(resolved)
+    resolved = logical.resolve()
+    if resolved in ancestors:
+        raise ValueError(f"Circular stylesheet dependency: {logical}")
     with open_regular_file(resolved) as source:
         content = source.read()
-    digest.update(len(content).to_bytes(8, "big"))
-    digest.update(content)
-    root = etree.fromstring(content, parser=safe_xml_parser(), base_url=resolved.as_uri())
+    documents[uri] = content
+    root = etree.fromstring(content, parser=safe_xml_parser(), base_url=uri)
     nodes = root.xpath(
         "//xsl:include[@href] | //xsl:import[@href]",
         namespaces=_XSL_NAMESPACE,
     )
     for node in nodes:
-        _update_stylesheet_hash(_stylesheet_dependency(node), digest, seen)
+        dependency = _stylesheet_uri_path(urljoin(node.base, node.attrib["href"]))
+        _collect_stylesheets(dependency, documents, ancestors | {resolved})
+
+
+def _snapshot_stylesheet(path: Path) -> _StylesheetSnapshot:
+    documents: dict[str, bytes] = {}
+    _collect_stylesheets(path, documents, frozenset())
+    digest = hashlib.sha256()
+    for uri, content in documents.items():
+        for data in (uri.encode("utf-8"), content):
+            digest.update(len(data).to_bytes(8, "big"))
+            digest.update(data)
+    return _StylesheetSnapshot(next(iter(documents)), tuple(documents.items()), digest.hexdigest())
 
 
 def stylesheet_hash(path: Path) -> str:
-    digest = hashlib.sha256()
-    _update_stylesheet_hash(path, digest, set())
-    return digest.hexdigest()
+    return _snapshot_stylesheet(path).fingerprint
+
+
+class _SnapshotResolver(etree.Resolver):
+    def __init__(self, snapshot: _StylesheetSnapshot):
+        self._documents = dict(snapshot.documents)
+
+    def resolve(self, url, pubid, context):
+        uri = Path(os.path.abspath(_stylesheet_uri_path(url))).as_uri()
+        if uri not in self._documents:
+            raise ValueError(f"Stylesheet resource is outside the captured snapshot: {uri}")
+        return self.resolve_string(self._documents[uri], context, base_url=uri)
 
 
 # ------------------------------------------------------------
@@ -132,6 +163,23 @@ class TransformEngine(ABC):
     # ``name`` is the strategy-registry key (see :func:`make_engine`) and
     # also identifies the engine in the dry-run debug log.
     name: ClassVar[str]
+
+    def __init__(self):
+        self._snapshots: dict[tuple[str, str], _StylesheetSnapshot] = {}
+
+    def prepare_stylesheet(self, path: Path) -> str:
+        snapshot = _snapshot_stylesheet(path)
+        self._snapshots[(snapshot.root_uri, snapshot.fingerprint)] = snapshot
+        return snapshot.fingerprint
+
+    def _stylesheet_snapshot(self, path: Path, fingerprint: Optional[str]) -> _StylesheetSnapshot:
+        uri = Path(os.path.abspath(path)).as_uri()
+        snapshot = self._snapshots.get((uri, fingerprint or ""))
+        if snapshot is None:
+            snapshot = _snapshot_stylesheet(path)
+            if fingerprint is not None and fingerprint != snapshot.fingerprint:
+                raise ValueError(f"Stylesheet fingerprint changed since planning: {path}")
+        return snapshot
 
     @property
     @abstractmethod
@@ -187,6 +235,7 @@ class LxmlEngine(TransformEngine):
     name = "lxml"
 
     def __init__(self):
+        super().__init__()
         self._thread_local = threading.local()
 
     @property
@@ -201,12 +250,14 @@ class LxmlEngine(TransformEngine):
         return cache
 
     def _compiled_stylesheet(self, xsl_path: Path, fingerprint: Optional[str]):
-        fingerprint = fingerprint or stylesheet_hash(xsl_path)
-        key = (xsl_path.resolve(), fingerprint)
+        snapshot = self._stylesheet_snapshot(xsl_path, fingerprint)
+        key = (snapshot.root_uri, snapshot.fingerprint)
         cache = self._stylesheet_cache()
         if key not in cache:
+            parser = safe_xml_parser()
+            parser.resolvers.add(_SnapshotResolver(snapshot))
             cache[key] = etree.XSLT(
-                etree.parse(str(xsl_path), parser=safe_xml_parser()),
+                etree.fromstring(snapshot.documents[0][1], parser=parser, base_url=snapshot.root_uri),
                 access_control=safe_xslt_access_control(),
             )
         return cache[key]
@@ -236,6 +287,7 @@ class SaxonCEngine(TransformEngine):
     name = "saxonc"
 
     def __init__(self, saxonc_bin: Path):
+        super().__init__()
         self.saxonc_bin = saxonc_bin
 
     @property
@@ -251,14 +303,22 @@ class SaxonCEngine(TransformEngine):
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
     ):
-        if isinstance(xml_input, bytes):
-            with TempWorkspace() as workspace:
+        snapshot = self._stylesheet_snapshot(xsl_path, stylesheet_fingerprint)
+        if len(snapshot.documents) != 1:
+            raise ValueError("SaxonC stylesheets must be standalone; includes/imports are not supported")
+        root = etree.fromstring(
+            snapshot.documents[0][1], parser=safe_xml_parser(), base_url=snapshot.root_uri,
+        )
+        root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
+        with TempWorkspace() as workspace:
+            with workspace.named_file("w+b", suffix=".xsl") as stylesheet:
+                stylesheet.write(etree.tostring(root))
+                captured_xsl = Path(stylesheet.name)
+            if isinstance(xml_input, bytes):
                 with workspace.named_file("w+b", suffix=".xml") as f:
                     f.write(xml_input)
-                    tmp_path = Path(f.name)
-                self._run_saxon(tmp_path, xsl_path, output_path)
-        else:
-            self._run_saxon(xml_input, xsl_path, output_path)
+                    xml_input = Path(f.name)
+            self._run_saxon(xml_input, captured_xsl, output_path)
 
     def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path):
         # Absolute paths prevent filenames from being interpreted as CLI flags.

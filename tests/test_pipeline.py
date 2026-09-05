@@ -16,7 +16,7 @@ import pytest
 
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG, validate_config
-from articulous.engines import LxmlEngine, SaxonCEngine
+from articulous.engines import LxmlEngine, SaxonCEngine, stylesheet_hash
 from articulous.filesystem import TempWorkspace, cache_lock_path, lock_file
 from articulous.pipeline import (
     ArticleStore,
@@ -713,7 +713,7 @@ def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     cache = {}
     task = _make_xslt_task(
         xml_input=b"<root/>",
-        xsl_path=xsl, xsl_hash="abc",
+        xsl_path=xsl, xsl_hash=stylesheet_hash(xsl),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
@@ -722,7 +722,7 @@ def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     task()
     import hashlib
     expected = hashlib.sha256(b"<root/>").hexdigest()
-    assert cache["k"] == [expected, "abc", LxmlEngine().cache_identity, "out.html"]
+    assert cache["k"] == [expected, stylesheet_hash(xsl), LxmlEngine().cache_identity, "out.html"]
 
 
 def test_make_xslt_task_path_hashes_file(tmp_path):
@@ -732,14 +732,14 @@ def test_make_xslt_task_path_hashes_file(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     cache = {}
     task = _make_xslt_task(
-        xml_input=xml, xsl_path=xsl, xsl_hash="xsl_h",
+        xml_input=xml, xsl_path=xsl, xsl_hash=stylesheet_hash(xsl),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
         engine=LxmlEngine(), ctx=ctx,
     )
     assert task is not None
     task()
-    assert cache["k"][1] == "xsl_h"
+    assert cache["k"][1] == stylesheet_hash(xsl)
 
 
 def test_make_xslt_task_cached_returns_none(tmp_path):
@@ -798,7 +798,7 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
     broken.write_bytes(b"<not-a-stylesheet/>")
     cache = {}
     task = _make_xslt_task(
-        xml_input=b"<root/>", xsl_path=broken, xsl_hash="xsl_h",
+        xml_input=b"<root/>", xsl_path=broken, xsl_hash=stylesheet_hash(broken),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="bad",
         engine=LxmlEngine(), ctx=ctx,
@@ -2098,6 +2098,42 @@ def test_run_build_rebuilds_missing_cached_output(site_root):
     apply_cli_overrides(cfg2, cli2, site_root)
     run_build(cli2, cfg2, site_root)
     assert rss.exists()
+
+
+@pytest.mark.parametrize("dependency", [False, True])
+def test_stylesheet_edits_and_reverts_cannot_poison_cache(site_root, monkeypatch, dependency):
+    config = _site_config(site_root)
+    main = site_root / "xsl/pages/article.xsl"
+    changed = main
+    if dependency:
+        main.write_bytes(
+            b'<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+            b'<xsl:include href="common.xsl"/></xsl:stylesheet>'
+        )
+        changed = main.with_name("common.xsl")
+    changed.write_bytes(MINIMAL_XSLT)
+    run_build(_CLI(), config, site_root)
+    page = site_root / "output/en/articles/first-post/index.html"
+    original = page.read_bytes()
+    original_run = _run_plan
+
+    def edit_during_execution(plan, ctx):
+        changed.write_bytes(MINIMAL_XSLT.replace(b"<out/>", b"<intermediate/>"))
+        try:
+            return original_run(plan, ctx)
+        finally:
+            changed.write_bytes(MINIMAL_XSLT)
+
+    config["build"]["force_full_build"] = True
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.pipeline._run_plan", edit_during_execution)
+        run_build(_CLI(), config, site_root)
+    assert page.read_bytes() == original
+    modified = page.stat().st_mtime_ns
+    config["build"]["force_full_build"] = False
+    run_build(_CLI(), config, site_root)
+    assert page.read_bytes() == original
+    assert page.stat().st_mtime_ns == modified
 
 
 def _redirect_page_output(page, target, component):

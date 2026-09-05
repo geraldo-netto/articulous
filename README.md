@@ -277,6 +277,12 @@ while allowing local stylesheet includes/imports. SaxonC is invoked with
 functions, XInclude and external resource URIs.
 SaxonC requires standalone stylesheets: external includes and imports
 are rejected. Use lxml for stylesheets with local includes or imports.
+Planning captures stylesheet bytes and local dependencies; workers compile
+that snapshot, so edits during execution apply on the next build. Fingerprints
+include the captured bytes and logical file URIs. With lxml, relative includes
+resolve beside the configured stylesheet path, including symlink paths;
+`xml:base` applies consistently to both capture and compilation. Every dependency
+must be a regular file and is opened without blocking on special files.
 The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.

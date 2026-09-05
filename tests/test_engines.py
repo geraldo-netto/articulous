@@ -21,6 +21,8 @@ from articulous.engines import (
     SaxonCEngine,
     TransformEngine,
     VALID_ENGINES,
+    _SnapshotResolver,
+    _snapshot_stylesheet,
     check_dependencies,
     configure_saxonc,
     make_engine,
@@ -152,6 +154,90 @@ def test_stylesheet_dependencies_respect_uris_and_xml_base(tmp_path, absolute):
     assert etree.parse(str(output)).getroot().tag == "changed"
 
 
+def _including_stylesheet(href, xml_base=""):
+    return (
+        '<xsl:stylesheet version="1.0" '
+        'xmlns:xsl="http://www.w3.org/1999/XSL/Transform" '
+        f'xml:base="{xml_base}"><xsl:include href="{href}"/></xsl:stylesheet>'
+    )
+
+
+@pytest.mark.parametrize("xml_base", ["", "shared/"])
+def test_stylesheet_symlinks_keep_logical_dependency_bases(tmp_path, xml_base):
+    pages = tmp_path / "pages"
+    templates = tmp_path / "templates"
+    library = tmp_path / "library"
+    for directory in (pages / xml_base, templates / xml_base, library):
+        directory.mkdir(parents=True)
+    physical = templates / "main.xsl"
+    physical.write_text(_including_stylesheet("common.xsl", xml_base))
+    main = pages / "main.xsl"
+    main.symlink_to(physical)
+    common = library / "common.xsl"
+    common.write_text(_including_stylesheet("leaf.xsl"))
+    (pages / xml_base / "common.xsl").symlink_to(common)
+    (templates / xml_base / "common.xsl").write_text(MINIMAL_XSLT)
+    (library / "leaf.xsl").write_text(MINIMAL_XSLT.replace("<out/>", "<physical/>"))
+    logical = pages / xml_base / "leaf.xsl"
+    logical.write_text(MINIMAL_XSLT)
+    engine = LxmlEngine()
+    first = engine.prepare_stylesheet(main)
+    output = tmp_path / "page.xml"
+    engine.run(b"<root/>", main, output, stylesheet_fingerprint=first)
+    assert etree.parse(str(output)).getroot().tag == "out"
+    logical.write_text(MINIMAL_XSLT.replace("<out/>", "<logical/>"))
+    assert stylesheet_hash(main) != first
+    engine.run(b"<root/>", main, output)
+    assert etree.parse(str(output)).getroot().tag == "logical"
+
+
+def test_lxml_compiles_only_captured_stylesheet_bytes(tmp_path, monkeypatch):
+    main = tmp_path / "main.xsl"
+    main.write_text(_including_stylesheet("included.xsl"))
+    included = tmp_path / "included.xsl"
+    included.write_text(MINIMAL_XSLT)
+    engine = LxmlEngine()
+    fingerprint = engine.prepare_stylesheet(main)
+    main.unlink()
+    included.unlink()
+
+    def unexpected_read(_path):
+        pytest.fail("Compilation reopened a stylesheet after capture")
+
+    monkeypatch.setattr("articulous.engines.open_regular_file", unexpected_read)
+    output = tmp_path / "page.xml"
+    engine.run(b"<root/>", main, output, stylesheet_fingerprint=fingerprint)
+    assert etree.parse(str(output)).getroot().tag == "out"
+
+
+def test_snapshot_resolver_rejects_uncaptured_resources(tmp_path):
+    main = tmp_path / "main.xsl"
+    main.write_text(MINIMAL_XSLT)
+    outside = tmp_path / "outside.xsl"
+    outside.write_text(MINIMAL_XSLT)
+    resolver = _SnapshotResolver(_snapshot_stylesheet(main))
+    with pytest.raises(ValueError, match="outside the captured snapshot"):
+        resolver.resolve(outside.as_uri(), None, None)
+
+
+def test_stylesheet_alias_cycle_is_rejected(tmp_path):
+    main = tmp_path / "main.xsl"
+    main.write_text(_including_stylesheet("nested/main.xsl"))
+    (tmp_path / "nested").symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(ValueError, match="Circular stylesheet dependency"):
+        stylesheet_hash(main)
+
+
+def test_engine_rejects_uncaptured_mismatched_fingerprint(tmp_path):
+    main = tmp_path / "main.xsl"
+    main.write_text(MINIMAL_XSLT)
+    output = tmp_path / "page.xml"
+    output.write_text("keep")
+    with pytest.raises(ValueError, match="fingerprint changed since planning"):
+        LxmlEngine().run(b"<root/>", main, output, stylesheet_fingerprint="unverified")
+    assert output.read_text() == "keep"
+
+
 @pytest.mark.parametrize("href", [
     "https://example.invalid/style.xsl", "file://remote/style.xsl",
     "style.xsl?query", "style.xsl#fragment",
@@ -226,13 +312,16 @@ def test_lxml_engine_caches_stylesheet_by_fingerprint(tmp_path):
     xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     engine = LxmlEngine()
+    first = engine.prepare_stylesheet(xsl)
     real_xslt = etree.XSLT
     with mock.patch(
         "articulous.engines.etree.XSLT", side_effect=real_xslt,
     ) as compile_xslt:
-        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
-        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
-        engine.run(xml, xsl, out, stylesheet_fingerprint="v2")
+        engine.run(xml, xsl, out, stylesheet_fingerprint=first)
+        engine.run(xml, xsl, out, stylesheet_fingerprint=first)
+        xsl.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
+        second = engine.prepare_stylesheet(xsl)
+        engine.run(xml, xsl, out, stylesheet_fingerprint=second)
     assert compile_xslt.call_count == 2
 
 
@@ -243,10 +332,11 @@ def test_lxml_engine_keeps_thread_local_stylesheets(tmp_path):
     xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     engine = LxmlEngine()
+    fingerprint = engine.prepare_stylesheet(xsl)
     real_xslt = etree.XSLT
 
     def transform():
-        engine.run(xml, xsl, out, stylesheet_fingerprint="v1")
+        engine.run(xml, xsl, out, stylesheet_fingerprint=fingerprint)
 
     with mock.patch(
         "articulous.engines.etree.XSLT", side_effect=real_xslt,
@@ -381,9 +471,43 @@ def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
     assert not captured["tmp"].exists()
 
 
+def test_saxon_uses_captured_stylesheet_and_original_base(tmp_path, monkeypatch):
+    xsl = tmp_path / "main.xsl"
+    xsl.write_text(MINIMAL_XSLT)
+    engine = SaxonCEngine(tmp_path / "Transform")
+    fingerprint = engine.prepare_stylesheet(xsl)
+    xsl.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
+    captured = []
+
+    def inspect_transform(cmd, check):
+        path = Path(next(arg[5:] for arg in cmd if arg.startswith("-xsl:")))
+        captured.append(path)
+        root = etree.parse(str(path)).getroot()
+        assert root.base == xsl.as_uri()
+        assert root.find(".//out") is not None
+        assert root.find(".//changed") is None
+
+    monkeypatch.setattr("articulous.engines.subprocess.run", inspect_transform)
+    engine.run(b"<root/>", xsl, tmp_path / "page.xml", stylesheet_fingerprint=fingerprint)
+    assert len(captured) == 1
+    assert not captured[0].exists()
+
+
+def test_saxon_rejects_dependencies_before_subprocess(tmp_path):
+    main = tmp_path / "main.xsl"
+    main.write_text(_including_stylesheet("included.xsl"))
+    (tmp_path / "included.xsl").write_text(MINIMAL_XSLT)
+    with mock.patch("articulous.engines.subprocess.run") as run:
+        with pytest.raises(ValueError, match="SaxonC stylesheets must be standalone"):
+            SaxonCEngine(tmp_path / "Transform").run(b"<root/>", main, tmp_path / "page.xml")
+    run.assert_not_called()
+
+
 @pytest.mark.parametrize("operation", ["write", "close"])
 def test_saxon_materialization_failure_cleans_input(tmp_path, monkeypatch, operation):
     allocated = []
+    xsl = tmp_path / "stylesheet.xsl"
+    xsl.write_text(MINIMAL_XSLT)
     real_named_file = TempWorkspace.named_file
 
     @contextmanager
@@ -401,7 +525,7 @@ def test_saxon_materialization_failure_cleans_input(tmp_path, monkeypatch, opera
 
     monkeypatch.setattr(TempWorkspace, "named_file", failing_file)
     with pytest.raises(OSError, match="materialization failed"):
-        SaxonCEngine(tmp_path / "unused").run(b"<root/>", tmp_path / "unused.xsl", tmp_path / "out")
+        SaxonCEngine(tmp_path / "unused").run(b"<root/>", xsl, tmp_path / "out")
     assert len(allocated) == 1
     assert not allocated[0].exists()
 

@@ -34,7 +34,6 @@ from .engines import (
     TransformEngine,
     configure_saxonc,
     make_engine,
-    stylesheet_hash,
 )
 from .filesystem import (
     TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file,
@@ -864,7 +863,7 @@ def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformE
     xsl_path = ctx.xsl_for(section)
     engine = ctx.engine_for(section)
     assert isinstance(engine, TransformEngine)
-    return xsl_path, stylesheet_hash(xsl_path), engine
+    return xsl_path, engine.prepare_stylesheet(xsl_path), engine
 
 
 def _append_task(tasks: _TaskQueue, task: Optional[_XsltTask], skip_message: str) -> None:

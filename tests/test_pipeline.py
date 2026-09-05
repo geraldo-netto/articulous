@@ -1282,6 +1282,18 @@ def test_collect_tasks_rejects_output_escape(tmp_path):
         _collect_tasks(stream_factory, cli, ctx, {}, manifest)
 
 
+@pytest.mark.parametrize("old_path", ["en/1/index.html", "en/1", "en"])
+def test_prune_preserves_reassigned_paths_and_parents(tmp_path, old_path):
+    ctx = _ctx_for(tmp_path)
+    page = ctx.output_dir / "en/1/index.html"
+    page.parent.mkdir(parents=True)
+    page.write_text("new index")
+    cache = {"old": ["old hash"], "new": ["new hash"]}
+    _prune_stale_outputs(ctx, cache, {"old": old_path}, {"new": "en/1/index.html"})
+    assert page.read_text() == "new index"
+    assert cache == {"new": ["new hash"]}
+
+
 def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
     ctx = _ctx_for(tmp_path)
     root_file = tmp_path / "output" / "root.txt"

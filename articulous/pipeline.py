@@ -1320,13 +1320,20 @@ def _prune_stale_outputs(
 ) -> None:
     stale_keys = sorted(set(old_manifest) - set(current_manifest))
     root = ctx.output_dir.resolve()
+    protected = {
+        ancestor
+        for relpath in current_manifest.values()
+        for path in [_manifest_target(ctx, relpath)]
+        for ancestor in (path, *path.parents)
+    }
     for key in stale_keys:
         try:
             target = _manifest_target(ctx, old_manifest[key])
         except ValueError as e:
             logging.warning(f"Skipping invalid cached output manifest entry: {e}")
         else:
-            _delete_output_file(target, root)
+            if target not in protected:
+                _delete_output_file(target, root)
         cache.pop(key, None)
 
 

@@ -284,6 +284,20 @@ def test_asset_cache_paths_cannot_escape_destination(tmp_path, rel):
     assert not (ctx.output_dir / "assets").exists()
 
 
+def test_asset_destination_hardlink_preserves_external_file(tmp_path):
+    ctx = _ctx_for(tmp_path)
+    (ctx.assets_dir / "style.css").write_text("replacement")
+    victim = tmp_path / "outside.txt"
+    victim.write_text("private")
+    destination = ctx.output_dir / "assets/style.css"
+    destination.parent.mkdir()
+    os.link(victim, destination)
+    with pytest.raises(ValueError, match="hardlink"):
+        copy_assets(ctx, {})
+    assert victim.read_text() == "private"
+    assert destination.read_text() == "private"
+
+
 def test_copy_assets_missing_src_removes_stale_output_and_cache(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}

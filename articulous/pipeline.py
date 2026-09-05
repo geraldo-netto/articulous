@@ -203,6 +203,8 @@ def _asset_target(root: Path, rel: str) -> Path:
         component = root / part
         if component.is_symlink():
             raise ValueError(f"Asset destination contains a symlink: {component}")
+        if component.is_file() and component.stat().st_nlink > 1:
+            raise ValueError(f"Asset destination contains a hardlink: {component}")
     return target
 
 

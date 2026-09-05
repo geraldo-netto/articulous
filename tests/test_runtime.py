@@ -63,6 +63,20 @@ def test_write_text_atomic_cleans_temp_on_encoding_error(tmp_path):
     assert list(tmp_path.iterdir()) == [path]
 
 
+def test_write_text_atomic_new_file_is_readable(tmp_path):
+    path = tmp_path / "page.html"
+    write_text_atomic(path, "page")
+    assert path.stat().st_mode & 0o777 == 0o644
+
+
+def test_write_text_atomic_preserves_existing_permissions(tmp_path):
+    path = tmp_path / "page.html"
+    path.write_text("old")
+    path.chmod(0o640)
+    write_text_atomic(path, "new")
+    assert path.stat().st_mode & 0o777 == 0o640
+
+
 def test_write_text_atomic_cleans_temp_on_replace_error(tmp_path, monkeypatch):
     p = tmp_path / "x.txt"
 

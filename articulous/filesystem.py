@@ -5,6 +5,7 @@ import fcntl
 import json
 import logging
 import os
+import stat
 import tempfile
 import time
 from contextlib import contextmanager
@@ -20,11 +21,13 @@ def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
 @contextmanager
 def atomic_output(path: Path):
     ensure_parent_dir(path)
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     fd, name = tempfile.mkstemp(dir=path.parent)
     tmp_path = Path(name)
     try:
         os.close(fd)
         yield tmp_path
+        tmp_path.chmod(mode)
         tmp_path.replace(path)
     finally:
         tmp_path.unlink(missing_ok=True)

@@ -277,8 +277,9 @@ def test_invalid_asset_source_preserves_published_mirror(tmp_path):
 
 
 @pytest.mark.parametrize("component", ["assets", "assets/nested", "assets/nested/file.txt"])
-def test_copy_assets_rejects_destination_symlinks(tmp_path, component):
-    ctx = _ctx_for(tmp_path)
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_copy_assets_rejects_destination_symlinks(tmp_path, component, dry_run):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), dry_run=dry_run)
     source = ctx.assets_dir / "nested/file.txt"
     source.parent.mkdir()
     source.write_text("replacement")
@@ -295,16 +296,18 @@ def test_copy_assets_rejects_destination_symlinks(tmp_path, component):
 
 
 @pytest.mark.parametrize("rel", ["../outside", "/outside", "."])
-def test_asset_cache_paths_cannot_escape_destination(tmp_path, rel):
-    ctx = _ctx_for(tmp_path)
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_asset_cache_paths_cannot_escape_destination(tmp_path, rel, dry_run):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), dry_run=dry_run)
     cache = {"assets": {"version": 1, "manifest": {rel: ["d", 0]}}}
     with pytest.raises(ValueError, match="Invalid asset output path"):
         copy_assets(ctx, cache)
     assert not (ctx.output_dir / "assets").exists()
 
 
-def test_asset_destination_hardlink_preserves_external_file(tmp_path):
-    ctx = _ctx_for(tmp_path)
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_asset_destination_hardlink_preserves_external_file(tmp_path, dry_run):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), dry_run=dry_run)
     (ctx.assets_dir / "style.css").write_text("replacement")
     victim = tmp_path / "outside.txt"
     victim.write_text("private")

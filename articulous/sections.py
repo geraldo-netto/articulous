@@ -89,7 +89,7 @@ def validate_url_pattern(section: str, pattern: str) -> None:
         raise ValueError(
             f"config urls.{spec.url_key} must be a directory-style pattern"
         )
-    if spec.output_kind == "file" and not suffix:
+    if spec.output_kind == "file" and (not suffix or pattern.endswith("/")):
         raise ValueError(
             f"config urls.{spec.url_key} must be a file-style pattern"
         )

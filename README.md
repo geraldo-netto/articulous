@@ -290,11 +290,10 @@ URL patterns are validated by section:
 | `search`  | none                  | File-style path, such as `/search.json` |
 
 Directory-style patterns must not end in a file suffix. File-style
-patterns must include one. Patterns are local paths: schemes, hosts,
-query strings, fragments, percent escapes, backslashes, and control
-characters are rejected before a build starts.
-Use file patterns without a trailing slash, such as `/rss.xml`. Keep
-derived slug/tag components within the target filesystem's filename
+patterns must include one and must not end with a slash. Patterns are
+local paths: schemes, hosts, query strings, fragments, percent escapes,
+backslashes, and control characters are rejected before a build starts.
+Keep derived slug/tag components within the target filesystem's filename
 limits; the current builder does not truncate them automatically.
 
 ---

@@ -23,6 +23,7 @@ from articulous.models import (
     build_tags_models,
     build_url_from_pattern,
 )
+from articulous.sections import validate_url_pattern
 
 
 def _ctx(**overrides):
@@ -70,9 +71,16 @@ def test_build_output_path_from_pattern_directory_section():
     assert p == Path("en/articles/x/index.html")
 
 
-def test_build_output_path_from_pattern_file_section():
-    p = build_output_path_from_pattern("rss", "/feed.xml")
-    assert p == Path("feed.xml")
+@pytest.mark.parametrize("section,pattern", [
+    ("rss", "/feed.xml"), ("sitemap", "/feeds/sitemap.xml"),
+    ("search", "feeds/search.json"),
+])
+def test_file_pattern_url_matches_output_path(section, pattern):
+    validate_url_pattern(section, pattern)
+    output = build_output_path_from_pattern(section, pattern)
+    url = build_url_from_pattern("https://example.test/", pattern)
+    assert url == f"https://example.test/{output.as_posix()}"
+    assert output.suffix in {".xml", ".json"}
 
 
 def test_build_url_from_pattern_strips_slashes():

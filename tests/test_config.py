@@ -187,6 +187,15 @@ def test_url_pattern_rejects_non_file_url_components(pattern):
         validate_config(config)
 
 
+@pytest.mark.parametrize("section", ["rss", "sitemap", "search"])
+@pytest.mark.parametrize("ending", ["/", "//"])
+def test_file_url_pattern_rejects_trailing_slashes(section, ending):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["urls"][section] += ending
+    with pytest.raises(ValueError, match=rf"urls\.{section}.*file-style"):
+        validate_config(config)
+
+
 # --- apply_cli_overrides ---
 
 def test_apply_cli_overrides_force_and_verbose(tmp_path):

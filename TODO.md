@@ -13,6 +13,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| CONTRA-10 | blocked | S | Reconcile valid positive configuration integers with platform-limited iterator windows. | README accepts positive pagination.per_page and build.parallelism; validation also accepts 10**100. models._page_batches and runtime._fill_pending pass those values to islice, which rejects stops above sys.maxsize even for one input item. Preserve the positive-integer contract by bounding each iterator window; unblock with full-build and seeded large-value regressions. |
 
 ## security
 

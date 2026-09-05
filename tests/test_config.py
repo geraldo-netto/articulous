@@ -165,6 +165,22 @@ def test_validate_config_accepts_optional_strings():
     validate_config(cfg)
 
 
+@pytest.mark.parametrize("value", ["not-a-url", "//example.test", "https://example.test?", "https://example.test#"])
+def test_base_url_syntax_is_validated_for_custom_backends(value):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["engines"]["sitemap"] = "lxml"
+    config["site"]["base_url"] = value
+    with pytest.raises(ValueError, match="site.base_url"):
+        validate_config(config)
+
+
+@pytest.mark.parametrize("value", ["", "/", "/blog/", "https://example.test/blog", "/caf%C3%A9"])
+def test_valid_base_url_forms_remain_supported(value):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["site"]["base_url"] = value
+    validate_config(config)
+
+
 @pytest.mark.parametrize("language", [
     "en?query", "en#fragment", "en/fr", "en\\fr", ".", "..", "../en",
     "%2e%2e", "en:us", "en us", "en\n", "en\x7f", "français",

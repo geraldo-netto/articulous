@@ -14,7 +14,7 @@ from .filesystem import (
     assert_disjoint_trees, cache_lock_path, open_regular_file,
     validate_regular_file, write_text_atomic,
 )
-from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
+from .sections import SECTION_NAMES, url_key_for_section, validate_base_url, validate_url_pattern
 from .ownership import ownership_path
 
 
@@ -166,6 +166,7 @@ def _validate_site(config: dict) -> None:
     site = _require_block(config, "site", DEFAULT_CONFIG["site"])
     _require_string(site["site_name"], "site.site_name")
     _require_string(site["base_url"], "site.base_url")
+    _validate_site_base_url(site["base_url"])
     _require_languages(site["languages"], site["default_language"])
     pagination = _require_object(site["pagination"], "site.pagination")
     _require_exact_keys(
@@ -175,6 +176,13 @@ def _validate_site(config: dict) -> None:
     _require_non_negative_int(
         pagination["rss_items"], "site.pagination.rss_items"
     )
+
+
+def _validate_site_base_url(value: str) -> None:
+    try:
+        validate_base_url(value)
+    except ValueError as error:
+        raise ValueError(f"config site.base_url: {error}") from error
 
 
 def _validate_urls(config: dict) -> None:

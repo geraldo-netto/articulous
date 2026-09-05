@@ -66,6 +66,7 @@ from .sections import (
     PER_LANG_SECTIONS,
     SECTION_NAMES,
     SECTION_XSL,
+    validate_sitemap_location,
 )
 
 
@@ -1035,6 +1036,16 @@ def _single_native_section(
     return [task]
 
 
+def _validate_sitemap_source(base_url: str, sitemap_url: str, source) -> None:
+    validate_sitemap_location(base_url)
+    validate_sitemap_location(sitemap_url)
+    prefix = sitemap_url.rsplit("/", 1)[0] + "/"
+    for url in _source_values(source):
+        validate_sitemap_location(url)
+        if not url.startswith(prefix):
+            raise ValueError(f"Sitemap URL is outside its host or directory scope: {url}")
+
+
 def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=None):
     """Build sitemap.xml from a streamed list of URL strings."""
     if isinstance(workspace, dict) and manifest is None:
@@ -1043,6 +1054,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
     sitemap = build_sitemap_model([], ctx)
     if isinstance(ctx.engine_for("sitemap"), NativeEngine):
         source = urls if isinstance(urls, SitemapSink) else list(urls)
+        _validate_sitemap_source(ctx.base_url, sitemap.url, source)
         return _single_native_section(
             "sitemap", source, ctx.output_dir / sitemap.output_path,
             _write_native_sitemap, ctx, cache, manifest,

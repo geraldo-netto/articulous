@@ -4,7 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from string import Formatter
 from pathlib import Path
-from urllib.parse import urlsplit
+import re
+from urllib.parse import unquote, urlsplit
 
 
 @dataclass(frozen=True)
@@ -100,3 +101,27 @@ def output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path:
     if SECTION_BY_NAME[section].output_kind == "directory":
         return Path(rel) / "index.html"
     return Path(rel)
+
+
+def validate_sitemap_location(url: str) -> None:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("Native sitemap requires an absolute HTTP(S) site.base_url and locations")
+    if not re.fullmatch(r"[A-Za-z0-9:/?\[\]@!$&'()*+,;=._~%#-]+", url):
+        raise ValueError("Native sitemap URLs must be URI-encoded without whitespace or controls")
+    if parsed.username is not None or parsed.query or parsed.fragment:
+        raise ValueError("Native sitemap URLs cannot contain credentials, queries, or fragments")
+    if parsed.port == 0:
+        raise ValueError("Native sitemap URL port must be positive")
+    if re.search(r"%(?![0-9A-Fa-f]{2})", url) or len(url) >= 2048:
+        raise ValueError("Native sitemap URLs need valid escapes and fewer than 2048 characters")
+    _validate_sitemap_path(parsed.path)
+
+
+def _validate_sitemap_path(path: str) -> None:
+    decoded = unquote(path)
+    if "\\" in decoded or any(ord(char) < 32 or ord(char) == 127 for char in decoded):
+        raise ValueError("Native sitemap paths cannot contain backslashes or controls")
+    segments = decoded.removeprefix("/").removesuffix("/")
+    if segments and any(part in {".", "..", ""} for part in segments.split("/")):
+        raise ValueError("Native sitemap paths cannot contain dot or empty segments")

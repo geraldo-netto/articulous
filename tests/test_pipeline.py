@@ -110,6 +110,7 @@ def _ctx_for(tmp_path, engines=None):
     cfg["paths"]["assets_dir"] = str(tmp_path / "assets")
     cfg["paths"]["content_dir"] = str(tmp_path / "content")
     cfg["site"]["languages"] = ["en"]
+    cfg["site"]["base_url"] = "https://e.test"
     if engines:
         cfg["engines"].update(engines)
     return build_ctx_from_config(cfg, dry_run=False)
@@ -1015,14 +1016,14 @@ def test_native_sitemap_enforces_url_limit(tmp_path):
 
 def test_native_sitemap_counts_utf8_bytes(tmp_path, monkeypatch):
     ctx = _ctx_for(tmp_path)
-    urls = ["https://e.test/é/"]
+    urls = ["https://e.test/%C3%A9/"]
     build_sitemap_section(urls, ctx, {})[0]()
     output = ctx.output_dir / "sitemap.xml"
     previous = output.read_bytes()
     monkeypatch.setattr("articulous.pipeline._SITEMAP_MAX_BYTES", len(previous))
     build_sitemap_section(urls, ctx, {})[0]()
     with pytest.raises(ValueError, match="50 MiB"):
-        build_sitemap_section(["https://e.test/éé/"], ctx, {})[0]()
+        build_sitemap_section(["https://e.test/%C3%A9%C3%A9/"], ctx, {})[0]()
     assert output.read_bytes() == previous
 
 

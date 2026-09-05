@@ -104,7 +104,7 @@ def build_output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path
 def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
     """Join the formatted pattern to base_url; an empty base gives a root-relative URL."""
     rel = pattern.format(**kwargs).lstrip("/")
-    return f"{base_url.rstrip('/')}/{rel}"
+    return f"{base_url.rstrip('/')}/{quote(rel, safe='/')}"
 
 
 # ------------------------------------------------------------

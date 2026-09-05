@@ -293,8 +293,21 @@ The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.
 
-Native sitemap builds fail before replacing the published file if they
-exceed 50,000 URLs or 50 MiB of uncompressed XML.
+When the native sitemap is selected, `site.base_url` must be an absolute
+HTTP(S) URL, such as `https://example.com` or `https://example.com/blog`.
+Use URI-encoded base paths, without credentials, queries, or fragments.
+An empty base still produces relative links in builds excluding the native
+sitemap, for example `--only articles,index,tags,search`. Custom XSLT outputs
+remain the stylesheet author's responsibility.
+
+Native sitemap planning checks each location: it must be URI-encoded,
+shorter than 2,048 characters, and inside the sitemap's host and directory.
+Dot segments and repeated path separators are rejected. For example,
+`/feeds/sitemap.xml` cannot list `/en/articles/post/`; put the sitemap at
+`/sitemap.xml` to cover both language trees. These checks follow the
+[Sitemaps protocol](https://www.sitemaps.org/protocol.html).
+Publication also fails before replacing the sitemap if it exceeds 50,000
+URLs or 50 MiB of uncompressed XML.
 
 URL patterns are validated by section:
 
@@ -314,6 +327,14 @@ backslashes, and control characters are rejected before a build starts.
 Generated paths and their components are checked against the target
 filesystem's byte limits during planning, before assets or pages are
 published. Oversized slugs or tags fail the build; they are not truncated.
+
+Route literals containing spaces or Unicode are percent-encoded in links
+while keeping their original filesystem names. With base
+`https://example.com/blog` and article pattern `/café/{lang}/{slug}/`,
+`output/café/en/post/index.html` is served at
+`https://example.com/blog/caf%C3%A9/en/post/`. Configure the web server to
+mount the output directory at `/blog/`; the deployment prefix is not an
+extra directory inside `output/`.
 
 ---
 

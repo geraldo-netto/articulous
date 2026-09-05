@@ -72,7 +72,6 @@ Line numbers refer to repository paths.
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
 | REL-23 | open | M | Include retained output owners in partial-build collision preflight (`articulous/pipeline.py:1243`, `articulous/pipeline.py:1344`). | High. Following a full build, set `urls.rss` to an existing article's `index.html` and run `--only rss`: the article is overwritten and the saved manifest assigns both keys the same path. Validate planned outputs against all unselected owners before publishing. |
-| REL-29 | open | M | Validate URL-pattern syntax separately from filesystem output shape (`articulous/sections.py:71`, `articulous/sections.py:88`, `articulous/models.py:104`). | Medium. Accepted RSS patterns `/feed.xml?format=rss` and `/feed.xml#section` produce literal filenames containing query/fragment text, while clients request `/feed.xml`. Encoded path segments are likewise copied verbatim. Reject unsupported URL components or map decoded output paths and encoded URLs consistently. |
 
 ## observability
 

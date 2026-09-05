@@ -148,6 +148,18 @@ def test_validate_config_accepts_optional_strings():
     validate_config(cfg)
 
 
+@pytest.mark.parametrize("pattern", [
+    "/feed.xml?format=rss", "/feed.xml#section", "/my%20feed.xml",
+    "/feed\\name.xml", "/feed\nname.xml", "/feed\x7fname.xml",
+    "https://example.test/feed.xml", "//example.test/feed.xml",
+])
+def test_url_pattern_rejects_non_file_url_components(pattern):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["urls"]["rss"] = pattern
+    with pytest.raises(ValueError, match="URL patterns"):
+        validate_config(config)
+
+
 # --- apply_cli_overrides ---
 
 def test_apply_cli_overrides_force_and_verbose(tmp_path):

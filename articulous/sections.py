@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from string import Formatter
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 @dataclass(frozen=True)
@@ -68,7 +69,16 @@ def _validate_placeholders(spec: SectionSpec, pattern: str) -> None:
         )
 
 
+def _validate_url_syntax(pattern: str) -> None:
+    if any(char in pattern for char in "?#%\\") or any(ord(char) < 32 or ord(char) == 127 for char in pattern):
+        raise ValueError("URL patterns cannot contain queries, fragments, escapes, or control characters")
+    parsed = urlsplit(pattern)
+    if parsed.scheme or parsed.netloc:
+        raise ValueError("URL patterns must be local paths, without a scheme or host")
+
+
 def validate_url_pattern(section: str, pattern: str) -> None:
+    _validate_url_syntax(pattern)
     spec = SECTION_BY_NAME[section]
     _validate_placeholders(spec, pattern)
     stripped = pattern.format(

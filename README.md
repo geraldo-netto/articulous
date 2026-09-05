@@ -209,7 +209,9 @@ URL patterns are validated by section:
 | `search`  | none                  | File-style path, such as `/search.json` |
 
 Directory-style patterns must not end in a file suffix. File-style
-patterns must include one.
+patterns must include one. Patterns are local paths: schemes, hosts,
+query strings, fragments, percent escapes, backslashes, and control
+characters are rejected before a build starts.
 
 ---
 

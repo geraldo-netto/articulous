@@ -835,7 +835,9 @@ def test_build_streamed_sitemap_and_search_sections(tmp_path):
         assert len(tasks) == 1
         tasks[0]()
     sitemap = tmp_path / "output" / "sitemap.xml"
-    assert etree.parse(str(sitemap)).findtext("url/loc") == "https://e.test/a/"
+    root = etree.parse(str(sitemap)).getroot()
+    assert root.tag == "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset"
+    assert root.findtext("{*}url/{*}loc") == "https://e.test/a/"
     search = tmp_path / "output" / "search.json"
     assert json.loads(search.read_text())[0]["title"] == "A"
 

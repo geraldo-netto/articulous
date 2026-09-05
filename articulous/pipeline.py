@@ -602,7 +602,10 @@ def _source_hash(source) -> str:
 def _write_native_sitemap(output_path: Path, source) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as out:
-        out.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset>')
+        out.write(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        )
         for url in _source_values(source):
             out.write(f"<url><loc>{_xml_escape(url)}</loc></url>")
         out.write("</urlset>")

@@ -168,7 +168,7 @@ class NativeEngine:
 
     @property
     def cache_identity(self) -> str:
-        return "native:v1"
+        return "native:v2"
 
 
 class LxmlEngine(TransformEngine):

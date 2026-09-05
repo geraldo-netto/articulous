@@ -110,6 +110,22 @@ def test_setup_logging_verbose_overrides(tmp_path):
     assert logging.getLogger().level == logging.DEBUG
 
 
+@pytest.mark.parametrize("next_file", ["app.log", None])
+def test_setup_logging_closes_previous_file_handler(tmp_path, next_file):
+    cfg = {"logging": {"level": "INFO", "file": "app.log"}}
+    setup_logging(cfg, tmp_path)
+    handler = next(h for h in logging.getLogger().handlers if isinstance(h, logging.FileHandler))
+    previous_stream = handler.stream
+    assert previous_stream is not None
+    assert not previous_stream.closed
+    cfg["logging"]["file"] = next_file
+    setup_logging(cfg, tmp_path)
+    assert handler not in logging.getLogger().handlers
+    assert handler.stream is None
+    assert previous_stream.closed
+    setup_logging({"logging": {"level": "INFO", "file": None}}, tmp_path)
+
+
 def test_setup_logging_adds_file_handler(tmp_path):
     log_file = tmp_path / "app.log"
     cfg = {"logging": {"level": "INFO", "file": log_file.name}}

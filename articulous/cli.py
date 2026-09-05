@@ -120,6 +120,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
     root = logging.getLogger()
     for handler in root.handlers[:]:
         root.removeHandler(handler)
+        handler.close()
     root.setLevel(level)
 
     stream = logging.StreamHandler(sys.stdout)

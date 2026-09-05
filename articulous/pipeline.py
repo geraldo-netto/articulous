@@ -272,22 +272,25 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
     return entry["manifest"]
 
 
-def _remove_asset_type_conflicts(
-    dest: Path, old: dict, new: dict,
-) -> None:
-    for rel in sorted(set(old) & set(new), reverse=True):
-        if old[rel][0] != new[rel][0]:
-            _delete_output_file(_asset_target(dest, rel), dest)
+def _prepare_asset_type(path: Path, directory: bool, root: Path) -> None:
+    if path.exists() and path.is_dir() != directory:
+        _delete_output_file(path, root)
+
+
+def _remove_asset_type_conflicts(dest: Path, new: dict) -> None:
+    for rel, metadata in sorted(new.items()):
+        _prepare_asset_type(_asset_target(dest, rel), metadata[0] == "d", dest)
 
 
 def _copy_asset_delta(
     src: Path, dest: Path, old: dict, new: dict, refresh: set[str],
 ) -> None:
+    _prepare_asset_type(dest, True, dest.parent)
     dest.mkdir(parents=True, exist_ok=True)
     for rel in sorted(set(old) - set(new), reverse=True):
         target = _asset_target(dest, rel)
         _delete_output_file(target, dest)
-    _remove_asset_type_conflicts(dest, old, new)
+    _remove_asset_type_conflicts(dest, new)
     for rel, meta in sorted(new.items()):
         target = _asset_target(dest, rel)
         if meta[0] == "d":

@@ -553,6 +553,25 @@ def test_copy_assets_replaces_directory_with_file(tmp_path):
     assert output.read_text() == "file"
 
 
+@pytest.mark.parametrize("changed", ["assets", "assets/folder", "assets/folder/style.css"])
+def test_asset_mirror_repairs_destination_type_drift(tmp_path, changed):
+    ctx = _ctx_for(tmp_path)
+    source = ctx.assets_dir / "folder/style.css"
+    source.parent.mkdir()
+    source.write_text("source")
+    cache = {}
+    copy_assets(ctx, cache)
+    target = ctx.output_dir / changed
+    if target.is_dir():
+        shutil.rmtree(target)
+        target.write_text("wrong type")
+    else:
+        target.unlink()
+        target.mkdir()
+    copy_assets(ctx, cache)
+    assert (ctx.output_dir / "assets/folder/style.css").read_text() == "source"
+
+
 def test_copy_assets_rejects_overlapping_source_and_dest(tmp_path):
     ctx = _ctx_for(tmp_path)
     assets = tmp_path / "output" / "assets"

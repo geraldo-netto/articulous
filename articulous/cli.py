@@ -127,6 +127,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
     root.addHandler(stream)
 
     if file_path is not None:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         fh = logging.FileHandler(file_path, encoding="utf-8")
         fh.setLevel(level)
         fh.setFormatter(logging.Formatter(_LOG_FORMAT))

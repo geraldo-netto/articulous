@@ -75,7 +75,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-03 | open | S | A configured nested log path fails unless its parent already exists (`articulous/cli.py:117-130`) | Reproduced with `logging.file="logs/build.log"` as `FileNotFoundError`. Create the validated parent directory before constructing `FileHandler`. |
 | OBS-04 | open | S | Reconfiguring logging removes old handlers without closing them (`articulous/cli.py:120-133`) | The removed `FileHandler` stream remained open after a second `setup_logging` call, contradicting the function's idempotence claim. Close each handler after removal. |
 
 ## wiring gaps

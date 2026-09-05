@@ -129,6 +129,17 @@ def test_setup_logging_rejects_traversing_log_file(tmp_path):
         setup_logging(cfg, tmp_path)
 
 
+def test_setup_logging_creates_nested_log_directory(tmp_path):
+    cfg = {"logging": {"level": "INFO", "file": "logs/build/run.log"}}
+    setup_logging(cfg, tmp_path)
+    logging.info("nested log message")
+    assert "nested log message" in (tmp_path / "logs/build/run.log").read_text()
+    for handler in logging.getLogger().handlers.copy():
+        if isinstance(handler, logging.FileHandler):
+            logging.getLogger().removeHandler(handler)
+            handler.close()
+
+
 def test_setup_logging_rejects_absolute_log_file_outside_root(tmp_path):
     outside = tmp_path.parent / "articulous-outside.log"
     cfg = {"logging": {"level": "INFO", "file": str(outside)}}

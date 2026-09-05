@@ -172,6 +172,18 @@ def test_build_tags_models_group_by_tag():
     assert all(m.lang == "en" for m in models)
 
 
+def test_build_tags_models_deduplicates_membership_preserving_order():
+    arts = [
+        _art("a", tags=("news", "intro", "news", "intro")),
+        _art("b", tags=("intro", "news", "intro")),
+        _art("c", tags=("news",)),
+    ]
+    models = build_tags_models(iter(arts), "en", _ctx())
+    assert [page.tag for page in models] == ["news", "intro"]
+    assert [article.slug for article in models[0].articles] == ["a", "b", "c"]
+    assert [article.slug for article in models[1].articles] == ["a", "b"]
+
+
 def test_build_tags_models_skips_empty_slug(caplog):
     arts = [_art("a", tags=("!!!",))]
     with caplog.at_level("WARNING"):

@@ -158,7 +158,7 @@ def build_tags_models(
     pattern = ctx.url_patterns["tag"]
     tag_map: dict = {}
     for art in lang_articles:
-        for tag in art.tags:
+        for tag in dict.fromkeys(art.tags):
             tag_map.setdefault(tag, []).append(art)
 
     models: list[TagPage] = []

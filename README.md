@@ -63,8 +63,10 @@ your-site/
 
 The build cache (`.build-cache.json` by default) is written next to
 `sitegen.py` and is safe to delete to force a full rebuild. Concurrent
-builds are guarded by `.build-cache.lock`; stale or malformed locks are
-recovered automatically.
+builds targeting the same output directory share a lock beside that
+directory (`.output.articulous.lock` for the default output), independent
+of the cache filename. Stale or malformed lock metadata is recovered
+automatically; the cache must not use the lock's path.
 
 ---
 

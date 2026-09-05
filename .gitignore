@@ -217,6 +217,7 @@ temp/
 
 # Build cache
 .build-cache.json
+.*.articulous.lock
 
 # Logs (if enabled)
 logs/

@@ -1219,7 +1219,11 @@ def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
 
 
 def _lock_path_for(ctx: BuildCtx, project_root: Path) -> Path:
-    return _cache_path_for(ctx, project_root).with_suffix(".lock")
+    output = ctx.output_dir.resolve()
+    lock = output.parent / f".{output.name}.articulous.lock"
+    if _cache_path_for(ctx, project_root).resolve() == lock:
+        raise ValueError("Cache file must not alias the output build lock")
+    return lock
 
 
 def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:

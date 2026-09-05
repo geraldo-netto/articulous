@@ -16,7 +16,7 @@ import pytest
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG, validate_config
 from articulous.engines import LxmlEngine, SaxonCEngine
-from articulous.filesystem import TempWorkspace
+from articulous.filesystem import TempWorkspace, lock_file
 from articulous.pipeline import (
     ArticleStore,
     BuildCtx,
@@ -31,6 +31,7 @@ from articulous.pipeline import (
     _encode_xml,
     _index_doc,
     _log_article_stats,
+    _lock_path_for,
     _make_xslt_task,
     _passes_cli_filters,
     _prune_stale_outputs,
@@ -1274,6 +1275,37 @@ def test_run_build_end_to_end(site_root):
     assert (site_root / "output" / "rss.xml").exists()
 
 
+def test_output_lock_excludes_builds_with_other_cache_names(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    config = load_or_create_config(site_root / "config.json")
+    apply_cli_overrides(config, _CLI(), site_root)
+    ctx = build_ctx_from_config(config, dry_run=False)
+    with lock_file(_lock_path_for(ctx, site_root)):
+        config["build"]["cache_file"] = "other.json"
+        with pytest.raises(FileExistsError):
+            run_build(_CLI(), config, site_root)
+    assert not (site_root / "output").exists()
+
+
+def test_cache_cannot_alias_output_lock(tmp_path):
+    ctx = dataclasses.replace(_ctx_for(tmp_path), cache_file=".output.articulous.lock")
+    with pytest.raises(ValueError, match="alias"):
+        _lock_path_for(ctx, tmp_path)
+
+
+def test_lock_suffix_cache_survives_repeated_builds(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    config = load_or_create_config(site_root / "config.json")
+    config["build"]["cache_file"] = "state.lock"
+    apply_cli_overrides(config, _CLI(), site_root)
+    run_build(_CLI(), config, site_root)
+    path = site_root / "state.lock"
+    modified = path.stat().st_mtime_ns
+    run_build(_CLI(), config, site_root)
+    assert path.stat().st_mtime_ns == modified
+    assert "pid" not in json.loads(path.read_text())
+
+
 def test_run_build_rejects_source_overlap_before_writes(site_root):
     from articulous.config import load_or_create_config
     config = load_or_create_config(site_root / "config.json")
@@ -1283,7 +1315,7 @@ def test_run_build_rejects_source_overlap_before_writes(site_root):
     with pytest.raises(ValueError, match="overlap"):
         run_build(_CLI(), config, site_root)
     assert source.read_bytes() == previous
-    assert not (site_root / ".build-cache.lock").exists()
+    assert not (site_root / ".content.articulous.lock").exists()
 
 
 def test_run_build_skips_save_when_cache_unchanged(site_root, caplog):

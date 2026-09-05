@@ -34,7 +34,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| CONC-01 | open | M | Build exclusion depends on the configurable cache filename rather than the shared output tree; a cache filename ending in `.lock` also aliases the lock itself (`articulous/pipeline.py:1213-1220`, `articulous/pipeline.py:1335-1337`) | High; distinct cache names allow simultaneous writers to one output tree. With `cache_file="state.lock"`, acquisition destroys the cache and atomic cache saving replaces the locked inode; reproduced a second successful lock acquisition before the first released. Use a stable lock per output tree and reject cache/lock aliases. |
 
 ## code complexity
 

@@ -30,6 +30,14 @@ def test_log_cannot_alias_cache_lock(tmp_path):
         apply_cli_overrides(config, FakeCLI(), tmp_path)
 
 
+@pytest.mark.parametrize("block,key", [("build", "cache_file"), ("logging", "file")])
+def test_state_cannot_alias_output_ownership(tmp_path, block, key):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config[block][key] = ".output.articulous-ownership.json"
+    with pytest.raises(ValueError, match="alias each other"):
+        apply_cli_overrides(config, FakeCLI(), tmp_path)
+
+
 # --- deep_merge ---
 
 def test_deep_merge_shallow():

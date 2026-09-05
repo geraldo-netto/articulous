@@ -69,16 +69,18 @@ configuration paths inside it, including symlink aliases, before publishing.
 
 The build cache (`.build-cache.json` by default) lives at the project
 root. Only the filename component of `build.cache_file` is used. Entries
-live under `__output_roots__`, keyed by resolved output directory, so
-each output keeps its own fingerprints and pruning manifest. Legacy
-flat caches bind to the output used for the first upgraded build; target
-the existing output before changing directories.
+live under `__output_roots__`, keyed by resolved output directory.
+Ownership is also stored beside each output tree in
+`.output.articulous-ownership.json` by default, under the output lock.
+Deleting, corrupting or switching the fingerprint cache preserves this
+ownership history, so deleted/private pages can still be pruned.
 
-Use `--force` to rebuild while retaining ownership history. Deleting,
-corrupting or switching the cache loses pruning information and can
-leave deleted/private articles' old HTML in the output. If ownership
-history is lost, rebuild into an empty output tree before deploying it.
-Current recovery limitations are tracked in [TODO.md](TODO.md).
+Legacy cache manifests migrate automatically when no ownership file
+exists. Flat caches bind to the output used for the first upgraded build;
+target the existing output before changing directories. A populated output
+tree without ownership history, or an invalid ownership file, stops the
+build. Restore ownership from backup or choose an empty output tree.
+Use `--force` for a rebuild that keeps ownership history.
 
 Builds targeting the same output directory share a lock beside it
 (`.output.articulous.lock` by default), independent of cache filename.
@@ -86,9 +88,9 @@ Builds sharing a cache also share a cache lock
 (`..build-cache.json.articulous.lock` by default). A conflicting build
 fails immediately rather than waiting. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
-Cache, log and lock paths must stay separate from configuration, source
+Cache, log, lock and ownership paths must stay separate from configuration, source
 trees, output trees and each other.
-Configuration, cache, log and lock paths must refer to regular files
+Configuration, cache, log, lock and ownership paths must refer to regular files
 when they exist; directories, FIFOs and devices are rejected. File opens
 are nonblocking and verify the opened file type before reading or writing.
 

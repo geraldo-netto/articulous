@@ -61,6 +61,7 @@ from .runtime import (
     timed,
     update_cache,
 )
+from .ownership import load_ownership, save_ownership
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
@@ -1408,6 +1409,7 @@ def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cach
     retained = _retained_outputs(cli, old_manifest)
     next_manifest = {**retained, **current_manifest}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
+    save_ownership(ctx.output_dir, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(next_manifest.items()))
     if cache_changed(cache):
         roots[str(ctx.output_dir.resolve())] = dict(cache)
@@ -1446,17 +1448,6 @@ def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     cpu = os.cpu_count() or 4
     has_saxon = any(isinstance(e, SaxonCEngine) for e in ctx.engines.values())
     return cpu if has_saxon else max(4, cpu)
-
-
-def _load_output_manifest(cache: dict) -> dict:
-    manifest = cache.get(_OUTPUT_MANIFEST_KEY)
-    if not isinstance(manifest, dict):
-        return {}
-    return {
-        str(key): value
-        for key, value in manifest.items()
-        if isinstance(value, str)
-    }
 
 
 def _can_prune_outputs(cli) -> bool:
@@ -1564,7 +1555,7 @@ def run_build(cli, config, project_root: Path) -> None:
             plan: dict = {}
             try:
                 cache, roots = _load_build_cache(cache_path, ctx.output_dir)
-                old_manifest = _load_output_manifest(cache)
+                old_manifest = load_ownership(ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest()

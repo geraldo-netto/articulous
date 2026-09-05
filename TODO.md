@@ -38,7 +38,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-07 | open | M | Preserve output ownership when the build cache is removed or invalid (`articulous/pipeline.py:1375`, `articulous/pipeline.py:1449`). | High. Full build, mark `first-post` private, delete `.build-cache.json`, rebuild: its public HTML survives because the only pruning manifest disappeared. Keep durable ownership separately, or require an explicit clean-output recovery. |
 | DATA-08 | open | M | Retain ownership of files published before a later build failure (`articulous/pipeline.py:1573`, `articulous/pipeline.py:1576`). | High. On a fresh site, execute article tasks then raise from a later section; no manifest is saved. Mark a rendered article private and retry successfully: its public page remains orphaned. Journal planned/published ownership or stage publication transactionally so failed builds remain recoverable. |
 
 ## system design

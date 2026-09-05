@@ -61,6 +61,7 @@ from articulous.pipeline import (
     run_build,
 )
 from articulous.models import IndexPage, RssFeed, Sitemap, TagPage
+from articulous.ownership import ownership_path
 from articulous.sections import SECTION_NAMES
 
 
@@ -1821,10 +1822,58 @@ def test_legacy_cache_migration_keeps_pruning_ownership(site_root):
     path = site_root / ".build-cache.json"
     legacy = json.loads(path.read_text())["__output_roots__"][str(site_root / "output")]
     path.write_text(json.dumps(legacy))
+    ownership_path(site_root / "output").unlink()
     _set_publication(site_root / "content/en/first-post.xml", "private")
     run_build(_CLI(), config, site_root)
     assert not (site_root / "output/en/articles/first-post/index.html").exists()
     assert "__output_roots__" in json.loads(path.read_text())
+
+
+@pytest.mark.parametrize("loss", ["removed", "corrupt", "invalid-roots", "changed-name"])
+@pytest.mark.parametrize("options", [{}, {"only_sections": ["articles"], "only_slugs": ["first-post"]}])
+def test_cache_loss_preserves_unpublishing_ownership(site_root, loss, options):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    path = site_root / ".build-cache.json"
+    if loss == "removed":
+        path.unlink()
+    elif loss == "changed-name":
+        config["build"]["cache_file"] = "other-cache.json"
+    else:
+        path.write_text("{" if loss == "corrupt" else '{"__output_roots__": null}')
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(**options), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+    assert (site_root / "output/en/articles/second-post/index.html").exists()
+
+
+def test_cache_write_failure_keeps_output_ownership(site_root, monkeypatch):
+    config = _site_config(site_root)
+
+    def fail_write(*_args):
+        raise OSError("cache unavailable")
+
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.runtime.write_text_atomic", fail_write)
+        run_build(_CLI(), config, site_root)
+    assert not (site_root / ".build-cache.json").exists()
+    assert ownership_path(site_root / "output").is_file()
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+
+
+def test_missing_all_ownership_stops_before_publication(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / "output"
+    before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+    ownership_path(output).unlink()
+    (site_root / ".build-cache.json").unlink()
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    with pytest.raises(ValueError, match="Output ownership unavailable"):
+        run_build(_CLI(), config, site_root)
+    assert {path: path.read_bytes() for path in output.rglob("*") if path.is_file()} == before
 
 
 @pytest.mark.parametrize("roots", [None, "invalid", {"output": []}])

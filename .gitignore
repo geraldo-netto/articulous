@@ -218,6 +218,7 @@ temp/
 # Build cache
 .build-cache.json
 .*.articulous.lock
+.*.articulous-ownership.json
 
 # Logs (if enabled)
 logs/

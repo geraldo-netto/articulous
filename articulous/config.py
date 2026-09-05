@@ -15,6 +15,7 @@ from .filesystem import (
     validate_regular_file, write_text_atomic,
 )
 from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
+from .ownership import ownership_path
 
 
 DEFAULT_CONFIG = {
@@ -284,7 +285,7 @@ def validate_state_paths(config: dict, cli, project_root: Path) -> None:
         raise ValueError(f"Configuration input must stay outside the output tree: {source}")
     cache = root / Path(config["build"]["cache_file"]).name
     state = [cache, cache_lock_path(cache),
-             output.parent / f".{output.name}.articulous.lock"]
+             output.parent / f".{output.name}.articulous.lock", ownership_path(output)]
     if log_file := config["logging"].get("file"):
         state.append(root / log_file)
     for index, path in enumerate(state):

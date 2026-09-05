@@ -196,7 +196,7 @@ def test_load_cache_read_error_warns(tmp_path, caplog, monkeypatch):
     def fail_read(_self):
         raise PermissionError("denied")
 
-    monkeypatch.setattr(type(p), "read_text", fail_read)
+    monkeypatch.setattr("articulous.runtime.open_regular_file", fail_read)
     with caplog.at_level(logging.WARNING):
         assert load_cache(p) == {}
     assert any("denied" in r.message for r in caplog.records)

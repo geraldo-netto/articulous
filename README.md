@@ -87,6 +87,9 @@ fails immediately rather than waiting. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
 Cache, log and lock paths must stay separate from configuration, source
 trees, output trees and each other.
+Configuration, cache, log and lock paths must refer to regular files
+when they exist; directories, FIFOs and devices are rejected. File opens
+are nonblocking and verify the opened file type before reading or writing.
 
 ---
 

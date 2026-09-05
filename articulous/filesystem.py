@@ -52,16 +52,32 @@ def validate_path_length(path: Path) -> None:
             raise ValueError(f"Generated output component exceeds filesystem limit ({name_max} bytes): {part}")
 
 
-@contextmanager
-def open_regular_file(path: Path):
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+def validate_regular_file(path: Path) -> os.stat_result | None:
+    try:
+        metadata = path.stat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"Path must be a regular file: {path}")
+    return metadata
+
+
+def regular_file_opener(path: str | Path, flags: int) -> int:
+    validate_regular_file(Path(path))
+    fd = os.open(path, flags | os.O_NOFOLLOW | os.O_NONBLOCK, 0o666)
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
-            raise OSError(f"Source must be a regular file: {path}")
-        with os.fdopen(fd, "rb", closefd=False) as source:
-            yield source
-    finally:
+            raise ValueError(f"Opened path must be a regular file: {path}")
+    except BaseException:
         os.close(fd)
+        raise
+    return fd
+
+
+@contextmanager
+def open_regular_file(path: Path):
+    with open(path, "rb", opener=regular_file_opener) as source:
+        yield source
 
 
 @contextmanager

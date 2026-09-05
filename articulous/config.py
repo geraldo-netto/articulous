@@ -10,7 +10,10 @@ import re
 from pathlib import Path
 
 from .engines import validate_engines
-from .filesystem import assert_disjoint_trees, cache_lock_path, write_text_atomic
+from .filesystem import (
+    assert_disjoint_trees, cache_lock_path, open_regular_file,
+    validate_regular_file, write_text_atomic,
+)
 from .sections import SECTION_NAMES, url_key_for_section, validate_url_pattern
 
 
@@ -230,7 +233,8 @@ def load_or_create_config(path: Path) -> dict:
         return cfg
 
     try:
-        data = json.loads(path.read_text())
+        with open_regular_file(path.resolve()) as source:
+            data = json.loads(source.read().decode("utf-8"))
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid config JSON at {path}: {e}") from e
 
@@ -264,7 +268,8 @@ def _validate_state_path(path: Path, root: Path, source: Path, trees) -> None:
         raise ValueError(f"Build state path resolves outside project root: {path}")
     if _paths_alias(path, source):
         raise ValueError(f"Build state path aliases the configuration input: {path}")
-    if path.is_file() and path.stat().st_nlink > 1:
+    metadata = validate_regular_file(path)
+    if metadata is not None and metadata.st_nlink > 1:
         raise ValueError(f"Build state path contains multiple hardlinks: {path}")
     if any(resolved.is_relative_to(tree) for tree in trees):
         raise ValueError(f"Build state path overlaps a source or output tree: {path}")

@@ -19,7 +19,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Callable, Union
 
-from .filesystem import write_text_atomic
+from .filesystem import open_regular_file, write_text_atomic
 
 WorkerCount = Union[int, str]  # int or the sentinel "auto"
 
@@ -83,12 +83,13 @@ def file_hash(path: Path) -> str:
 
 
 def load_cache(cache_path: Path) -> dict:
-    """Load the build cache from disk; empty dict if missing/invalid."""
+    """Load regular cache files; reject special files, recover missing/invalid data."""
     if not cache_path.exists():
         logging.debug("Cache file not found — starting with empty cache")
         return TrackedCache()
     try:
-        data = json.loads(cache_path.read_text())
+        with open_regular_file(cache_path.resolve()) as source:
+            data = json.loads(source.read().decode("utf-8"))
         if isinstance(data, dict):
             logging.debug("Cache loaded successfully")
             return TrackedCache(data)

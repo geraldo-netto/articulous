@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .config import apply_cli_overrides, load_or_create_config
 from .engines import check_dependencies
+from .filesystem import regular_file_opener
 from .pipeline import run_build
 from .sections import SECTION_HELP, SECTION_NAMES
 
@@ -108,6 +109,14 @@ def _resolve_log_file(project_root: Path, log_file: str) -> Path:
     return resolved
 
 
+class _AppendLogHandler(logging.FileHandler):
+    def _open(self):
+        return open(
+            self.baseFilename, "a", encoding=self.encoding,
+            errors=self.errors, opener=regular_file_opener,
+        )
+
+
 def setup_logging(config, project_root: Path, verbose: bool = False):
     """Configure logging idempotently. Safe to call multiple times."""
     level = (
@@ -129,7 +138,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
 
     if file_path is not None:
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(file_path, encoding="utf-8")
+        fh = _AppendLogHandler(file_path, encoding="utf-8")
         fh.setLevel(level)
         fh.setFormatter(logging.Formatter(_LOG_FORMAT))
         root.addHandler(fh)

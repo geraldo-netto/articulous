@@ -72,7 +72,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-32 | open | S | Reject special files before opening configuration, cache or log paths (`articulous/config.py:229`, `articulous/config.py:257`, `articulous/runtime.py:91`, `articulous/cli.py:132`). | Medium. A FIFO at any of these paths blocks the CLI indefinitely; each isolated reproduction exceeded a two-second timeout. Existing state validation rejects aliases and hardlinks but accepts FIFOs. Check opened file types without blocking and fail clearly. |
 | REL-33 | open | S | Validate the asset mirror root before taking the unchanged fast path (`articulous/pipeline.py:338`). | Medium. Build with an empty assets directory, replace `output/assets` with a regular file, rebuild: the file remains because both manifests and the mismatch set are empty. Require a directory destination before skipping copy/type repair; add the empty-tree regression. |
 
 ## observability

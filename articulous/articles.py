@@ -221,7 +221,7 @@ def parse_article_xml(
         with open_regular_file(path) as source:
             tree = etree.parse(source, parser=safe_xml_parser(), base_url=path.resolve().as_uri())
         root = tree.getroot()
-    except (etree.XMLSyntaxError, OSError):
+    except (etree.XMLSyntaxError, OSError, ValueError):
         logging.exception(f"Failed to parse XML: {path}")
         return None
 

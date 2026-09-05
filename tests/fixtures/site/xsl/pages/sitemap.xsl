@@ -3,7 +3,7 @@
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="xml" indent="yes"/>
   <xsl:template match="/sitemap">
-    <urlset>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <xsl:for-each select="url">
         <url><loc><xsl:value-of select="."/></loc></url>
       </xsl:for-each>

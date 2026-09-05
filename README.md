@@ -396,7 +396,11 @@ retry. A missing generated file is rebuilt automatically.
 ## 🧪 Development
 
 The package is covered by a pytest suite with fixture‑based site builds,
-unit tests, and section‑order fuzz tests. Coverage is enforced at
+unit tests, and section‑order fuzz tests. Rendered fixture feeds are checked
+for required RSS channel metadata, namespaced sitemap structure with both
+native and lxml backends, and links to generated HTML pages. The RSS fixture
+uses the test site's English first index page as its channel website.
+Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
 The tests use lxml for XML validation; `xmllint` is not required. In an
 activated virtual environment, install the test extra and run:

@@ -8,11 +8,12 @@ receive articles with an empty URL.
 from __future__ import annotations
 
 import logging
+import hashlib
 import os
 import re
 import sqlite3
 from contextlib import closing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
@@ -60,6 +61,22 @@ class PublicationState:
 
 
 @dataclass(frozen=True)
+class ArticleSnapshot:
+    path: Path
+    offset: int
+    size: int
+    fingerprint: str
+
+    def read_bytes(self) -> bytes:
+        with open_regular_file(self.path) as source:
+            source.seek(self.offset)
+            content = source.read(self.size)
+        if hashlib.sha256(content).hexdigest() != self.fingerprint:
+            raise ValueError(f"Article snapshot changed or truncated: {self.path}")
+        return content
+
+
+@dataclass(frozen=True)
 class Article:
     """
     Parsed article. Immutable: once produced by :func:`parse_article_xml`,
@@ -75,6 +92,8 @@ class Article:
     source_path: Path
     url: str
     publication: PublicationState | str = PublicationState()
+    source_xml: bytes | ArticleSnapshot | None = field(default=None, repr=False)
+    source_base_uri: str | None = None
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -219,8 +238,9 @@ def parse_article_xml(
     """
     try:
         with open_regular_file(path) as source:
-            tree = etree.parse(source, parser=safe_xml_parser(), base_url=path.resolve().as_uri())
-        root = tree.getroot()
+            content = source.read()
+        base_uri = path.resolve().as_uri()
+        root = etree.fromstring(content, parser=safe_xml_parser(), base_url=base_uri)
     except (etree.XMLSyntaxError, OSError, ValueError):
         logging.exception(f"Failed to parse XML: {path}")
         return None
@@ -268,6 +288,8 @@ def parse_article_xml(
         source_path=path,
         url=url,
         publication=publication,
+        source_xml=content,
+        source_base_uri=base_uri,
     )
 
 

@@ -131,6 +131,13 @@ Notes:
   `scheduled`. Unknown statuses are skipped with a warning.
 - `unlisted` pages are generated but excluded from index/tag pages, RSS,
   sitemap, and search. `draft` and `private` articles are skipped.
+- Article pages render the XML captured during metadata and publication
+  validation; fingerprints use those same bytes and the captured source URI.
+  Bodies are spooled to disk, while shared listings retain metadata only.
+  Edits after capture apply on the next build: changing a public article to
+  private can still publish its old public snapshot in the current build,
+  but cannot publish newly added private text. The next selected build
+  retracts the owned page. This is snapshot consistency, not immediate revocation.
 - `scheduled` articles publish only when `<publish-at>` is present and
   its ISO-8601 timestamp has been reached. A missing or invalid timestamp
   keeps the article unpublished and emits a warning. Scheduling is
@@ -291,6 +298,9 @@ include the captured bytes and logical file URIs. With lxml, relative includes
 resolve beside the configured stylesheet path, including symlink paths;
 `xml:base` applies consistently to both capture and compilation. Every dependency
 must be a regular file and is opened without blocking on special files.
+Captured article documents retain their effective base URI. SaxonC preserves
+it by inserting or normalizing the root `xml:base` attribute in its temporary
+XML input; stylesheets inspecting that attribute can observe this metadata.
 The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.

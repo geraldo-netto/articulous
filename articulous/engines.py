@@ -193,6 +193,7 @@ class TransformEngine(ABC):
         output_path: Path,
         dry_run: bool = False,
         stylesheet_fingerprint: Optional[str] = None,
+        xml_base_uri: Optional[str] = None,
     ) -> None:
         """Run the transform unless dry-run is set; returns ``None``."""
         xsl_path = Path(xsl_path)
@@ -209,7 +210,7 @@ class TransformEngine(ABC):
         validate_output_path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self._do_transform(
-            normalised, xsl_path, output_path, stylesheet_fingerprint
+            normalised, xsl_path, output_path, stylesheet_fingerprint, xml_base_uri,
         )
 
     @abstractmethod
@@ -219,6 +220,7 @@ class TransformEngine(ABC):
         xsl_path: Path,
         output_path: Path,
         stylesheet_fingerprint: Optional[str] = None,
+        xml_base_uri: Optional[str] = None,
     ) -> None:
         ...
 
@@ -263,13 +265,13 @@ class LxmlEngine(TransformEngine):
         return cache[key]
 
     def _do_transform(
-        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
+        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,
     ):
         logging.debug(f"Running lxml transform -> {output_path}")
         try:
             parser = safe_xml_parser()
             if isinstance(xml_input, bytes):
-                dom = etree.fromstring(xml_input, parser=parser)
+                dom = etree.fromstring(xml_input, parser=parser, base_url=xml_base_uri)
             else:
                 dom = etree.parse(str(xml_input), parser=parser)
             xslt = self._compiled_stylesheet(
@@ -281,6 +283,14 @@ class LxmlEngine(TransformEngine):
             raise
         with atomic_output(output_path, generated=True) as staged:
             staged.write_bytes(bytes(result))
+
+
+def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:
+    if base_uri is None:
+        return content
+    root = etree.fromstring(content, parser=safe_xml_parser(), base_url=base_uri)
+    root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
+    return etree.tostring(root)
 
 
 class SaxonCEngine(TransformEngine):
@@ -301,7 +311,7 @@ class SaxonCEngine(TransformEngine):
         return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none"
 
     def _do_transform(
-        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
+        self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,
     ):
         snapshot = self._stylesheet_snapshot(xsl_path, stylesheet_fingerprint)
         if len(snapshot.documents) != 1:
@@ -316,7 +326,7 @@ class SaxonCEngine(TransformEngine):
                 captured_xsl = Path(stylesheet.name)
             if isinstance(xml_input, bytes):
                 with workspace.named_file("w+b", suffix=".xml") as f:
-                    f.write(xml_input)
+                    f.write(_xml_with_base(xml_input, xml_base_uri))
                     xml_input = Path(f.name)
             self._run_saxon(xml_input, captured_xsl, output_path)
 

@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
-from .articles import ArticleStats, iter_articles
+from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import validate_output_layout, validate_state_paths
 from .engines import (
     NativeEngine,
@@ -36,7 +36,7 @@ from .engines import (
     make_engine,
 )
 from .filesystem import (
-    TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file,
+    TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file, open_regular_file,
     validate_output_path, validate_path_length,
 )
 from .models import (
@@ -568,20 +568,36 @@ class ArticleStore:
     def __init__(self, workspace: TempWorkspace):
         self._workspace = workspace
         self._files: dict[str, Any] = {}
+        self._sources: Any = None
         self.counts: dict[str, int] = {}
+
+    def _snapshot_article(self, art):
+        if not isinstance(art.source_xml, bytes):
+            return art
+        if self._sources is None:
+            self._sources = self._workspace.named_file("w+b")
+        content = art.source_xml
+        snapshot = ArticleSnapshot(
+            Path(self._sources.name), self._sources.tell(), len(content),
+            hashlib.sha256(content).hexdigest(),
+        )
+        self._sources.write(content)
+        return replace(art, source_xml=snapshot)
 
     def append(self, lang: str, art) -> None:
         f = self._files.get(lang)
         if f is None:
             f = self._workspace.named_file("w+b")
             self._files[lang] = f
-        pickle.dump(art, f)
+        pickle.dump(self._snapshot_article(art), f)
         self.counts[lang] = self.counts.get(lang, 0) + 1
 
     def iter_lang(self, lang: str):
         f = self._files.get(lang)
         if f is None:
             return
+        if self._sources is not None:
+            self._sources.flush()
         f.flush()
         path = Path(f.name)
         yield from _read_pickled_articles(path, self.counts[lang])
@@ -603,6 +619,8 @@ class ArticleStore:
     def close(self) -> None:
         for f in self._files.values():
             f.close()
+        if self._sources is not None:
+            self._sources.close()
 
 
 class OutputManifest(dict):
@@ -724,6 +742,7 @@ class _TransformSpec:
     output_path: Path
     cache_key: str
     fingerprint: tuple
+    xml_base_uri: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -743,6 +762,7 @@ class _XsltTask:
             self.spec.output_path,
             dry_run=self.ctx.dry_run,
             stylesheet_fingerprint=self.spec.fingerprint[1],
+            xml_base_uri=self.spec.xml_base_uri,
         )
         update_cache(self.cache, self.spec.cache_key, self.spec.fingerprint)
 
@@ -801,6 +821,7 @@ def _make_xslt_task(
     engine: TransformEngine,
     ctx: BuildCtx,
     manifest: Optional[OutputManifest] = None,
+    xml_base_uri: Optional[str] = None,
 ) -> Optional[_XsltTask]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
@@ -825,12 +846,14 @@ def _make_xslt_task(
         xml_hash = file_hash(xml_input)
 
     fingerprint = (xml_hash, xsl_hash, engine.cache_identity, _output_relpath(ctx, output_path))
+    if xml_base_uri is not None:
+        fingerprint += (xml_base_uri,)
     if not should_rebuild(
         cache_key, cache, fingerprint, ctx.force, output_path=output_path,
     ):
         return None
 
-    spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint)
+    spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint, xml_base_uri)
     return _XsltTask(spec, engine, ctx, cache)
 
 
@@ -885,6 +908,15 @@ def _append_task(tasks: _TaskQueue, task: Optional[_XsltTask], skip_message: str
     tasks.append(task)
 
 
+def _article_input(art) -> bytes:
+    if art.source_xml is None:
+        with open_regular_file(art.source_path) as source:
+            return source.read()
+    if isinstance(art.source_xml, bytes):
+        return art.source_xml
+    return art.source_xml.read_bytes()
+
+
 def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """
     Build article pages for one language's article batch.
@@ -902,7 +934,8 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
             "articles", pattern, lang=art.lang, slug=art.slug,
         )
         task = _make_xslt_task(
-            xml_input=art.source_path,
+            xml_input=_article_input(art),
+            xml_base_uri=art.source_base_uri or art.source_path.resolve().as_uri(),
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
             output_path=output_path,
@@ -1150,8 +1183,8 @@ def _stream_projections(
     Single article pass with complete shared projections.
 
     Sitemap/search use disk-backed sinks and RSS uses a bounded heap.
-    Separate stores retain selected article metadata and complete
-    language listings. Article transforms later read their source XML.
+    Separate stores retain selected article snapshots and complete
+    language listings. Article XML bytes stay in a disk spool until planning.
     """
     workspace = workspace or TempWorkspace()
     sections = _projection_sections(cli, collect_cross, collect_articles)
@@ -1178,7 +1211,7 @@ def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> 
             if _passes_cli_filters(art, cli):
                 _record_skipped_publication(projection, art)
             continue
-        _record_projection_article(projection, art, cli)
+        art = _record_projection_article(projection, art, cli)
         if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
@@ -1192,16 +1225,18 @@ def _record_skipped_publication(projection: StreamProjection, art) -> None:
     )
 
 
-def _record_projection_article(projection: StreamProjection, art, cli) -> None:
+def _record_projection_article(projection: StreamProjection, art, cli):
     if _passes_cli_filters(art, cli):
         projection.total += 1
         if projection.articles_by_lang is not None:
             projection.articles_by_lang.append(art.lang, art)
+    art = replace(art, source_xml=None)
     _add_cross_projection(projection, art)
     if cli.only_langs and art.lang not in cli.only_langs:
-        return
+        return art
     if projection.listings_by_lang is not None and art.policy.listing:
         projection.listings_by_lang.append(art.lang, art)
+    return art
 
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:

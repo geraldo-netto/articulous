@@ -68,7 +68,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DOC-04 | open | S | README engine guidance contradicts production selection: the configuration table omits `native`, and development notes claim missing Saxon forces lxml for every section (`README.md:175`, `README.md:240-241`, `articulous/engines.py:339-343`) | Document `native` for sitemap/search and limit fallback wording to sections explicitly configured with `saxonc`. Native sections remain native regardless of Saxon availability. |
 
 ## observability
 

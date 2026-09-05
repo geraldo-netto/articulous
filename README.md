@@ -176,7 +176,7 @@ fails fast instead of being overwritten.
 | Block         | Keys                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `paths`       | `content_dir`, `output_dir`, `xsl_dir`, `assets_dir`                                                |
-| `engines`     | per‑section engine (`articles`, `index`, `tags`, `rss`, `sitemap`, `search`) → `"lxml"` or `"saxonc"` |
+| `engines`     | per‑section engine (`articles`, `index`, `tags`, `rss`, `sitemap`, `search`) → `"lxml"` or `"saxonc"`; `"native"` also supported for `sitemap` and `search` (their default) |
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
@@ -249,8 +249,9 @@ Notes:
 
 - Incremental builds use `.build-cache.json` at the project root.
 - `parallelism` defaults to CPU count when set to `"auto"`.
-- SaxonC is optional; when its binary is absent the lxml engine is used
-  for every section, regardless of `engines` configuration.
+- SaxonC is optional; when its binary is absent, sections configured with
+  `"saxonc"` fall back to lxml. Sections configured with `"native"` retain
+  their native renderer.
 
 ---
 

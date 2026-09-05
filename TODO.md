@@ -13,7 +13,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| CONTRA-05 | blocked | M | Define and enforce handling of contradictory singleton XML fields. | High; articulous/articles.py:110 silently keeps the last title/date/language/status, while the shipped article stylesheet selects the first title (tests/fixtures/site/xsl/pages/article.xsl:7). Reproduced: two different titles produce one title on the article page and another in its slug/search entry; `<status>private</status><status>published</status>` silently publishes the article despite the conflicting privacy declaration. Unblock by defining an explicit duplicate-field policy, rejecting conflicting declarations before publication, and verifying consistent page/listing metadata plus fail-closed status handling. |
 
 ## security
 

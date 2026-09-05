@@ -118,6 +118,13 @@ special files are skipped with an error. Each article has this shape:
 
 Notes:
 
+- `<title>`, `<date>`, `<description>`, `<lang>`, `<status>`, and
+  `<publish-at>` may each occur at most once, including identical or empty
+  occurrences. A duplicate skips the article and emits a warning naming
+  its file and field, for example `duplicate singleton field <status>`.
+  A successful build retracts previously owned outputs within its selected
+  scope. Repeated `<tag>` elements remain valid; each article appears once
+  on each tag page.
 - The slug is derived from `<title>` (URL‑safe). If the title is empty,
   the filename stem is used instead. Slugs contain lowercase ASCII
   letters, digits and hyphens; articles producing an empty slug are skipped.

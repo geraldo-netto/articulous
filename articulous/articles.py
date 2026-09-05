@@ -40,6 +40,7 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
+_SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"})
 
 
 @dataclass(frozen=True)
@@ -127,6 +128,14 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _track_singleton_field(tag, seen: set) -> None:
+    if tag not in _SINGLETON_FIELDS:
+        return
+    if tag in seen:
+        raise ValueError(f"duplicate singleton field <{tag}>")
+    seen.add(tag)
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
@@ -136,8 +145,10 @@ def _read_article_fields(root) -> dict:
     tags: list = []
     publication = "published"
     publish_at = ""
+    seen: set = set()
     for child in root:
         tag = child.tag
+        _track_singleton_field(tag, seen)
         text = (child.text or "").strip()
         if tag in fields:
             fields[tag] = text
@@ -251,7 +262,11 @@ def parse_article_xml(
         )
         return None
 
-    fields = _read_article_fields(root)
+    try:
+        fields = _read_article_fields(root)
+    except ValueError as error:
+        logging.warning(f"Article {path} has {error} — skipping")
+        return None
     lang = _validated_lang(fields["lang"], default_lang, allowed_langs, path)
 
     try:

@@ -86,8 +86,11 @@ def _write_lock(fd: int) -> None:
 
 def _acquire_lock(path: Path, stale_after: float) -> int:
     ensure_parent_dir(path)
-    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o644)
     try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            raise ValueError(f"Build lock must be a regular file with one link: {path}")
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as e:

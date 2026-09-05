@@ -339,6 +339,23 @@ def test_failed_lock_initialization_releases_descriptor(tmp_path, monkeypatch):
         assert json.loads(path.read_text())["pid"] == os.getpid()
 
 
+@pytest.mark.parametrize("kind", ["symlink", "hardlink", "fifo"])
+def test_lock_rejects_unsafe_files(tmp_path, kind):
+    victim = tmp_path / "outside.txt"
+    victim.write_text("keep")
+    path = tmp_path / "build.lock"
+    makers = {
+        "symlink": lambda: path.symlink_to(victim),
+        "hardlink": lambda: os.link(victim, path),
+        "fifo": lambda: os.mkfifo(path),
+    }
+    makers[kind]()
+    with pytest.raises((OSError, ValueError)):
+        with lock_file(path):
+            pytest.fail("unsafe lock accepted")
+    assert victim.read_text() == "keep"
+
+
 def test_lock_file_keeps_stable_inode(tmp_path):
     path = tmp_path / "build.lock"
     with lock_file(path):

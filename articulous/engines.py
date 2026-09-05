@@ -23,7 +23,7 @@ from typing import ClassVar, Optional, Union
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import write_text_atomic
+from .filesystem import atomic_output
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -179,7 +179,7 @@ class LxmlEngine(TransformEngine):
 
     @property
     def cache_identity(self) -> str:
-        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}"
+        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v2"
 
     def _stylesheet_cache(self) -> dict:
         cache = getattr(self._thread_local, "stylesheets", None)
@@ -216,7 +216,8 @@ class LxmlEngine(TransformEngine):
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
             logging.exception("lxml transform failed")
             raise
-        write_text_atomic(output_path, str(result))
+        with atomic_output(output_path) as staged:
+            staged.write_bytes(bytes(result))
 
 
 class SaxonCEngine(TransformEngine):

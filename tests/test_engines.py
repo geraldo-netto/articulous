@@ -122,6 +122,22 @@ def test_lxml_engine_runs_with_bytes(tmp_path):
     assert out.exists()
 
 
+@pytest.mark.parametrize("encoding", ["ISO-8859-1", "UTF-8"])
+def test_lxml_html_respects_declared_encoding(tmp_path, encoding):
+    xsl = tmp_path / "page.xsl"
+    xsl.write_text(
+        '<xsl:stylesheet version="1.0" '
+        'xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+        f'<xsl:output method="html" encoding="{encoding}"/>'
+        '<xsl:template match="/"><html><head><title>café</title></head>'
+        '<body>café</body></html></xsl:template></xsl:stylesheet>',
+        encoding="utf-8",
+    )
+    output = tmp_path / "page.html"
+    LxmlEngine().run(b"<root/>", xsl, output)
+    assert etree.HTML(output.read_bytes()).findtext("body") == "café"
+
+
 def test_lxml_engine_caches_stylesheet_by_fingerprint(tmp_path):
     xml = tmp_path / "x.xml"
     xml.write_text("<root/>")

@@ -16,6 +16,7 @@ from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from time import monotonic
 from typing import Callable, Iterable, Optional
 
 from lxml import etree  # type: ignore[attr-defined]
@@ -112,6 +113,22 @@ class ArticleStats:
     scanned: int = 0
     parsed: int = 0
     skipped: int = 0
+
+
+class _ScanProgress:
+    def __init__(self, stats: ArticleStats):
+        self._stats = stats
+        self._reported_at = monotonic()
+
+    def report(self) -> None:
+        now = monotonic()
+        if now - self._reported_at < 5:
+            return
+        logging.info(
+            "Article scan progress: %d scanned, %d parsed, %d skipped",
+            self._stats.scanned, self._stats.parsed, self._stats.skipped,
+        )
+        self._reported_at = now
 
 
 def normalize_slug(text: str) -> str:
@@ -354,18 +371,20 @@ def iter_articles(
     to article-page selection, and builds complete shared projections.
     """
     allowed = frozenset(allowed_langs) if allowed_langs is not None else None
+    stats = stats or ArticleStats()
+    progress = _ScanProgress(stats)
     for path in _discover_article_files(content_dir):
-        if stats is not None:
-            stats.scanned += 1
+        stats.scanned += 1
         art = parse_article_xml(
             path,
             default_lang=default_lang,
             url_builder=url_builder,
             allowed_langs=allowed,
         )
-        if art is not None:
-            if stats is not None:
-                stats.parsed += 1
-            yield art
-        elif stats is not None:
+        if art is None:
             stats.skipped += 1
+        else:
+            stats.parsed += 1
+        progress.report()
+        if art is not None:
+            yield art

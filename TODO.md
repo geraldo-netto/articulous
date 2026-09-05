@@ -95,7 +95,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-01 | parked | S | `_stream_projections` emits no per-section progress; only final tally/plan logs are emitted (articulous/pipeline.py:1114; articulous/pipeline.py:1206) | Deliberate to keep production logs quiet; revisit if very large sites need progress feedback. |
 | DOC-01 | parked | S | `SiteModelCtx` `@property` members carry no docstrings (articulous/models.py:34) | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
 
 ## Audit picks deliberately rejected

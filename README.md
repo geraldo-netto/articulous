@@ -250,6 +250,11 @@ files, creates temporary planning files and writes configured logs.
 A missing configuration file is still created with defaults.
 Per-task timings stay at DEBUG; use `--verbose` to inspect individual
 transform durations. INFO logging avoids a timing line for every page.
+Long article scans report cumulative scanned, parsed, and skipped counts
+at INFO at most once every five seconds, after a file is parsed. Short
+scans emit no progress lines. These are parsing counts: accepted private
+articles count as parsed; publication exclusions appear in the final build
+summary. Enable INFO logging to see progress when using a quieter log level.
 Asset destination and cached-path checks run in both modes; a dry run
 rejects the same existing symlinks, hardlinks, and invalid cached paths
 without copying or pruning assets. Filesystem changes after validation

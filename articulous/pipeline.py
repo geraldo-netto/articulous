@@ -692,7 +692,7 @@ def _make_xslt_task(
     else:
         xml_hash = file_hash(xml_input)
 
-    fingerprint = (xml_hash, xsl_hash, engine.cache_identity)
+    fingerprint = (xml_hash, xsl_hash, engine.cache_identity, _output_relpath(ctx, output_path))
     if not should_rebuild(
         cache_key, cache, fingerprint, ctx.force, output_path=output_path,
     ):
@@ -725,7 +725,7 @@ def _make_native_task(
     output_path = _record_planned_output(
         manifest, ctx, cache_key, output_path,
     )
-    fingerprint = (_source_hash(source), engine.cache_identity)
+    fingerprint = (_source_hash(source), engine.cache_identity, _output_relpath(ctx, output_path))
     if not should_rebuild(
         cache_key, cache, fingerprint, ctx.force, output_path=output_path,
     ):
@@ -1224,8 +1224,8 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
 
 def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path) -> None:
     replace_manifest = _can_prune_outputs(cli)
-    if replace_manifest:
-        _prune_stale_outputs(ctx, cache, old_manifest, current_manifest)
+    next_manifest = current_manifest if replace_manifest else {**old_manifest, **current_manifest}
+    _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     _store_output_manifest(cache, old_manifest, current_manifest, replace_manifest)
     if cache_changed(cache):
         save_cache(cache_path, cache)
@@ -1318,7 +1318,9 @@ def _prune_stale_outputs(
     old_manifest: dict,
     current_manifest: dict,
 ) -> None:
-    stale_keys = sorted(set(old_manifest) - set(current_manifest))
+    stale_keys = sorted(
+        key for key, path in old_manifest.items() if current_manifest.get(key) != path
+    )
     root = ctx.output_dir.resolve()
     protected = {
         ancestor
@@ -1334,7 +1336,8 @@ def _prune_stale_outputs(
         else:
             if target not in protected:
                 _delete_output_file(target, root)
-        cache.pop(key, None)
+        if key not in current_manifest:
+            cache.pop(key, None)
 
 
 def _store_output_manifest(

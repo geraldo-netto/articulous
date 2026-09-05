@@ -653,7 +653,7 @@ def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     task()
     import hashlib
     expected = hashlib.sha256(b"<root/>").hexdigest()
-    assert cache["k"] == [expected, "abc", LxmlEngine().cache_identity]
+    assert cache["k"] == [expected, "abc", LxmlEngine().cache_identity, "out.html"]
 
 
 def test_make_xslt_task_path_hashes_file(tmp_path):
@@ -678,7 +678,7 @@ def test_make_xslt_task_cached_returns_none(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
-    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity, "out.html"]}
     output = tmp_path / "output" / "out.html"
     output.write_text("cached")
     task = _make_xslt_task(
@@ -695,7 +695,7 @@ def test_make_xslt_task_rebuilds_when_output_missing(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
-    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity, "missing.html"]}
     task = _make_xslt_task(
         xml_input=b"<root/>", xsl_path=xsl, xsl_hash="xsl_h",
         output_path=tmp_path / "output" / "missing.html",
@@ -710,7 +710,7 @@ def test_make_xslt_task_rebuilds_when_engine_changes(tmp_path):
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
     import hashlib
     pre_xml_hash = hashlib.sha256(b"<root/>").hexdigest()
-    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity]}
+    cache = {"k": [pre_xml_hash, "xsl_h", LxmlEngine().cache_identity, "out.html"]}
     output = tmp_path / "output" / "out.html"
     output.write_text("cached")
     task = _make_xslt_task(
@@ -1346,6 +1346,30 @@ class _CLI:
         self.only_sections = kw.get("only_sections")
         self.only_langs = kw.get("only_langs")
         self.only_slugs = kw.get("only_slugs")
+
+
+def _site_config(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    config = load_or_create_config(site_root / "config.json")
+    apply_cli_overrides(config, _CLI(), site_root)
+    return config
+
+
+@pytest.mark.parametrize("sections", [None, ["articles"]])
+def test_url_move_prunes_old_path_and_rebuilds_existing_target(site_root, sections):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    old = site_root / "output/en/articles/first-post/index.html"
+    new = site_root / "output/en/posts/first-post/index.html"
+    new.parent.mkdir(parents=True)
+    new.write_text("stale page")
+    config["urls"]["article"] = "/{lang}/posts/{slug}/"
+    run_build(_CLI(only_sections=sections), config, site_root)
+    assert not old.exists()
+    assert new.read_text() != "stale page"
+    modified = new.stat().st_mtime_ns
+    run_build(_CLI(), config, site_root)
+    assert new.stat().st_mtime_ns == modified
 
 
 def test_run_build_end_to_end(site_root):

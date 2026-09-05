@@ -54,6 +54,15 @@ def test_write_text_atomic_replaces_existing_file(tmp_path):
     assert p.read_text() == "new"
 
 
+def test_write_text_atomic_cleans_temp_on_encoding_error(tmp_path):
+    path = tmp_path / "page.html"
+    path.write_text("previous page")
+    with pytest.raises(UnicodeEncodeError):
+        write_text_atomic(path, "\ud800")
+    assert path.read_text() == "previous page"
+    assert list(tmp_path.iterdir()) == [path]
+
+
 def test_write_text_atomic_cleans_temp_on_replace_error(tmp_path, monkeypatch):
     p = tmp_path / "x.txt"
 

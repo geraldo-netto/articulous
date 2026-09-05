@@ -17,18 +17,22 @@ def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
         parent.mkdir(parents=True, exist_ok=True)
 
 
-def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
+@contextmanager
+def atomic_output(path: Path):
     ensure_parent_dir(path)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding=encoding, dir=path.parent, delete=False,
-    ) as f:
-        f.write(text)
-        tmp_path = Path(f.name)
+    fd, name = tempfile.mkstemp(dir=path.parent)
+    tmp_path = Path(name)
     try:
+        os.close(fd)
+        yield tmp_path
         tmp_path.replace(path)
-    except OSError:
+    finally:
         tmp_path.unlink(missing_ok=True)
-        raise
+
+
+def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
+    with atomic_output(path) as tmp_path:
+        tmp_path.write_text(text, encoding=encoding)
 
 
 def _pid_alive(pid: int) -> bool:

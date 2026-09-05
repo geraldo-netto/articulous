@@ -32,19 +32,19 @@ def parse_cli_args(argv=None):
     )
     parser.add_argument(
         "--lang", action="append",
-        help="Limit build to specific languages (can repeat)",
+        help="Limit article/listing languages; global feeds stay complete (can repeat)",
     )
     parser.add_argument(
         "--slug", action="append",
-        help="Limit build to specific article slugs (can repeat)",
+        help="Limit article slugs; shared listings/feeds stay complete (can repeat)",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
-        help="Run without writing output files",
+        help="Plan without publishing outputs or saving the build cache",
     )
     parser.add_argument(
         "--force", action="store_true",
-        help="Force full rebuild, ignoring cache",
+        help="Rebuild selected outputs and assets, ignoring fingerprints",
     )
     parser.add_argument(
         "-v", "--verbose", action="store_true",

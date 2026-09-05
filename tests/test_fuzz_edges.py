@@ -146,8 +146,7 @@ def test_oversize_description(tmp_path):
 
 
 def test_oversize_title_yields_oversize_slug(tmp_path):
-    """No internal cap on slug length; OS filename limits are a
-    deployment concern, not a library invariant."""
+    """Parsing preserves long slugs; this test does not exercise output creation."""
     p = tmp_path / "x.xml"
     title = "ab" * 200
     p.write_text(

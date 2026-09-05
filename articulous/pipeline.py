@@ -799,9 +799,9 @@ def _make_xslt_task(
     ``xsl_hash`` is precomputed by the caller so per-section XSL hashing
     is amortised across every page in that section.
 
-    The cache entry is committed *inside* the returned task, after a
-    successful transform — failed transforms leave the prior cache
-    entry intact.
+    The returned task updates its in-memory cache entry after a successful
+    transform. The pipeline saves the cache after the build succeeds;
+    a failed transform leaves its prior in-memory entry intact.
     """
     output_path = _record_planned_output(manifest, ctx, cache_key, output_path)
     if isinstance(xml_input, bytes):
@@ -874,8 +874,8 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
     """
     Build article pages for one language's article batch.
 
-    Called once per language by :func:`run_build`; the input is a
-    per-language sorted list, not the global article set.
+    The planner supplies a sorted, filtered article batch for one
+    language. The returned task queue is spooled to a temporary file.
     """
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "articles")
     if tasks is None:
@@ -1047,7 +1047,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
 
 
 def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=None):
-    """Build search.json through the configured search XSLT engine."""
+    """Build the search output with the configured native or XSLT engine."""
     if isinstance(workspace, dict) and manifest is None:
         manifest = workspace
         workspace = None
@@ -1123,9 +1123,9 @@ def _stream_projections(
     """
     Single article pass with complete shared projections.
 
-    Cross-language sections use projected lists/heaps; per-language
-    sections reuse ``articles_by_lang`` so the XML tree is not reparsed
-    once for every configured language.
+    Sitemap/search use disk-backed sinks and RSS uses a bounded heap.
+    Separate stores retain selected article metadata and complete
+    language listings. Article transforms later read their source XML.
     """
     workspace = workspace or TempWorkspace()
     sections = _projection_sections(cli, collect_cross, collect_articles)
@@ -1206,7 +1206,7 @@ def _rss_sorted_from_heap(rss_heap) -> list:
 def _collect_cross_lang_plan(
     projection: StreamProjection, ctx, cache, want, workspace, manifest,
 ) -> dict:
-    """Phase-1 streaming pass: cross-language projections (rss / sitemap / search)."""
+    """Plan cross-language sections from the completed projections."""
     logging.info(f"Discovered {projection.total} article(s) after filters")
     plan: dict = {}
     if want("rss"):
@@ -1258,7 +1258,7 @@ def _add_per_lang_tasks(
 def _collect_per_lang_plan(
     plan: dict, projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest,
 ) -> None:
-    """Phase-2 streaming pass: per-language sections (articles / index / tags)."""
+    """Plan per-language sections from the spooled article/listing stores."""
     for lang in ctx.languages:
         if cli.only_langs and lang not in cli.only_langs:
             continue
@@ -1269,7 +1269,6 @@ def _collect_per_lang_plan(
         _add_per_lang_tasks(
             plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
         )
-        # lang_articles goes out of scope here → released between languages.
 
 
 def _collect_tasks(
@@ -1433,14 +1432,9 @@ def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     """
     Pick a sensible ``max_workers`` for ``run_parallel_tasks``.
 
-    For lxml-only builds, oversubscribing is cheap (each task is a
-    short C call that releases the GIL), so we stay with the previous
-    ``max(4, cpu_count)`` default.
-
-    SaxonC tasks each launch a JVM subprocess; stacking more of those
-    than the machine has cores risks running out of memory long before
-    it runs out of CPU. When any section is configured to use
-    SaxonCEngine, ``"auto"`` resolves to ``cpu_count`` instead.
+    Without a SaxonC engine, ``"auto"`` uses ``max(4, cpu_count or 4)``.
+    SaxonC tasks launch an external Transform process, so any configured
+    SaxonC engine lowers the automatic count to ``cpu_count or 4``.
 
     Explicit integer/string values in ``ctx.parallelism`` pass through
     unchanged.

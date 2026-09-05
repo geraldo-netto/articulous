@@ -2,8 +2,8 @@
 
 [![Articulous](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml)
 
-A fast, parallel, incremental static site generator powered by **XML + XSLT**.
-Written in Python, with optional SaxonC acceleration for high-performance builds.
+A parallel, incremental static site generator powered by **XML + XSLT**.
+Written in Python, with lxml and optional SaxonC transformation backends.
 
 ---
 
@@ -12,7 +12,7 @@ Written in Python, with optional SaxonC acceleration for high-performance builds
 - XML-based article format
 - XSLT-driven rendering pipeline (per-section engine choice)
 - Streaming, parallel build execution
-- Incremental caching (only rebuilds changed files)
+- Incremental caching of input, stylesheet, engine and output-path fingerprints
 - Multi‑language sites with per‑article `<lang>`
 - Automatic generation of:
   - Article pages
@@ -61,24 +61,40 @@ your-site/
     └── search.json
 ```
 
-The build cache (`.build-cache.json` by default) is written next to
-`sitegen.py` and is safe to delete to force a full rebuild. Concurrent
-builds targeting the same output directory share a lock beside that
-directory (`.output.articulous.lock` for the default output), independent
-of the cache filename. Builds sharing a cache also share a cache lock
-(`..build-cache.json.articulous.lock` by default). Cache entries live under
-`__output_roots__`, keyed by resolved output directory, so each output keeps
-its own fingerprints and pruning manifest. Legacy flat caches bind to the
-output directory used for the first upgraded build; run that build against
-the existing output before changing directories. Stale or malformed lock
-metadata is recovered automatically. Cache, log and lock paths must stay
-separate from configuration, source trees, output trees and each other.
+The project root is the current working directory, regardless of where
+the executable or `--config` file lives. Configured source/output paths
+are resolved beneath that root; output must not overlap a source tree.
+Keep the configuration file outside the output tree.
+
+The build cache (`.build-cache.json` by default) lives at the project
+root. Only the filename component of `build.cache_file` is used. Entries
+live under `__output_roots__`, keyed by resolved output directory, so
+each output keeps its own fingerprints and pruning manifest. Legacy
+flat caches bind to the output used for the first upgraded build; target
+the existing output before changing directories.
+
+Use `--force` to rebuild while retaining ownership history. Deleting,
+corrupting or switching the cache loses pruning information and can
+leave deleted/private articles' old HTML in the output. If ownership
+history is lost, rebuild into an empty output tree before deploying it.
+Current recovery limitations are tracked in [TODO.md](TODO.md).
+
+Builds targeting the same output directory share a lock beside it
+(`.output.articulous.lock` by default), independent of cache filename.
+Builds sharing a cache also share a cache lock
+(`..build-cache.json.articulous.lock` by default). A conflicting build
+fails immediately rather than waiting. Lock files remain after release;
+stale or malformed metadata is recovered once the OS lock is available.
+Cache, log and lock paths must stay separate from configuration, source
+trees, output trees and each other.
 
 ---
 
 ## 📝 Article Format (XML)
 
-Place your articles anywhere inside `content/`. Each file:
+Place regular `.xml` article files anywhere inside `content/`. Discovery
+does not traverse symlinked subdirectories; symlinked article files and
+special files are skipped with an error. Each article has this shape:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -97,9 +113,12 @@ Place your articles anywhere inside `content/`. Each file:
 Notes:
 
 - The slug is derived from `<title>` (URL‑safe). If the title is empty,
-  the filename stem is used instead.
+  the filename stem is used instead. Slugs contain lowercase ASCII
+  letters, digits and hyphens; articles producing an empty slug are skipped.
 - `<date>` must be ISO‑8601 (`YYYY-MM-DD` or full timestamp). Articles
-  with a missing or invalid date are skipped with a warning.
+  with a missing or invalid date are skipped with a warning. Dates and
+  publication timestamps without a timezone are treated as UTC; timezone
+  offsets are converted to UTC for sorting and scheduling.
 - `<lang>` is validated against `site.languages`; values outside the
   configured set fall back to `site.default_language`.
 - `<status>` may be `published`, `unlisted`, `draft`, `private`, or
@@ -107,13 +126,16 @@ Notes:
 - `unlisted` pages are generated but excluded from index/tag pages, RSS,
   sitemap, and search. `draft` and `private` articles are skipped.
 - `scheduled` articles publish only when `<publish-at>` is present and
-  its ISO-8601 timestamp has passed. A missing timestamp keeps the article
-  skipped; an invalid timestamp is skipped with a warning.
+  its ISO-8601 timestamp has been reached. A missing or invalid timestamp
+  keeps the article unpublished and emits a warning. Scheduling is
+  evaluated during a build; no background scheduler runs the generator.
 - Targeted builds remove retired article pages within their selected
-  sections, languages, and slugs while preserving unselected pages.
+  sections, languages, and slugs when ownership is present in the cache.
+  Unselected pages remain untouched.
 - Language and slug filters limit article pages. Selected RSS, sitemap
-  and search sections always use all published articles; selected index
-  and tag sections use complete listings for each selected language.
+  and search sections use all articles eligible for those sections;
+  selected index and tag sections use complete listings for each selected
+  language. `--slug` does not narrow shared listings or feeds.
 
 ---
 
@@ -129,12 +151,33 @@ The generator requires these files inside `xsl/pages/`:
 The default `native` engine writes sitemap and search outputs incrementally,
 so it does not need `sitemap.xsl` or `search.xsl`. Those templates are
 required only when their section is configured with `lxml` or `saxonc`.
+Dependency validation checks all configured sections, even with `--only`.
+The content directory and `xsl/pages/` must already exist.
 
 ---
 
 ## ⚙️ Running the Generator
 
-Either invoke the shim:
+Requires Python 3.11 or newer and a Unix platform with `fcntl` file
+locking. CI runs on Ubuntu with Python 3.11–3.14. Native Windows execution
+is not supported by the current filesystem layer.
+
+From a repository checkout, install the package in a virtual environment:
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+```
+
+Create a site with the source directories and templates shown above,
+then run from that site's root using the installed command:
+
+```sh
+articulous
+```
+
+For a site containing the source checkout, the executable shim also works:
 
 ```sh
 chmod +x sitegen.py
@@ -147,7 +190,9 @@ chmod +x sitegen.py
 python3 -m articulous
 ```
 
-Both forms are equivalent.
+All three entry points use the current working directory as the project
+root. This repository includes a test site under `tests/fixtures/site/`;
+the repository root itself does not contain production content/templates.
 
 ---
 
@@ -158,10 +203,12 @@ Both forms are equivalent.
 --only SECTIONS      Build only specific sections, comma-separated
                      (articles,index,tags,rss,sitemap,search).
                      Unknown names raise immediately.
---lang LANG          Limit build to specific languages (repeat to pass many)
---slug SLUG          Build only specific article slugs (repeat to pass many)
---dry-run            Do not write output files
---force              Ignore cache and rebuild everything
+--lang LANG          Limit article/listing languages; global feeds stay complete
+                     (repeat to pass many)
+--slug SLUG          Limit article slugs; shared listings/feeds stay complete
+                     (repeat to pass many)
+--dry-run            Plan without publishing outputs or saving the build cache
+--force              Rebuild selected outputs and assets, ignoring fingerprints
 -v, --verbose        Enable DEBUG-level logging
 ```
 
@@ -174,6 +221,12 @@ Examples:
 ./sitegen.py --dry-run
 ```
 
+`--force` retains section, language and slug filters. Assets are mirrored
+on every non-dry build, including section-limited builds. `--dry-run`
+still validates dependencies and paths, scans inputs, acquires lock
+files, creates temporary planning files and writes configured logs.
+A missing configuration file is still created with defaults.
+
 ---
 
 ## 🛠️ Configuration
@@ -181,6 +234,8 @@ Examples:
 Configuration lives in `config.json`. If the file is missing, defaults
 are written automatically on first run. Malformed existing configuration
 fails fast instead of being overwritten.
+Supplied JSON is merged with defaults, so omitted settings use their
+defaults. Unknown keys and invalid value types are rejected.
 
 | Block         | Keys                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------- |
@@ -189,14 +244,30 @@ fails fast instead of being overwritten.
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
-| `build`       | `cache_file`, `parallelism` (`"auto"` or an int), `force_full_build`                                |
+| `build`       | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean)              |
 | `logging`     | `level` (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`), `file` (optional path)                       |
 
-An unknown engine name in `engines` aborts the build immediately so
-typos surface early. Requesting `"saxonc"` without a usable binary
-silently falls back to the lxml engine. lxml denies XSLT file/network
-access. SaxonC disables external functions, XInclude, and all external
-resource URIs, including document reads and external XML entities.
+`pagination.per_page` must be positive; `pagination.rss_items` may be
+zero, producing an empty RSS feed. `languages` must be non-empty and
+unique, and must contain `default_language`. Use simple language
+identifiers such as `en`, `fr` or `pt-BR`; reserved URL characters are
+not yet rejected in these values (see [TODO.md](TODO.md)).
+
+With `parallelism="auto"`, the worker count is `max(4, os.cpu_count() or 4)`
+unless a configured engine resolves to SaxonC, in which case it is
+`os.cpu_count() or 4`. An explicit positive integer overrides that choice.
+
+An unknown engine name aborts the build immediately. Requesting
+`"saxonc"` without a usable `Transform` executable falls back to lxml;
+an invalid explicit `saxonc.home` also emits a warning. A configured
+home is checked at `<home>/bin/Transform`; `PATH` discovery is used only
+when no home is set. A nonzero exit from a selected executable fails
+the build; it does not trigger fallback.
+
+lxml blocks XSLT document reads and writes to files or network resources,
+while allowing local stylesheet includes/imports. SaxonC is invoked with
+`-ext:off`, `-xi:off` and `--allowedProtocols:#none` to disable external
+functions, XInclude and external resource URIs.
 SaxonC requires standalone stylesheets: external includes and imports
 are rejected. Use lxml for stylesheets with local includes or imports.
 The `"native"` engine is available only for `sitemap` and `search`; it
@@ -221,6 +292,9 @@ Directory-style patterns must not end in a file suffix. File-style
 patterns must include one. Patterns are local paths: schemes, hosts,
 query strings, fragments, percent escapes, backslashes, and control
 characters are rejected before a build starts.
+Use file patterns without a trailing slash, such as `/rss.xml`. Keep
+derived slug/tag components within the target filesystem's filename
+limits; the current builder does not truncate them automatically.
 
 ---
 
@@ -239,6 +313,18 @@ rejected before publishing. Defaults produce:
 - `output/sitemap.xml`
 - `output/search.json`
 
+Generated pages and feeds replace individual files atomically; a whole
+build is not transactional. A later task failure can leave some new
+files published without a saved ownership manifest. Preserve the cache
+and inspect partial output before deploying after a failed build.
+
+Assets are an incremental mirror: removed source entries are pruned,
+and a missing assets directory removes the entire mirrored assets tree.
+Entries inside the asset source must be regular files or directories;
+destination symlinks and hardlinks are rejected. Asset copies are not
+atomic. For predictable pruning, reserve the output tree for generated
+files and avoid adding symlinks inside it.
+
 ---
 
 ## 🧪 Development
@@ -246,23 +332,23 @@ rejected before publishing. Defaults produce:
 The package is covered by a pytest suite with fixture‑based site builds,
 unit tests, and section‑order fuzz tests. Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
-Install `xmllint` first (for example, `libxml2-utils` on Debian/Ubuntu),
-then install the Python test dependencies and local lint/type tools.
+The tests use lxml for XML validation; `xmllint` is not required. In an
+activated virtual environment, install the test extra and run:
 
 ```sh
-pip install -e ".[test]" ruff pyright
-pytest
-ruff check .
-pyright
+python -m pip install -e ".[test]"
+python -m pytest
+ruff check --no-cache .
+ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 10' articulous tests
+pyright --pythonpath .venv/bin/python
 ```
 
-Notes:
-
-- Incremental builds use `.build-cache.json` at the project root.
-- `parallelism` defaults to CPU count when set to `"auto"`.
-- SaxonC is optional; when its binary is absent, sections configured with
-  `"saxonc"` fall back to lxml. Sections configured with `"native"` retain
-  their native renderer.
+CI installs the versions in `uv.lock` with
+`uv sync --locked --extra test --no-build --no-install-project` for each
+Python version. To use those locked dependencies locally, run that
+command with `--python 3.11` (or another CI version), then use the tools
+in `.venv/bin/`. The CI job runs Ruff, Pyright and pytest; the separate
+`C901` command above checks the repository's complexity limit.
 
 ---
 

@@ -1,6 +1,6 @@
 """
-Build runtime primitives: content-addressed cache, parallel executor,
-filesystem I/O helpers, and per-task timing.
+Build runtime primitives: fingerprint cache, hashing, parallel execution
+and per-task timing.
 
 Everything here is independent of the build pipeline — it operates on
 paths, dicts, and callables, with no knowledge of articles, models, or
@@ -206,11 +206,11 @@ def run_parallel_tasks(
     Set ``collect_results=False`` for tasks whose return values are unused.
 
     ``max_workers`` accepts either a positive ``int`` or the sentinel
-    string ``"auto"`` (resolves to ``max(4, cpu_count())``).
+    string ``"auto"`` (resolves to ``max(4, os.cpu_count() or 4)``).
 
-    On failure: cancel any tasks that have not yet started, drain the
-    rest, log every error, and re-raise. Raises the original exception
-    when only one task failed, or an :class:`ExceptionGroup` if more.
+    Ordinary task or producer failures cancel pending work and drain
+    submitted tasks. Task failures are logged; one error is re-raised
+    directly and multiple errors form an :class:`ExceptionGroup`.
     """
     workers: int = (
         max(4, os.cpu_count() or 4) if max_workers == "auto" else int(max_workers)

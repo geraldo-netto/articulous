@@ -1,9 +1,9 @@
 """
 Transform engines and the dependency-check machinery that backs them.
 
-Engines follow a strategy pattern: each concrete engine subclasses
-:class:`TransformEngine` and implements ``_do_transform``. The base
-class owns the dry-run check so engines never duplicate it.
+XSLT engines subclass :class:`TransformEngine` and implement
+``_do_transform``. The base class owns their dry-run check. NativeEngine
+identifies native writers implemented by the build pipeline.
 
 Section-to-XSL metadata lives in :mod:`articulous.sections` so config,
 CLI validation, dependency checks, and the build pipeline cannot drift.
@@ -50,7 +50,7 @@ _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
 
 def safe_xml_parser() -> etree.XMLParser:
     """
-    XXE-safe parser used by every XML read in the project.
+    Parser settings for in-process article and stylesheet XML reads.
 
     Disables external entity resolution, network access, and DTD loading
     so untrusted article XML cannot exfiltrate files or hit internal
@@ -259,15 +259,7 @@ class SaxonCEngine(TransformEngine):
             self._run_saxon(xml_input, xsl_path, output_path)
 
     def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path):
-        # SEC-05 hardening:
-        # 1. Pre-resolve to absolute paths. On every supported platform
-        #    an absolute path starts with a path separator (POSIX) or a
-        #    drive letter (Windows), neither of which can be confused
-        #    with a CLI flag.
-        # 2. Defence-in-depth: explicitly reject any path that, after
-        #    resolution, still begins with '-'. Saxon's "-s:VAL" form
-        #    already consumes the leading dash so this is unreachable
-        #    in practice, but the assertion documents the boundary.
+        # Absolute paths prevent filenames from being interpreted as CLI flags.
         resolved = {
             "xml": xml_path.resolve(),
             "xsl": xsl_path.resolve(),
@@ -303,8 +295,8 @@ class SaxonCEngine(TransformEngine):
 
 def configure_saxonc(config) -> Optional[Path]:
     """
-    Validate SaxonC installation and return the path to the Transform
-    binary, or ``None`` (the system falls back to lxml).
+    Find an executable Transform binary, or return ``None``.
+    The engine factory applies lxml fallback to configured SaxonC sections.
     """
     saxon_home = config["saxonc"].get("home")
     if not saxon_home:

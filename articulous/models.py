@@ -102,7 +102,7 @@ def build_output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path
 
 
 def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
-    """Resolve a URL pattern into an absolute URL."""
+    """Join the formatted pattern to base_url; an empty base gives a root-relative URL."""
     rel = pattern.format(**kwargs).lstrip("/")
     return f"{base_url.rstrip('/')}/{rel}"
 
@@ -201,11 +201,9 @@ def build_rss_model(articles, ctx: SiteModelCtx) -> RssFeed:
 
 def build_sitemap_model(urls, ctx: SiteModelCtx) -> Sitemap:
     """
-    Build sitemap model from a list of URL strings.
-
-    The pipeline accumulates these incrementally during its phase-1
-    streaming pass, so we never hold the full Article set just to
-    project the URL field.
+    Build sitemap metadata and materialize the supplied URL iterable.
+    Streaming section builders pass an empty iterable for metadata and
+    consume their URL sink separately.
     """
     pattern = ctx.url_patterns["sitemap"]
     return Sitemap(

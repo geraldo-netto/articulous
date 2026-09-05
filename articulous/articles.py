@@ -1,11 +1,9 @@
 """
 Article XML parsing, discovery, and the :class:`Article` domain type.
 
-``Article`` is a frozen dataclass: every consumer downstream sees the
-same field set on every article, attribute-typed, with the URL already
-attached. The previous mutable-dict representation made URL attachment
-a side effect of the articles section builder; the dataclass closes
-that loophole.
+``Article`` is a frozen dataclass shared by section builders. The pipeline
+supplies a URL builder during parsing; direct callers may omit it and
+receive articles with an empty URL.
 """
 from __future__ import annotations
 
@@ -315,9 +313,8 @@ def iter_articles(
     at a time. The lxml DOM is released between iterations and the
     previous ``Article`` is only retained if the caller holds onto it.
 
-    The pipeline consumes this generator once per build and partitions
-    the filtered articles by language while building cross-language
-    projections.
+    The pipeline consumes this generator once per build, applies filters
+    to article-page selection, and builds complete shared projections.
     """
     allowed = frozenset(allowed_langs) if allowed_langs is not None else None
     for path in _discover_article_files(content_dir):

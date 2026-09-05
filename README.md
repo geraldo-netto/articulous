@@ -348,6 +348,10 @@ targets. A symlink in a stale path's parent directories aborts pruning.
 If a stale owned file has become a directory, pruning stops and preserves
 the directory and its contents. Move or remove it explicitly before retrying;
 page/feed ownership never authorizes recursive directory deletion.
+Cached generated outputs must remain regular files. A directory, FIFO, or
+device in place of a cached page/feed stops both normal and forced builds;
+the entry is preserved for explicit recovery. Remove or relocate it, then
+retry. A missing generated file is rebuilt automatically.
 
 ---
 

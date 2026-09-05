@@ -2113,6 +2113,29 @@ def _redirect_page_output(page, target, component):
     return target
 
 
+@pytest.mark.parametrize("section", ["rss", "search"])
+@pytest.mark.parametrize("kind", ["directory", "fifo"])
+@pytest.mark.parametrize("force", [False, True])
+def test_build_rejects_nonregular_cached_output(site_root, section, kind, force):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    filename = {"rss": "rss.xml", "search": "search.json"}[section]
+    page = site_root / "output" / filename
+    page.unlink()
+    if kind == "directory":
+        page.mkdir()
+        (page / "manual.txt").write_text("keep")
+    else:
+        os.mkfifo(page)
+    before = page.lstat()
+    config["build"]["force_full_build"] = force
+    with pytest.raises(ValueError, match="Path must be a regular file"):
+        run_build(_CLI(only_sections=[section]), config, site_root)
+    assert page.lstat() == before
+    if kind == "directory":
+        assert (page / "manual.txt").read_text() == "keep"
+
+
 @pytest.mark.parametrize("section", ["articles", "search"])
 @pytest.mark.parametrize("component", ["leaf", "ancestor"])
 @pytest.mark.parametrize("stage", ["planning", "publication"])

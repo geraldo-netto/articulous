@@ -84,7 +84,6 @@ Line numbers refer to repository paths.
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
 | REL-37 | open | S | Deduplicate an article's repeated tag memberships before building tag pages. | Medium; articulous/models.py:161 appends the same article for every occurrence in `art.tags`. Reproduced: two `<tag>intro</tag>` fields yield two identical article links on the intro page. Preserve tag order while deduplicating membership; test repeated tags alongside distinct articles sharing a tag. |
-| REL-38 | open | S | Require a regular generated output file before accepting an unchanged-input cache hit. | Medium; articulous/runtime.py:128 tests only `output_path.exists()`. Reproduced: build the site, replace `output/search.json` with an empty directory, rebuild unchanged inputs; the build succeeds with no usable search file. Reject unsafe output types or repair them without deleting unowned contents; test directories and special files for native and XSLT outputs. Coordinate with DATA-11 and DATA-12. |
 
 ## observability
 

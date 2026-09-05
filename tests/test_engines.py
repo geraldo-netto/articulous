@@ -86,6 +86,42 @@ def test_engine_cache_identities_include_runtime(tmp_path):
     assert "missing" in SaxonCEngine(tmp_path / "missing").cache_identity
 
 
+@pytest.mark.parametrize("absolute", [False, True])
+def test_stylesheet_dependencies_respect_uris_and_xml_base(tmp_path, absolute):
+    included = tmp_path / "includes/common file.xsl"
+    included.parent.mkdir()
+    included.write_text(MINIMAL_XSLT)
+    href = included.as_uri() if absolute else "common%20file.xsl"
+    main = tmp_path / "main.xsl"
+    main.write_text(
+        '<xsl:stylesheet version="1.0" xml:base="includes/" '
+        'xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+        f'<xsl:include href="{href}"/></xsl:stylesheet>'
+    )
+    output = tmp_path / "page.xml"
+    engine = LxmlEngine()
+    engine.run(b"<root/>", main, output)
+    assert etree.parse(str(output)).getroot().tag == "out"
+    included.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
+    engine.run(b"<root/>", main, output)
+    assert etree.parse(str(output)).getroot().tag == "changed"
+
+
+@pytest.mark.parametrize("href", [
+    "https://example.invalid/style.xsl", "file://remote/style.xsl",
+    "style.xsl?query", "style.xsl#fragment",
+])
+def test_stylesheet_dependency_policy_rejects_unsupported_uris(tmp_path, href):
+    path = tmp_path / "main.xsl"
+    path.write_text(
+        '<xsl:stylesheet version="1.0" '
+        'xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+        f'<xsl:include href="{href}"/></xsl:stylesheet>'
+    )
+    with pytest.raises(ValueError, match="Stylesheet dependenc"):
+        stylesheet_hash(path)
+
+
 def test_safe_xml_parser_is_xxe_safe(tmp_path):
     """Behavioural check: external entities do not get expanded."""
     payload = (

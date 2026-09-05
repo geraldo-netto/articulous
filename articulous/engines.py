@@ -20,6 +20,8 @@ import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Optional, Union
+from urllib.parse import urljoin, urlsplit
+from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
@@ -74,6 +76,15 @@ def safe_xslt_access_control() -> etree.XSLTAccessControl:
     )
 
 
+def _stylesheet_dependency(node) -> Path:
+    uri = urlsplit(urljoin(node.base, node.attrib["href"]))
+    if uri.scheme != "file" or uri.netloc not in ("", "localhost"):
+        raise ValueError("Stylesheet dependencies must use local file URIs")
+    if uri.query or uri.fragment:
+        raise ValueError("Stylesheet dependency URIs cannot include queries or fragments")
+    return Path(url2pathname(uri.path))
+
+
 def _update_stylesheet_hash(path: Path, digest, seen: set[Path]) -> None:
     resolved = path.resolve()
     if resolved in seen:
@@ -82,13 +93,13 @@ def _update_stylesheet_hash(path: Path, digest, seen: set[Path]) -> None:
     content = resolved.read_bytes()
     digest.update(len(content).to_bytes(8, "big"))
     digest.update(content)
-    root = etree.fromstring(content, parser=safe_xml_parser())
+    root = etree.fromstring(content, parser=safe_xml_parser(), base_url=resolved.as_uri())
     nodes = root.xpath(
         "//xsl:include[@href] | //xsl:import[@href]",
         namespaces=_XSL_NAMESPACE,
     )
     for node in nodes:
-        _update_stylesheet_hash(resolved.parent / node.attrib["href"], digest, seen)
+        _update_stylesheet_hash(_stylesheet_dependency(node), digest, seen)
 
 
 def stylesheet_hash(path: Path) -> str:

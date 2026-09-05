@@ -73,7 +73,6 @@ Line numbers refer to repository paths.
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
 | REL-10 | open | M | CI tests only Python 3.12 despite declaring Python 3.11+ support (`.github/workflows/main.yml:18-21`; `pyproject.toml:6`) | Run a supported-version matrix so CI exercises the full package contract. |
-| REL-20 | open | M | Stylesheet dependency hashing treats include/import hrefs as raw filesystem paths rather than XML URI references (`articulous/engines.py:77-91`) | Reproduced an include of `common%20file.xsl`: lxml compiles the valid stylesheet, but `stylesheet_hash` raises `FileNotFoundError`. Resolve dependencies consistently with the XML engine, including URI decoding and XML base URIs, while retaining the local-file access policy. |
 | DOC-04 | open | S | README engine guidance contradicts production selection: the configuration table omits `native`, and development notes claim missing Saxon forces lxml for every section (`README.md:175`, `README.md:240-241`, `articulous/engines.py:339-343`) | Document `native` for sitemap/search and limit fallback wording to sections explicitly configured with `saxonc`. Native sections remain native regardless of Saxon availability. |
 
 ## observability

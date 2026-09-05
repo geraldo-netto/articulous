@@ -12,6 +12,7 @@ import hashlib
 import json
 import logging
 import os
+import sys
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, CancelledError, ThreadPoolExecutor, wait
@@ -183,7 +184,7 @@ def _raise_if_errors(errors: list) -> None:
 
 
 def _fill_pending(pool, pending: set, tasks, limit: int) -> None:
-    for task in islice(tasks, limit - len(pending)):
+    for task in islice(tasks, min(limit - len(pending), sys.maxsize)):
         pending.add(pool.submit(task))
 
 

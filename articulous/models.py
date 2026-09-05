@@ -16,6 +16,7 @@ import logging
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
+import sys
 from typing import Iterator, Protocol
 from urllib.parse import quote
 
@@ -113,7 +114,7 @@ def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
 
 def _page_batches(articles, per_page: int):
     iterator = iter(articles)
-    while batch := list(islice(iterator, per_page)):
+    while batch := list(islice(iterator, min(per_page, sys.maxsize))):
         yield batch
 
 

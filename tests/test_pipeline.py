@@ -389,6 +389,21 @@ def test_copy_assets_rebuilds_invalid_cache_version(tmp_path, invalid_entry):
     assert dest.read_text() == "source"
 
 
+@pytest.mark.parametrize("manifest", [
+    None, [], {"style.css": None}, {"style.css": []},
+    {"style.css": [{}]}, {"style.css": ["unknown"]},
+    {"style.css": ["f", 1]}, {"style.css": ["f", True, 0, "hash"]},
+    {"style.css": ["f", 1, "bad time", "hash"]}, {1: ["d", 0]},
+])
+def test_asset_cache_invalid_metadata_is_rebuilt(tmp_path, manifest):
+    ctx = _ctx_for(tmp_path)
+    (ctx.assets_dir / "style.css").write_text("source")
+    cache = {"assets": {"version": 1, "manifest": manifest}}
+    copy_assets(ctx, cache)
+    assert (ctx.output_dir / "assets/style.css").read_text() == "source"
+    assert cache["assets"]["manifest"]["style.css"][0] == "f"
+
+
 def test_copy_assets_force_rebuilds_matching_manifest(tmp_path):
     ctx = _ctx_for(tmp_path)
     cache = {}

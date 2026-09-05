@@ -210,6 +210,15 @@ def _asset_target(root: Path, rel: str) -> Path:
     return target
 
 
+def _valid_asset_metadata(value) -> bool:
+    if not isinstance(value, list) or not value or not isinstance(value[0], str):
+        return False
+    expected = {"d": (str, int), "f": (str, int, int, str)}.get(value[0], ())
+    return len(value) == len(expected) and all(
+        type(item) is kind for item, kind in zip(value, expected)
+    )
+
+
 def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
     if cache is None:
         return None
@@ -217,6 +226,11 @@ def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
     if not isinstance(entry, dict):
         return None
     if entry.get("version") != _ASSET_CACHE_VERSION:
+        return None
+    manifest = entry.get("manifest")
+    if not isinstance(manifest, dict):
+        return None
+    if not all(isinstance(key, str) and _valid_asset_metadata(meta) for key, meta in manifest.items()):
         return None
     return entry
 
@@ -255,8 +269,7 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
     entry = _validated_asset_cache_entry(cache)
     if entry is None:
         return {}
-    manifest = entry.get("manifest")
-    return manifest if isinstance(manifest, dict) else {}
+    return entry["manifest"]
 
 
 def _remove_asset_type_conflicts(

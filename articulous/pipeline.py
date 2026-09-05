@@ -1385,10 +1385,26 @@ def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache,
     return cache, roots
 
 
-def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
-    retained = {} if _can_prune_outputs(cli) else {
+def _retained_outputs(cli, old_manifest: dict) -> dict:
+    return {} if _can_prune_outputs(cli) else {
         key: path for key, path in old_manifest.items() if not _selected_output_key(key, cli)
     }
+
+
+def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifest) -> None:
+    retained = _retained_outputs(cli, old_manifest)
+    if not retained:
+        return
+    owners = OutputManifest()
+    for key, relpath in retained.items():
+        path = _manifest_target(ctx, relpath)
+        owners.record(key, _output_relpath(ctx, path))
+    for key, relpath in current_manifest.items():
+        owners.record(key, relpath)
+
+
+def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
+    retained = _retained_outputs(cli, old_manifest)
     next_manifest = {**retained, **current_manifest}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(next_manifest.items()))
@@ -1556,6 +1572,7 @@ def run_build(cli, config, project_root: Path) -> None:
                     stream_factory, cli, ctx, cache, workspace, current_manifest,
                 )
                 projection = plan.projection
+                _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
                 copy_assets(ctx, cache)
                 if not ctx.dry_run:
                     ctx.output_dir.mkdir(parents=True, exist_ok=True)

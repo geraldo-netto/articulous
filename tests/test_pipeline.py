@@ -1455,6 +1455,41 @@ def test_asset_page_conflict_fails_before_writes(site_root):
     assert not (site_root / ".build-cache.json").exists()
 
 
+@pytest.mark.parametrize("rss_path", [
+    "/en/articles/first-post/index.html",
+    "/en/articles/first-post",
+    "/en/articles/first-post/index.html/feed.xml",
+])
+def test_partial_build_rejects_retained_owner_collisions(site_root, rss_path):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / "output"
+    before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+    cache_path = site_root / ".build-cache.json"
+    cache_before = cache_path.read_bytes()
+    (site_root / "assets/new.txt").write_text("must not publish")
+    config["urls"]["rss"] = rss_path
+    with pytest.raises(ValueError, match="Duplicate generated output path"):
+        run_build(_CLI(only_sections=["rss"]), config, site_root)
+    assert {path: path.read_bytes() for path in output.rglob("*") if path.is_file()} == before
+    assert cache_path.read_bytes() == cache_before
+
+
+def test_partial_build_can_transfer_selected_output_ownership(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    config["urls"]["rss"] = "/sitemap.xml"
+    config["urls"]["sitemap"] = "/new-sitemap.xml"
+    run_build(_CLI(only_sections=["rss", "sitemap"]), config, site_root)
+    root = site_root / "output"
+    assert etree.parse(str(root / "sitemap.xml")).getroot().tag == "rss"
+    assert (root / "new-sitemap.xml").exists()
+    assert not (root / "rss.xml").exists()
+    cache, _ = _load_build_cache(site_root / ".build-cache.json", root)
+    assert cache["__outputs__"]["rss"] == "sitemap.xml"
+    assert cache["__outputs__"]["sitemap"] == "new-sitemap.xml"
+
+
 def test_collect_tasks_rejects_output_escape(tmp_path):
     ctx = _ctx_for(tmp_path)
     ctx = cast(BuildCtx, dataclasses.replace(

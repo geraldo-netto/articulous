@@ -68,7 +68,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-23 | open | M | Include retained output owners in partial-build collision preflight (`articulous/pipeline.py:1243`, `articulous/pipeline.py:1344`). | High. Following a full build, set `urls.rss` to an existing article's `index.html` and run `--only rss`: the article is overwritten and the saved manifest assigns both keys the same path. Validate planned outputs against all unselected owners before publishing. |
 
 ## observability
 

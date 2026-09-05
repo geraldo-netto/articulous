@@ -79,7 +79,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-05 | open | M | Collect running-task errors when the task producer fails (`articulous/runtime.py:223-234`). | Medium. With a worker raising `RuntimeError` and the producer raising `ValueError`, the executor waits for the worker but neither logs nor aggregates its failure. Drain pending futures through the result collector on producer/submission failure, preserving the original error and any worker diagnostics. |
 
 ## wiring gaps
 

@@ -225,8 +225,13 @@ def run_parallel_tasks(
             pool, pending, iter(tasks), 2 * workers,
             results if collect_results else None, errors,
         )
-    except BaseException:
+    except BaseException as error:
         _cancel_pending(pending)
+        for future in pending:
+            _collect_one(future, results if collect_results else None, errors, pending)
+        if isinstance(error, Exception):
+            errors.insert(0, error)
+            _raise_if_errors(errors)
         raise
     finally:
         pool.shutdown(wait=True)

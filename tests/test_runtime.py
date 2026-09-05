@@ -505,6 +505,32 @@ def test_collect_one_ignores_cancelled_future():
     assert errors == results == []
 
 
+def test_producer_failure_includes_running_worker_errors(caplog):
+    started = threading.Event()
+    release = threading.Event()
+    def worker():
+        started.set()
+        release.wait(timeout=2)
+        raise RuntimeError("worker failure")
+    def tasks():
+        yield worker
+        assert started.wait(timeout=2)
+        release.set()
+        raise ValueError("producer failure")
+    with pytest.raises(ExceptionGroup) as result:
+        run_parallel_tasks(tasks(), max_workers=1, collect_results=False)
+    assert [type(error) for error in result.value.exceptions] == [ValueError, RuntimeError]
+    assert "worker failure" in caplog.text
+
+
+def test_producer_interrupt_preserves_control_exception():
+    def tasks():
+        yield lambda: None
+        raise KeyboardInterrupt("stop")
+    with pytest.raises(KeyboardInterrupt, match="stop"):
+        run_parallel_tasks(tasks(), max_workers=1)
+
+
 def test_run_parallel_tasks_auto_workers():
     out = run_parallel_tasks([lambda: 1, lambda: 2], max_workers="auto")
     assert sorted(out) == [1, 2]

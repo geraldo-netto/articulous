@@ -1,6 +1,7 @@
 """Unit tests for articulous.config."""
 import copy
 import json
+import os
 from pathlib import Path
 from typing import cast
 
@@ -19,6 +20,7 @@ class FakeCLI:
     def __init__(self, force=False, verbose=False):
         self.force_full_build = force
         self.verbose = verbose
+        self.config_path = Path("config.json")
 
 
 # --- deep_merge ---
@@ -214,3 +216,43 @@ def test_apply_cli_overrides_accepts_absolute_inside_root(tmp_path):
     cfg["paths"]["content_dir"] = str(inside)
     apply_cli_overrides(cfg, FakeCLI(), tmp_path)
     assert Path(cfg["paths"]["content_dir"]) == inside.resolve()
+
+
+@pytest.mark.parametrize("kind", ["same", "symlink", "hardlink"])
+def test_cache_cannot_alias_active_configuration(tmp_path, kind):
+    source = tmp_path / "alternate.json"
+    source.write_text("configuration")
+    aliases = {"same": lambda: None, "symlink": lambda: (tmp_path / "cache.json").symlink_to(source),
+               "hardlink": lambda: os.link(source, tmp_path / "cache.json")}
+    aliases[kind]()
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["build"]["cache_file"] = source.name if kind == "same" else "cache.json"
+    cli = FakeCLI()
+    cli.config_path = source
+    with pytest.raises(ValueError, match="aliases the configuration"):
+        apply_cli_overrides(config, cli, tmp_path)
+    assert source.read_text() == "configuration"
+
+
+@pytest.mark.parametrize("log_file,message", [
+    ("content/article.xml", "overlaps"), ("output/build.log", "overlaps"),
+    ("../external.log", "outside project root"), (".build-cache.json", "alias each other"),
+])
+def test_build_state_paths_are_disjoint(tmp_path, log_file, message):
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config["logging"]["file"] = log_file
+    with pytest.raises(ValueError, match=message):
+        apply_cli_overrides(config, FakeCLI(), tmp_path)
+
+
+@pytest.mark.parametrize("block, key", [("logging", "file"), ("build", "cache_file")])
+def test_state_hardlinks_cannot_alias_source_inputs(tmp_path, block, key):
+    source = tmp_path / "content/article.xml"
+    source.parent.mkdir()
+    source.write_text("<article/>")
+    (tmp_path / "state").hardlink_to(source)
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    config[block][key] = "state"
+    with pytest.raises(ValueError, match="multiple hardlinks"):
+        apply_cli_overrides(config, FakeCLI(), tmp_path)
+    assert source.read_text() == "<article/>"

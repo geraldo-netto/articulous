@@ -27,7 +27,7 @@ from typing import Any, Callable, Optional
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleStats, iter_articles
-from .config import validate_output_layout
+from .config import validate_output_layout, validate_state_paths
 from .engines import (
     NativeEngine,
     SaxonCEngine,
@@ -1524,6 +1524,7 @@ def run_build(cli, config, project_root: Path) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
 
+    validate_state_paths(config, cli, project_root)
     ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
     cache_path = _cache_path_for(ctx, project_root)
     with lock_file(_lock_path_for(ctx, project_root)):

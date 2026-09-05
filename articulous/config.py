@@ -248,6 +248,39 @@ def validate_output_layout(paths: dict) -> None:
         assert_disjoint_trees(Path(paths[key]), output)
 
 
+def _paths_alias(left: Path, right: Path) -> bool:
+    return left.resolve() == right.resolve() or (
+        left.exists() and right.exists() and left.samefile(right)
+    )
+
+
+def _validate_state_path(path: Path, root: Path, source: Path, trees) -> None:
+    resolved = path.resolve()
+    if not resolved.is_relative_to(root):
+        raise ValueError(f"Build state path resolves outside project root: {path}")
+    if _paths_alias(path, source):
+        raise ValueError(f"Build state path aliases the configuration input: {path}")
+    if path.is_file() and path.stat().st_nlink > 1:
+        raise ValueError(f"Build state path contains multiple hardlinks: {path}")
+    if any(resolved.is_relative_to(tree) for tree in trees):
+        raise ValueError(f"Build state path overlaps a source or output tree: {path}")
+
+
+def validate_state_paths(config: dict, cli, project_root: Path) -> None:
+    root = project_root.resolve()
+    source = root / getattr(cli, "config_path", "config.json")
+    trees = [(root / path).resolve() for path in config["paths"].values()]
+    output = (root / config["paths"]["output_dir"]).resolve()
+    state = [root / Path(config["build"]["cache_file"]).name,
+             output.parent / f".{output.name}.articulous.lock"]
+    if log_file := config["logging"].get("file"):
+        state.append(root / log_file)
+    for index, path in enumerate(state):
+        _validate_state_path(path, root, source, trees)
+        if any(_paths_alias(path, previous) for previous in state[:index]):
+            raise ValueError(f"Build state paths must not alias each other: {path}")
+
+
 def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
     """
     Apply CLI overrides to the loaded config, in place.
@@ -273,3 +306,4 @@ def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
             )
         config["paths"][key] = str(resolved)
     validate_output_layout(config["paths"])
+    validate_state_paths(config, cli, project_root)

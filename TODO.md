@@ -38,7 +38,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-04 | open | M | Reject build-state paths that alias project inputs (`articulous/config.py:180`, `articulous/pipeline.py:1357`). | High. Accepted `build.cache_file="config.json"` causes a successful build to overwrite configuration with cache keys; next startup fails schema validation. Validate cache/config ownership before writes, including configured aliases. |
 | DATA-05 | open | M | Preserve complete shared feeds and listing pages during language/slug-filtered builds (`articulous/pipeline.py:1075`, `articulous/pipeline.py:1092`, `articulous/pipeline.py:1174`). | Medium. After a full three-article build, `--slug first-post` rewrites global search with one article while other pages remain published; shared RSS, sitemap, index and tag inputs use the same filter. Aggregate complete published inputs for shared outputs, or explicitly exclude shared outputs from targeted updates. |
 | DATA-06 | open | M | Bind cached output ownership to the resolved output tree and coordinate shared cache writes (`articulous/pipeline.py:1344`, `articulous/pipeline.py:1363`, `articulous/pipeline.py:1494`). | High. Build output A, then output B with a different article URL pattern but the same cache; mark an article private and rebuild A. Its old public page survives because B replaced A's manifest. Namespace or isolate cache state per output; separate output locks currently also permit concurrent writes to the same cache file. |
 

@@ -32,6 +32,14 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 - Prefer explicit, maintainable solutions over clever shortcuts.
 - Propose business/design patterns + DDD only when improve clarity or structure.
 - ALWAYS record review findings in `TODO.md` — never chat-only. Any time scan, review, audit, or "look for issues" (not just major changes), add each finding to matching category table in `TODO.md` before/while reporting.
+- ALWAYS report every contradiction encountered, of any kind, and add or update a
+  `blocked` item in the `contradictions` table in `TODO.md`. This includes conflicting
+  instructions, requirements, code, tests, documentation, and observed behavior.
+  Record both conflicting claims, source references or evidence, impact, and the
+  condition needed to resolve the contradiction. Never silently choose a side or
+  omit the finding. Follow instruction precedence and continue unaffected work;
+  keep the item blocked until the contradiction is reconciled and verified, then
+  remove it under the completed-item rule below.
 - ALWAYS remove completed items from `TODO.md` — once finding implemented + tested + merged,
   delete row from table outright. No "shipped" sub-sections, no struck-through entries.
   `git log` = durable record. Exceptions: "Open — parked" section keeps open-but-deferred
@@ -39,6 +47,7 @@ Primary source for agent conduct, edit norms, response expectations — follow b
   rationale so future passes don't re-pick same items.
 - On major changes, rescan whole project + create or update `TODO.md` with one table per review category.
   Each table use format: `id | status | effort | description | notes`.
+  - contradictions
   - security
   - performance
   - scalability

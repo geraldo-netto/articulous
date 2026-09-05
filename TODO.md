@@ -9,6 +9,12 @@ Line numbers refer to repository paths.
 
 ---
 
+## contradictions
+
+| id | status | effort | description | notes |
+|----|--------|--------|-------------|-------|
+| CONTRA-01 | blocked | S | Reconcile conflicting TODO formats in [AGENTS.md](AGENTS.md) and the [todo-ledger skill](/home/netto/.codex/skills/todo-ledger/SKILL.md). | Repository rules require category tables with `id`, `status`, `effort`, `description`, `notes`; the skill requires exactly three lifecycle tables with `id`, `status`, `severity`, `effort`, `description`. Applying the skill literally would discard the required repository structure. User-provided repository instructions take precedence. Unblock by aligning the skill and repository guidance on a compatible format, then verifying both. |
+
 ## security
 
 | id | status | effort | description | notes |

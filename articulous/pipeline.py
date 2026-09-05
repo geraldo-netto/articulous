@@ -1364,7 +1364,8 @@ def run_build(cli, config, project_root: Path) -> None:
                 cache = load_cache(cache_path)
                 old_manifest = _load_output_manifest(cache)
                 copy_assets(ctx, cache)
-                ctx.output_dir.mkdir(parents=True, exist_ok=True)
+                if not ctx.dry_run:
+                    ctx.output_dir.mkdir(parents=True, exist_ok=True)
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest()

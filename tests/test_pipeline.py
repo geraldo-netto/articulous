@@ -1446,6 +1446,7 @@ def test_run_build_dry_run_skips_save(site_root):
     apply_cli_overrides(cfg, cli, site_root)
     run_build(cli, cfg, site_root)
     assert not (site_root / ".build-cache.json").exists()
+    assert not (site_root / "output").exists()
 
 
 def test_run_build_only_one_section(site_root):

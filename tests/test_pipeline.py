@@ -61,7 +61,7 @@ from articulous.pipeline import (
     run_build,
 )
 from articulous.models import IndexPage, RssFeed, Sitemap, TagPage
-from articulous.ownership import ownership_path
+from articulous.ownership import load_ownership, ownership_path
 from articulous.sections import SECTION_NAMES
 
 
@@ -1514,7 +1514,7 @@ def test_prune_preserves_reassigned_paths_and_parents(tmp_path, old_path):
     page.parent.mkdir(parents=True)
     page.write_text("new index")
     cache = {"old": ["old hash"], "new": ["new hash"]}
-    _prune_stale_outputs(ctx, cache, {"old": old_path}, {"new": "en/1/index.html"})
+    _prune_stale_outputs(ctx, cache, {old_path: "old"}, {"en/1/index.html": "new"})
     assert page.read_text() == "new index"
     assert cache == {"new": ["new hash"]}
 
@@ -1535,7 +1535,7 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
         "bad": str(tmp_path.parent / "outside.txt"),
     }
     with caplog.at_level(logging.WARNING):
-        _prune_stale_outputs(ctx, cache, old, {})
+        _prune_stale_outputs(ctx, cache, {path: key for key, path in old.items()}, {})
     assert not root_file.exists()
     assert not old_dir.exists()
     assert cache == {}
@@ -1549,7 +1549,7 @@ def test_prune_never_deletes_reserved_assets(tmp_path, old_path):
     asset.parent.mkdir()
     asset.write_text("current asset")
     cache = {"rss": ["old"]}
-    _prune_stale_outputs(ctx, cache, {"rss": old_path}, {})
+    _prune_stale_outputs(ctx, cache, {old_path: "rss"}, {})
     assert asset.read_text() == "current asset"
     assert cache == {}
 
@@ -1586,7 +1586,7 @@ def test_pruning_rejects_symlink_ancestors(tmp_path, outside):
     (ctx.output_dir / "stale").symlink_to(manual, target_is_directory=True)
     cache = {"old": ["fingerprint"]}
     with pytest.raises(OSError, match="ancestor is a symlink"):
-        _prune_stale_outputs(ctx, cache, {"old": "stale/index.html"}, {})
+        _prune_stale_outputs(ctx, cache, {"stale/index.html": "old"}, {})
     assert victim.read_text() == "unowned"
     assert cache == {"old": ["fingerprint"]}
 
@@ -1874,6 +1874,138 @@ def test_missing_all_ownership_stops_before_publication(site_root):
     with pytest.raises(ValueError, match="Output ownership unavailable"):
         run_build(_CLI(), config, site_root)
     assert {path: path.read_bytes() for path in output.rglob("*") if path.is_file()} == before
+
+
+def _fail_after_article_publication(plan, _ctx):
+    for task in plan["articles"]:
+        task()
+    raise RuntimeError("later section failed")
+
+
+def _run_interrupted_build(site_root, config, monkeypatch):
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.pipeline._run_plan", _fail_after_article_publication)
+        with pytest.raises(RuntimeError, match="later section failed"):
+            run_build(_CLI(), config, site_root)
+
+
+def test_failed_first_build_preserves_ownership_for_unpublishing(site_root, monkeypatch):
+    config = _site_config(site_root)
+    _run_interrupted_build(site_root, config, monkeypatch)
+    output = site_root / "output"
+    page = output / "en/articles/first-post/index.html"
+    assert page.is_file()
+    assert not (site_root / ".build-cache.json").exists()
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    journal = ownership_path(output).read_bytes()
+    run_build(_CLI(dry_run=True), config, site_root)
+    assert ownership_path(output).read_bytes() == journal
+    assert page.is_file()
+    run_build(_CLI(), config, site_root)
+    assert not page.exists()
+    assert not load_ownership(output).pending
+
+
+def test_repeated_failed_url_moves_preserve_every_owned_path(site_root, monkeypatch):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    for folder in ("moved", "again"):
+        config["urls"]["article"] = f"/{{lang}}/{folder}/{{slug}}/"
+        _run_interrupted_build(site_root, config, monkeypatch)
+    output = site_root / "output"
+    paths = [f"en/{folder}/first-post/index.html" for folder in ("articles", "moved", "again")]
+    assert all(path in load_ownership(output).paths for path in paths)
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    (site_root / ".build-cache.json").unlink()
+    run_build(_CLI(), config, site_root)
+    assert not any((output / path).exists() for path in paths)
+    assert (output / "en/again/second-post/index.html").is_file()
+
+
+def test_recovery_rebuilds_when_source_reverts_to_cached_bytes(site_root, monkeypatch):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    source = site_root / "content/en/first-post.xml"
+    page = site_root / "output/en/articles/first-post/index.html"
+    original_source, original_page = source.read_bytes(), page.read_bytes()
+    source.write_bytes(original_source.replace(b"Inaugural article.", b"Interrupted version."))
+    _run_interrupted_build(site_root, config, monkeypatch)
+    assert b"Interrupted version." in page.read_bytes()
+    source.write_bytes(original_source)
+    run_build(_CLI(), config, site_root)
+    assert page.read_bytes() == original_page
+
+
+@pytest.mark.parametrize("options", [
+    {"only_sections": ["articles"]}, {"only_langs": ["en"]}, {"only_slugs": ["first-post"]},
+])
+def test_interrupted_build_requires_full_recovery(site_root, monkeypatch, options):
+    config = _site_config(site_root)
+    _run_interrupted_build(site_root, config, monkeypatch)
+    output = site_root / "output"
+    journal = ownership_path(output).read_bytes()
+    with pytest.raises(ValueError, match="requires a full recovery build"):
+        run_build(_CLI(**options), config, site_root)
+    assert ownership_path(output).read_bytes() == journal
+    assert load_ownership(output).pending
+
+
+def test_journal_write_failure_prevents_publication(site_root, monkeypatch):
+    config = _site_config(site_root)
+
+    def fail_write(*_args):
+        raise OSError("ownership unavailable")
+
+    monkeypatch.setattr("articulous.ownership.write_text_atomic", fail_write)
+    with pytest.raises(OSError, match="ownership unavailable"):
+        run_build(_CLI(), config, site_root)
+    assert not (site_root / "output").exists()
+    assert not (site_root / ".build-cache.json").exists()
+
+
+def test_final_ownership_failure_keeps_recovery_journal(site_root, monkeypatch):
+    config = _site_config(site_root)
+
+    def fail_finalize(_output, _paths):
+        raise OSError("final ownership unavailable")
+
+    with monkeypatch.context() as patch:
+        patch.setattr("articulous.pipeline.save_ownership", fail_finalize)
+        with pytest.raises(OSError, match="final ownership unavailable"):
+            run_build(_CLI(), config, site_root)
+    assert load_ownership(site_root / "output").pending
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+
+
+def test_recovery_preserves_unowned_target_never_published(site_root, monkeypatch):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / "output"
+    manual = output / "manual.txt"
+    manual.write_text("keep unowned content")
+    config["urls"]["rss"] = "/manual.txt"
+    _run_interrupted_build(site_root, config, monkeypatch)
+    assert "manual.txt" not in load_ownership(output).paths
+    config["urls"]["rss"] = "/rss.xml"
+    run_build(_CLI(), config, site_root)
+    assert manual.read_text() == "keep unowned content"
+
+
+def test_recovery_tracks_existing_target_after_publication(site_root, monkeypatch):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / "output"
+    target = output / "en/moved/first-post/index.html"
+    target.parent.mkdir(parents=True)
+    target.write_text("previous unowned content")
+    config["urls"]["article"] = "/{lang}/moved/{slug}/"
+    _run_interrupted_build(site_root, config, monkeypatch)
+    assert "en/moved/first-post/index.html" in load_ownership(output).paths
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    run_build(_CLI(), config, site_root)
+    assert not target.exists()
 
 
 @pytest.mark.parametrize("roots", [None, "invalid", {"output": []}])

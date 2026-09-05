@@ -38,7 +38,7 @@ def test_ownership_identity_and_entries_are_validated(tmp_path, override):
 def test_empty_output_needs_no_legacy_ownership(tmp_path):
     output = tmp_path / "output"
     output.mkdir()
-    assert load_ownership(output) == {}
+    assert load_ownership(output).paths == {}
 
 
 def test_ownership_requires_recovery_for_unknown_existing_output(tmp_path):
@@ -53,10 +53,45 @@ def test_ownership_requires_recovery_for_unknown_existing_output(tmp_path):
 
 def test_ownership_save_does_not_rewrite_unchanged_state(tmp_path):
     output = tmp_path / "output"
-    entries = {"rss": "rss.xml"}
+    entries = {"rss.xml": "rss"}
     save_ownership(output, entries)
     path = ownership_path(output)
     before = path.stat().st_mtime_ns
     save_ownership(output, entries)
     assert path.stat().st_mtime_ns == before
-    assert load_ownership(output) == entries
+    assert load_ownership(output).paths == entries
+
+
+def test_version_one_ownership_migrates_without_losing_paths(tmp_path):
+    output = tmp_path / "output"
+    ownership_path(output).write_text(json.dumps({
+        "version": 1, "output_dir": str(output), "outputs": {"rss": "rss.xml"},
+    }))
+    state = load_ownership(output)
+    assert state.paths == {"rss.xml": "rss"}
+    assert not state.pending
+
+
+@pytest.mark.parametrize("override", [
+    {"version": 3}, {"pending": "false"}, {"paths": {"rss.xml": None}},
+    {"paths": {"../rss.xml": "rss"}},
+])
+def test_invalid_recovery_metadata_is_rejected(tmp_path, override):
+    output = tmp_path / "output"
+    data = {"version": 2, "output_dir": str(output), "paths": {}, "pending": False}
+    data.update(override)
+    ownership_path(output).write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="Invalid output ownership"):
+        load_ownership(output)
+
+
+@pytest.mark.parametrize("existing", [
+    [], {"unknown.xml": None}, {"rss.xml": "invalid"}, {"rss.xml": []}, {"rss.xml": [1, "2"]},
+])
+def test_invalid_publication_identities_are_rejected(tmp_path, existing):
+    output = tmp_path / "output"
+    data = {"version": 2, "output_dir": str(output), "paths": {"rss.xml": "rss"},
+            "pending": True, "existing": existing}
+    ownership_path(output).write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="Invalid output ownership publication identities"):
+        load_ownership(output)

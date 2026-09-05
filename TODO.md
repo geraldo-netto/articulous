@@ -38,7 +38,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-08 | open | M | Retain ownership of files published before a later build failure (`articulous/pipeline.py:1573`, `articulous/pipeline.py:1576`). | High. On a fresh site, execute article tasks then raise from a later section; no manifest is saved. Mark a rendered article private and retry successfully: its public page remains orphaned. Journal planned/published ownership or stage publication transactionally so failed builds remain recoverable. |
 
 ## system design
 

@@ -20,7 +20,7 @@ import shutil
 import stat
 import tempfile
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -61,7 +61,7 @@ from .runtime import (
     timed,
     update_cache,
 )
-from .ownership import load_ownership, save_ownership
+from .ownership import journal_ownership, load_ownership, save_ownership
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
@@ -1389,7 +1389,7 @@ def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache,
 
 def _retained_outputs(cli, old_manifest: dict) -> dict:
     return {} if _can_prune_outputs(cli) else {
-        key: path for key, path in old_manifest.items() if not _selected_output_key(key, cli)
+        path: key for path, key in old_manifest.items() if not _selected_output_key(key, cli)
     }
 
 
@@ -1398,19 +1398,17 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
     if not retained:
         return
     owners = OutputManifest()
-    for key, relpath in retained.items():
+    for relpath in chain(retained, current_manifest.values()):
         path = _manifest_target(ctx, relpath)
-        owners.record(key, path.relative_to(ctx.output_dir.resolve()).as_posix())
-    for key, relpath in current_manifest.items():
-        owners.record(key, relpath)
+        owners.record(str(len(owners)), path.relative_to(ctx.output_dir.resolve()).as_posix())
 
 
 def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
     retained = _retained_outputs(cli, old_manifest)
-    next_manifest = {**retained, **current_manifest}
+    next_manifest = {**retained, **{path: key for key, path in current_manifest.items()}}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     save_ownership(ctx.output_dir, next_manifest)
-    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(next_manifest.items()))
+    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     if cache_changed(cache):
         roots[str(ctx.output_dir.resolve())] = dict(cache)
         save_cache(cache_path, {_CACHE_ROOTS_KEY: roots})
@@ -1504,27 +1502,25 @@ def _prune_stale_outputs(
     old_manifest: dict,
     current_manifest: dict,
 ) -> None:
-    stale_keys = sorted(
-        key for key, path in old_manifest.items() if current_manifest.get(key) != path
-    )
+    stale_paths = sorted(old_manifest.keys() - current_manifest.keys())
     root = ctx.output_dir.resolve()
     protected = {
         ancestor
-        for relpath in current_manifest.values()
+        for relpath in current_manifest
         for path in [_manifest_target(ctx, relpath)]
         for ancestor in (path, *path.parents)
     }
     protected.add(root)
-    for key in stale_keys:
+    for relpath in stale_paths:
         try:
-            target = _manifest_target(ctx, old_manifest[key])
+            target = _manifest_target(ctx, relpath)
         except ValueError as e:
             logging.warning(f"Skipping invalid cached output manifest entry: {e}")
         else:
             if target not in protected and not target.is_relative_to(root / "assets"):
                 _delete_output_file(target, root)
-        if key not in current_manifest:
-            cache.pop(key, None)
+    for key in set(old_manifest.values()) - set(current_manifest.values()):
+        cache.pop(key, None)
 
 
 def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
@@ -1542,6 +1538,15 @@ def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
 # Top-level build pipeline
 # ================================================================
 
+def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_manifest: dict) -> None:
+    if not ctx.dry_run:
+        planned_paths = {path: key for key, path in current_manifest.items()}
+        journal_ownership(ctx.output_dir, old_manifest, planned_paths)
+    copy_assets(ctx, cache)
+    if not ctx.dry_run:
+        ctx.output_dir.mkdir(parents=True, exist_ok=True)
+
+
 def run_build(cli, config, project_root: Path) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
@@ -1555,7 +1560,12 @@ def run_build(cli, config, project_root: Path) -> None:
             plan: dict = {}
             try:
                 cache, roots = _load_build_cache(cache_path, ctx.output_dir)
-                old_manifest = load_ownership(ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY))
+                ownership = load_ownership(
+                    ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY), allow_pending=_can_prune_outputs(cli),
+                )
+                old_manifest = ownership.paths
+                if ownership.pending:
+                    ctx = replace(ctx, force=True)
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest()
@@ -1564,9 +1574,7 @@ def run_build(cli, config, project_root: Path) -> None:
                 )
                 projection = plan.projection
                 _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
-                copy_assets(ctx, cache)
-                if not ctx.dry_run:
-                    ctx.output_dir.mkdir(parents=True, exist_ok=True)
+                _prepare_outputs(ctx, cache, old_manifest, current_manifest)
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:

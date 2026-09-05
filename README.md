@@ -321,9 +321,14 @@ rejected before publishing. Defaults produce:
 - `output/search.json`
 
 Generated pages and feeds replace individual files atomically; a whole
-build is not transactional. A later task failure can leave some new
-files published without a saved ownership manifest. Preserve the cache
-and inspect partial output before deploying after a failed build.
+build is not transactional. Before publishing, the ownership file records
+all previously owned and planned paths. Interrupted builds retain this
+record, including old paths from failed URL changes. Retry without
+`--only`, `--lang` or `--slug`: recovery forces a full rebuild and prunes
+obsolete paths, then clears the recovery flag. A dry run leaves that flag
+intact. Inspect partial output before deploying after a failed build.
+Existing unowned targets enter recovery ownership only after publication
+replaces them; a planned target that was never replaced is preserved.
 
 Assets are an incremental mirror: removed source entries are pruned,
 and a missing assets directory removes the entire mirrored assets tree.

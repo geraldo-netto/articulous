@@ -30,6 +30,7 @@ from articulous.articles import (
     parse_article_xml,
 )
 from articulous.engines import LxmlEngine, safe_xml_parser
+from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.models import (
     SiteModelCtx,
     build_index_models,
@@ -40,6 +41,7 @@ from articulous.pipeline import (
     BuildCtx,
     _make_xslt_task,
     _stream_projections,
+    run_build,
 )
 from articulous.runtime import (
     file_hash,
@@ -145,9 +147,8 @@ def test_oversize_description(tmp_path):
     assert len(a.description) == 100_000
 
 
-def test_oversize_title_yields_oversize_slug(tmp_path):
-    """Parsing preserves long slugs; this test does not exercise output creation."""
-    p = tmp_path / "x.xml"
+def test_oversize_title_parses_but_build_rejects_before_writes(site_root):
+    p = site_root / "content" / "en" / "x.xml"
     title = "ab" * 200
     p.write_text(
         f'<article><title>{title}</title><date>2025-01-01</date>'
@@ -156,6 +157,14 @@ def test_oversize_title_yields_oversize_slug(tmp_path):
     a = parse_article_xml(p, default_lang="en")
     assert a is not None
     assert len(a.slug) == 400
+    config = load_or_create_config(site_root / "config.json")
+    cli = _no_filter_cli()
+    cli.dry_run = cli.force_full_build = cli.verbose = False
+    apply_cli_overrides(config, cli, site_root)
+    with pytest.raises(ValueError, match="output component exceeds filesystem limit"):
+        run_build(cli, config, site_root)
+    assert not (site_root / "output").exists()
+    assert not (site_root / ".build-cache.json").exists()
 
 
 def test_empty_base_url_builds_relative_url():

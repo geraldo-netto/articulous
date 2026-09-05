@@ -293,8 +293,9 @@ Directory-style patterns must not end in a file suffix. File-style
 patterns must include one and must not end with a slash. Patterns are
 local paths: schemes, hosts, query strings, fragments, percent escapes,
 backslashes, and control characters are rejected before a build starts.
-Keep derived slug/tag components within the target filesystem's filename
-limits; the current builder does not truncate them automatically.
+Generated paths and their components are checked against the target
+filesystem's byte limits during planning, before assets or pages are
+published. Oversized slugs or tags fail the build; they are not truncated.
 
 ---
 

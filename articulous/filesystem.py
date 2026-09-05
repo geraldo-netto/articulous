@@ -1,6 +1,7 @@
 """Filesystem primitives shared across build layers."""
 from __future__ import annotations
 
+import errno
 import fcntl
 import json
 import logging
@@ -28,6 +29,27 @@ def assert_disjoint_trees(source: Path, output: Path) -> None:
 def cache_lock_path(cache_path: Path) -> Path:
     cache = cache_path.resolve()
     return cache.with_name(f".{cache.name}.articulous.lock")
+
+
+def _path_limits(path: Path) -> tuple[int, int]:
+    parent = path.parent
+    while True:
+        try:
+            return os.pathconf(parent, "PC_NAME_MAX"), os.pathconf(parent, "PC_PATH_MAX")
+        except OSError as error:
+            if error.errno not in {errno.ENOENT, errno.ENOTDIR, errno.ENAMETOOLONG} or parent == parent.parent:
+                raise
+            parent = parent.parent
+
+
+def validate_path_length(path: Path) -> None:
+    path = path.absolute()
+    name_max, path_max = _path_limits(path)
+    if path_max >= 0 and len(os.fsencode(path)) >= path_max:
+        raise ValueError(f"Generated output path exceeds filesystem limit ({path_max} bytes): {path}")
+    for part in path.parts:
+        if name_max >= 0 and len(os.fsencode(part)) > name_max:
+            raise ValueError(f"Generated output component exceeds filesystem limit ({name_max} bytes): {part}")
 
 
 @contextmanager

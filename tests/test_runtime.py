@@ -1,4 +1,5 @@
 """Unit tests for articulous.runtime."""
+import errno
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ from articulous.filesystem import (
     _pid_alive,
     ensure_parent_dir,
     lock_file,
+    validate_path_length,
     write_text_atomic,
 )
 from articulous.runtime import (
@@ -27,6 +29,36 @@ from articulous.runtime import (
     timed,
     update_cache,
 )
+
+
+@pytest.mark.parametrize("name_max,path_max", [(-1, -1), (255, 4096)])
+def test_path_length_accepts_limit_boundary(tmp_path, monkeypatch, name_max, path_max):
+    limits = {"PC_NAME_MAX": name_max, "PC_PATH_MAX": path_max}
+    monkeypatch.setattr(os, "pathconf", lambda _path, key: limits[key])
+    validate_path_length(tmp_path / ("x" * 255))
+
+
+def test_path_length_rejects_encoded_component_bytes(tmp_path):
+    name_max = os.pathconf(tmp_path, "PC_NAME_MAX")
+    with pytest.raises(ValueError, match="component exceeds filesystem limit"):
+        validate_path_length(tmp_path / ("é" * (name_max // 2 + 1)))
+
+
+def test_path_length_rejects_total_path_at_limit(tmp_path, monkeypatch):
+    path = tmp_path / "page.html"
+    limits = {"PC_NAME_MAX": 255, "PC_PATH_MAX": len(os.fsencode(path))}
+    monkeypatch.setattr(os, "pathconf", lambda _path, key: limits[key])
+    with pytest.raises(ValueError, match="output path exceeds filesystem limit"):
+        validate_path_length(path)
+
+
+@pytest.mark.parametrize("code", [errno.EACCES, errno.ENOENT])
+def test_path_length_propagates_unavailable_limits(tmp_path, monkeypatch, code):
+    def unavailable(_path, _key):
+        raise OSError(code, "Cannot determine limits")
+    monkeypatch.setattr(os, "pathconf", unavailable)
+    with pytest.raises(OSError, match="Cannot determine limits"):
+        validate_path_length(tmp_path / "page.html")
 
 
 # --- _ensure_parent_dir ---

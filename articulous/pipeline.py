@@ -38,6 +38,7 @@ from .engines import (
 )
 from .filesystem import (
     TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file,
+    validate_path_length,
 )
 from .models import (
     build_index_models,
@@ -767,6 +768,7 @@ def _record_planned_output(
     output_path: Path,
 ) -> Path:
     output_path = _safe_output_path(ctx, output_path)
+    validate_path_length(output_path)
     relpath = _output_relpath(ctx, output_path)
     if Path(relpath).parts[:1] == ("assets",):
         raise ValueError(f"Generated output uses the reserved assets directory: {relpath}")

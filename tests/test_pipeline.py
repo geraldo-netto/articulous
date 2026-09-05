@@ -1591,6 +1591,28 @@ def _site_config(site_root):
     return config
 
 
+@pytest.mark.parametrize("key,pattern", [
+    ("article", "/{lang}/" + "a" * 256 + "/{slug}/"),
+    ("tag", "/{lang}/" + "é" * 128 + "/{tag}/"),
+    ("search", "/" + "s" * 256 + ".json"),
+    ("rss", "/" + "nested/" * 600 + "rss.xml"),
+])
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_oversize_output_preserves_published_site(site_root, key, pattern, dry_run):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / "output"
+    before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+    cache = site_root / ".build-cache.json"
+    old_cache = cache.read_bytes()
+    (site_root / "assets" / "style.css").write_text("changed asset")
+    config["urls"][key] = pattern
+    with pytest.raises(ValueError, match="exceeds filesystem limit"):
+        run_build(_CLI(dry_run=dry_run), config, site_root)
+    assert {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()} == before
+    assert cache.read_bytes() == old_cache
+
+
 def _set_publication(path, status):
     tree = etree.parse(str(path))
     etree.SubElement(tree.getroot(), "status").text = status

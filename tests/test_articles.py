@@ -1,4 +1,5 @@
 """Unit tests for articulous.articles."""
+import os
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -181,6 +182,21 @@ def test_parse_article_xml_happy_path(tmp_path):
     assert art.tags == ("news",)
     assert art.url == "/en/hello-world/"
     assert art.policy.search is True
+
+
+@pytest.mark.parametrize("kind", ["symlink", "fifo", "directory"])
+def test_article_parser_skips_unsafe_source_entries(tmp_path, kind):
+    source = tmp_path / "article.xml"
+    outside = tmp_path / "outside.xml"
+    outside.write_text(ARTICLE_XML)
+    makers = {
+        "symlink": lambda: source.symlink_to(outside),
+        "fifo": lambda: os.mkfifo(source),
+        "directory": source.mkdir,
+    }
+    makers[kind]()
+    assert parse_article_xml(source) is None
+    assert outside.read_text() == ARTICLE_XML
 
 
 def test_parse_article_xml_normalizes_dates_for_sorting(tmp_path):

@@ -26,6 +26,18 @@ def assert_disjoint_trees(source: Path, output: Path) -> None:
 
 
 @contextmanager
+def open_regular_file(path: Path):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise OSError(f"Source must be a regular file: {path}")
+        with os.fdopen(fd, "rb", closefd=False) as source:
+            yield source
+    finally:
+        os.close(fd)
+
+
+@contextmanager
 def atomic_output(path: Path):
     ensure_parent_dir(path)
     mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644

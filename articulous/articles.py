@@ -19,6 +19,7 @@ from typing import Callable, Iterable, Optional
 from lxml import etree  # type: ignore[attr-defined]
 
 from .engines import safe_xml_parser
+from .filesystem import open_regular_file
 
 
 @dataclass(frozen=True)
@@ -216,7 +217,8 @@ def parse_article_xml(
         </article>
     """
     try:
-        tree = etree.parse(str(path), parser=safe_xml_parser())
+        with open_regular_file(path) as source:
+            tree = etree.parse(source, parser=safe_xml_parser(), base_url=path.resolve().as_uri())
         root = tree.getroot()
     except (etree.XMLSyntaxError, OSError):
         logging.exception(f"Failed to parse XML: {path}")

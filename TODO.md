@@ -13,7 +13,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-09 | open | M | Validate discovered article entries before opening them (`articulous/articles.py:218`, `articulous/articles.py:271`). | High. A content-file symlink published an XML article from outside the project, including its private description. A FIFO named `pipe.xml` blocked the build until an isolated one-second timeout killed it. Reject source symlinks/special files or enforce an explicit confined-link policy before parsing. |
 
 ## performance
 

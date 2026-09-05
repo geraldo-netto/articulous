@@ -186,7 +186,10 @@ fails fast instead of being overwritten.
 An unknown engine name in `engines` aborts the build immediately so
 typos surface early. Requesting `"saxonc"` without a usable binary
 silently falls back to the lxml engine. lxml denies XSLT file/network
-access, and SaxonC runs with external functions and XInclude disabled.
+access. SaxonC disables external functions, XInclude, and all external
+resource URIs, including document reads and external XML entities.
+SaxonC requires standalone stylesheets: external includes and imports
+are rejected. Use lxml for stylesheets with local includes or imports.
 The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.

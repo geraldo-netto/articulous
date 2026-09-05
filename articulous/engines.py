@@ -245,7 +245,7 @@ class SaxonCEngine(TransformEngine):
             revision = f"{stat.st_size}:{stat.st_mtime_ns}"
         except OSError:
             revision = "missing"
-        return f"{self.name}:{binary}:{revision}:ext=off:xi=off"
+        return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none"
 
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
@@ -291,6 +291,7 @@ class SaxonCEngine(TransformEngine):
                 str(self.saxonc_bin),
                 "-ext:off",
                 "-xi:off",
+                "--allowedProtocols:#none",
                 f"-s:{resolved['xml']}",
                 f"-xsl:{resolved['xsl']}",
                 f"-o:{staged}",

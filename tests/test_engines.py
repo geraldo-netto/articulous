@@ -307,6 +307,7 @@ def test_saxon_engine_invokes_subprocess(tmp_path):
     assert cmd[0] == str(tmp_path / "Transform")
     assert "-ext:off" in cmd
     assert "-xi:off" in cmd
+    assert "--allowedProtocols:#none" in cmd
     assert any(arg.startswith("-s:") for arg in cmd)
     assert any(arg.startswith("-xsl:") for arg in cmd)
     assert any(arg.startswith("-o:") for arg in cmd)

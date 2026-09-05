@@ -1245,6 +1245,27 @@ def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
         _collect_tasks(stream_factory, cli, ctx, {}, manifest)
 
 
+@pytest.mark.parametrize("paths", [
+    ("page.html", "page.html/feed.xml"), ("page.html/feed.xml", "page.html"),
+])
+def test_output_manifest_rejects_ancestor_conflicts(paths):
+    manifest = OutputManifest()
+    manifest.record("first", paths[0])
+    with pytest.raises(ValueError, match="Duplicate generated output path"):
+        manifest.record("second", paths[1])
+
+
+def test_asset_page_conflict_fails_before_writes(site_root):
+    from articulous.config import apply_cli_overrides, load_or_create_config
+    config = load_or_create_config(site_root / "config.json")
+    config["urls"]["article"] = "/assets/{lang}/{slug}/"
+    apply_cli_overrides(config, _CLI(), site_root)
+    with pytest.raises(ValueError, match="reserved assets"):
+        run_build(_CLI(), config, site_root)
+    assert not (site_root / "output").exists()
+    assert not (site_root / ".build-cache.json").exists()
+
+
 def test_collect_tasks_rejects_output_escape(tmp_path):
     ctx = _ctx_for(tmp_path)
     ctx = cast(BuildCtx, dataclasses.replace(

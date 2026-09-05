@@ -211,7 +211,9 @@ patterns must include one.
 ## 📦 Output
 
 Files are written to `output/` according to the configured `urls`
-patterns. Defaults produce:
+patterns. The `assets/` subtree is reserved for mirrored assets;
+generated-page patterns cannot use it. Conflicting generated paths are
+rejected before publishing. Defaults produce:
 
 - `output/en/articles/<slug>/index.html`
 - `output/en/page/<n>/index.html`

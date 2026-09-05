@@ -67,6 +67,7 @@ from .sections import (
 _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
+_OUTPUT_OWNER = object()
 _SORT_CHUNK_SIZE = 1024
 _SITEMAP_MAX_URLS = 50_000
 _SITEMAP_MAX_BYTES = 52_428_800
@@ -533,19 +534,20 @@ class ArticleStore:
 class OutputManifest(dict):
     def __init__(self):
         super().__init__()
-        self._owners: dict[str, str] = {}
+        self._owners: dict = {}
 
     def record(self, cache_key: str, relpath: str) -> None:
         if cache_key in self:
             raise ValueError(f"Duplicate generated cache key: {cache_key}")
-        owner = self._owners.get(relpath)
-        if owner is not None:
-            raise ValueError(
-                f"Duplicate generated output path: {relpath} "
-                f"for {owner!r} and {cache_key!r}"
-            )
+        node = self._owners
+        for part in Path(relpath).parts:
+            if _OUTPUT_OWNER in node:
+                raise ValueError(f"Duplicate generated output path: {relpath}")
+            node = node.setdefault(part, {})
+        if node:
+            raise ValueError(f"Duplicate generated output path: {relpath}")
+        node[_OUTPUT_OWNER] = cache_key
         super().__setitem__(cache_key, relpath)
-        self._owners[relpath] = cache_key
 
 
 def _read_pickled_articles(path: Path, count: int):
@@ -648,9 +650,11 @@ def _record_planned_output(
     output_path: Path,
 ) -> Path:
     output_path = _safe_output_path(ctx, output_path)
+    relpath = _output_relpath(ctx, output_path)
+    if Path(relpath).parts[:1] == ("assets",):
+        raise ValueError(f"Generated output uses the reserved assets directory: {relpath}")
     if manifest is None:
         return output_path
-    relpath = _output_relpath(ctx, output_path)
     manifest.record(cache_key, relpath)
     return output_path
 
@@ -1363,9 +1367,6 @@ def run_build(cli, config, project_root: Path) -> None:
             try:
                 cache = load_cache(cache_path)
                 old_manifest = _load_output_manifest(cache)
-                copy_assets(ctx, cache)
-                if not ctx.dry_run:
-                    ctx.output_dir.mkdir(parents=True, exist_ok=True)
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest()
@@ -1373,6 +1374,9 @@ def run_build(cli, config, project_root: Path) -> None:
                     stream_factory, cli, ctx, cache, workspace, current_manifest,
                 )
                 projection = plan.projection
+                copy_assets(ctx, cache)
+                if not ctx.dry_run:
+                    ctx.output_dir.mkdir(parents=True, exist_ok=True)
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:

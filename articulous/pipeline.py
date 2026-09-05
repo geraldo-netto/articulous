@@ -60,6 +60,7 @@ from .runtime import (
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
+    SECTION_NAMES,
     SECTION_XSL,
 )
 
@@ -1223,10 +1224,12 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
 
 
 def _finalize_cache(cli, ctx, cache, old_manifest, current_manifest, cache_path) -> None:
-    replace_manifest = _can_prune_outputs(cli)
-    next_manifest = current_manifest if replace_manifest else {**old_manifest, **current_manifest}
+    retained = {} if _can_prune_outputs(cli) else {
+        key: path for key, path in old_manifest.items() if not _selected_output_key(key, cli)
+    }
+    next_manifest = {**retained, **current_manifest}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
-    _store_output_manifest(cache, old_manifest, current_manifest, replace_manifest)
+    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(next_manifest.items()))
     if cache_changed(cache):
         save_cache(cache_path, cache)
     else:
@@ -1285,6 +1288,21 @@ def _can_prune_outputs(cli) -> bool:
     return not (cli.only_sections or cli.only_langs or cli.only_slugs)
 
 
+def _selected_output_key(key: str, cli) -> bool:
+    prefix, _, tail = key.partition(":")
+    section = {"article": "articles", "tag": "tags"}.get(prefix, prefix)
+    if section not in (cli.only_sections or SECTION_NAMES):
+        return False
+    if prefix in ("article", "index", "tag"):
+        lang, _, slug = tail.rpartition(":")
+        if cli.only_langs and lang not in cli.only_langs:
+            return False
+        if cli.only_slugs:
+            return prefix == "article" and slug in cli.only_slugs
+        return True
+    return not (cli.only_langs or cli.only_slugs)
+
+
 def _manifest_target(ctx: BuildCtx, relpath: str) -> Path:
     rel = Path(relpath)
     if rel.is_absolute():
@@ -1338,16 +1356,6 @@ def _prune_stale_outputs(
                 _delete_output_file(target, root)
         if key not in current_manifest:
             cache.pop(key, None)
-
-
-def _store_output_manifest(
-    cache: dict,
-    old_manifest: dict,
-    current_manifest: dict,
-    replace: bool,
-) -> None:
-    manifest = current_manifest if replace else {**old_manifest, **current_manifest}
-    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted(manifest.items()))
 
 
 def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:

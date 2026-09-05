@@ -1355,6 +1355,39 @@ def _site_config(site_root):
     return config
 
 
+def _set_publication(path, status):
+    tree = etree.parse(str(path))
+    etree.SubElement(tree.getroot(), "status").text = status
+    etree.SubElement(tree.getroot(), "publish-at").text = "9999-01-01T00:00:00Z"
+    tree.write(str(path), encoding="utf-8")
+
+
+@pytest.mark.parametrize("status", ["private", "draft", "scheduled"])
+@pytest.mark.parametrize("options", [
+    {"only_sections": ["articles"]},
+    {"only_sections": ["articles"], "only_slugs": ["first-post"]},
+    {"only_langs": ["en"]},
+    {"only_slugs": ["first-post"]},
+])
+def test_targeted_build_unpublishes_selected_articles(site_root, status, options):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    _set_publication(site_root / "content/en/first-post.xml", status)
+    run_build(_CLI(**options), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+    assert (site_root / "output/en/articles/second-post/index.html").exists()
+
+
+def test_targeted_unpublishing_preserves_unselected_retired_page(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    _set_publication(site_root / "content/en/first-post.xml", "private")
+    _set_publication(site_root / "content/en/second-post.xml", "private")
+    run_build(_CLI(only_sections=["articles"], only_slugs=["first-post"]), config, site_root)
+    assert not (site_root / "output/en/articles/first-post/index.html").exists()
+    assert (site_root / "output/en/articles/second-post/index.html").exists()
+
+
 @pytest.mark.parametrize("sections", [None, ["articles"]])
 def test_url_move_prunes_old_path_and_rebuilds_existing_target(site_root, sections):
     config = _site_config(site_root)

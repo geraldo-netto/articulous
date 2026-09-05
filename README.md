@@ -103,6 +103,8 @@ Notes:
 - `scheduled` articles publish only when `<publish-at>` is present and
   its ISO-8601 timestamp has passed. A missing timestamp keeps the article
   skipped; an invalid timestamp is skipped with a warning.
+- Targeted builds remove retired article pages within their selected
+  sections, languages, and slugs while preserving unselected pages.
 
 ---
 

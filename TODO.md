@@ -42,7 +42,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| DATA-03 | open | M | Targeted builds leave previously published pages online after their status becomes private, draft, or future-scheduled because every CLI filter disables pruning (`articulous/pipeline.py:998-1000`, `articulous/pipeline.py:1202-1206`, `articulous/pipeline.py:1257-1258`) | High; reproduced publishing `hello`, changing it to private, then building `--only articles --slug hello`: the public HTML remains. Reconcile retired outputs within the selected scope while preserving unselected pages. |
 
 ## system design
 

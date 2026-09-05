@@ -1,7 +1,9 @@
 """Unit tests for articulous.engines."""
 import logging
+import os
 import shutil
 import subprocess
+import sys
 import threading
 from contextlib import contextmanager
 from pathlib import Path
@@ -78,6 +80,47 @@ def test_stylesheet_hash_handles_repeated_dependency(tmp_path):
         )
     )
     assert len(stylesheet_hash(main)) == 64
+
+
+@pytest.mark.parametrize("kind", ["fifo", "device"])
+def test_stylesheet_hash_rejects_special_dependencies(tmp_path, kind):
+    dependency = tmp_path / "included.xsl"
+    if kind == "fifo":
+        os.mkfifo(dependency)
+    else:
+        dependency.symlink_to("/dev/null")
+    main = tmp_path / "main.xsl"
+    main.write_text(MINIMAL_XSLT.replace(
+        "<xsl:template", '<xsl:include href="included.xsl"/><xsl:template', 1,
+    ))
+    result = subprocess.run(
+        [sys.executable, "-c", "from pathlib import Path; import sys; "
+         "from articulous.engines import stylesheet_hash; stylesheet_hash(Path(sys.argv[1]))",
+         str(main)],
+        cwd=Path(__file__).resolve().parents[1], capture_output=True, timeout=5,
+    )
+    assert result.returncode != 0
+    assert b"Path must be a regular file" in result.stderr
+
+
+def test_stylesheet_hash_rejects_dependency_swapped_during_open(tmp_path, monkeypatch):
+    dependency = tmp_path / "included.xsl"
+    dependency.write_text(MINIMAL_XSLT)
+    main = tmp_path / "main.xsl"
+    main.write_text(MINIMAL_XSLT.replace(
+        "<xsl:template", '<xsl:include href="included.xsl"/><xsl:template', 1,
+    ))
+    original_open = os.open
+
+    def swap_before_open(path, flags, mode=0o777):
+        if Path(path) == dependency:
+            dependency.unlink()
+            os.mkfifo(dependency)
+        return original_open(path, flags, mode)
+
+    monkeypatch.setattr(os, "open", swap_before_open)
+    with pytest.raises(ValueError, match="Opened path must be a regular file"):
+        stylesheet_hash(main)
 
 
 def test_engine_cache_identities_include_runtime(tmp_path):

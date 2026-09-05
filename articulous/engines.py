@@ -24,7 +24,7 @@ from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import TempWorkspace, atomic_output
+from .filesystem import TempWorkspace, atomic_output, open_regular_file
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -89,7 +89,8 @@ def _update_stylesheet_hash(path: Path, digest, seen: set[Path]) -> None:
     if resolved in seen:
         return
     seen.add(resolved)
-    content = resolved.read_bytes()
+    with open_regular_file(resolved) as source:
+        content = source.read()
     digest.update(len(content).to_bytes(8, "big"))
     digest.update(content)
     root = etree.fromstring(content, parser=safe_xml_parser(), base_url=resolved.as_uri())

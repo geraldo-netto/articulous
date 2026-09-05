@@ -146,6 +146,24 @@ def test_validated_publication_invalid_publish_at(caplog):
     assert any("invalid publish-at" in r.message for r in caplog.records)
 
 
+@pytest.mark.parametrize("date", [
+    "0001-01-01T00:00:00+01:00", "9999-12-31T23:59:59-01:00",
+])
+def test_article_utc_overflow_is_skipped(tmp_path, date):
+    source = tmp_path / "article.xml"
+    source.write_text(f"<article><title>T</title><date>{date}</date></article>")
+    assert parse_article_xml(source) is None
+
+
+@pytest.mark.parametrize("date", [
+    "0001-01-01T00:00:00+01:00", "9999-12-31T23:59:59-01:00",
+])
+def test_scheduled_utc_overflow_stays_unpublished(date):
+    state = _validated_publication("scheduled", date, Path("article.xml"))
+    assert state is not None
+    assert not state.policy.page
+
+
 def test_validated_publication_warns_for_scheduled_without_publish_at(caplog):
     with caplog.at_level("WARNING"):
         state = _validated_publication("scheduled", "", Path("/x"))

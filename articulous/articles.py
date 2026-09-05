@@ -143,7 +143,7 @@ def _parse_publish_at(raw: str, path: Path) -> Optional[datetime]:
         return None
     try:
         return _as_utc(datetime.fromisoformat(raw))
-    except ValueError:
+    except (ValueError, OverflowError):
         logging.warning(
             f"Article {path} has invalid publish-at {raw!r} — treating as scheduled"
         )
@@ -235,7 +235,7 @@ def parse_article_xml(
 
     try:
         dt = _as_utc(datetime.fromisoformat(fields["date"]))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         logging.warning(
             f"Article {path} has missing/invalid date {fields['date']!r} — skipping"
         )

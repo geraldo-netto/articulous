@@ -36,7 +36,7 @@ from .engines import (
     make_engine,
 )
 from .filesystem import (
-    TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file, open_regular_file,
+    StagedOutput, TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file, open_regular_file,
     validate_output_path, validate_path_length,
 )
 from .models import (
@@ -701,8 +701,7 @@ def _source_hash(source) -> str:
     return digest.hexdigest()
 
 
-def _write_native_sitemap(output_path: Path, source) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+def _write_native_sitemap(output_path: Path | StagedOutput, source) -> None:
     header = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -720,8 +719,7 @@ def _write_native_sitemap(output_path: Path, source) -> None:
         out.write(footer)
 
 
-def _write_native_search(output_path: Path, source) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+def _write_native_search(output_path: Path | StagedOutput, source) -> None:
     with output_path.open("w", encoding="utf-8") as out:
         out.write("[\n")
         for index, item in enumerate(_source_values(source)):

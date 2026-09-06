@@ -11,6 +11,7 @@ import stat
 import tempfile
 import time
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -87,12 +88,44 @@ def validate_output_path(path: Path) -> None:
             raise ValueError(f"Generated output path contains a symlink: {component}")
 
 
+@dataclass(frozen=True)
+class StagedOutput:
+    path: Path
+    fd: int
+
+    @property
+    def name(self) -> str:
+        return self.path.name
+
+    def open(self, mode="w", encoding=None):
+        if mode not in {"w", "wb"}:
+            raise ValueError("Staged output supports only w and wb modes")
+        os.ftruncate(self.fd, 0)
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        return os.fdopen(os.dup(self.fd), mode, encoding=encoding)
+
+    def write_bytes(self, content: bytes) -> int:
+        with self.open("wb") as output:
+            return output.write(content)
+
+    def write_text(self, content: str, encoding="utf-8") -> int:
+        with self.open("w", encoding=encoding) as output:
+            return output.write(content)
+
+
+def _validate_staging_file(staged: StagedOutput, directory_fd: int) -> None:
+    current = os.stat(staged.name, dir_fd=directory_fd, follow_symlinks=False)
+    original = os.fstat(staged.fd)
+    if (current.st_dev, current.st_ino) != (original.st_dev, original.st_ino):
+        raise ValueError(f"Generated staging file changed during rendering: {staged.path}")
+
+
 @contextmanager
 def _generated_staging_file(path: Path, directory_fd: int):
     name = f".articulous-{secrets.token_hex(16)}"
     fd = os.open(name, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600, dir_fd=directory_fd)
     try:
-        yield path.parent / name, fd
+        yield StagedOutput(path.parent / name, fd)
     finally:
         os.close(fd)
         try:
@@ -108,14 +141,15 @@ def _generated_output(path: Path):
     mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        with _generated_staging_file(path, directory_fd) as (staged, fd):
+        with _generated_staging_file(path, directory_fd) as staged:
             yield staged
             validate_output_path(path)
             current = path.parent.stat()
             original = os.fstat(directory_fd)
             if (current.st_dev, current.st_ino) != (original.st_dev, original.st_ino):
                 raise ValueError(f"Generated output directory changed during rendering: {path.parent}")
-            os.fchmod(fd, mode)
+            _validate_staging_file(staged, directory_fd)
+            os.fchmod(staged.fd, mode)
             os.replace(staged.name, path.name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
     finally:
         os.close(directory_fd)

@@ -456,7 +456,7 @@ def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
     out = tmp_path / "out.html"
     captured = {}
 
-    def fake_run(cmd, check):
+    def fake_run(cmd, check, pass_fds):
         # -s:VAL — extract VAL and confirm it exists during the call
         s_arg = [a for a in cmd if a.startswith("-s:")][0]
         captured["tmp"] = Path(s_arg[3:])
@@ -479,7 +479,7 @@ def test_saxon_uses_captured_stylesheet_and_original_base(tmp_path, monkeypatch)
     xsl.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
     captured = []
 
-    def inspect_transform(cmd, check):
+    def inspect_transform(cmd, check, pass_fds):
         path = Path(next(arg[5:] for arg in cmd if arg.startswith("-xsl:")))
         captured.append(path)
         root = etree.parse(str(path)).getroot()
@@ -555,7 +555,7 @@ def test_saxon_partial_failure_preserves_published_output(tmp_path):
     output = tmp_path / "page.html"
     output.write_text("published")
 
-    def fail_transform(cmd, check):
+    def fail_transform(cmd, check, pass_fds):
         staged = Path(next(arg[3:] for arg in cmd if arg.startswith("-o:")))
         staged.write_text("partial")
         raise subprocess.CalledProcessError(1, cmd)

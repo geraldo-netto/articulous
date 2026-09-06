@@ -25,7 +25,7 @@ from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import TempWorkspace, atomic_output, open_regular_file, validate_output_path
+from .filesystem import StagedOutput, TempWorkspace, atomic_output, open_regular_file, validate_output_path
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 
 __all__ = [
@@ -344,6 +344,7 @@ class SaxonCEngine(TransformEngine):
                     f"misparsed by the Saxon CLI: {p}"
                 )
         with atomic_output(resolved["output"], generated=True) as staged:
+            assert isinstance(staged, StagedOutput)
             cmd = [
                 str(self.saxonc_bin),
                 "-ext:off",
@@ -351,11 +352,11 @@ class SaxonCEngine(TransformEngine):
                 "--allowedProtocols:#none",
                 f"-s:{resolved['xml']}",
                 f"-xsl:{resolved['xsl']}",
-                f"-o:{staged}",
+                f"-o:/dev/fd/{staged.fd}",
             ]
             logging.debug(f"Running SaxonC: {' '.join(cmd)}")
             try:
-                subprocess.run(cmd, check=True)
+                subprocess.run(cmd, check=True, pass_fds=(staged.fd,))
             except subprocess.CalledProcessError:
                 logging.exception("SaxonC transform failed")
                 raise

@@ -129,7 +129,7 @@ def test_saxon_snapshot_materializes_effective_document_base(site_root, monkeypa
     expected = (source.parent / "media").as_uri() + "/" if xml_base else source.as_uri()
     observed = []
 
-    def inspect_transform(command, check):
+    def inspect_transform(command, check, pass_fds):
         xml_path = next(argument[3:] for argument in command if argument.startswith("-s:"))
         root = etree.parse(xml_path).getroot()
         observed.append(root.base)

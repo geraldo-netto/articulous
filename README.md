@@ -386,8 +386,10 @@ rejected before publishing. Defaults produce:
 
 Generated pages and feeds replace individual files atomically; a whole
 build is not transactional. A live generated target or any parent component
-that is a symlink is rejected. Publication and temporary-file cleanup stay
-anchored to the original destination directory. A directory replacement
+that is a symlink is rejected. Content writes use the original staging file
+descriptor; SaxonC inherits that descriptor through `/dev/fd`. A replaced
+staging entry is rejected before publication. Publication and temporary-file
+cleanup stay anchored to the original destination directory. A directory replacement
 detected after rendering aborts publication; cleanup and permission changes
 use the original directory and file descriptors.
 Before publishing, the ownership file records

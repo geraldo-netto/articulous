@@ -49,6 +49,7 @@ from .models import (
     build_tags_models,
     build_url_from_pattern,
 )
+from .migrations import OutputMigrations
 from .runtime import (
     TrackedCache,
     WorkerCount,
@@ -115,6 +116,7 @@ class BuildCtx:
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
     rss_items: int = 20
+    output_migrations: Optional[OutputMigrations] = None
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -808,6 +810,13 @@ def _record_planned_output(
     manifest.record(cache_key, relpath)
     return output_path
 
+
+def _needs_output_rebuild(ctx: BuildCtx, cache_key, cache, fingerprint, output_path: Path) -> bool:
+    if ctx.output_migrations is not None and ctx.output_migrations.requires_rebuild(output_path):
+        return True
+    return should_rebuild(cache_key, cache, fingerprint, ctx.force, output_path=output_path)
+
+
 def _make_xslt_task(
     *,
     xml_input,            # Path on disk (article XML) or bytes (in-memory model)
@@ -846,9 +855,7 @@ def _make_xslt_task(
     fingerprint = (xml_hash, xsl_hash, engine.cache_identity, _output_relpath(ctx, output_path))
     if xml_base_uri is not None:
         fingerprint += (xml_base_uri,)
-    if not should_rebuild(
-        cache_key, cache, fingerprint, ctx.force, output_path=output_path,
-    ):
+    if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
     spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint, xml_base_uri)
@@ -870,9 +877,7 @@ def _make_native_task(
         manifest, ctx, cache_key, output_path,
     )
     fingerprint = (_source_hash(source), engine.cache_identity, _output_relpath(ctx, output_path))
-    if not should_rebuild(
-        cache_key, cache, fingerprint, ctx.force, output_path=output_path,
-    ):
+    if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
     def task(output_path=output_path):
@@ -1574,16 +1579,24 @@ def _prune_stale_outputs(
         for ancestor in (path, *path.parents)
     }
     protected.add(root)
+    current_paths = {root / relpath for relpath in current_manifest}
     for relpath in stale_paths:
         try:
             target = _manifest_target(ctx, relpath)
         except ValueError as e:
             logging.warning(f"Skipping invalid cached output manifest entry: {e}")
         else:
-            if target not in protected and not target.is_relative_to(root / "assets"):
+            if _can_delete_stale_target(target, root, protected, current_paths):
                 _delete_output_file(target, root)
     for key in set(old_manifest.values()) - set(current_manifest.values()):
         cache.pop(key, None)
+
+
+def _can_delete_stale_target(target: Path, root: Path, protected: set, current_paths: set) -> bool:
+    return (
+        target not in protected and not target.is_relative_to(root / "assets")
+        and not any(parent in current_paths for parent in target.parents)
+    )
 
 
 def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
@@ -1601,10 +1614,19 @@ def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
 # Top-level build pipeline
 # ================================================================
 
+def _remove_output_obstructions(ctx: BuildCtx) -> None:
+    assert ctx.output_migrations is not None
+    for path in ctx.output_migrations.removals():
+        logging.info(f"{'Would remove' if ctx.dry_run else 'Removing'} obsolete route obstruction: {path}")
+        if not ctx.dry_run:
+            _delete_output_file(path, ctx.output_dir.resolve())
+
+
 def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_manifest: dict) -> None:
     if not ctx.dry_run:
         planned_paths = {path: key for key, path in current_manifest.items()}
         journal_ownership(ctx.output_dir, old_manifest, planned_paths)
+    _remove_output_obstructions(ctx)
     copy_assets(ctx, cache)
     if not ctx.dry_run:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
@@ -1629,6 +1651,9 @@ def run_build(cli, config, project_root: Path) -> None:
                 old_manifest = ownership.paths
                 if ownership.pending:
                     ctx = replace(ctx, force=True)
+                ctx = replace(ctx, output_migrations=OutputMigrations(
+                    ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest),
+                ))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest()

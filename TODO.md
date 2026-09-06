@@ -74,7 +74,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-04 | open | M | [P2] Handle owned file-to-directory route migrations during planning and publication. | `articulous/pipeline.py:1639-1645` publishes before pruning obsolete owned files. After a fixture build, changing RSS from `/rss.xml` to `/rss.xml/feed.xml` passes `--only rss --dry-run` but live planning/publication fails with `NotADirectoryError`; the old owned file blocks its replacement directory on every retry. Plan safe removal of selected owned obstructions, preserve unowned/retained paths, and cover both migration directions and dry-run diagnostics. |
 | REL-06 | open | M | [P2] Exercise the advertised SaxonC backend with a real executable in integration tests. | `tests/test_engines.py:432-568` and `tests/test_article_snapshots.py:127-151` mock the subprocess for successful transforms; `.github/workflows/main.yml` installs only the Python test dependencies. No real `Transform` executable was available for this scan. Command construction has coverage, but actual rendering, accepted CLI switches, external-resource restrictions, and nonzero-exit behavior are not verified against SaxonC. Add a pinned backend integration job with successful fixture output and resource-denial checks; retain the fast mocked unit tests. |
 
 ## observability

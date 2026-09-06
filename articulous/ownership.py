@@ -1,5 +1,6 @@
 """Persistent output ownership, independent of disposable fingerprints."""
 import json
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,9 +45,9 @@ def _legacy_ownership(output_dir: Path, legacy) -> dict:
 def _file_identity(path: Path) -> list[int] | None:
     try:
         metadata = path.stat()
-    except FileNotFoundError:
+    except (FileNotFoundError, NotADirectoryError):
         return None
-    return [metadata.st_dev, metadata.st_ino]
+    return [metadata.st_dev, metadata.st_ino] if stat.S_ISREG(metadata.st_mode) else None
 
 
 def _valid_identity(identity) -> bool:

@@ -403,6 +403,13 @@ Inspect partial output before deploying after a failed build.
 Existing unowned targets enter recovery ownership only after publication
 replaces them; a planned target that was never replaced is preserved.
 
+Route changes can replace a selected obsolete file with a directory, or a
+directory of selected obsolete files with one file. Planning checks ownership
+before publication; `--dry-run` reports these removals without changing output.
+Retained outputs, unowned files, extra empty directories and unsafe file types
+block the migration. The recovery journal is saved before removing obstructions,
+so an interrupted migration can be retried or reverted with a full build.
+
 The entire `output/assets/` subtree belongs to the asset mirror. Every build
 compares its entries with the source: removed source entries and manual
 additions in the destination are pruned, even after cache loss or a failed
@@ -420,7 +427,8 @@ transactional. For predictable pruning, reserve the output tree for generated
 files and avoid adding symlinks inside it.
 Pruning removes stale generated symlinks themselves, preserving their
 targets. A symlink in a stale path's parent directories aborts pruning.
-If a stale owned file has become a directory, pruning stops and preserves
+Outside a planned route migration, if a stale owned file has become a directory,
+pruning stops and preserves
 the directory and its contents. Move or remove it explicitly before retrying;
 page/feed ownership never authorizes recursive directory deletion.
 Cached generated outputs must remain regular files. A directory, FIFO, or

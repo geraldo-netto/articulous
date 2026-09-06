@@ -13,11 +13,14 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| CONTR-02 | blocked | S | Reconcile response-format instructions for repository work. | `AGENTS.md`, Communications requires headings and bullets; the current session's developer Writing style instruction says to avoid section headings and use lists selectively. The developer instruction takes precedence for this scan. Impact: both formatting requirements cannot be followed together; resolve by making the repository rule compatible with the session override. |
 
 ## security
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| SEC-01 | open | M | [P1] Keep generated content writes anchored to the staging file descriptor and reject a replaced staging entry. | `articulous/filesystem.py:90-119` retains an fd but yields a pathname; `articulous/engines.py:284-285` and native writers reopen that pathname. Reproduced by replacing the yielded staging entry with a symlink to a separate manual file before `write_text`: the manual file is overwritten and the symlink becomes the published page. Directory swaps before the write can also redirect content even though publication later aborts. Use descriptor-based writes or an equivalently protected engine handoff, verify staging identity before rename, and test swaps before writing as well as during cleanup. |
+| SEC-02 | open | M | [P1] Copy assets through validated file descriptors instead of reopening source and destination paths after inspection. | `articulous/pipeline.py:189-197,300-315`: manifest hashing rejects unsafe sources, but subsequent `shutil.copy2` follows a source symlink introduced after hashing. Reproduced by swapping `assets/style.css` to a symlink to a private file outside the project immediately before the copy; the build succeeds and publishes that file's contents. Destination link checks also precede a pathname-based write. Anchor source/destination traversal and copies, and cover source symlink/FIFO and destination symlink/hardlink swaps at copy time with regular-file controls. |
 
 ## performance
 
@@ -73,11 +76,15 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| REL-04 | open | M | [P2] Handle owned file-to-directory route migrations during planning and publication. | `articulous/pipeline.py:1639-1645` publishes before pruning obsolete owned files. After a fixture build, changing RSS from `/rss.xml` to `/rss.xml/feed.xml` passes `--only rss --dry-run` but live planning/publication fails with `NotADirectoryError`; the old owned file blocks its replacement directory on every retry. Plan safe removal of selected owned obstructions, preserve unowned/retained paths, and cover both migration directions and dry-run diagnostics. |
+| REL-05 | open | M | [P1] Preserve recovery state until fingerprints are durably saved or the previous cache is safely invalidated. | `articulous/pipeline.py:1464-1472` clears pending ownership before `save_cache`; `articulous/runtime.py:100-113` swallows write failures. Reproduced: build the fixture, change an article description, fail the cache write with `OSError`, restore the original source, and rebuild. Ownership reports `pending=False`, old hashes match, and the page keeps serving the interim description indefinitely. Keep cache-write failures nonfatal only when stale fingerprints cannot be reused; test source/style reverts and interruption between ownership/cache finalization. |
+| REL-06 | open | M | [P2] Exercise the advertised SaxonC backend with a real executable in integration tests. | `tests/test_engines.py:432-568` and `tests/test_article_snapshots.py:127-151` mock the subprocess for successful transforms; `.github/workflows/main.yml` installs only the Python test dependencies. No real `Transform` executable was available for this scan. Command construction has coverage, but actual rendering, accepted CLI switches, external-resource restrictions, and nonzero-exit behavior are not verified against SaxonC. Add a pinned backend integration job with successful fixture output and resource-denial checks; retain the fast mocked unit tests. |
 
 ## observability
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| OBS-01 | open | S | [P2] Distinguish normal lock release from abandoned-build recovery in warnings. | `articulous/filesystem.py:165-178,205-208,215-222`: release leaves the prior PID/timestamp payload intact, so the next process treats a successful predecessor as dead-process recovery. Reproduced with two consecutive successful CLI fixture builds: the second emits two WARNING messages, one for each lock. Clear or mark clean-release metadata while still holding the lock, preserve the lock inode, and test consecutive subprocess runs plus actual abandoned locks. |
 
 ## wiring gaps
 

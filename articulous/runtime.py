@@ -121,9 +121,10 @@ def should_rebuild(
     output_path: Path | None = None,
 ) -> bool:
     """Decide whether a page should be rebuilt."""
-    if output_path is not None and (force or cache.get(key) == list(new_hashes)):
+    if output_path is not None:
         validate_output_path(output_path)
-        validate_regular_file(output_path)
+        if output_path.exists():
+            validate_regular_file(output_path)
     if force:
         return True
     if output_path is not None and not output_path.exists():

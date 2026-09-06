@@ -1541,7 +1541,7 @@ def test_partial_build_rejects_retained_owner_collisions(site_root, rss_path):
     cache_before = cache_path.read_bytes()
     (site_root / "assets/new.txt").write_text("must not publish")
     config["urls"]["rss"] = rss_path
-    with pytest.raises(ValueError, match="Duplicate generated output path"):
+    with pytest.raises(ValueError, match="Duplicate generated output path|must be a regular file"):
         run_build(_CLI(only_sections=["rss"]), config, site_root)
     assert {path: path.read_bytes() for path in output.rglob("*") if path.is_file()} == before
     assert cache_path.read_bytes() == cache_before

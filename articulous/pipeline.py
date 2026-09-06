@@ -36,7 +36,8 @@ from .engines import (
     make_engine,
 )
 from .filesystem import (
-    StagedOutput, TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, lock_file, open_regular_file,
+    StagedOutput, TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, copy_asset_file,
+    lock_file, open_regular_file,
     validate_output_path, validate_path_length,
 )
 from .models import (
@@ -311,8 +312,7 @@ def _copy_asset_delta(
         if meta[0] == "d":
             target.mkdir(parents=True, exist_ok=True)
         elif old.get(rel) != meta or rel in refresh:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src / rel, target)
+            copy_asset_file(src / rel, target)
 
 
 def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict]) -> None:

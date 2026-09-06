@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import secrets
+import shutil
 import stat
 import tempfile
 import time
@@ -88,6 +89,59 @@ def validate_output_path(path: Path) -> None:
             raise ValueError(f"Generated output path contains a symlink: {component}")
 
 
+def _open_directory_at(parent_fd: int, name: str, create: bool) -> int:
+    if create:
+        try:
+            os.mkdir(name, dir_fd=parent_fd)
+        except FileExistsError:
+            pass
+    return os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+
+
+@contextmanager
+def _directory_handle(path: Path, *, create: bool = False):
+    path = path.absolute()
+    fd = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for part in path.parts[1:]:
+            child_fd = _open_directory_at(fd, part, create)
+            os.close(fd)
+            fd = child_fd
+        yield fd
+    finally:
+        os.close(fd)
+
+
+@contextmanager
+def _asset_source(path: Path):
+    with _directory_handle(path.parent) as directory_fd:
+        fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory_fd)
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise ValueError(f"Asset source must be a regular file: {path}")
+            with os.fdopen(fd, "rb", closefd=False) as source:
+                yield source
+        finally:
+            os.close(fd)
+
+
+def _validate_asset_copy_target(path: Path) -> None:
+    metadata = validate_regular_file(path)
+    if metadata is not None and metadata.st_nlink > 1:
+        raise ValueError(f"Asset destination contains a hardlink: {path}")
+
+
+def copy_asset_file(source: Path, destination: Path) -> None:
+    with _asset_source(source) as input_file:
+        metadata = os.fstat(input_file.fileno())
+        _validate_asset_copy_target(destination)
+        with _generated_output(destination, permissions=stat.S_IMODE(metadata.st_mode)) as staged:
+            with staged.open("wb") as output:
+                shutil.copyfileobj(input_file, output)
+            os.utime(staged.fd, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+            _validate_asset_copy_target(destination)
+
+
 @dataclass(frozen=True)
 class StagedOutput:
     path: Path
@@ -135,12 +189,12 @@ def _generated_staging_file(path: Path, directory_fd: int):
 
 
 @contextmanager
-def _generated_output(path: Path):
+def _generated_output(path: Path, *, permissions: int | None = None):
     validate_output_path(path)
-    ensure_parent_dir(path)
-    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
-    directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    try:
+    mode = permissions
+    if mode is None:
+        mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
+    with _directory_handle(path.parent, create=True) as directory_fd:
         with _generated_staging_file(path, directory_fd) as staged:
             yield staged
             validate_output_path(path)
@@ -151,8 +205,6 @@ def _generated_output(path: Path):
             _validate_staging_file(staged, directory_fd)
             os.fchmod(staged.fd, mode)
             os.replace(staged.name, path.name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
-    finally:
-        os.close(directory_fd)
 
 
 @contextmanager

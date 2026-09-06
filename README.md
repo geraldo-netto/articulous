@@ -413,8 +413,10 @@ source assets directory removes the entire mirrored assets tree.
 Destination file/directory mismatches are repaired, including the mirror
 root when the source directory is empty.
 Entries inside the asset source must be regular files or directories;
-destination symlinks and hardlinks are rejected. Asset copies are not
-atomic. For predictable pruning, reserve the output tree for generated
+destination symlinks and hardlinks are rejected. Asset source opens reject
+symlinks in every path component. Each asset file is copied through open
+file descriptors and replaced atomically; the complete mirror is not
+transactional. For predictable pruning, reserve the output tree for generated
 files and avoid adding symlinks inside it.
 Pruning removes stale generated symlinks themselves, preserving their
 targets. A symlink in a stale path's parent directories aborts pruning.

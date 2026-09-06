@@ -19,7 +19,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEC-02 | open | M | [P1] Copy assets through validated file descriptors instead of reopening source and destination paths after inspection. | `articulous/pipeline.py:189-197,300-315`: manifest hashing rejects unsafe sources, but subsequent `shutil.copy2` follows a source symlink introduced after hashing. Reproduced by swapping `assets/style.css` to a symlink to a private file outside the project immediately before the copy; the build succeeds and publishes that file's contents. Destination link checks also precede a pathname-based write. Anchor source/destination traversal and copies, and cover source symlink/FIFO and destination symlink/hardlink swaps at copy time with regular-file controls. |
 
 ## performance
 

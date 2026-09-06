@@ -523,13 +523,14 @@ def test_copy_assets_refreshes_only_mismatched_file(tmp_path, monkeypatch):
     copy_assets(ctx, cache)
     (output / "changed.txt").write_text("edited")
     copied = []
-    real_copy = shutil.copy2
+    from articulous.filesystem import copy_asset_file
+    real_copy = copy_asset_file
 
     def track_copy(source, destination):
         copied.append(source)
         return real_copy(source, destination)
 
-    monkeypatch.setattr("articulous.pipeline.shutil.copy2", track_copy)
+    monkeypatch.setattr("articulous.pipeline.copy_asset_file", track_copy)
     copy_assets(ctx, cache)
     assert copied == [assets / "changed.txt"]
 

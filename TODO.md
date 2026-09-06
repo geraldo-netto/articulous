@@ -74,7 +74,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REL-06 | open | M | [P2] Exercise the advertised SaxonC backend with a real executable in integration tests. | `tests/test_engines.py:432-568` and `tests/test_article_snapshots.py:127-151` mock the subprocess for successful transforms; `.github/workflows/main.yml` installs only the Python test dependencies. No real `Transform` executable was available for this scan. Command construction has coverage, but actual rendering, accepted CLI switches, external-resource restrictions, and nonzero-exit behavior are not verified against SaxonC. Add a pinned backend integration job with successful fixture output and resource-denial checks; retain the fast mocked unit tests. |
 
 ## observability
 

@@ -473,6 +473,25 @@ command with `--python 3.11` (or another CI version), then use the tools
 in `.venv/bin/`. The CI job runs Ruff, Pyright and pytest; the separate
 `C901` command above checks the repository's complexity limit.
 
+A separate Linux integration job downloads the
+[SaxonC-HE 12.10 executable](https://downloads.saxonica.com/SaxonC/HE/12/index.html),
+verifies its pinned SHA-256 checksum, and runs all six sections with the real
+backend. It also checks cache reuse, blocked file/HTTP reads and external
+entities, disabled XInclude expansion and secondary writes, and preservation
+of previous output when compilation or execution fails. The ordinary suite
+keeps fast mocked subprocess tests and skips these integration checks unless
+`ARTICULOUS_SAXONC_HOME` is set. A configured but unavailable executable fails
+the integration checks rather than falling back to lxml.
+
+To reproduce with the extracted Linux 12.10 archive:
+
+```sh
+saxonc_root=/path/to/SaxonCHE-linux-x86_64-12-10-0
+ARTICULOUS_SAXONC_HOME="$saxonc_root/SaxonCHE" \
+LD_LIBRARY_PATH="$saxonc_root/SaxonCCoreHE/lib:$saxonc_root/SaxonCHE/lib" \
+.venv/bin/pytest --no-cov tests/test_saxonc_integration.py
+```
+
 ---
 
 ## 📜 License

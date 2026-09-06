@@ -41,3 +41,41 @@ jobs:
 
       - name: Run pytest suite
         run: .venv/bin/pytest -vv
+
+  saxonc:
+    name: SaxonC-HE 12.10 integration
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.28"
+
+      - name: Install locked dependencies
+        run: uv sync --locked --extra test --no-build --no-install-project --python "3.11"
+
+      - name: Install pinned SaxonC executable
+        shell: bash
+        run: |
+          saxonc_archive="$RUNNER_TEMP/SaxonCHE-linux-x86_64-12-10-0.zip"
+          curl --fail --location --retry 3 --output "$saxonc_archive" \
+            'https://downloads.saxonica.com/SaxonC/HE/12/SaxonCHE-linux-x86_64-12-10-0.zip'
+          printf '%s  %s\n' \
+            '8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce' \
+            "$saxonc_archive" | sha256sum --check
+          unzip -q "$saxonc_archive" -d "$RUNNER_TEMP/saxonc"
+          saxonc_root="$RUNNER_TEMP/saxonc/SaxonCHE-linux-x86_64-12-10-0"
+          printf 'ARTICULOUS_SAXONC_HOME=%s/SaxonCHE\n' "$saxonc_root" >> "$GITHUB_ENV"
+          printf 'LD_LIBRARY_PATH=%s/SaxonCCoreHE/lib:%s/SaxonCHE/lib\n' \
+            "$saxonc_root" "$saxonc_root" >> "$GITHUB_ENV"
+
+      - name: Run real SaxonC integration tests
+        run: .venv/bin/pytest --no-cov -vv tests/test_saxonc_integration.py

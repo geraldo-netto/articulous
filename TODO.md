@@ -83,7 +83,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| OBS-01 | open | S | [P2] Distinguish normal lock release from abandoned-build recovery in warnings. | `articulous/filesystem.py:165-178,205-208,215-222`: release leaves the prior PID/timestamp payload intact, so the next process treats a successful predecessor as dead-process recovery. Reproduced with two consecutive successful CLI fixture builds: the second emits two WARNING messages, one for each lock. Clear or mark clean-release metadata while still holding the lock, preserve the lock inode, and test consecutive subprocess runs plus actual abandoned locks. |
 
 ## wiring gaps
 

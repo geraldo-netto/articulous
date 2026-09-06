@@ -217,6 +217,8 @@ def lock_file(path: Path, stale_after: float = 3600):
     fd = _acquire_lock(path, stale_after)
     try:
         yield
+        os.ftruncate(fd, 0)
+        os.fsync(fd)
     finally:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)

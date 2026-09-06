@@ -395,7 +395,9 @@ all previously owned and planned paths. Interrupted builds retain this
 record, including old paths from failed URL changes. Retry without
 `--only`, `--lang` or `--slug`: recovery forces a full rebuild and prunes
 obsolete paths, then clears the recovery flag. A dry run leaves that flag
-intact. Inspect partial output before deploying after a failed build.
+intact. Cache-write failures also retain the recovery flag, so the next
+unfiltered build cannot reuse fingerprints from an older publication.
+Inspect partial output before deploying after a failed build.
 Existing unowned targets enter recovery ownership only after publication
 replaces them; a planned target that was never replaced is preserved.
 

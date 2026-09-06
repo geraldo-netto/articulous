@@ -97,7 +97,7 @@ def load_cache(cache_path: Path) -> dict:
     return TrackedCache()
 
 
-def save_cache(cache_path: Path, cache: dict) -> None:
+def save_cache(cache_path: Path, cache: dict) -> bool:
     """
     Save the build cache to disk. Logs and swallows both I/O errors
     (``OSError``) and serialisation errors (``TypeError`` when a cache
@@ -109,8 +109,10 @@ def save_cache(cache_path: Path, cache: dict) -> None:
         if isinstance(cache, TrackedCache):
             cache.mark_clean()
         logging.debug("Cache saved successfully")
+        return True
     except (OSError, TypeError):
         logging.exception("Failed to save cache")
+        return False
 
 
 def should_rebuild(

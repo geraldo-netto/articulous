@@ -1465,13 +1465,15 @@ def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cach
     retained = _retained_outputs(cli, old_manifest)
     next_manifest = {**retained, **{path: key for key, path in current_manifest.items()}}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
-    save_ownership(ctx.output_dir, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     if cache_changed(cache):
         roots[str(ctx.output_dir.resolve())] = dict(cache)
-        save_cache(cache_path, {_CACHE_ROOTS_KEY: roots})
+        if not save_cache(cache_path, {_CACHE_ROOTS_KEY: roots}):
+            logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
+            return
     else:
         logging.debug("Cache unchanged — skipping save")
+    save_ownership(ctx.output_dir, next_manifest)
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:

@@ -57,6 +57,7 @@ def test_read_article_fields_single_pass():
         "tags": ["a", "b"],
         "publication": "published",
         "publish_at": "",
+        "indexing": "index",
     }
 
 

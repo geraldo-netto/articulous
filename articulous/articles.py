@@ -13,7 +13,7 @@ import os
 import re
 import sqlite3
 from contextlib import closing
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from time import monotonic
@@ -41,7 +41,8 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
-_SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"})
+_SEO_FIELDS = frozenset({"indexing"})
+_SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
 @dataclass(frozen=True)
@@ -96,10 +97,18 @@ class Article:
     publication: PublicationState | str = PublicationState()
     source_xml: bytes | ArticleSnapshot | None = field(default=None, repr=False)
     source_base_uri: str | None = None
+    indexing: str = "index"
 
     @property
     def policy(self) -> PublicationPolicy:
-        return self.publication_state.policy
+        policy = self.publication_state.policy
+        if self.indexing == "noindex":
+            return replace(policy, sitemap=False)
+        return policy
+
+    @property
+    def indexable(self) -> bool:
+        return self.policy.page and self.indexing == "index"
 
     @property
     def publication_state(self) -> PublicationState:
@@ -153,12 +162,24 @@ def _track_singleton_field(tag, seen: set) -> None:
     seen.add(tag)
 
 
+def _field_text(child) -> str:
+    if child.tag in _SEO_FIELDS and len(child):
+        raise ValueError(f"<{child.tag}> must contain text only")
+    return (child.text or "").strip()
+
+
+def _validated_indexing(raw: str) -> str:
+    if raw not in {"index", "noindex"}:
+        raise ValueError("<indexing> must be index or noindex")
+    return raw
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
-    fields = {"title": "", "date": "", "description": "", "lang": ""}
+    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index"}
     tags: list = []
     publication = "published"
     publish_at = ""
@@ -166,7 +187,7 @@ def _read_article_fields(root) -> dict:
     for child in root:
         tag = child.tag
         _track_singleton_field(tag, seen)
-        text = (child.text or "").strip()
+        text = _field_text(child)
         if tag in fields:
             fields[tag] = text
         elif tag == "tag" and text:
@@ -176,10 +197,8 @@ def _read_article_fields(root) -> dict:
         elif tag == "publish-at" and text:
             publish_at = text
     return {
-        "title": fields["title"],
-        "date": fields["date"],
-        "description": fields["description"],
-        "lang": fields["lang"],
+        **fields,
+        "indexing": _validated_indexing(fields["indexing"]),
         "tags": tags,
         "publication": publication,
         "publish_at": publish_at,
@@ -322,6 +341,7 @@ def parse_article_xml(
         publication=publication,
         source_xml=content,
         source_base_uri=base_uri,
+        indexing=fields["indexing"],
     )
 
 

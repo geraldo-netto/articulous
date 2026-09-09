@@ -926,6 +926,15 @@ def _article_input(art) -> bytes:
     return art.source_xml.read_bytes()
 
 
+def _article_parameters(art, ctx: BuildCtx) -> dict[str, str]:
+    return {
+        "articulous-url": art.url,
+        "articulous-lang": art.lang,
+        "articulous-site": ctx.site_name,
+        "articulous-indexing": art.indexing,
+    }
+
+
 def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """
     Build article pages for one language's article batch.
@@ -944,7 +953,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
         )
         task = _make_xslt_task(
             xml_input=_article_input(art),
-            parameters={"articulous-url": art.url, "articulous-lang": art.lang, "articulous-site": ctx.site_name},
+            parameters=_article_parameters(art, ctx),
             xml_base_uri=art.source_base_uri or art.source_path.resolve().as_uri(),
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,

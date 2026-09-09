@@ -163,6 +163,17 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+Article XML may specify `<indexing>noindex</indexing>` or
+`<indexing>index</indexing>` (default when absent). Values are case-sensitive;
+duplicate, nested, empty, and unknown directives reject the article. This
+setting is independent of publication status: `unlisted` still publishes a
+page and permits indexing by default, while excluding discovery links.
+Private and draft articles remain unpublished. A noindex page stays crawlable
+and leaves the sitemap. Templates receive `articulous-indexing`; the reference
+article template emits `<meta name="robots" content="noindex">` when requested.
+Do not disallow noindex pages in robots.txt: crawlers need access to read the
+directive. See [indexing controls](https://developers.google.com/search/docs/fundamentals/get-started-developers).
+
 `tests/fixtures/site/xsl/pages/` contains reference templates for tests and
 examples, not an installed production theme. Its HTML pages render meaningful
 titles, resolved language, optional article descriptions, and one absolute

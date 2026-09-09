@@ -44,7 +44,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEO-04 | open | M | Add an explicit search-indexing policy independent of publication/listing status. | P1. `articulous/articles.py:PublicationPolicy` controls generated pages and discovery feeds but exposes no indexing directive; `unlisted` only removes discovery links. Preserve and document that existing default, with an explicit noindex option passed through SEO-01 to reference templates. Accept: noindex pages remain crawlable, leave the sitemap, and rebuild when the directive changes; private/draft pages remain unpublished. Add reproducible invalid/duplicate-field fuzz cases and valid defaults. [Indexing controls](https://developers.google.com/search/docs/fundamentals/get-started-developers). |
 
 ## system design
 

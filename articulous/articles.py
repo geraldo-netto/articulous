@@ -41,7 +41,7 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
-_SEO_FIELDS = frozenset({"indexing", "slug"})
+_SEO_FIELDS = frozenset({"indexing", "slug", "modified"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
@@ -98,6 +98,7 @@ class Article:
     source_xml: bytes | ArticleSnapshot | None = field(default=None, repr=False)
     source_base_uri: str | None = None
     indexing: str = "index"
+    modified: str = ""
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -182,12 +183,22 @@ def _validated_slug(raw: str | None) -> str | None:
     return raw
 
 
+def _validated_modified(raw: str | None) -> str:
+    if raw is None:
+        return ""
+    pattern = r"[0-9]{4}-[0-9]{2}-[0-9]{2}(?:T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]))?"
+    if re.fullmatch(pattern, raw) is None:
+        raise ValueError("<modified> must be an ISO date or timestamp with timezone")
+    datetime.fromisoformat(raw)
+    return raw
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
-    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index", "slug": None}
+    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index", "slug": None, "modified": None}
     tags: list = []
     publication = "published"
     publish_at = ""
@@ -208,6 +219,7 @@ def _read_article_fields(root) -> dict:
         **fields,
         "indexing": _validated_indexing(fields["indexing"]),
         "slug": _validated_slug(fields["slug"]),
+        "modified": _validated_modified(fields["modified"]),
         "tags": tags,
         "publication": publication,
         "publish_at": publish_at,
@@ -351,6 +363,7 @@ def parse_article_xml(
         source_xml=content,
         source_base_uri=base_uri,
         indexing=fields["indexing"],
+        modified=fields["modified"],
     )
 
 

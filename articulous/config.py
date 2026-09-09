@@ -31,6 +31,7 @@ DEFAULT_CONFIG = {
         "search": "native",
     },
     "saxonc": {"home": None},
+    "sitemap": {"include_listings": False},
     "site": {
         "site_name": "My Site",
         "base_url": "https://example.com",
@@ -214,6 +215,11 @@ def _validate_logging(config: dict) -> None:
         _require_string(log_file, "logging.file")
 
 
+def _validate_sitemap(config: dict) -> None:
+    sitemap = _require_block(config, "sitemap", DEFAULT_CONFIG["sitemap"])
+    _require_bool(sitemap["include_listings"], "sitemap.include_listings")
+
+
 def validate_config(config: dict) -> None:
     config = _require_object(config, "root")
     _require_exact_keys(config, _CONFIG_KEYS, "root")
@@ -225,6 +231,7 @@ def validate_config(config: dict) -> None:
         _validate_urls,
         _validate_build,
         _validate_logging,
+        _validate_sitemap,
     ):
         validator(config)
 

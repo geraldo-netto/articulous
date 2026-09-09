@@ -116,6 +116,7 @@ class BuildCtx:
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
     rss_items: int = 20
+    sitemap_listings: bool = False
     output_migrations: Optional[OutputMigrations] = None
 
     def xsl_for(self, section: str) -> Path:
@@ -158,6 +159,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         url_patterns=dict(config["urls"]),
         per_page=pagination["per_page"],
         rss_items=pagination["rss_items"],
+        sitemap_listings=config["sitemap"]["include_listings"],
     )
 
 
@@ -400,8 +402,16 @@ def _rss_item_xml(a) -> str:
     )
 
 
-def _sitemap_url_xml(url: str) -> str:
-    return f"<url>{_xml_escape(url)}</url>"
+def _sitemap_entry(value) -> tuple[str, str]:
+    if isinstance(value, dict):
+        return value["url"], value["modified"]
+    return value, ""
+
+
+def _sitemap_url_xml(value) -> str:
+    url, modified = _sitemap_entry(value)
+    attrs = f" lastmod={_xml_attr(modified)}" if modified else ""
+    return f"<url{attrs}>{_xml_escape(url)}</url>"
 
 
 def _search_item_xml(item) -> str:
@@ -507,8 +517,8 @@ class _JsonLinesSink:
 
 
 class SitemapSink(_JsonLinesSink):
-    def append_url(self, url: str) -> None:
-        self.append(url)
+    def append_url(self, url: str, modified: str = "") -> None:
+        self.append({"url": url, "modified": modified} if modified else url)
 
 
 class SearchSink(_JsonLinesSink):
@@ -704,6 +714,12 @@ def _source_hash(source) -> str:
     return digest.hexdigest()
 
 
+def _native_sitemap_entry(value) -> str:
+    url, modified = _sitemap_entry(value)
+    lastmod = f"<lastmod>{_xml_escape(modified)}</lastmod>" if modified else ""
+    return f"<url><loc>{_xml_escape(url)}</loc>{lastmod}</url>"
+
+
 def _write_native_sitemap(output_path: Path | StagedOutput, source) -> None:
     header = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -714,7 +730,7 @@ def _write_native_sitemap(output_path: Path | StagedOutput, source) -> None:
     with output_path.open("w", encoding="utf-8") as out:
         out.write(header)
         for count, url in enumerate(_source_values(source), start=1):
-            entry = f"<url><loc>{_xml_escape(url)}</loc></url>"
+            entry = _native_sitemap_entry(url)
             size += len(entry.encode("utf-8"))
             if count > _SITEMAP_MAX_URLS or size > _SITEMAP_MAX_BYTES:
                 raise ValueError("Sitemap exceeds the 50,000 URL or 50 MiB limit")
@@ -1092,7 +1108,8 @@ def _validate_sitemap_source(base_url: str, sitemap_url: str, source) -> None:
     validate_sitemap_location(base_url)
     validate_sitemap_location(sitemap_url)
     prefix = sitemap_url.rsplit("/", 1)[0] + "/"
-    for url in _source_values(source):
+    for value in _source_values(source):
+        url, _ = _sitemap_entry(value)
         validate_sitemap_location(url)
         if not url.startswith(prefix):
             raise ValueError(f"Sitemap URL is outside its host or directory scope: {url}")
@@ -1164,6 +1181,7 @@ class StreamProjection:
     articles_by_lang: ArticleStore | None = None
     listings_by_lang: ArticleStore | None = None
     sections: frozenset[str] = field(default_factory=lambda: frozenset(SECTION_NAMES))
+    sitemap_listings: bool = False
 
 
 class BuildPlan(dict):
@@ -1208,19 +1226,32 @@ def _stream_projections(
     workspace = workspace or TempWorkspace()
     sections = _projection_sections(cli, collect_cross, collect_articles)
     article_store = ArticleStore(workspace) if "articles" in sections else None
-    listing_store = ArticleStore(workspace) if sections.intersection({"index", "tags"}) else None
+    sitemap_listings = ctx.sitemap_listings and "sitemap" in sections
+    listing_store = ArticleStore(workspace) if sections.intersection({"index", "tags"}) or sitemap_listings else None
     projection = StreamProjection(
         SitemapSink(workspace), SearchSink(workspace), [], 0,
         articles_by_lang=article_store,
         listings_by_lang=listing_store,
         sections=sections,
+        sitemap_listings=sitemap_listings,
     )
     try:
         _fill_projection(projection, stream_factory, cli, ctx)
+        _append_sitemap_listings(projection, ctx)
     except BaseException:
         _cleanup_stream_projection(projection)
         raise
     return projection
+
+
+def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> None:
+    if not projection.sitemap_listings:
+        return
+    for lang in ctx.languages:
+        articles = _sorted_store_articles(projection.listings_by_lang, lang)
+        pages = chain(build_index_models(articles, lang, ctx), build_tags_models(articles, lang, ctx))
+        for page in pages:
+            projection.sitemap_urls.append_url(page.url)
 
 
 def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
@@ -1251,7 +1282,7 @@ def _record_projection_article(projection: StreamProjection, art, cli):
             projection.articles_by_lang.append(art.lang, art)
     art = replace(art, source_xml=None)
     _add_cross_projection(projection, art)
-    if cli.only_langs and art.lang not in cli.only_langs:
+    if cli.only_langs and art.lang not in cli.only_langs and not projection.sitemap_listings:
         return art
     if projection.listings_by_lang is not None and art.policy.listing:
         projection.listings_by_lang.append(art.lang, art)
@@ -1260,7 +1291,7 @@ def _record_projection_article(projection: StreamProjection, art, cli):
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
     if "sitemap" in projection.sections and art.policy.sitemap:
-        projection.sitemap_urls.append_url(art.url)
+        projection.sitemap_urls.append_url(art.url, art.modified)
     if "search" in projection.sections and art.policy.search:
         item = {
             "title": art.title,

@@ -77,7 +77,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEO-07 | open | M | Extend sitemap entries with trustworthy modification dates and optional index/tag coverage. | P2. `articulous/pipeline.py:SitemapSink` stores URL strings, `_add_cross_projection` only adds articles, and `_write_native_sitemap` only emits loc. Accept: an optional validated content-modified field, lastmod omitted when unknown rather than set to build time, and configurable inclusion of indexable listing pages. Preserve publication exclusions and complete global sitemap scope during filtered builds; update native and documented XSLT inputs consistently. Test cache invalidation, encoded URLs, and reproducible invalid/duplicate/date-boundary fuzz cases. [Sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap). |
 
 ## observability
 

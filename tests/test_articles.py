@@ -59,6 +59,7 @@ def test_read_article_fields_single_pass():
         "publish_at": "",
         "indexing": "index",
         "slug": None,
+        "modified": "",
     }
 
 

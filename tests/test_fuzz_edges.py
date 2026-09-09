@@ -213,7 +213,7 @@ def test_build_rss_model_rss_items_larger_than_input():
 def test_stream_projections_rss_items_zero(tmp_path):
     arts = [_art("a"), _art("b")]
     projection = _stream_projections(
-        lambda: iter(arts), _no_filter_cli(), cast(Any, _model_ctx(rss_items=0)),
+        lambda: iter(arts), _no_filter_cli(), cast(Any, _model_ctx(rss_items=0, sitemap_listings=False)),
     )
     assert projection.rss_heap == []
     assert projection.total == 2

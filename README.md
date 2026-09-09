@@ -171,6 +171,20 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+Optional `<modified>` records a trustworthy content modification date as
+`YYYY-MM-DD` or an ISO timestamp with seconds and an explicit timezone
+(`Z` or `±HH:MM`). It is never inferred from build time or file timestamps.
+Unknown dates omit sitemap `lastmod`; malformed, duplicate, or nested fields
+reject the article. Native sitemaps emit `<lastmod>`; XSLT sitemap input uses
+`<url lastmod="...">absolute URL</url>` and omits the attribute when unknown.
+The reference sitemap stylesheet handles both forms.
+
+Set top-level `"sitemap": {"include_listings": true}` to include public index
+and tag pages; the default is false. Global sitemap scope remains complete
+under language, slug, and section filters. Listing pages omit modification
+dates because their full content modification time is not known. See
+[sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap).
+
 Article XML may specify `<indexing>noindex</indexing>` or
 `<indexing>index</indexing>` (default when absent). Values are case-sensitive;
 duplicate, nested, empty, and unknown directives reject the article. This
@@ -320,6 +334,7 @@ defaults. Unknown keys and invalid value types are rejected.
 | `paths`       | `content_dir`, `output_dir`, `xsl_dir`, `assets_dir`                                                |
 | `engines`     | per‑section engine (`articles`, `index`, `tags`, `rss`, `sitemap`, `search`) → `"lxml"` or `"saxonc"`; `"native"` also supported for `sitemap` and `search` (their default) |
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
+| `sitemap`     | `include_listings` — include index/tag pages (boolean, default false) |
 | `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
 | `build`       | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean)              |

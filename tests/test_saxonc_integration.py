@@ -96,6 +96,35 @@ def test_seo06_real_saxonc_renders_reciprocal_alternates(site_root, seo_config, 
         assert root.xpath("head/link[@rel='alternate']/@hreflang") == ["en", "fr"]
 
 
+def test_seo10_real_saxonc_serializes_safe_jsonld(site_root, seo_config, saxonc_home):
+    cli, config = seo_config
+    config["saxonc"]["home"] = str(saxonc_home)
+    config["engines"]["articles"] = "saxonc"
+    source = site_root / "content/en/first-post.xml"
+    source.write_text(source.read_text().replace(
+        "</article>", '<structured-data>Article</structured-data><author>&lt;/script&gt; 日本語</author></article>',
+    ))
+    run_build(cli, config, site_root)
+    root = etree.HTML((site_root / "output/en/articles/first-post/index.html").read_bytes())
+    assert len(root.xpath("//script")) == 1
+    data = json.loads(root.xpath("string(head/script)"))
+    assert data["author"]["name"] == "</script> 日本語"
+
+
+def test_seo10_real_saxonc_handles_large_jsonld(site_root, seo_config, saxonc_home):
+    cli, config = seo_config
+    config["saxonc"]["home"] = str(saxonc_home)
+    config["engines"]["articles"] = "saxonc"
+    source = site_root / "content/en/first-post.xml"
+    description = ("Quoted ' café " * 12000).strip()
+    text = source.read_text().replace("Inaugural article.", description)
+    source.write_text(text.replace("</article>", "<structured-data>Article</structured-data></article>"))
+    run_build(cli, config, site_root)
+    root = etree.HTML((site_root / "output/en/articles/first-post/index.html").read_bytes())
+    data = json.loads(root.xpath("string(head/script)"))
+    assert data["description"] == description
+
+
 def test_real_saxonc_builds_all_sections_and_reuses_cache(site_root, saxonc_home):
     cli = CliOptions(parse_cli_args([]))
     config = load_or_create_config(site_root / "config.json")

@@ -76,6 +76,7 @@ from .sitemaps import (
     sitemap_entry as _sitemap_entry, write_document, write_index,
 )
 from .translations import TranslationStore
+from .structured_data import article_jsonld
 
 
 _ASSET_CACHE_KEY = "assets"
@@ -955,6 +956,13 @@ def _article_parameters(art, ctx: BuildCtx) -> dict[str, str]:
         "articulous-indexing": art.indexing,
         "articulous-translation": art.translation,
         "articulous-alternates": _article_alternates(art, ctx),
+        "articulous-jsonld": article_jsonld(art),
+        "articulous-title": art.title,
+        "articulous-description": art.description,
+        "articulous-author": art.author,
+        "articulous-image": art.image,
+        "articulous-published": art.datetime.isoformat(),
+        "articulous-modified": art.modified,
     }
 
 

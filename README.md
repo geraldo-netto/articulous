@@ -171,6 +171,42 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+The optional reference structured-data example is enabled per article:
+
+```xml
+<structured-data>BlogPosting</structured-data>
+<author>Author Name</author>
+<image>https://example.com/photo.jpg?w=800&amp;h=600</image>
+<modified>2025-02-01T12:00:00Z</modified>
+```
+
+`structured-data` accepts `Article` or `BlogPosting`; omission disables JSON-LD.
+`author`, `image`, and `modified` are optional and omitted from JSON-LD when
+unavailable. An author is one plain-text name of 1–512 characters after trimming
+surrounding whitespace. Image URLs must be absolute, URI-encoded HTTP(S),
+without credentials or fragments; query parameters are supported. Empty,
+malformed, duplicate, and nested metadata fields reject the article.
+
+`articulous-jsonld` contains script-safe JSON-LD with the resolved canonical URL,
+UTC publication timestamp from the source date, optional content modification
+date, and metadata matching the reference page's visible text. Templates also
+receive `articulous-title`, `articulous-description`, `articulous-author`,
+`articulous-image`, `articulous-published`, and `articulous-modified`. The reference
+template displays those values and emits one `application/ld+json` script when
+enabled. Relative-only builds omit JSON-LD because no absolute canonical is
+available. Production themes should include only metadata matching their visible
+content, following [Article structured-data guidance](https://developers.google.com/search/docs/appearance/structured-data/article).
+Large SaxonC metadata strings are embedded as quoted literal parameters in the
+temporary captured stylesheet to avoid operating-system argument-size limits.
+The source stylesheet remains unchanged.
+
+After adapting and deploying your template, run its public article URL through
+Google's [Rich Results Test](https://search.google.com/test/rich-results), or paste
+the generated HTML into its code input. Confirm the intended Article/BlogPosting
+item, canonical URL, author/image, and dates; investigate errors and relevant
+warnings. This repository's tests parse rendered JSON-LD locally; the external
+Rich Results Test remains a deployment check.
+
 Use the same `<translation>story-id</translation>` in articles that are actual
 translations. IDs contain 1–128 ASCII letters/digits with hyphen or underscore
 separators; duplicates within one article, malformed IDs, and nested fields
@@ -451,8 +487,9 @@ Dot segments and repeated path separators are rejected. For example,
 `/feeds/sitemap.xml` cannot list `/en/articles/post/`; put the sitemap at
 `/sitemap.xml` to cover both language trees. These checks follow the
 [Sitemaps protocol](https://www.sitemaps.org/protocol.html).
-Publication also fails before replacing the sitemap if it exceeds 50,000
-URLs or 50 MiB of uncompressed XML.
+Production builds partition oversized URL sets. Each shard and the sitemap
+index retain the 50,000-entry and 50 MiB uncompressed XML limits; an entry
+that cannot fit in one shard fails before publication.
 
 URL patterns are validated by section:
 

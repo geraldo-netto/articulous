@@ -48,7 +48,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEO-10 | open | M | Add an optional Article/BlogPosting structured-data example. | P3. `tests/fixtures/site/xsl/pages/article.xsl` has no structured data; parsed metadata lacks dedicated author, image, and modification fields. Document optional source metadata and render JSON-LD matching visible content, omitting unavailable values. Accept: parseable, safely escaped JSON-LD using SEO-01's canonical URL, accurate publication/modification dates, and a documented Rich Results Test check. Add reproducible malformed-field and script-termination fuzz cases plus valid Unicode/optional-field cases for any new input contract. [Article guidance](https://developers.google.com/search/docs/appearance/structured-data/article). |
 
 ## code duplication
 

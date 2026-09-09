@@ -296,6 +296,30 @@ def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:
     return etree.tostring(root)
 
 
+def _materialize_parameter(root, name: str, value: str) -> None:
+    nodes = root.xpath("./xsl:param[@name=$name]", namespaces=_XSL_NAMESPACE, name=name)
+    if nodes:
+        node = nodes[0]
+    else:
+        node = etree.Element("{http://www.w3.org/1999/XSL/Transform}param", name=name)
+        root.insert(0, node)
+    for child in node:
+        node.remove(child)
+    node.text = None
+    node.attrib.pop("required", None)
+    node.set("select", "'" + value.replace("'", "''") + "'")
+
+
+def _saxon_parameters(root, parameters) -> dict[str, str]:
+    command_parameters = {}
+    for name, value in (parameters or {}).items():
+        if len((name + value).encode("utf-8")) < 32768:
+            command_parameters[name] = value
+        else:
+            _materialize_parameter(root, name, value)
+    return command_parameters
+
+
 class SaxonCEngine(TransformEngine):
     name = "saxonc"
 
@@ -324,6 +348,7 @@ class SaxonCEngine(TransformEngine):
             snapshot.documents[0][1], parser=safe_xml_parser(), base_url=snapshot.root_uri,
         )
         root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
+        parameters = _saxon_parameters(root, parameters)
         with TempWorkspace() as workspace:
             with workspace.named_file("w+b", suffix=".xsl") as stylesheet:
                 stylesheet.write(etree.tostring(root))

@@ -112,15 +112,26 @@ def _validate_absolute_web_url(url: str) -> None:
 
 def _validate_web_url_resource(url: str) -> None:
     parsed = urlsplit(url)
-    if not re.fullmatch(r"[A-Za-z0-9:/?\[\]@!$&'()*+,;=._~%#-]+", url):
-        raise ValueError("URL must be URI-encoded without whitespace or controls")
+    _validate_uri_encoding(url)
     if parsed.username is not None or "?" in url or "#" in url:
         raise ValueError("URL cannot contain credentials, queries, or fragments")
     if parsed.port == 0:
         raise ValueError("URL port must be positive")
+    _validate_web_url_path(parsed.path)
+
+
+def _validate_uri_encoding(url: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9:/?\[\]@!$&'()*+,;=._~%#-]+", url):
+        raise ValueError("URL must be URI-encoded without whitespace or controls")
     if re.search(r"%(?![0-9A-Fa-f]{2})", url):
         raise ValueError("URL must use valid percent escapes")
-    _validate_web_url_path(parsed.path)
+
+
+def validate_image_url(url: str) -> None:
+    _validate_absolute_web_url(url.split("?", 1)[0])
+    _validate_uri_encoding(url)
+    if "#" in url:
+        raise ValueError("Image URLs cannot contain fragments")
 
 
 def _validate_web_url_path(path: str) -> None:

@@ -61,6 +61,9 @@ def test_read_article_fields_single_pass():
         "slug": None,
         "modified": "",
         "translation": "",
+        "author": "",
+        "image": "",
+        "structured-data": "",
     }
 
 

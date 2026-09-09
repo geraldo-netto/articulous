@@ -23,6 +23,7 @@ from lxml import etree  # type: ignore[attr-defined]
 
 from .engines import safe_xml_parser
 from .filesystem import open_regular_file
+from .sections import validate_image_url
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,7 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
-_SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation"})
+_SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation", "author", "image", "structured-data"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
@@ -100,6 +101,9 @@ class Article:
     indexing: str = "index"
     modified: str = ""
     translation: str = ""
+    author: str = ""
+    image: str = ""
+    structured_data: str = ""
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -202,13 +206,37 @@ def _validated_translation(raw: str | None) -> str:
     return raw
 
 
+def _validated_author(raw: str | None) -> str:
+    if raw is None:
+        return ""
+    if not raw or len(raw) > 512:
+        raise ValueError("<author> must contain 1–512 characters")
+    return raw
+
+
+def _validated_image(raw: str | None) -> str:
+    if raw is None:
+        return ""
+    validate_image_url(raw)
+    return raw
+
+
+def _validated_structured_data(raw: str | None) -> str:
+    if raw is None:
+        return ""
+    if raw not in {"Article", "BlogPosting"}:
+        raise ValueError("<structured-data> must be Article or BlogPosting")
+    return raw
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
     fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index",
-              "slug": None, "modified": None, "translation": None}
+              "slug": None, "modified": None, "translation": None,
+              "author": None, "image": None, "structured-data": None}
     tags: list = []
     publication = "published"
     publish_at = ""
@@ -231,6 +259,9 @@ def _read_article_fields(root) -> dict:
         "slug": _validated_slug(fields["slug"]),
         "modified": _validated_modified(fields["modified"]),
         "translation": _validated_translation(fields["translation"]),
+        "author": _validated_author(fields["author"]),
+        "image": _validated_image(fields["image"]),
+        "structured-data": _validated_structured_data(fields["structured-data"]),
         "tags": tags,
         "publication": publication,
         "publish_at": publish_at,
@@ -376,6 +407,9 @@ def parse_article_xml(
         indexing=fields["indexing"],
         modified=fields["modified"],
         translation=fields["translation"],
+        author=fields["author"],
+        image=fields["image"],
+        structured_data=fields["structured-data"],
     )
 
 

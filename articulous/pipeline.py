@@ -24,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Optional
+from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
@@ -69,6 +70,10 @@ from .sections import (
     SECTION_NAMES,
     SECTION_XSL,
     validate_sitemap_location,
+)
+from .sitemaps import (
+    SitemapSlice, native_entry as _native_sitemap_entry, partition_sitemap,
+    sitemap_entry as _sitemap_entry, write_document, write_index,
 )
 
 
@@ -404,12 +409,6 @@ def _rss_item_xml(a) -> str:
     )
 
 
-def _sitemap_entry(value) -> tuple[str, str]:
-    if isinstance(value, dict):
-        return value["url"], value["modified"]
-    return value, ""
-
-
 def _sitemap_url_xml(value) -> str:
     url, modified = _sitemap_entry(value)
     attrs = f" lastmod={_xml_attr(modified)}" if modified else ""
@@ -697,12 +696,14 @@ def _write_search_model_file(
 
 
 def _source_values(source):
-    if isinstance(source, _JsonLinesSink):
+    if isinstance(source, (_JsonLinesSink, SitemapSlice)):
         return source.values()
     return iter(source)
 
 
 def _source_hash(source) -> str:
+    if isinstance(source, SitemapSlice):
+        return source.fingerprint
     if isinstance(source, _JsonLinesSink):
         source.flush()
         return file_hash(source.path)
@@ -716,28 +717,11 @@ def _source_hash(source) -> str:
     return digest.hexdigest()
 
 
-def _native_sitemap_entry(value) -> str:
-    url, modified = _sitemap_entry(value)
-    lastmod = f"<lastmod>{_xml_escape(modified)}</lastmod>" if modified else ""
-    return f"<url><loc>{_xml_escape(url)}</loc>{lastmod}</url>"
-
-
 def _write_native_sitemap(output_path: Path | StagedOutput, source) -> None:
-    header = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    write_document(
+        output_path, _source_values(source), "urlset", _native_sitemap_entry,
+        _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES,
     )
-    footer = "</urlset>"
-    size = len((header + footer).encode("utf-8"))
-    with output_path.open("w", encoding="utf-8") as out:
-        out.write(header)
-        for count, url in enumerate(_source_values(source), start=1):
-            entry = _native_sitemap_entry(url)
-            size += len(entry.encode("utf-8"))
-            if count > _SITEMAP_MAX_URLS or size > _SITEMAP_MAX_BYTES:
-                raise ValueError("Sitemap exceeds the 50,000 URL or 50 MiB limit")
-            out.write(entry)
-        out.write(footer)
 
 
 def _write_native_search(output_path: Path | StagedOutput, source) -> None:
@@ -1143,6 +1127,8 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
     if isinstance(ctx.engine_for("sitemap"), NativeEngine):
         source = urls if isinstance(urls, SitemapSink) else list(urls)
         _validate_sitemap_source(ctx.base_url, sitemap.url, source)
+        if isinstance(workspace, TempWorkspace):
+            return _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest)
         return _single_native_section(
             "sitemap", source, ctx.output_dir / sitemap.output_path,
             _write_native_sitemap, ctx, cache, manifest,
@@ -1158,6 +1144,39 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
         "sitemap", xml_input, ctx.output_dir / sitemap.output_path,
         "sitemap", "Skipping unchanged sitemap", ctx, cache, manifest,
     )
+
+
+def _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest):
+    shards = partition_sitemap(workspace, _source_values(source), _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES)
+    if len(shards) == 1:
+        return _single_native_section(
+            "sitemap", shards[0], ctx.output_dir / sitemap.output_path,
+            _write_native_sitemap, ctx, cache, manifest,
+        )
+    tasks, urls = [], []
+    for index, shard in enumerate(shards, start=1):
+        filename = f"{sitemap.output_path.stem[:40]}-{index:05d}-{shard.fingerprint}.xml"
+        url = sitemap.url.rsplit("/", 1)[0] + "/" + quote(filename, safe="")
+        validate_sitemap_location(url)
+        urls.append(url)
+        task = _make_native_task(
+            source=shard, output_path=ctx.output_dir / sitemap.output_path.parent / filename,
+            cache=cache, cache_key=f"sitemap:shard:{index}", engine=ctx.engine_for("sitemap"),
+            writer=_write_native_sitemap, ctx=ctx, manifest=manifest,
+        )
+        if task is not None:
+            tasks.append(task)
+    tasks.extend(_single_native_section(
+        "sitemap", urls, ctx.output_dir / sitemap.output_path, write_index, ctx, cache, manifest,
+    ))
+    return [_sequential_tasks(tasks)] if tasks else []
+
+
+def _sequential_tasks(tasks):
+    def run():
+        for task in tasks:
+            task()
+    return run
 
 
 def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=None):

@@ -394,6 +394,18 @@ The `"native"` engine is available only for `sitemap` and `search`; it
 streams those standard formats with bounded memory. Select `lxml` or
 `saxonc` for either section when custom XSLT output is required.
 
+Native production builds automatically partition sitemaps at 50,000 URLs
+or 50 MiB of uncompressed UTF-8 XML, including the document envelope.
+A single shard stays at the configured sitemap path; multiple shards turn
+that path into a sitemap index. Shard names include their sequence and content
+fingerprint. New shards publish before the index, preserving the old index
+and its referenced files if publication fails. Successful builds prune retired
+owned shards, including when the sitemap shrinks back to one file. Interrupted
+builds require a full recovery build under the existing ownership rules.
+The low-level `build_sitemap_section` caller must provide a `TempWorkspace`
+for automatic partitioning and retain it until its returned tasks finish;
+without a workspace it remains a single-file writer with strict limits.
+
 Configuration loading validates `site.base_url` for every backend. Supported
 forms are an absolute HTTP(S) URL, an empty string, or a root-relative prefix
 such as `/blog`. A value such as `not-a-url`, a protocol-relative host such as

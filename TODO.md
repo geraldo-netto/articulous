@@ -28,7 +28,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEO-08 | open | L | Split oversized native sitemaps and generate a sitemap index. | P2. `articulous/pipeline.py:_write_native_sitemap` currently rejects output beyond 50,000 URLs or 50 MiB; retain those safeguards per shard. Accept: deterministic shards, bounded memory, an index referencing every shard, ownership/pruning of retired shards, and recovery after interrupted publication. Test exact URL/byte limits, one-over cases, multibyte content, and shrinking builds. [Sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap). |
 
 ## concurrency
 

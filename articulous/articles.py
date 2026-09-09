@@ -41,7 +41,7 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
-_SEO_FIELDS = frozenset({"indexing"})
+_SEO_FIELDS = frozenset({"indexing", "slug"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
@@ -174,12 +174,20 @@ def _validated_indexing(raw: str) -> str:
     return raw
 
 
+def _validated_slug(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    if len(raw) > 128 or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", raw) is None:
+        raise ValueError("<slug> must contain 1–128 lowercase ASCII letters/digits separated by single hyphens")
+    return raw
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
-    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index"}
+    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index", "slug": None}
     tags: list = []
     publication = "published"
     publish_at = ""
@@ -199,6 +207,7 @@ def _read_article_fields(root) -> dict:
     return {
         **fields,
         "indexing": _validated_indexing(fields["indexing"]),
+        "slug": _validated_slug(fields["slug"]),
         "tags": tags,
         "publication": publication,
         "publish_at": publish_at,
@@ -314,7 +323,7 @@ def parse_article_xml(
         return None
 
     title = fields["title"]
-    slug = normalize_slug(title) if title else normalize_slug(path.stem)
+    slug = fields["slug"] or normalize_slug(title or path.stem)
     if not slug:
         logging.warning(
             f"Article {path} produced an empty slug from title={title!r} — skipping"

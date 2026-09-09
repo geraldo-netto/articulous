@@ -125,9 +125,17 @@ Notes:
   A successful build retracts previously owned outputs within its selected
   scope. Repeated `<tag>` elements remain valid; each article appears once
   on each tag page.
-- The slug is derived from `<title>` (URL‑safe). If the title is empty,
-  the filename stem is used instead. Slugs contain lowercase ASCII
-  letters, digits and hyphens; articles producing an empty slug are skipped.
+- Optional `<slug>stable-address</slug>` pins an article URL across title edits.
+  Explicit slugs contain 1–128 lowercase ASCII letters/digits with single
+  hyphens between segments. Empty, duplicate, nested, and unsafe slugs reject
+  the article; colliding generated paths fail before publication. Without
+  `<slug>`, the legacy title-derived slug remains; an empty title falls back
+  to the filename stem. Articles producing an empty slug are skipped.
+  Intentional slug or route changes prune the old owned output on the next
+  selected build. Configure a permanent HTTP 301 or 308 redirect from the old
+  URL to the new URL at your host/CDN before deployment; the generator cannot
+  emit HTTP responses. Include the deployment prefix in both redirect URLs,
+  avoid redirect chains, and verify the old URL returns the permanent redirect.
 - `<date>` must be ISO‑8601 (`YYYY-MM-DD` or full timestamp). Articles
   with a missing or invalid date are skipped with a warning. Dates and
   publication timestamps without a timezone are treated as UTC; timezone

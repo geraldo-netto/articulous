@@ -60,6 +60,7 @@ def test_read_article_fields_single_pass():
         "indexing": "index",
         "slug": None,
         "modified": "",
+        "translation": "",
     }
 
 

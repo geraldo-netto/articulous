@@ -83,6 +83,19 @@ def test_seo01_real_saxonc_receives_literal_metadata(tmp_path, saxonc_engine):
     assert etree.parse(str(output)).getroot().text == value
 
 
+def test_seo06_real_saxonc_renders_reciprocal_alternates(site_root, seo_config, saxonc_home):
+    cli, config = seo_config
+    config["saxonc"]["home"] = str(saxonc_home)
+    config["engines"]["articles"] = "saxonc"
+    for relative in ["en/first-post.xml", "fr/premier.xml"]:
+        path = site_root / "content" / relative
+        path.write_text(path.read_text().replace("</article>", "<translation>pair</translation></article>"))
+    run_build(cli, config, site_root)
+    for relative in ["en/articles/first-post/index.html", "fr/articles/premier-article/index.html"]:
+        root = etree.HTML((site_root / "output" / relative).read_bytes())
+        assert root.xpath("head/link[@rel='alternate']/@hreflang") == ["en", "fr"]
+
+
 def test_real_saxonc_builds_all_sections_and_reuses_cache(site_root, saxonc_home):
     cli = CliOptions(parse_cli_args([]))
     config = load_or_create_config(site_root / "config.json")

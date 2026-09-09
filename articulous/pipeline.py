@@ -75,6 +75,7 @@ from .sitemaps import (
     SitemapSlice, native_entry as _native_sitemap_entry, partition_sitemap,
     sitemap_entry as _sitemap_entry, write_document, write_index,
 )
+from .translations import TranslationStore
 
 
 _ASSET_CACHE_KEY = "assets"
@@ -124,6 +125,7 @@ class BuildCtx:
     sitemap_listings: bool = False
     robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
+    translations: Optional[TranslationStore] = None
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -951,7 +953,15 @@ def _article_parameters(art, ctx: BuildCtx) -> dict[str, str]:
         "articulous-lang": art.lang,
         "articulous-site": ctx.site_name,
         "articulous-indexing": art.indexing,
+        "articulous-translation": art.translation,
+        "articulous-alternates": _article_alternates(art, ctx),
     }
+
+
+def _article_alternates(art, ctx: BuildCtx) -> str:
+    if ctx.translations is None or not art.indexable:
+        return ""
+    return ctx.translations.markup(art.translation)
 
 
 def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, tasks=None):
@@ -1220,6 +1230,7 @@ class StreamProjection:
     listings_by_lang: ArticleStore | None = None
     sections: frozenset[str] = field(default_factory=lambda: frozenset(SECTION_NAMES))
     sitemap_listings: bool = False
+    translations: Optional[TranslationStore] = None
 
 
 class BuildPlan(dict):
@@ -1272,6 +1283,7 @@ def _stream_projections(
         listings_by_lang=listing_store,
         sections=sections,
         sitemap_listings=sitemap_listings,
+        translations=TranslationStore() if "articles" in sections else None,
     )
     try:
         _fill_projection(projection, stream_factory, cli, ctx)
@@ -1295,6 +1307,8 @@ def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> Non
 def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
+        if projection.translations is not None:
+            projection.translations.add(art, _passes_cli_filters(art, cli))
         if not art.policy.page:
             if _passes_cli_filters(art, cli):
                 _record_skipped_publication(projection, art)
@@ -1452,6 +1466,10 @@ def _collect_tasks(
         collect_articles=need_per_lang,
     )
     try:
+        if projection.translations is not None:
+            ctx = replace(ctx, translations=projection.translations)
+            if cli.only_langs or cli.only_slugs:
+                projection.translations.validate_filters(cache, lambda key: _selected_output_key(key, cli))
         if need_cross:
             plan.update(
                 _collect_cross_lang_plan(projection, ctx, cache, want, workspace, manifest)
@@ -1694,6 +1712,8 @@ def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
         projection.articles_by_lang.close()
     if projection.listings_by_lang is not None:
         projection.listings_by_lang.close()
+    if projection.translations is not None:
+        projection.translations.close()
 
 
 # ================================================================

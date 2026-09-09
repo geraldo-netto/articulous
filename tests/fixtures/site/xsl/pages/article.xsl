@@ -6,9 +6,11 @@
   <xsl:param name="articulous-lang"/>
   <xsl:param name="articulous-site"/>
   <xsl:param name="articulous-indexing" select="'index'"/>
+  <xsl:param name="articulous-alternates"/>
   <xsl:template match="/article">
     <html lang="{translate($articulous-lang, '_', '-')}">
       <head>
+        <xsl:value-of select="$articulous-alternates" disable-output-escaping="yes"/>
         <xsl:if test="$articulous-indexing = 'noindex'"><meta name="robots" content="noindex"/></xsl:if>
         <title><xsl:value-of select="title"/> | <xsl:value-of select="$articulous-site"/></title>
         <xsl:if test="normalize-space(description)">

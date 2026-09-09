@@ -171,6 +171,31 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+Use the same `<translation>story-id</translation>` in articles that are actual
+translations. IDs contain 1–128 ASCII letters/digits with hyphen or underscore
+separators; duplicates within one article, malformed IDs, and nested fields
+reject that article. There can be only one indexable page per translation ID
+and normalized locale; ambiguity fails before publication. Relationships are
+never inferred from titles or slugs. Private, draft, and noindex peers are
+excluded; unlisted peers remain indexable by default.
+
+Templates receive `articulous-translation` and `articulous-alternates`.
+The latter is a pre-escaped HTML fragment of self-inclusive reciprocal
+`<link rel="alternate" hreflang="..." href="..."/>` elements, sorted by locale.
+Emit it in the head with `<xsl:value-of select="$articulous-alternates"
+disable-output-escaping="yes"/>`, as in the reference template. Relative-only
+builds omit the fragment. Metadata fingerprints track peer URLs and membership.
+
+Annotation locales use ISO language, optional script, and optional region codes
+(for example `en`, `en-US`, `zh-Hant-TW`); `en_US` normalizes to `en-US` without
+changing the route. Unsupported codes fail translated builds. Bundled identifiers
+come from the [IANA registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry)
+and ISO 3166-1 alpha-2; numeric and reserved regions such as `419`, `EU`, and `UK`
+are excluded, following [hreflang guidance](https://developers.google.com/search/docs/specialty/international/localized-versions).
+Filtered builds still discover all peers. If a filter would leave an unselected
+peer with stale reciprocal links, the build fails before publishing; run a full
+build after relationship changes. Unchanged groups support targeted builds.
+
 Set top-level `"robots": {"enabled": true}` to generate `output/robots.txt`
 alongside the sitemap (including `--only sitemap`). Default: disabled.
 The supported rules allow crawling all paths and advertise the absolute

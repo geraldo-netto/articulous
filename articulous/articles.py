@@ -41,7 +41,7 @@ _PUBLICATION_POLICIES = {
     "private": PublicationPolicy(False, False, False, False, False),
     "scheduled": PublicationPolicy(False, False, False, False, False),
 }
-_SEO_FIELDS = frozenset({"indexing", "slug", "modified"})
+_SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
@@ -99,6 +99,7 @@ class Article:
     source_base_uri: str | None = None
     indexing: str = "index"
     modified: str = ""
+    translation: str = ""
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -193,12 +194,21 @@ def _validated_modified(raw: str | None) -> str:
     return raw
 
 
+def _validated_translation(raw: str | None) -> str:
+    if raw is None:
+        return ""
+    if len(raw) > 128 or re.fullmatch(r"[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*", raw) is None:
+        raise ValueError("<translation> must contain 1–128 ASCII letters/digits separated by hyphens or underscores")
+    return raw
+
+
 def _read_article_fields(root) -> dict:
     """
     Single pass over the article's child elements. Replaces four
     separate ``root.find(...)`` XPath traversals with one walk.
     """
-    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index", "slug": None, "modified": None}
+    fields = {"title": "", "date": "", "description": "", "lang": "", "indexing": "index",
+              "slug": None, "modified": None, "translation": None}
     tags: list = []
     publication = "published"
     publish_at = ""
@@ -220,6 +230,7 @@ def _read_article_fields(root) -> dict:
         "indexing": _validated_indexing(fields["indexing"]),
         "slug": _validated_slug(fields["slug"]),
         "modified": _validated_modified(fields["modified"]),
+        "translation": _validated_translation(fields["translation"]),
         "tags": tags,
         "publication": publication,
         "publish_at": publish_at,
@@ -364,6 +375,7 @@ def parse_article_xml(
         source_base_uri=base_uri,
         indexing=fields["indexing"],
         modified=fields["modified"],
+        translation=fields["translation"],
     )
 
 

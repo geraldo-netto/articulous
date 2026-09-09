@@ -424,7 +424,8 @@ def _index_doc(page, site_name: str) -> str:
         f" site={_xml_attr(site_name)} "
         f"lang={_xml_attr(page.lang)} "
         f'page="{page.page}" total="{page.total_pages}" '
-        f"self={_xml_attr(page.url)}"
+        f"self={_xml_attr(page.url)} "
+        f"previous={_xml_attr(page.previous_url)} next={_xml_attr(page.next_url)}"
     )
     return _xml_doc(
         "index", [_article_xml(a) for a in page.articles], attrs,

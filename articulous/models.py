@@ -61,6 +61,8 @@ class IndexPage:
     articles: list
     output_path: Path
     url: str
+    previous_url: str = ""
+    next_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -118,6 +120,12 @@ def _page_batches(articles, per_page: int):
         yield batch
 
 
+def _index_url(page: int, total: int, lang: str, ctx: SiteModelCtx) -> str:
+    if not 1 <= page <= total:
+        return ""
+    return build_url_from_pattern(ctx.base_url, ctx.url_patterns["index"], lang=lang, page=page)
+
+
 def build_index_models(
     lang_articles, lang: str, ctx: SiteModelCtx,
 ) -> Iterator[IndexPage]:
@@ -143,9 +151,9 @@ def build_index_models(
             output_path=build_output_path_from_pattern(
                 "index", pattern, lang=lang, page=page,
             ),
-            url=build_url_from_pattern(
-                ctx.base_url, pattern, lang=lang, page=page,
-            ),
+            url=_index_url(page, num_pages, lang, ctx),
+            previous_url=_index_url(page - 1, num_pages, lang, ctx),
+            next_url=_index_url(page + 1, num_pages, lang, ctx),
         )
 
 

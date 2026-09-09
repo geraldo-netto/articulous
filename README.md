@@ -171,6 +171,12 @@ indices also expose `@page` and `@total`. Each pagination page uses its own
 canonical URL. Relative-only builds omit canonicals. Adapt this contract in
 your production templates; see [canonical URL guidance](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls).
 
+Index inputs expose `@previous` and `@next` URLs, with empty strings at the
+sequence boundaries. `IndexPage.previous_url` and `IndexPage.next_url` carry
+the same values. Render ordinary anchor links when nonempty, as in the
+reference index template, so crawlers can reach every page from page one.
+See [pagination guidance](https://developers.google.com/search/docs/specialty/ecommerce/pagination-and-incremental-page-loading).
+
 Article stylesheets receive literal string parameters `articulous-url`
 (resolved article URL), `articulous-lang` (validated language including fallback),
 and `articulous-site` (configured site name). Declare each with a top-level

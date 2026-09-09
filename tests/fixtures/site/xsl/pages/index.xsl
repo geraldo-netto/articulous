@@ -16,6 +16,10 @@
             <li><a href="{url}"><xsl:value-of select="title"/></a></li>
           </xsl:for-each>
         </ul>
+        <nav aria-label="Pagination">
+          <xsl:if test="@previous != ''"><a rel="prev" href="{@previous}">Previous</a></xsl:if>
+          <xsl:if test="@next != ''"><a rel="next" href="{@next}">Next</a></xsl:if>
+        </nav>
       </body>
     </html>
   </xsl:template>

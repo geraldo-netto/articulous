@@ -3,7 +3,13 @@
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="html" indent="yes"/>
   <xsl:template match="/tag">
-    <html>
+    <html lang="{translate(@lang, '_', '-')}">
+      <head>
+        <title><xsl:value-of select="display-name"/> | <xsl:value-of select="@site"/></title>
+        <xsl:if test="starts-with(@self, 'https://') or starts-with(@self, 'http://')">
+          <link rel="canonical" href="{@self}"/>
+        </xsl:if>
+      </head>
       <body>
         <ul>
           <xsl:for-each select="article">

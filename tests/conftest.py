@@ -19,9 +19,11 @@ import subprocess
 import sys
 from contextlib import ExitStack
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.filesystem import TempWorkspace
 
 
@@ -75,3 +77,12 @@ def run_sitegen():
 def xml_files(root: Path) -> list:
     """List all XML article files under ``root`` (recursive)."""
     return list(root.rglob("*.xml"))
+
+
+@pytest.fixture
+def seo_config(site_root):
+    cli = SimpleNamespace(dry_run=False, force_full_build=False, verbose=False,
+                          only_sections=None, only_langs=None, only_slugs=None)
+    config = load_or_create_config(site_root / "config.json")
+    apply_cli_overrides(config, cli, site_root)
+    return cli, config

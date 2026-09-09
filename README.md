@@ -163,6 +163,14 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+`tests/fixtures/site/xsl/pages/` contains reference templates for tests and
+examples, not an installed production theme. Its HTML pages render meaningful
+titles, resolved language, optional article descriptions, and one absolute
+self-canonical URL. Index and tag inputs expose `@site`, `@lang`, and `@self`;
+indices also expose `@page` and `@total`. Each pagination page uses its own
+canonical URL. Relative-only builds omit canonicals. Adapt this contract in
+your production templates; see [canonical URL guidance](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls).
+
 Article stylesheets receive literal string parameters `articulous-url`
 (resolved article URL), `articulous-lang` (validated language including fallback),
 and `articulous-site` (configured site name). Declare each with a top-level

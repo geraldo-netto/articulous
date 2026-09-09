@@ -163,6 +163,18 @@ Notes:
 
 ## 🧩 Required XSL Templates
 
+Article stylesheets receive literal string parameters `articulous-url`
+(resolved article URL), `articulous-lang` (validated language including fallback),
+and `articulous-site` (configured site name). Declare each with a top-level
+`<xsl:param name="articulous-url"/>` and read it as `$articulous-url`.
+The contract works with lxml and SaxonC. Parameters participate in incremental
+fingerprints; metadata-only configuration changes rebuild article pages.
+The captured source XML and its original document base URI are preserved.
+An empty site base URL produces root-relative article URLs; templates should
+omit absolute canonical markup in that case. See the
+[lxml parameter documentation](https://lxml.de/xpathxslt.html#stylesheets-parameters)
+and [Saxon command-line parameters](https://www.saxonica.com/html/documentation12/using-xsl/commandline/index.html).
+
 The generator requires these files inside `xsl/pages/`:
 
 - `article.xsl`

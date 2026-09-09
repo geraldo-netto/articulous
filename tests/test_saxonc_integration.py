@@ -69,6 +69,20 @@ def test_real_saxonc_version(saxonc_engine):
     assert "SaxonC-HE 12.10" in result.stdout + result.stderr
 
 
+def test_seo01_real_saxonc_receives_literal_metadata(tmp_path, saxonc_engine):
+    stylesheet = tmp_path / "metadata.xsl"
+    stylesheet.write_text(
+        '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+        '<xsl:param name="articulous-site"/><xsl:template match="/">'
+        '<site><xsl:value-of select="$articulous-site"/></site>'
+        '</xsl:template></xsl:stylesheet>'
+    )
+    output = tmp_path / "metadata.xml"
+    value = 'Unicode café 日本語 & "quotes" <markup> = literal'
+    saxonc_engine.run(b"<article/>", stylesheet, output, parameters={"articulous-site": value})
+    assert etree.parse(str(output)).getroot().text == value
+
+
 def test_real_saxonc_builds_all_sections_and_reuses_cache(site_root, saxonc_home):
     cli = CliOptions(parse_cli_args([]))
     config = load_or_create_config(site_root / "config.json")

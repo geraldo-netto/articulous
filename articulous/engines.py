@@ -194,6 +194,7 @@ class TransformEngine(ABC):
         dry_run: bool = False,
         stylesheet_fingerprint: Optional[str] = None,
         xml_base_uri: Optional[str] = None,
+        parameters: Optional[dict[str, str]] = None,
     ) -> None:
         """Run the transform unless dry-run is set; returns ``None``."""
         xsl_path = Path(xsl_path)
@@ -210,7 +211,7 @@ class TransformEngine(ABC):
         validate_output_path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self._do_transform(
-            normalised, xsl_path, output_path, stylesheet_fingerprint, xml_base_uri,
+            normalised, xsl_path, output_path, stylesheet_fingerprint, xml_base_uri, parameters,
         )
 
     @abstractmethod
@@ -221,6 +222,7 @@ class TransformEngine(ABC):
         output_path: Path,
         stylesheet_fingerprint: Optional[str] = None,
         xml_base_uri: Optional[str] = None,
+        parameters: Optional[dict[str, str]] = None,
     ) -> None:
         ...
 
@@ -266,6 +268,7 @@ class LxmlEngine(TransformEngine):
 
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,
+        parameters=None,
     ):
         logging.debug(f"Running lxml transform -> {output_path}")
         try:
@@ -277,7 +280,7 @@ class LxmlEngine(TransformEngine):
             xslt = self._compiled_stylesheet(
                 xsl_path, stylesheet_fingerprint,
             )
-            result = xslt(dom)
+            result = xslt(dom, **{key: etree.XSLT.strparam(value) for key, value in (parameters or {}).items()})
         except (etree.XMLSyntaxError, etree.XSLTParseError, etree.XSLTApplyError):
             logging.exception("lxml transform failed")
             raise
@@ -312,6 +315,7 @@ class SaxonCEngine(TransformEngine):
 
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,
+        parameters=None,
     ):
         snapshot = self._stylesheet_snapshot(xsl_path, stylesheet_fingerprint)
         if len(snapshot.documents) != 1:
@@ -328,9 +332,9 @@ class SaxonCEngine(TransformEngine):
                 with workspace.named_file("w+b", suffix=".xml") as f:
                     f.write(_xml_with_base(xml_input, xml_base_uri))
                     xml_input = Path(f.name)
-            self._run_saxon(xml_input, captured_xsl, output_path)
+            self._run_saxon(xml_input, captured_xsl, output_path, parameters)
 
-    def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path):
+    def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path, parameters=None):
         # Absolute paths prevent filenames from being interpreted as CLI flags.
         resolved = {
             "xml": xml_path.resolve(),
@@ -354,6 +358,7 @@ class SaxonCEngine(TransformEngine):
                 f"-xsl:{resolved['xsl']}",
                 f"-o:/dev/fd/{staged.fd}",
             ]
+            cmd.extend(f"{key}={value}" for key, value in (parameters or {}).items())
             logging.debug(f"Running SaxonC: {' '.join(cmd)}")
             try:
                 subprocess.run(cmd, check=True, pass_fds=(staged.fd,))

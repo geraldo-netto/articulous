@@ -743,6 +743,7 @@ class _TransformSpec:
     cache_key: str
     fingerprint: tuple
     xml_base_uri: Optional[str] = None
+    parameters: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -763,6 +764,7 @@ class _XsltTask:
             dry_run=self.ctx.dry_run,
             stylesheet_fingerprint=self.spec.fingerprint[1],
             xml_base_uri=self.spec.xml_base_uri,
+            parameters=self.spec.parameters,
         )
         update_cache(self.cache, self.spec.cache_key, self.spec.fingerprint)
 
@@ -829,6 +831,7 @@ def _make_xslt_task(
     ctx: BuildCtx,
     manifest: Optional[OutputManifest] = None,
     xml_base_uri: Optional[str] = None,
+    parameters: Optional[dict[str, str]] = None,
 ) -> Optional[_XsltTask]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
@@ -853,12 +856,14 @@ def _make_xslt_task(
         xml_hash = file_hash(xml_input)
 
     fingerprint = (xml_hash, xsl_hash, engine.cache_identity, _output_relpath(ctx, output_path))
+    if parameters:
+        fingerprint += (json.dumps(parameters, sort_keys=True),)
     if xml_base_uri is not None:
         fingerprint += (xml_base_uri,)
     if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
-    spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint, xml_base_uri)
+    spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint, xml_base_uri, parameters or {})
     return _XsltTask(spec, engine, ctx, cache)
 
 
@@ -938,6 +943,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
         )
         task = _make_xslt_task(
             xml_input=_article_input(art),
+            parameters={"articulous-url": art.url, "articulous-lang": art.lang, "articulous-site": ctx.site_name},
             xml_base_uri=art.source_base_uri or art.source_path.resolve().as_uri(),
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,

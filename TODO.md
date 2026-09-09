@@ -92,7 +92,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| SEO-01 | open | M | Pass resolved article SEO metadata into the actual XSLT rendering path. | P1; prerequisite for SEO-02/04/06/10. `articulous/articles.py:Article` already has the resolved URL and language, but `articulous/pipeline.py:build_articles_section` transforms only captured source XML; unlike listing `@self`, generated article URLs are unavailable to templates. Accept: a documented metadata/parameter contract for URL, resolved language, and site name in both lxml and SaxonC, preserving snapshot/base-URI semantics. Include values in fingerprints and test metadata-only config changes, language fallback, custom URL patterns, and production dispatcher invocation. |
 
 ## unused functions/methods
 

@@ -117,6 +117,7 @@ class BuildCtx:
     per_page: int = 10
     rss_items: int = 20
     sitemap_listings: bool = False
+    robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
 
     def xsl_for(self, section: str) -> Path:
@@ -160,6 +161,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         per_page=pagination["per_page"],
         rss_items=pagination["rss_items"],
         sitemap_listings=config["sitemap"]["include_listings"],
+        robots_enabled=config["robots"]["enabled"],
     )
 
 
@@ -748,6 +750,23 @@ def _write_native_search(output_path: Path | StagedOutput, source) -> None:
         out.write("\n]")
 
 
+def _write_robots(output_path: Path | StagedOutput, source) -> None:
+    output_path.write_text(f"User-agent: *\nAllow: /\nSitemap: {source[0]}\n", encoding="utf-8")
+
+
+def _build_robots(ctx: BuildCtx, cache, manifest) -> list:
+    if not ctx.robots_enabled:
+        return []
+    url = build_url_from_pattern(ctx.base_url, ctx.url_patterns["sitemap"])
+    validate_sitemap_location(url)
+    task = _make_native_task(
+        source=[url], output_path=ctx.output_dir / "robots.txt", cache=cache,
+        cache_key="sitemap:robots", engine=NativeEngine(), writer=_write_robots,
+        ctx=ctx, manifest=manifest,
+    )
+    return [task] if task is not None else []
+
+
 # ================================================================
 # Shared XSLT task plumbing
 # ================================================================
@@ -1328,6 +1347,7 @@ def _collect_cross_lang_plan(
         plan["sitemap"] = build_sitemap_section(
             projection.sitemap_urls, ctx, cache, workspace, manifest,
         )
+        plan["sitemap"].extend(_build_robots(ctx, cache, manifest))
     if want("search"):
         plan["search"] = build_search_section(
             projection.search_items, ctx, cache, workspace, manifest,

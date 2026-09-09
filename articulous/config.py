@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     },
     "saxonc": {"home": None},
     "sitemap": {"include_listings": False},
+    "robots": {"enabled": False},
     "site": {
         "site_name": "My Site",
         "base_url": "https://example.com",
@@ -220,6 +221,11 @@ def _validate_sitemap(config: dict) -> None:
     _require_bool(sitemap["include_listings"], "sitemap.include_listings")
 
 
+def _validate_robots(config: dict) -> None:
+    robots = _require_block(config, "robots", DEFAULT_CONFIG["robots"])
+    _require_bool(robots["enabled"], "robots.enabled")
+
+
 def validate_config(config: dict) -> None:
     config = _require_object(config, "root")
     _require_exact_keys(config, _CONFIG_KEYS, "root")
@@ -232,6 +238,7 @@ def validate_config(config: dict) -> None:
         _validate_build,
         _validate_logging,
         _validate_sitemap,
+        _validate_robots,
     ):
         validator(config)
 

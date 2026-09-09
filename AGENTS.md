@@ -76,6 +76,6 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 
 ## Communications
 
-- Use headings + bullets for readability.
+- Keep responses concise and readable. Headings and bullets are optional; follow higher-priority formatting instructions.
 - Highlight changed files + key points.
 - Keep final answers brief + professional.

@@ -13,7 +13,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| CONTR-02 | blocked | S | Reconcile response-format instructions for repository work. | `AGENTS.md`, Communications requires headings and bullets; the current session's developer Writing style instruction says to avoid section headings and use lists selectively. The developer instruction takes precedence for this scan. Impact: both formatting requirements cannot be followed together; resolve by making the repository rule compatible with the session override. |
 
 ## security
 

@@ -617,6 +617,9 @@ ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 10' a
 pyright --pythonpath .venv/bin/python
 ```
 
+CI runs only on manual dispatch. In GitHub Actions, select
+**Test Articulous Generator** and choose **Run workflow**.
+
 CI installs the versions in `uv.lock` with
 `uv sync --locked --extra test --no-build --no-install-project` for each
 Python version. To use those locked dependencies locally, run that

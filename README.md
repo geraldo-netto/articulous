@@ -266,7 +266,9 @@ Article XML may specify `<indexing>noindex</indexing>` or
 `<indexing>index</indexing>` (default when absent). Values are case-sensitive;
 duplicate, nested, empty, and unknown directives reject the article. This
 setting is independent of publication status: `unlisted` still publishes a
-page and permits indexing by default, while excluding discovery links.
+page and permits indexing by default, while excluding archive, feed, sitemap,
+and search listings. Explicit translation groups are an exception: indexable
+unlisted peers appear in reciprocal hreflang links on their translations.
 Private and draft articles remain unpublished. A noindex page stays crawlable
 and leaves the sitemap. Templates receive `articulous-indexing`; the reference
 article template emits `<meta name="robots" content="noindex">` when requested.

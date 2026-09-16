@@ -73,6 +73,10 @@ class TagPage:
     articles: list
     output_path: Path
     url: str
+    page: int = 1
+    total_pages: int = 1
+    previous_url: str = ""
+    next_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -157,40 +161,57 @@ def build_index_models(
         )
 
 
-def build_tags_models(
-    lang_articles, lang: str, ctx: SiteModelCtx,
-) -> list[TagPage]:
-    """
-    Build tag pages for one language. Tag values are slugified for
-    filesystem paths and URL-encoded for URLs.
-    """
+def _tag_page_pattern(pattern: str, page: int) -> str:
+    return pattern if page == 1 else f"{pattern.rstrip('/')}/page/{page}/"
+
+
+def _tag_url(page, total, pattern, lang, tag_slug, ctx):
+    if not 1 <= page <= total:
+        return ""
+    return build_url_from_pattern(
+        ctx.base_url, _tag_page_pattern(pattern, page), lang=lang, tag=tag_slug,
+    )
+
+
+def _tag_pages(tag, items, lang, ctx, paginate):
+    tag_slug = normalize_slug(tag)
+    if not tag_slug:
+        logging.warning(f"Tag {tag!r} slugifies to empty string — skipping")
+        return
+    size = ctx.per_page if paginate else len(items)
+    total = (len(items) + size - 1) // size
     pattern = ctx.url_patterns["tag"]
+    for number, batch in enumerate(_page_batches(items, size), 1):
+        yield TagPage(
+            lang=lang, tag=tag, tag_slug=tag_slug, articles=batch,
+            output_path=build_output_path_from_pattern(
+                "tags", _tag_page_pattern(pattern, number), lang=lang, tag=tag_slug,
+            ),
+            url=_tag_url(number, total, pattern, lang, tag_slug, ctx),
+            page=number, total_pages=total,
+            previous_url=_tag_url(number - 1, total, pattern, lang, tag_slug, ctx),
+            next_url=_tag_url(number + 1, total, pattern, lang, tag_slug, ctx),
+        )
+
+
+def build_tags_models(
+    lang_articles, lang: str, ctx: SiteModelCtx, *, paginate: bool = False,
+) -> list[TagPage]:
+    """Group already-sorted, publication-filtered articles by tag.
+
+    Opt-in pagination uses ``ctx.per_page``. Page one keeps the configured
+    tag route; subsequent pages append ``page/N/``. API callers can supply
+    a global tag pattern without ``{lang}`` and an empty language.
+    """
+    if not isinstance(paginate, bool):
+        raise ValueError("paginate must be a boolean")
     tag_map: dict = {}
     for art in lang_articles:
         for tag in dict.fromkeys(art.tags):
             tag_map.setdefault(tag, []).append(art)
-
     models: list[TagPage] = []
     for tag, items in tag_map.items():
-        tag_slug = normalize_slug(tag)
-        if not tag_slug:
-            logging.warning(
-                f"Tag {tag!r} slugifies to empty string — skipping"
-            )
-            continue
-        url_tag = quote(tag_slug, safe="")
-        models.append(TagPage(
-            lang=lang,
-            tag=tag,
-            tag_slug=tag_slug,
-            articles=items,
-            output_path=build_output_path_from_pattern(
-                "tags", pattern, lang=lang, tag=tag_slug,
-            ),
-            url=build_url_from_pattern(
-                ctx.base_url, pattern, lang=lang, tag=url_tag,
-            ),
-        ))
+        models.extend(_tag_pages(tag, items, lang, ctx, paginate))
     return models
 
 

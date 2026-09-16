@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
         "base_url": "https://example.com",
         "languages": ["en"],
         "default_language": "en",
-        "pagination": {"per_page": 10, "rss_items": 20},
+        "pagination": {"per_page": 10, "rss_items": 20, "paginate_tags": False},
     },
     "urls": {
         "article": "/{lang}/articles/{slug}/",
@@ -175,6 +175,7 @@ def _validate_site(config: dict) -> None:
         pagination, DEFAULT_CONFIG["site"]["pagination"], "site.pagination"
     )
     _require_positive_int(pagination["per_page"], "site.pagination.per_page")
+    _require_bool(pagination["paginate_tags"], "site.pagination.paginate_tags")
     _require_non_negative_int(
         pagination["rss_items"], "site.pagination.rss_items"
     )

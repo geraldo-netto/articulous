@@ -123,6 +123,7 @@ class BuildCtx:
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
     rss_items: int = 20
+    paginate_tags: bool = False
     sitemap_listings: bool = False
     robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
@@ -168,6 +169,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         url_patterns=dict(config["urls"]),
         per_page=pagination["per_page"],
         rss_items=pagination["rss_items"],
+        paginate_tags=pagination["paginate_tags"],
         sitemap_listings=config["sitemap"]["include_listings"],
         robots_enabled=config["robots"]["enabled"],
     )
@@ -451,7 +453,9 @@ def _tag_doc(page, site_name: str) -> str:
         f" site={_xml_attr(site_name)} "
         f"lang={_xml_attr(page.lang)} "
         f"slug={_xml_attr(page.tag_slug)} "
-        f"self={_xml_attr(page.url)}"
+        f'page="{page.page}" total="{page.total_pages}" '
+        f"self={_xml_attr(page.url)} "
+        f"previous={_xml_attr(page.previous_url)} next={_xml_attr(page.next_url)}"
     )
     children = [f"<display-name>{_xml_escape(page.tag)}</display-name>"]
     children.extend(_article_xml(a) for a in page.articles)
@@ -1030,13 +1034,18 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
     return tasks
 
 
+def _tag_cache_key(page) -> str:
+    key = f"tag:{page.lang}:{page.tag_slug}"
+    return key if page.page == 1 else f"{key}/page/{page.page}"
+
+
 def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """Build tag pages for one language."""
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "tags")
     if tasks is None:
         tasks = _TaskQueue(ctx, cache, engine)
 
-    for page in build_tags_models(lang_articles, lang, ctx):
+    for page in build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags):
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
         task = _make_xslt_task(
             xml_input=xml_bytes,
@@ -1044,7 +1053,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
             xsl_hash=xsl_hash,
             output_path=ctx.output_dir / page.output_path,
             cache=cache,
-            cache_key=f"tag:{page.lang}:{page.tag_slug}",
+            cache_key=_tag_cache_key(page),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1307,7 +1316,10 @@ def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> Non
         return
     for lang in ctx.languages:
         articles = _sorted_store_articles(projection.listings_by_lang, lang)
-        pages = chain(build_index_models(articles, lang, ctx), build_tags_models(articles, lang, ctx))
+        pages = chain(
+            build_index_models(articles, lang, ctx),
+            build_tags_models(articles, lang, ctx, paginate=ctx.paginate_tags),
+        )
         for page in pages:
             projection.sitemap_urls.append_url(page.url)
 

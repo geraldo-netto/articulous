@@ -277,13 +277,13 @@ directive. See [indexing controls](https://developers.google.com/search/docs/fun
 examples, not an installed production theme. Its HTML pages render meaningful
 titles, resolved language, optional article descriptions, and one absolute
 self-canonical URL. Index and tag inputs expose `@site`, `@lang`, and `@self`;
-indices also expose `@page` and `@total`. Each pagination page uses its own
+both expose `@page` and `@total`. Each pagination page uses its own
 canonical URL. Relative-only builds omit canonicals. Adapt this contract in
 your production templates; see [canonical URL guidance](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls).
 
-Index inputs expose `@previous` and `@next` URLs, with empty strings at the
-sequence boundaries. `IndexPage.previous_url` and `IndexPage.next_url` carry
-the same values. Render ordinary anchor links when nonempty, as in the
+Index and tag inputs expose `@previous` and `@next` URLs, with empty strings at the
+sequence boundaries. `IndexPage` and `TagPage` carry the same values as `previous_url` and
+`next_url`. Render ordinary anchor links when nonempty, as in the
 reference index template, so crawlers can reach every page from page one.
 See [pagination guidance](https://developers.google.com/search/docs/specialty/ecommerce/pagination-and-incremental-page-loading).
 
@@ -413,10 +413,24 @@ defaults. Unknown keys and invalid value types are rejected.
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `sitemap`     | `include_listings` — include index/tag pages (boolean, default false) |
 | `robots`      | `enabled` — generate host-root robots.txt alongside sitemap (boolean, default false) |
-| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items` |
+| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
 | `build`       | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean)              |
 | `logging`     | `level` (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`), `file` (optional path)                       |
+
+Tag pagination is opt-in: set `site.pagination.paginate_tags` to `true` after
+adding previous/next links to your tag template. The default is `false`, preserving
+one page per tag for existing sites. Enabled tags use `pagination.per_page`.
+The configured `urls.tag` remains page one; later pages append `/page/2/`,
+`/page/3/`, and so on. For example, `/en/tags/linux/` keeps its address and page
+two is `/en/tags/linux/page/2/`. Paginated tags participate in incremental caching,
+selected-language cleanup and the sitemap when `include_listings` is enabled.
+
+Python consumers can call `build_tags_models(articles, lang, ctx, paginate=True)`
+from `articulous.models`. Supply articles already sorted and filtered for
+publication, with a validated positive `ctx.per_page`. For a global archive,
+pass `lang=""` and an API context whose `url_patterns["tag"]` is `/tags/{tag}/`.
+The CLI still uses its configured language-specific tag pattern.
 
 `pagination.per_page` must be positive; `pagination.rss_items` may be
 zero, producing an empty RSS feed. `languages` must be non-empty and

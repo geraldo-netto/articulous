@@ -215,17 +215,20 @@ def build_tags_models(
     return models
 
 
-def build_rss_model(articles, ctx: SiteModelCtx) -> RssFeed:
+def build_rss_model(articles, ctx: SiteModelCtx, lang: str | None = None) -> RssFeed:
     """
     Build RSS feed model. ``articles`` is expected to be the already
     selected top-N (newest first); the pipeline builds it via a
-    streaming heap so no full-list sort is required.
+    streaming heap so no full-list sort is required. ``lang`` is supplied
+    when ``urls.rss`` names ``{lang}`` and the site publishes one feed per
+    language.
     """
     pattern = ctx.url_patterns["rss"]
+    fields = {"lang": lang} if lang is not None else {}
     return RssFeed(
         articles=list(articles[:ctx.rss_items]),
-        output_path=build_output_path_from_pattern("rss", pattern),
-        url=build_url_from_pattern(ctx.base_url, pattern),
+        output_path=build_output_path_from_pattern("rss", pattern, **fields),
+        url=build_url_from_pattern(ctx.base_url, pattern, **fields),
     )
 
 

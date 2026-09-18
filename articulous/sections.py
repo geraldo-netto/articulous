@@ -16,6 +16,10 @@ class SectionSpec:
     output_kind: str
     scope: str
     placeholders: frozenset[str]
+    # Placeholders a pattern may use but does not have to. A cross-language
+    # section that names {lang} becomes per-language, so a site can choose one
+    # feed or one per language without the engine deciding for it.
+    optional_placeholders: frozenset[str] = frozenset()
 
 
 SECTION_SPECS: tuple[SectionSpec, ...] = (
@@ -31,7 +35,10 @@ SECTION_SPECS: tuple[SectionSpec, ...] = (
         "tags", "tag", "tags.xsl", "directory", "per-lang",
         frozenset({"lang", "tag"}),
     ),
-    SectionSpec("rss", "rss", "rss.xsl", "file", "cross-lang", frozenset()),
+    SectionSpec(
+        "rss", "rss", "rss.xsl", "file", "cross-lang", frozenset(),
+        frozenset({"lang"}),
+    ),
     SectionSpec("sitemap", "sitemap", "sitemap.xsl", "file", "cross-lang", frozenset()),
     SectionSpec("search", "search", "search.xsl", "file", "cross-lang", frozenset()),
 )
@@ -61,13 +68,26 @@ def _pattern_fields(pattern: str) -> set[str]:
 
 def _validate_placeholders(spec: SectionSpec, pattern: str) -> None:
     fields = _pattern_fields(pattern)
-    unknown = fields - spec.placeholders
+    unknown = fields - (spec.placeholders | spec.optional_placeholders)
     missing = spec.placeholders - fields
     if unknown or missing:
+        allowed = f"{sorted(spec.placeholders)}"
+        if spec.optional_placeholders:
+            allowed += f" plus optional {sorted(spec.optional_placeholders)}"
         raise ValueError(
             f"config urls.{spec.url_key} placeholders must be "
-            f"{sorted(spec.placeholders)}; got {sorted(fields)}"
+            f"{allowed}; got {sorted(fields)}"
         )
+
+
+def section_is_per_lang(section: str, pattern: str) -> bool:
+    """True when this section produces one output per language.
+
+    Either the section is per-language by nature, or its URL pattern opted in
+    by naming {lang}.
+    """
+    spec = SECTION_BY_NAME[section]
+    return spec.scope == "per-lang" or "lang" in _pattern_fields(pattern)
 
 
 def _validate_url_syntax(pattern: str) -> None:

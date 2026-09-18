@@ -69,6 +69,7 @@ from .sections import (
     PER_LANG_SECTIONS,
     SECTION_NAMES,
     SECTION_XSL,
+    section_is_per_lang,
     validate_sitemap_location,
 )
 from .sitemaps import (
@@ -462,8 +463,10 @@ def _tag_doc(page, site_name: str) -> str:
     return _xml_doc("tag", children, attrs)
 
 
-def _rss_doc(feed, site_name: str) -> str:
+def _rss_doc(feed, site_name: str, lang: str | None = None) -> str:
     attrs = f" site={_xml_attr(site_name)} self={_xml_attr(feed.url)}"
+    if lang:
+        attrs += f" lang={_xml_attr(lang)}"
     return _xml_doc(
         "rss", [_rss_item_xml(a) for a in feed.articles], attrs,
     )
@@ -1066,16 +1069,37 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
     return tasks
 
 
+def rss_is_per_lang(ctx: BuildCtx) -> bool:
+    """A site opts into one feed per language by naming {lang} in urls.rss."""
+    return section_is_per_lang("rss", ctx.url_patterns["rss"])
+
+
 def build_rss_section(rss_articles, ctx: BuildCtx, cache, manifest=None):
     """
     Build the RSS feed. ``rss_articles`` is the already-selected top-N
-    list (newest first) produced by :func:`_stream_projections`.
+    list (newest first) produced by :func:`_stream_projections`, or a
+    mapping of language to such a list when the site publishes one feed
+    per language.
     """
-    feed = build_rss_model(rss_articles, ctx)
-    xml_bytes = _encode_xml(_rss_doc(feed, ctx.site_name))
+    if not rss_is_per_lang(ctx):
+        return _build_rss_feed(rss_articles, ctx, cache, manifest)
+    tasks = []
+    # Every enabled language gets a feed, so a reader can subscribe before the
+    # first article in that language exists.
+    for lang in ctx.languages:
+        tasks.extend(_build_rss_feed(
+            rss_articles.get(lang, ()), ctx, cache, manifest, lang,
+        ))
+    return tasks
+
+
+def _build_rss_feed(articles, ctx: BuildCtx, cache, manifest, lang=None) -> list:
+    feed = build_rss_model(articles, ctx, lang)
+    xml_bytes = _encode_xml(_rss_doc(feed, ctx.site_name, lang))
     return _single_xslt_section(
         "rss", xml_bytes, ctx.output_dir / feed.output_path,
-        "rss", "Skipping unchanged RSS feed", ctx, cache, manifest,
+        "rss" if lang is None else f"rss:{lang}",
+        "Skipping unchanged RSS feed", ctx, cache, manifest,
     )
 
 
@@ -1242,6 +1266,8 @@ class StreamProjection:
     search_items: SearchSink
     rss_heap: list
     total: int
+    # Filled instead of rss_heap when the site publishes one feed per language.
+    rss_by_lang: dict = field(default_factory=dict)
     skipped_by_publication: dict = field(default_factory=dict)
     articles_by_lang: ArticleStore | None = None
     listings_by_lang: ArticleStore | None = None
@@ -1337,7 +1363,11 @@ def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> 
         if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
             entry = (art.datetime, seq, art)
             seq += 1
-            _push_rss_entry(projection.rss_heap, entry, ctx.rss_items)
+            if rss_is_per_lang(ctx):
+                heap = projection.rss_by_lang.setdefault(art.lang, [])
+            else:
+                heap = projection.rss_heap
+            _push_rss_entry(heap, entry, ctx.rss_items)
 
 
 def _record_skipped_publication(projection: StreamProjection, art) -> None:
@@ -1386,6 +1416,14 @@ def _rss_sorted_from_heap(rss_heap) -> list:
     return [art for _, _, art in sorted(rss_heap, reverse=True)]
 
 
+def _rss_selection(projection: StreamProjection, ctx: BuildCtx):
+    """One newest-first list, or one per language when the site asks for that."""
+    if not rss_is_per_lang(ctx):
+        return _rss_sorted_from_heap(projection.rss_heap)
+    return {lang: _rss_sorted_from_heap(heap)
+            for lang, heap in projection.rss_by_lang.items()}
+
+
 def _collect_cross_lang_plan(
     projection: StreamProjection, ctx, cache, want, workspace, manifest,
 ) -> dict:
@@ -1393,9 +1431,7 @@ def _collect_cross_lang_plan(
     logging.info(f"Discovered {projection.total} article(s) after filters")
     plan: dict = {}
     if want("rss"):
-        plan["rss"] = build_rss_section(
-            _rss_sorted_from_heap(projection.rss_heap), ctx, cache, manifest,
-        )
+        plan["rss"] = build_rss_section(_rss_selection(projection, ctx), ctx, cache, manifest)
     if want("sitemap"):
         plan["sitemap"] = build_sitemap_section(
             projection.sitemap_urls, ctx, cache, workspace, manifest,

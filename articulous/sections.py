@@ -90,6 +90,10 @@ def section_is_per_lang(section: str, pattern: str) -> bool:
     return spec.scope == "per-lang" or "lang" in _pattern_fields(pattern)
 
 
+def bare_pattern(pattern: str) -> str:
+    return pattern.replace("/{lang}/", "/", 1)
+
+
 def _validate_url_syntax(pattern: str) -> None:
     if any(char in pattern for char in "?#%\\") or any(ord(char) < 32 or ord(char) == 127 for char in pattern):
         raise ValueError("URL patterns cannot contain queries, fragments, escapes, or control characters")

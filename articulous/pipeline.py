@@ -49,6 +49,7 @@ from .models import (
     build_sitemap_model,
     build_tags_models,
     build_url_from_pattern,
+    section_pattern,
 )
 from .migrations import OutputMigrations
 from .runtime import (
@@ -121,6 +122,7 @@ class BuildCtx:
     base_url: str = ""
     languages: list = field(default_factory=list)
     default_language: str = "en"
+    bare_default_language: tuple = ()
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
     rss_items: int = 20
@@ -167,6 +169,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         base_url=config["site"]["base_url"],
         languages=list(config["site"]["languages"]),
         default_language=config["site"]["default_language"],
+        bare_default_language=tuple(config["site"]["bare_default_language"]),
         url_patterns=dict(config["urls"]),
         per_page=pagination["per_page"],
         rss_items=pagination["rss_items"],
@@ -384,10 +387,10 @@ def _article_url_builder(ctx: BuildCtx):
     :func:`iter_articles` so each :class:`Article` is constructed with
     its public URL already attached.
     """
-    pattern = ctx.url_patterns["article"]
     base_url = ctx.base_url
 
     def build(lang: str, slug: str) -> str:
+        pattern = section_pattern(ctx, "articles", lang)
         return build_url_from_pattern(base_url, pattern, lang=lang, slug=slug)
 
     return build
@@ -989,11 +992,10 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "articles")
     if tasks is None:
         tasks = _TaskQueue(ctx, cache, engine)
-    pattern = ctx.url_patterns["article"]
 
     for art in lang_articles:
         output_path = ctx.output_dir / build_output_path_from_pattern(
-            "articles", pattern, lang=art.lang, slug=art.slug,
+            "articles", section_pattern(ctx, "articles", art.lang), lang=art.lang, slug=art.slug,
         )
         task = _make_xslt_task(
             xml_input=_article_input(art),

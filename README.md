@@ -415,7 +415,7 @@ defaults. Unknown keys and invalid value types are rejected.
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `sitemap`     | `include_listings` — include index/tag pages (boolean, default false) |
 | `robots`      | `enabled` — generate host-root robots.txt alongside sitemap (boolean, default false) |
-| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags` |
+| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `bare_default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags` |
 | `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
 | `build`       | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean)              |
 | `logging`     | `level` (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`), `file` (optional path)                       |
@@ -433,6 +433,16 @@ from `articulous.models`. Supply articles already sorted and filtered for
 publication, with a validated positive `ctx.per_page`. For a global archive,
 pass `lang=""` and an API context whose `url_patterns["tag"]` is `/tags/{tag}/`.
 The CLI still uses its configured language-specific tag pattern.
+
+`site.bare_default_language` lists the sections whose default-language pages
+drop the `/{lang}/` segment of their pattern. With `["index", "tags"]`, the
+default language's listings are written to `/page/2/` and `/tags/linux/` while
+every other language keeps `/fr/page/2/` and `/fr/tags/linux/`, which matches
+a site whose untranslated pages already live at bare routes. `articles`,
+`index`, `tags` and `rss` (once `urls.rss` names `{lang}`) may be listed; each
+listed section's pattern must contain a `/{lang}/` segment. The default is
+`[]`, so existing sites keep their prefixed URLs. Page one of a bare index is
+`/page/1/`; a site that serves its front page at `/` provides that page itself.
 
 `pagination.per_page` must be positive; `pagination.rss_items` may be
 zero, producing an empty RSS feed. `languages` must be non-empty and
@@ -517,6 +527,10 @@ URL patterns are validated by section:
 | `rss`     | none                  | File-style path, such as `/rss.xml` |
 | `sitemap` | none                  | File-style path, such as `/sitemap.xml` |
 | `search`  | none                  | File-style path, such as `/search.json` |
+
+When `site.bare_default_language` names a section, the default language uses
+that pattern without its `/{lang}/` segment; the pattern itself is validated as
+written above.
 
 Directory-style patterns must not end in a file suffix. File-style
 patterns must include one and must not end with a slash. Patterns are

@@ -21,7 +21,7 @@ from typing import Iterator, Protocol
 from urllib.parse import quote
 
 from .articles import normalize_slug
-from .sections import output_path_from_pattern
+from .sections import bare_pattern, output_path_from_pattern, url_key_for_section
 
 
 class SiteModelCtx(Protocol):
@@ -46,6 +46,12 @@ class SiteModelCtx(Protocol):
         ...
     @property
     def url_patterns(self) -> dict:
+        ...
+    @property
+    def default_language(self) -> str:
+        ...
+    @property
+    def bare_default_language(self) -> tuple:
         ...
 
 
@@ -108,6 +114,21 @@ def build_output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path
     return output_path_from_pattern(section, pattern, **kwargs)
 
 
+def section_pattern(ctx: SiteModelCtx, section: str, lang: str | None) -> str:
+    """The URL pattern for ``section`` as it applies to ``lang``.
+
+    With ``site.bare_default_language`` naming the section, the default
+    language drops its ``/{lang}/`` segment, so it owns the bare routes the
+    way a site's untranslated pages usually do. API contexts predate the
+    setting and may not carry it; they keep the configured pattern.
+    """
+    pattern = ctx.url_patterns[url_key_for_section(section)]
+    bare = section in getattr(ctx, "bare_default_language", ())
+    if bare and lang is not None and lang == getattr(ctx, "default_language", None):
+        return bare_pattern(pattern)
+    return pattern
+
+
 def build_url_from_pattern(base_url: str, pattern: str, **kwargs) -> str:
     """Join the formatted pattern to base_url; an empty base gives a root-relative URL."""
     rel = pattern.format(**kwargs).lstrip("/")
@@ -127,7 +148,7 @@ def _page_batches(articles, per_page: int):
 def _index_url(page: int, total: int, lang: str, ctx: SiteModelCtx) -> str:
     if not 1 <= page <= total:
         return ""
-    return build_url_from_pattern(ctx.base_url, ctx.url_patterns["index"], lang=lang, page=page)
+    return build_url_from_pattern(ctx.base_url, section_pattern(ctx, "index", lang), lang=lang, page=page)
 
 
 def build_index_models(
@@ -139,7 +160,7 @@ def build_index_models(
     Caller is responsible for filtering articles to ``lang`` and
     sorting by datetime (newest first); this function only paginates.
     """
-    pattern = ctx.url_patterns["index"]
+    pattern = section_pattern(ctx, "index", lang)
     total = len(lang_articles)
     if total == 0:
         return
@@ -180,7 +201,7 @@ def _tag_pages(tag, items, lang, ctx, paginate):
         return
     size = ctx.per_page if paginate else len(items)
     total = (len(items) + size - 1) // size
-    pattern = ctx.url_patterns["tag"]
+    pattern = section_pattern(ctx, "tags", lang)
     for number, batch in enumerate(_page_batches(items, size), 1):
         yield TagPage(
             lang=lang, tag=tag, tag_slug=tag_slug, articles=batch,
@@ -223,7 +244,7 @@ def build_rss_model(articles, ctx: SiteModelCtx, lang: str | None = None) -> Rss
     when ``urls.rss`` names ``{lang}`` and the site publishes one feed per
     language.
     """
-    pattern = ctx.url_patterns["rss"]
+    pattern = section_pattern(ctx, "rss", lang)
     fields = {"lang": lang} if lang is not None else {}
     return RssFeed(
         articles=list(articles[:ctx.rss_items]),

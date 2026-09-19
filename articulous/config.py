@@ -14,7 +14,13 @@ from .filesystem import (
     assert_disjoint_trees, cache_lock_path, open_regular_file,
     validate_regular_file, write_text_atomic,
 )
-from .sections import SECTION_NAMES, url_key_for_section, validate_base_url, validate_url_pattern
+from .sections import (
+    PER_LANG_SECTIONS,
+    SECTION_NAMES,
+    url_key_for_section,
+    validate_base_url,
+    validate_url_pattern,
+)
 from .ownership import ownership_path
 
 
@@ -38,6 +44,7 @@ DEFAULT_CONFIG = {
         "base_url": "https://example.com",
         "languages": ["en"],
         "default_language": "en",
+        "bare_default_language": [],
         "pagination": {"per_page": 10, "rss_items": 20, "paginate_tags": False},
     },
     "urls": {
@@ -56,6 +63,7 @@ DEFAULT_CONFIG = {
     "logging": {"level": "INFO", "file": None},
 }
 
+_BARE_SECTIONS = frozenset(PER_LANG_SECTIONS) | {"rss"}
 _CONFIG_KEYS = frozenset(DEFAULT_CONFIG)
 _LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 _URL_KEYS = frozenset(url_key_for_section(section) for section in SECTION_NAMES)
@@ -227,6 +235,30 @@ def _validate_robots(config: dict) -> None:
     _require_bool(robots["enabled"], "robots.enabled")
 
 
+def _require_bare_default_language(sections, urls: dict) -> None:
+    name = "site.bare_default_language"
+    if not isinstance(sections, list) or not all(isinstance(s, str) for s in sections):
+        raise ValueError(f"config {name} must be a list of section names")
+    if len(sections) != len(set(sections)):
+        raise ValueError(f"config {name} must not contain duplicates")
+    for section in sections:
+        if section not in _BARE_SECTIONS:
+            raise ValueError(
+                f"config {name} names unknown section {section!r}; "
+                f"choose from {sorted(_BARE_SECTIONS)}"
+            )
+        key = url_key_for_section(section)
+        if "/{lang}/" not in urls[key]:
+            raise ValueError(
+                f"config {name} lists {section!r}, but urls.{key} has no "
+                "/{lang}/ segment to drop"
+            )
+
+
+def _validate_bare_default_language(config: dict) -> None:
+    _require_bare_default_language(config["site"]["bare_default_language"], config["urls"])
+
+
 def validate_config(config: dict) -> None:
     config = _require_object(config, "root")
     _require_exact_keys(config, _CONFIG_KEYS, "root")
@@ -236,6 +268,7 @@ def validate_config(config: dict) -> None:
         _validate_saxonc,
         _validate_site,
         _validate_urls,
+        _validate_bare_default_language,
         _validate_build,
         _validate_logging,
         _validate_sitemap,

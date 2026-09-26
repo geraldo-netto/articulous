@@ -58,6 +58,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| ARCH-001 | open | M | Review reusable generator capabilities supplied or duplicated by Morpha: canonical language roots/page-one routes, pagination and route discovery, static pages, tag indexes, 404 models and sitemap inclusion. Also assess public composition APIs for generated-output validation and whole-site publication. | Moved from `morpha-portal/TODO.md:ARCH-001` (medium priority). Compare `articulous/models.py:build_index_models`, `sections.py`, `pipeline.py` and `filesystem.py` with Morpha's `portal/build.py:archive_models`, `plan`, `publish`, `portal/catalog.py:articulous_routes` and `portal/validate.py`. Reuse existing engine locking/atomic-write capabilities where appropriate; native Windows remains unsupported as documented in README. Present keep/move/split recommendations, costs and public API contracts before implementation. Required regression plan: canonical roots without page-one aliases, empty-language landings, full pagination, output collisions, sitemap inclusion and failed-build preservation. Informs Morpha's COMPAT-003/HOST-004 decisions; content, theme, contact/project data and hosting policy remain portal-owned. Backlog transfer does not approve changing existing tests/contracts. |
 
 ## decoupling
 
@@ -73,6 +74,7 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| TYPE-001 | open | S | Restore the documented Pyright check for the bare-default-language and per-language RSS tests. | `.venv/bin/pyright --pythonpath .venv/bin/python` reports 36 errors in `tests/test_bare_default_language.py` and `tests/test_rss_per_language.py`: inferred heterogeneous `BuildCtx` keyword dictionaries, `SimpleNamespace` fixtures that do not satisfy `SiteModelCtx`, and an unresolved `lxml.etree` import. These precede the TODO transfer. Use accurately typed fixtures/constructor arguments and the project's supported import typing; retain all behavioral and invalid-input assertions. Resolve when the full type check and affected tests pass without suppressions or relaxed checks. |
 
 ## observability
 

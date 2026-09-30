@@ -20,7 +20,7 @@ import shutil
 import stat
 import tempfile
 import time
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
 from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -29,6 +29,7 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import validate_output_layout, validate_state_paths
+from .composition import ExtraPage, Route, RouteCatalog, route_from_output, validate_page_url
 from .engines import (
     NativeEngine,
     SaxonCEngine,
@@ -118,6 +119,7 @@ class BuildCtx:
     cache_file: str = ".build-cache.json"
     # engine map: section name -> TransformEngine
     engines: dict = field(default_factory=dict)
+    saxonc_bin: Path | None = None
     # site / URL model
     site_name: str = ""
     base_url: str = ""
@@ -133,6 +135,7 @@ class BuildCtx:
     robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
     translations: Optional[TranslationStore] = None
+    extra_pages: tuple[ExtraPage, ...] = ()
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -167,6 +170,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
         engines=engines,
+        saxonc_bin=saxonc_bin,
         site_name=config["site"]["site_name"],
         base_url=config["site"]["base_url"],
         languages=list(config["site"]["languages"]),
@@ -654,11 +658,14 @@ class ArticleStore:
 
 
 class OutputManifest(dict):
-    def __init__(self):
+    def __init__(self, ctx=None, catalog: RouteCatalog | None = None):
         super().__init__()
         self._owners: dict = {}
+        self.ctx = ctx
+        self.catalog = catalog
+        self.route_metadata: dict = {}
 
-    def record(self, cache_key: str, relpath: str) -> None:
+    def record(self, cache_key: str, relpath: str, route: Route | None = None) -> None:
         if cache_key in self:
             raise ValueError(f"Duplicate generated cache key: {cache_key}")
         node = self._owners
@@ -670,6 +677,13 @@ class OutputManifest(dict):
             raise ValueError(f"Duplicate generated output path: {relpath}")
         node[_OUTPUT_OWNER] = cache_key
         super().__setitem__(cache_key, relpath)
+        if self.ctx is not None:
+            self.record_route(route or route_from_output(self.ctx.base_url, cache_key, relpath))
+
+    def record_route(self, route: Route) -> None:
+        self.route_metadata[route.key] = asdict(route)
+        if self.catalog is not None:
+            self.catalog.record(route)
 
 
 def _read_pickled_articles(path: Path, count: int):
@@ -838,6 +852,7 @@ def _record_planned_output(
     ctx: BuildCtx,
     cache_key: str,
     output_path: Path,
+    route: Route | None = None,
 ) -> Path:
     output_path = _safe_output_path(ctx, output_path)
     relpath = _output_relpath(ctx, output_path)
@@ -845,7 +860,7 @@ def _record_planned_output(
         raise ValueError(f"Generated output uses the reserved assets directory: {relpath}")
     if manifest is None:
         return output_path
-    manifest.record(cache_key, relpath)
+    manifest.record(cache_key, relpath, route)
     return output_path
 
 
@@ -868,6 +883,7 @@ def _make_xslt_task(
     manifest: Optional[OutputManifest] = None,
     xml_base_uri: Optional[str] = None,
     parameters: Optional[dict[str, str]] = None,
+    route: Route | None = None,
 ) -> Optional[_XsltTask]:
     """
     Return a transform task for an XSLT-driven section, or ``None`` if
@@ -885,7 +901,7 @@ def _make_xslt_task(
     transform. The pipeline saves the cache after the build succeeds;
     a failed transform leaves its prior in-memory entry intact.
     """
-    output_path = _record_planned_output(manifest, ctx, cache_key, output_path)
+    output_path = _record_planned_output(manifest, ctx, cache_key, output_path, route)
     if isinstance(xml_input, bytes):
         xml_hash = hashlib.sha256(xml_input).hexdigest()
     else:
@@ -1009,6 +1025,8 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
             output_path=output_path,
             cache=cache,
             cache_key=f"article:{art.lang}:{art.slug}",
+            route=Route(f'article:{art.lang}:{art.slug}', 'articles', art.url,
+                        _output_relpath(ctx, output_path), art.lang, 'article', art.policy.sitemap),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1336,10 +1354,34 @@ def _stream_projections(
     try:
         _fill_projection(projection, stream_factory, cli, ctx)
         _append_sitemap_listings(projection, ctx)
+        _append_extra_sitemap(projection, ctx)
     except BaseException:
         _cleanup_stream_projection(projection)
         raise
     return projection
+
+
+def _append_extra_sitemap(projection, ctx):
+    for page in getattr(ctx, 'extra_pages', ()):
+        validate_page_url(page, ctx.base_url)
+        if 'sitemap' in projection.sections and page.route.included(ctx.sitemap_listings):
+            projection.sitemap_urls.append_url(page.route.url)
+
+
+def _collect_extra_plan(ctx, cache, manifest):
+    tasks = []
+    for page in ctx.extra_pages:
+        engine = make_engine(page.engine, ctx.saxonc_bin)
+        assert isinstance(engine, TransformEngine)
+        fingerprint = engine.prepare_stylesheet(page.stylesheet)
+        task = _make_xslt_task(
+            xml_input=page.model, xsl_path=page.stylesheet, xsl_hash=fingerprint,
+            output_path=ctx.output_dir / page.route.output_path, cache=cache,
+            cache_key=page.route.key, engine=engine, ctx=ctx, manifest=manifest, route=page.route,
+        )
+        if task is not None:
+            tasks.append(task)
+    return tasks
 
 
 def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> None:
@@ -1539,6 +1581,8 @@ def _collect_tasks(
             _collect_per_lang_plan(
                 plan, projection, cli, ctx, cache, want, manifest,
             )
+        if ctx.extra_pages:
+            plan['pages'] = _collect_extra_plan(ctx, cache, manifest)
     except BaseException:
         _close_task_queues(plan)
         _cleanup_stream_projection(projection)
@@ -1634,6 +1678,7 @@ def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cach
     next_manifest = {**retained, **{path: key for key, path in current_manifest.items()}}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
+    cache['__routes__'] = current_manifest.route_metadata
     if cache_changed(cache):
         roots[str(ctx.output_dir.resolve())] = dict(cache)
         if not save_cache(cache_path, {_CACHE_ROOTS_KEY: roots}):
@@ -1799,12 +1844,22 @@ def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_man
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
 
-def run_build(cli, config, project_root: Path) -> None:
+def _record_retained_routes(cli, ctx, cache, old_manifest, manifest):
+    stored = cache.get('__routes__', {})
+    for path, key in _retained_outputs(cli, old_manifest).items():
+        data = stored.get(key) if isinstance(stored, dict) else None
+        route = Route(**data) if isinstance(data, dict) else route_from_output(ctx.base_url, key, path)
+        if route.key != key or route.output_path != path:
+            raise ValueError('Retained route metadata does not match ownership')
+        manifest.record_route(route)
+
+
+def run_build(cli, config, project_root: Path, *, extra_pages=(), route_catalog=None) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
 
     validate_state_paths(config, cli, project_root)
-    ctx = build_ctx_from_config(config, dry_run=cli.dry_run)
+    ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages))
     cache_path = _cache_path_for(ctx, project_root)
     with lock_file(cache_lock_path(cache_path)), lock_file(_lock_path_for(ctx, project_root)):
         with TempWorkspace() as workspace:
@@ -1823,12 +1878,13 @@ def run_build(cli, config, project_root: Path) -> None:
                 ))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
-                current_manifest = OutputManifest()
+                current_manifest = OutputManifest(ctx, route_catalog)
                 plan = _collect_tasks(
                     stream_factory, cli, ctx, cache, workspace, current_manifest,
                 )
                 projection = plan.projection
                 _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
+                _record_retained_routes(cli, ctx, cache, old_manifest, current_manifest)
                 _prepare_outputs(ctx, cache, old_manifest, current_manifest)
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)

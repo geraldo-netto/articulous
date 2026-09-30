@@ -19,6 +19,7 @@ from pathlib import Path
 import sys
 from typing import Iterator, Protocol
 from urllib.parse import quote
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 from .articles import normalize_slug
 from .sections import bare_pattern, output_path_from_pattern, url_key_for_section, validate_index_first_pattern
@@ -115,6 +116,26 @@ class Sitemap:
 class SearchIndex:
     items: list
     output_path: Path
+
+
+@dataclass(frozen=True)
+class TagSummary:
+    tag: str
+    slug: str
+    count: int
+    url: str
+
+
+@dataclass(frozen=True)
+class TagIndex:
+    lang: str
+    tags: tuple[TagSummary, ...]
+
+    def to_xml(self) -> bytes:
+        root = Element('tag-index', lang=self.lang)
+        for tag in self.tags:
+            SubElement(root, 'tag', slug=tag.slug, count=str(tag.count), url=tag.url).text = tag.tag
+        return tostring(root, encoding='utf-8')
 
 
 # ------------------------------------------------------------
@@ -284,6 +305,15 @@ def build_rss_model(articles, ctx: SiteModelCtx, lang: str | None = None) -> Rss
         output_path=build_output_path_from_pattern("rss", pattern, **fields),
         url=build_url_from_pattern(ctx.base_url, pattern, **fields),
     )
+
+
+def build_tag_index_model(articles, lang: str, ctx: SiteModelCtx) -> TagIndex:
+    tags = {}
+    for page in build_tags_models(articles, lang, ctx):
+        if page.tag_slug in tags:
+            raise ValueError(f'Duplicate tag slug: {page.tag_slug}')
+        tags[page.tag_slug] = TagSummary(page.tag, page.tag_slug, len(page.articles), page.url)
+    return TagIndex(lang, tuple(tags.values()))
 
 
 def build_sitemap_model(urls, ctx: SiteModelCtx) -> Sitemap:

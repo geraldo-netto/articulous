@@ -4,7 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| ARCH-004 | open | L | Review public prepare/render/validate composition APIs; implement after ARCH-003 establishes the composed plan. | Decoupling. Contract and 3–5 day estimate: [assessment](docs/generator-composition.md#prepare-render-and-validate). Design review can start now. `pipeline.py:run_build` exposes no staged validation boundary; Morpha `validate_output` supplies concrete checks. Preserve bounded planning, locks and resource lifetime; validator failures or changed staged artifacts must prevent publication and preserve prior output/cache/ownership. Retain full-build restrictions for the initial whole-site API and test rejected partial builds. |
 | ARCH-005 | open | L | Review publication guarantees and design native backend interfaces; implement after ARCH-004 provides validated stages. | System design/platform boundaries. Contract and POSIX 5–8 day estimate: [assessment](docs/generator-composition.md#native-publication-boundary). Decide atomic visibility, rollback, crash recovery and durability guarantees during this actionable review. `filesystem.py` atomically replaces individual files; Morpha `publish` uses two renames with exception rollback and manual crash recovery. Reuse engine locking/ownership behind adapters. Require fault-injection, contention, unsafe-target and recovery tests. Native Windows remains unsupported; macOS/Windows acceptance is unavailable here and must precede any new support claim. |
 
 ## Other items

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import errno
+import hashlib
 import fcntl
 import json
 import logging
@@ -229,6 +230,23 @@ def atomic_output(path: Path, *, generated: bool = False):
 def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
     with atomic_output(path) as tmp_path:
         tmp_path.write_text(text, encoding=encoding)
+
+
+def tree_fingerprint(root: Path) -> str:
+    validate_output_path(root)
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob('*')):
+        validate_output_path(path)
+        content = hashlib.sha256()
+        kind = 'directory'
+        if not path.is_dir():
+            kind = 'file'
+            with open_regular_file(path) as source:
+                for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                    content.update(chunk)
+        record = [path.relative_to(root).as_posix(), kind, content.hexdigest()]
+        digest.update(json.dumps(record, ensure_ascii=True).encode() + b'\n')
+    return digest.hexdigest()
 
 
 def _pid_alive(pid: int) -> bool:

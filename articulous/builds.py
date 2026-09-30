@@ -1,0 +1,192 @@
+"""Prepared whole-site builds with validation before publication."""
+from contextlib import ExitStack, contextmanager
+from copy import deepcopy
+from dataclasses import dataclass, replace
+from pathlib import Path
+import tempfile
+
+from .articles import ArticleStats
+from .composition import ExtraPage, RouteCatalog
+from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config
+from .filesystem import (
+    TempWorkspace, cache_lock_path, lock_file, open_regular_file,
+    tree_fingerprint, validate_output_path,
+)
+from .pipeline import (
+    BuildCtx, OutputManifest, _article_stream_factory, _cache_path_for,
+    _cleanup_stream_projection, _close_task_queues, _collect_tasks, _lock_path_for,
+    _run_plan, build_ctx_from_config, copy_assets,
+)
+
+
+@dataclass(frozen=True)
+class Diagnostic:
+    message: str
+    severity: str = 'error'
+    path: str = ''
+
+    def __post_init__(self):
+        if self.severity not in ('error', 'warning'):
+            raise ValueError('Diagnostic severity must be error or warning')
+
+
+@dataclass(frozen=True)
+class ValidationReport:
+    routes: int
+    diagnostics: tuple[Diagnostic, ...]
+
+
+@dataclass
+class PreparedBuild:
+    context: BuildCtx
+    destination: Path
+    cache_path: Path
+    routes: RouteCatalog
+    manifest: OutputManifest
+    plan: dict
+    cache: dict
+    state: str = 'prepared'
+    closed: bool = False
+
+    def require_state(self, *states):
+        if self.closed:
+            raise ValueError('Prepared build is closed')
+        if self.state not in states:
+            raise ValueError(f'Invalid prepared build state: {self.state}')
+
+    def close(self):
+        self.closed = True
+
+
+@dataclass(frozen=True)
+class StagedBuild:
+    prepared: PreparedBuild
+    fingerprint: str
+
+    @property
+    def root(self) -> Path:
+        return self.prepared.context.output_dir
+
+    @property
+    def routes(self) -> RouteCatalog:
+        return self.prepared.routes
+
+    def assert_unchanged(self):
+        self.prepared.require_state('rendered', 'validated')
+        if tree_fingerprint(self.root) != self.fingerprint:
+            raise ValueError('Staged artifacts changed after rendering or validation')
+
+    @contextmanager
+    def open_artifact(self, relative: str):
+        self.prepared.require_state('rendered', 'validated')
+        if not isinstance(relative, str) or not relative:
+            raise ValueError('Invalid artifact path')
+        if any(char in relative for char in '\\:') or any(part in ('', '.', '..') for part in relative.split('/')):
+            raise ValueError('Invalid artifact path')
+        path = self.root / relative
+        validate_output_path(path)
+        with open_regular_file(path) as source:
+            yield source
+
+
+@dataclass(frozen=True)
+class ValidatedBuild:
+    staged: StagedBuild
+    diagnostics: tuple[Diagnostic, ...]
+
+    def assert_unchanged(self):
+        self.staged.prepared.require_state('validated')
+        self.staged.assert_unchanged()
+
+
+def _configuration(cli, config, root):
+    if not isinstance(config, dict):
+        raise ValueError('Configuration must be an object')
+    result = deep_merge(deepcopy(DEFAULT_CONFIG), deepcopy(config))
+    validate_config(result)
+    validate_output_path(root / result['paths']['output_dir'])
+    apply_cli_overrides(result, cli, root)
+    return result
+
+
+def _full_build(cli, extra_pages):
+    if cli.only_sections or cli.only_langs or cli.only_slugs:
+        raise ValueError('Whole-site preparation requires an unfiltered build')
+    pages = tuple(extra_pages)
+    if not all(isinstance(page, ExtraPage) for page in pages):
+        raise ValueError('extra_pages must contain ExtraPage values')
+    return pages
+
+
+def _capture_context(stack, original, extra_pages):
+    original.output_dir.parent.mkdir(parents=True, exist_ok=True)
+    private = Path(stack.enter_context(tempfile.TemporaryDirectory(
+        prefix='.articulous-stage-', dir=original.output_dir.parent,
+    )))
+    capture = replace(original, output_dir=private / 'inputs', dry_run=False, force=True)
+    copy_assets(capture)
+    return replace(capture, output_dir=private / 'output',
+                   assets_dir=capture.output_dir / 'assets', extra_pages=extra_pages)
+
+
+def _prepare_locked(stack, cli, original, root, pages):
+    context = _capture_context(stack, original, pages)
+    workspace = stack.enter_context(TempWorkspace())
+    routes = stack.enter_context(RouteCatalog())
+    manifest = OutputManifest(context, routes)
+    cache = {}
+    plan = _collect_tasks(_article_stream_factory(context, ArticleStats()), cli, context,
+                          cache, workspace, manifest)
+    stack.callback(_cleanup_stream_projection, plan.projection)
+    stack.callback(_close_task_queues, plan)
+    prepared = PreparedBuild(context, original.output_dir, _cache_path_for(original, root),
+                             routes, manifest, plan, cache)
+    stack.callback(prepared.close)
+    return prepared
+
+
+@contextmanager
+def prepare_build(cli, config, project_root: Path, *, extra_pages=()):
+    pages = _full_build(cli, extra_pages)
+    original = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
+    validate_output_path(original.output_dir)
+    with ExitStack() as stack:
+        stack.enter_context(lock_file(cache_lock_path(_cache_path_for(original, project_root))))
+        stack.enter_context(lock_file(_lock_path_for(original, project_root)))
+        yield _prepare_locked(stack, cli, original, project_root, pages)
+
+
+def render_prepared(prepared: PreparedBuild) -> StagedBuild:
+    prepared.require_state('prepared')
+    prepared.state = 'failed'
+    prepared.context.output_dir.mkdir(parents=True)
+    copy_assets(prepared.context, prepared.cache)
+    _run_plan(prepared.plan, prepared.context)
+    prepared.state = 'rendered'
+    return StagedBuild(prepared, tree_fingerprint(prepared.context.output_dir))
+
+
+def _validate_manifest(staged):
+    for route in staged.routes:
+        with staged.open_artifact(route.output_path):
+            pass
+
+
+def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
+    staged.assert_unchanged()
+    _validate_manifest(staged)
+    diagnostics = []
+    for validator in validators:
+        diagnostics.extend(validator(staged) or ())
+    errors = [item.message for item in diagnostics if item.severity == 'error']
+    if errors:
+        raise ValueError('\n'.join(errors))
+    staged.assert_unchanged()
+    staged.prepared.state = 'validated'
+    return ValidatedBuild(staged, tuple(diagnostics))
+
+
+def check_build(cli, config, project_root: Path, *, extra_pages=(), validators=()) -> ValidationReport:
+    with prepare_build(cli, config, project_root, extra_pages=extra_pages) as prepared:
+        checked = validate_generated(render_prepared(prepared), validators=validators)
+        return ValidationReport(len(prepared.routes), checked.diagnostics)

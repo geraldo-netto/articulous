@@ -139,3 +139,20 @@ def test_arch004_invalid_configuration_and_extra_values(site_root, seo_config):
         check_build(cli, None, site_root)
     with pytest.raises(ValueError, match='ExtraPage'):
         check_build(cli, {}, site_root, extra_pages=['invalid'])
+
+
+def test_arch005_workspace_swap_never_deletes_replacement(site_root, seo_config):
+    cli, config = seo_config
+    replacements = []
+    def swap(staged):
+        workspace = staged.root.parent
+        workspace.rename(site_root / 'original-stage')
+        workspace.mkdir()
+        manual = workspace / 'manual.txt'
+        manual.write_text('keep replacement')
+        replacements.append(manual)
+        raise RuntimeError('validator failed after swap')
+    with pytest.raises(RuntimeError, match='validator failed after swap'):
+        check_build(cli, config, site_root, validators=[swap])
+    assert replacements[0].read_text() == 'keep replacement'
+    assert (site_root / 'original-stage/output/rss.xml').exists()

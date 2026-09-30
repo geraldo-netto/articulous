@@ -1,0 +1,231 @@
+"""Linux-validated directory publication with rollback and a recovery journal."""
+import base64
+from contextlib import contextmanager
+import json
+import logging
+import os
+from pathlib import Path
+import shutil
+
+from ..filesystem import (
+    _directory_handle, atomic_output, cache_lock_path, lock_file, open_regular_file,
+    validate_output_path, validate_regular_file, write_text_atomic,
+)
+from ..ownership import load_ownership, ownership_path, save_ownership
+from . import publication_capabilities
+from ..runtime import load_cache
+
+
+def _identity(path):
+    validate_output_path(path)
+    if not path.exists():
+        return None
+    metadata = path.stat()
+    return [metadata.st_dev, metadata.st_ino]
+
+
+def _saved_file(path):
+    validate_output_path(path)
+    try:
+        with open_regular_file(path) as source:
+            if os.fstat(source.fileno()).st_nlink != 1:
+                raise ValueError('Publication state must have one hardlink')
+            return base64.b64encode(source.read()).decode('ascii')
+    except FileNotFoundError:
+        return None
+
+
+def _restore_file(path, saved):
+    validate_output_path(path)
+    if saved is None:
+        path.unlink(missing_ok=True)
+        return
+    content = base64.b64decode(saved, validate=True)
+    with atomic_output(path, generated=True) as staged:
+        with staged.open('wb') as target:
+            target.write(content)
+
+
+def _remove_tree(path):
+    validate_output_path(path)
+    with _directory_handle(path.parent) as parent:
+        shutil.rmtree(path.name, dir_fd=parent)
+
+
+def _validate_owned_tree(destination):
+    validate_output_path(destination)
+    if destination.exists() and not destination.is_dir():
+        raise ValueError('Publication output must remain a directory')
+    ownership = load_ownership(destination)
+    allowed = {Path(path) for path in ownership.paths}
+    parents = {parent for path in allowed for parent in path.parents}
+    for path in destination.rglob('*'):
+        validate_output_path(path)
+        relative = path.relative_to(destination)
+        if relative.parts[0] == 'assets':
+            continue
+        if relative in allowed:
+            validate_regular_file(path)
+            continue
+        if path.is_dir() and relative in parents:
+            continue
+        raise ValueError(f'Refusing to replace unowned output: {relative}')
+
+
+class PosixPublicationBackend:
+    def __init__(self):
+        self.capabilities = publication_capabilities()
+        if not self.capabilities.available:
+            raise RuntimeError('Native publication is unsupported on this platform')
+
+    @contextmanager
+    def locked(self, destination: Path, cache_path: Path):
+        output_lock = destination.parent / f'.{destination.name}.articulous.lock'
+        if cache_path.resolve() == output_lock.resolve():
+            raise ValueError('Cache must not alias output lock')
+        with lock_file(cache_lock_path(cache_path)), lock_file(output_lock):
+            yield
+
+    def _transaction(self, destination):
+        return destination.parent / f'.{destination.name}.articulous-transaction'
+
+    def _rename(self, source, destination):
+        validate_output_path(source)
+        validate_output_path(destination)
+        if destination.exists():
+            raise ValueError(f'Publication destination already exists: {destination}')
+        with _directory_handle(source.parent) as source_fd:
+            with _directory_handle(destination.parent) as target_fd:
+                os.rename(source.name, destination.name, src_dir_fd=source_fd, dst_dir_fd=target_fd)
+
+    def _set_phase(self, transaction, data, phase):
+        data['phase'] = phase
+        write_text_atomic(transaction / 'journal.json', json.dumps(data))
+
+    def _begin(self, checked):
+        prepared = checked.staged.prepared
+        destination, cache = prepared.destination, prepared.cache_path
+        stage = checked.staged.root.parent
+        data = {
+            'version': 1, 'destination': str(destination), 'cache': str(cache),
+            'previous': _identity(destination), 'new': _identity(checked.staged.root),
+            'stage': str(stage), 'stage_identity': _identity(stage),
+            'cache_before': _saved_file(cache), 'ownership_before': _saved_file(ownership_path(destination)),
+        }
+        transaction = self._transaction(destination)
+        transaction.mkdir(mode=0o700)
+        try:
+            self._set_phase(transaction, data, 'prepared')
+        except BaseException:
+            _remove_tree(transaction)
+            raise
+        return transaction, data
+
+    def _write_state(self, checked):
+        prepared = checked.staged.prepared
+        roots = load_cache(prepared.cache_path).get('__output_roots__', {})
+        roots = roots if isinstance(roots, dict) else {}
+        cache = dict(prepared.cache)
+        cache['__outputs__'] = dict(sorted(prepared.manifest.items()))
+        cache['__routes__'] = prepared.manifest.route_metadata
+        roots[str(prepared.destination)] = cache
+        write_text_atomic(prepared.cache_path, json.dumps({'__output_roots__': roots}, indent=2))
+        save_ownership(prepared.destination, {path: key for key, path in prepared.manifest.items()})
+
+    def _install(self, checked, transaction, data):
+        destination = checked.staged.prepared.destination
+        self._expect(checked.staged.root, data['new'])
+        self._rename(checked.staged.root, transaction / 'new')
+        self._expect(destination, data['previous'])
+        if data['previous'] is not None:
+            self._rename(destination, transaction / 'previous')
+        self._set_phase(transaction, data, 'old_moved')
+        self._rename(transaction / 'new', destination)
+        self._set_phase(transaction, data, 'installed')
+        self._write_state(checked)
+        self._set_phase(transaction, data, 'committed')
+
+    def publish(self, checked):
+        checked.assert_unchanged()
+        prepared = checked.staged.prepared
+        _validate_owned_tree(prepared.destination)
+        transaction, data = self._begin(checked)
+        try:
+            self._install(checked, transaction, data)
+        except BaseException:
+            try:
+                self.recover(prepared.destination, prepared.cache_path)
+            except BaseException as error:
+                raise RuntimeError(f'Publication needs recovery at {transaction}') from error
+            raise
+        try:
+            self._cleanup(transaction, data)
+        except (OSError, ValueError):
+            logging.warning(f'Publication committed; cleanup pending at {transaction}', exc_info=True)
+
+    def _read_journal(self, transaction, destination, cache):
+        try:
+            with open_regular_file(transaction / 'journal.json') as source:
+                data = json.load(source)
+            self._validate_journal(data, destination, cache)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            raise ValueError(f'Invalid publication journal at {transaction}; preserve it for recovery') from error
+        return data
+
+    def _validate_journal(self, data, destination, cache):
+        if data['version'] != 1 or data['destination'] != str(destination) or data['cache'] != str(cache):
+            raise ValueError('Wrong journal identity')
+        if data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed'):
+            raise ValueError('Invalid journal phase')
+        stage = Path(data['stage'])
+        if stage.parent != destination.parent or not stage.name.startswith('.articulous-stage-'):
+            raise ValueError('Invalid journal staging path')
+        for key in ('previous', 'new', 'stage_identity'):
+            self._validate_identity(data[key])
+        for key in ('cache_before', 'ownership_before'):
+            if data[key] is not None:
+                base64.b64decode(data[key], validate=True)
+
+    def _validate_identity(self, value):
+        if value is not None and not (isinstance(value, list) and len(value) == 2 and
+                                      all(type(part) is int for part in value)):
+            raise ValueError('Invalid journal file identity')
+
+    def _expect(self, path, identity):
+        if _identity(path) != identity:
+            raise ValueError(f'Publication path changed; preserve recovery data: {path}')
+
+    def _rollback(self, transaction, data, destination, cache):
+        previous = transaction / 'previous'
+        if previous.exists():
+            self._expect(previous, data['previous'])
+            if destination.exists():
+                self._expect(destination, data['new'])
+                self._rename(destination, transaction / 'discard')
+            self._rename(previous, destination)
+        elif data['previous'] is None and destination.exists():
+            self._expect(destination, data['new'])
+            self._rename(destination, transaction / 'discard')
+        self._expect(destination, data['previous'])
+        _restore_file(cache, data['cache_before'])
+        _restore_file(ownership_path(destination), data['ownership_before'])
+
+    def _cleanup(self, transaction, data):
+        stage = Path(data['stage'])
+        if stage.exists():
+            self._expect(stage, data['stage_identity'])
+            _remove_tree(stage)
+        _remove_tree(transaction)
+
+    def recover(self, destination, cache_path):
+        validate_output_path(destination)
+        transaction = self._transaction(destination)
+        validate_output_path(transaction)
+        if not transaction.exists():
+            return
+        data = self._read_journal(transaction, destination, cache_path)
+        if data['phase'] == 'committed':
+            self._expect(destination, data['new'])
+        else:
+            self._rollback(transaction, data, destination, cache_path)
+        self._cleanup(transaction, data)

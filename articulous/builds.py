@@ -3,17 +3,16 @@ from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
-import tempfile
 
 from .articles import ArticleStats
 from .composition import ExtraPage, RouteCatalog
 from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config
 from .filesystem import (
-    TempWorkspace, cache_lock_path, lock_file, open_regular_file,
+    TempWorkspace, cache_lock_path, lock_file, open_regular_file, private_directory,
     tree_fingerprint, validate_output_path,
 )
 from .pipeline import (
-    BuildCtx, OutputManifest, _article_stream_factory, _cache_path_for,
+    BuildCtx, BuildPlan, OutputManifest, _article_stream_factory, _cache_path_for,
     _cleanup_stream_projection, _close_task_queues, _collect_tasks, _lock_path_for,
     _run_plan, build_ctx_from_config, copy_assets,
 )
@@ -43,8 +42,9 @@ class PreparedBuild:
     cache_path: Path
     routes: RouteCatalog
     manifest: OutputManifest
-    plan: dict
+    plan: BuildPlan
     cache: dict
+    workspace: TempWorkspace
     state: str = 'prepared'
     closed: bool = False
 
@@ -120,9 +120,7 @@ def _full_build(cli, extra_pages):
 
 def _capture_context(stack, original, extra_pages):
     original.output_dir.parent.mkdir(parents=True, exist_ok=True)
-    private = Path(stack.enter_context(tempfile.TemporaryDirectory(
-        prefix='.articulous-stage-', dir=original.output_dir.parent,
-    )))
+    private = stack.enter_context(private_directory(original.output_dir.parent))
     capture = replace(original, output_dir=private / 'inputs', dry_run=False, force=True)
     copy_assets(capture)
     return replace(capture, output_dir=private / 'output',
@@ -140,19 +138,30 @@ def _prepare_locked(stack, cli, original, root, pages):
     stack.callback(_cleanup_stream_projection, plan.projection)
     stack.callback(_close_task_queues, plan)
     prepared = PreparedBuild(context, original.output_dir, _cache_path_for(original, root),
-                             routes, manifest, plan, cache)
+                             routes, manifest, plan, cache, workspace)
     stack.callback(prepared.close)
     return prepared
 
 
 @contextmanager
-def prepare_build(cli, config, project_root: Path, *, extra_pages=()):
+def _preparation_lock(original, root, backend):
+    cache = _cache_path_for(original, root)
+    if backend is not None:
+        with backend.locked(original.output_dir, cache):
+            backend.recover(original.output_dir, cache)
+            yield
+    else:
+        with lock_file(cache_lock_path(cache)), lock_file(_lock_path_for(original, root)):
+            yield
+
+
+@contextmanager
+def prepare_build(cli, config, project_root: Path, *, extra_pages=(), backend=None):
     pages = _full_build(cli, extra_pages)
     original = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
     validate_output_path(original.output_dir)
     with ExitStack() as stack:
-        stack.enter_context(lock_file(cache_lock_path(_cache_path_for(original, project_root))))
-        stack.enter_context(lock_file(_lock_path_for(original, project_root)))
+        stack.enter_context(_preparation_lock(original, project_root, backend))
         yield _prepare_locked(stack, cli, original, project_root, pages)
 
 
@@ -162,6 +171,8 @@ def render_prepared(prepared: PreparedBuild) -> StagedBuild:
     prepared.context.output_dir.mkdir(parents=True)
     copy_assets(prepared.context, prepared.cache)
     _run_plan(prepared.plan, prepared.context)
+    _cleanup_stream_projection(prepared.plan.projection)
+    prepared.workspace.cleanup()
     prepared.state = 'rendered'
     return StagedBuild(prepared, tree_fingerprint(prepared.context.output_dir))
 

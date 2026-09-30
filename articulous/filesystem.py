@@ -126,6 +126,28 @@ def _asset_source(path: Path):
             os.close(fd)
 
 
+def _cleanup_private_directory(path, identity):
+    try:
+        current = path.lstat()
+    except FileNotFoundError:
+        return
+    if (current.st_dev, current.st_ino) != identity:
+        logging.warning(f'Temporary workspace changed; cleanup refused: {path}')
+        return
+    with _directory_handle(path.parent) as parent:
+        shutil.rmtree(path.name, dir_fd=parent)
+
+
+@contextmanager
+def private_directory(parent: Path):
+    path = Path(tempfile.mkdtemp(prefix='.articulous-stage-', dir=parent))
+    metadata = path.stat()
+    try:
+        yield path
+    finally:
+        _cleanup_private_directory(path, (metadata.st_dev, metadata.st_ino))
+
+
 def _validate_asset_copy_target(path: Path) -> None:
     metadata = validate_regular_file(path)
     if metadata is not None and metadata.st_nlink > 1:

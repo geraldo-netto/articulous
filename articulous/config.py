@@ -20,6 +20,7 @@ from .sections import (
     url_key_for_section,
     validate_base_url,
     validate_url_pattern,
+    validate_index_first_pattern,
 )
 from .ownership import ownership_path
 
@@ -45,11 +46,12 @@ DEFAULT_CONFIG = {
         "languages": ["en"],
         "default_language": "en",
         "bare_default_language": [],
-        "pagination": {"per_page": 10, "rss_items": 20, "paginate_tags": False},
+        "pagination": {"per_page": 10, "rss_items": 20, "paginate_tags": False, "empty_index": False},
     },
     "urls": {
         "article": "/{lang}/articles/{slug}/",
         "index": "/{lang}/page/{page}/",
+        "index_first": None,
         "tag": "/{lang}/tags/{tag}/",
         "rss": "/rss.xml",
         "sitemap": "/sitemap.xml",
@@ -66,7 +68,7 @@ DEFAULT_CONFIG = {
 _BARE_SECTIONS = frozenset(PER_LANG_SECTIONS) | {"rss"}
 _CONFIG_KEYS = frozenset(DEFAULT_CONFIG)
 _LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
-_URL_KEYS = frozenset(url_key_for_section(section) for section in SECTION_NAMES)
+_URL_KEYS = frozenset(DEFAULT_CONFIG['urls'])
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -184,6 +186,7 @@ def _validate_site(config: dict) -> None:
     )
     _require_positive_int(pagination["per_page"], "site.pagination.per_page")
     _require_bool(pagination["paginate_tags"], "site.pagination.paginate_tags")
+    _require_bool(pagination['empty_index'], 'site.pagination.empty_index')
     _require_non_negative_int(
         pagination["rss_items"], "site.pagination.rss_items"
     )
@@ -198,6 +201,8 @@ def _validate_site_base_url(value: str) -> None:
 
 def _validate_urls(config: dict) -> None:
     urls = _require_block(config, "urls", _URL_KEYS)
+    if urls['index_first'] is not None:
+        validate_index_first_pattern(urls['index_first'])
     for section in SECTION_NAMES:
         key = url_key_for_section(section)
         pattern = _require_string(urls[key], f"urls.{key}", nonempty=True)

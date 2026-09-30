@@ -21,7 +21,7 @@ from typing import Iterator, Protocol
 from urllib.parse import quote
 
 from .articles import normalize_slug
-from .sections import bare_pattern, output_path_from_pattern, url_key_for_section
+from .sections import bare_pattern, output_path_from_pattern, url_key_for_section, validate_index_first_pattern
 
 
 class SiteModelCtx(Protocol):
@@ -58,6 +58,18 @@ class SiteModelCtx(Protocol):
 # ------------------------------------------------------------
 # Typed page models
 # ------------------------------------------------------------
+
+@dataclass(frozen=True)
+class IndexOptions:
+    first_pattern: str | None = None
+    include_empty: bool = False
+
+    def __post_init__(self):
+        if self.first_pattern is not None:
+            validate_index_first_pattern(self.first_pattern)
+        if not isinstance(self.include_empty, bool):
+            raise ValueError('include_empty must be a boolean')
+
 
 @dataclass(frozen=True)
 class IndexPage:
@@ -145,14 +157,34 @@ def _page_batches(articles, per_page: int):
         yield batch
 
 
-def _index_url(page: int, total: int, lang: str, ctx: SiteModelCtx) -> str:
+def _index_pattern(page, lang, ctx, options):
+    if page != 1 or options.first_pattern is None:
+        return section_pattern(ctx, 'index', lang)
+    pattern = options.first_pattern
+    if 'index' in getattr(ctx, 'bare_default_language', ()) and lang == ctx.default_language:
+        return bare_pattern(pattern)
+    return pattern
+
+
+def _index_url(page: int, total: int, lang: str, ctx: SiteModelCtx, options: IndexOptions) -> str:
     if not 1 <= page <= total:
         return ""
-    return build_url_from_pattern(ctx.base_url, section_pattern(ctx, "index", lang), lang=lang, page=page)
+    return build_url_from_pattern(ctx.base_url, _index_pattern(page, lang, ctx, options), lang=lang, page=page)
+
+
+def _index_options(ctx, lang, options):
+    options = getattr(ctx, 'index_options', IndexOptions()) if options is None else options
+    if not isinstance(options, IndexOptions):
+        raise ValueError('options must be IndexOptions')
+    if type(ctx.per_page) is not int or ctx.per_page < 1:
+        raise ValueError('per_page must be a positive integer')
+    if lang not in ctx.languages:
+        raise ValueError('index language must be enabled')
+    return options
 
 
 def build_index_models(
-    lang_articles, lang: str, ctx: SiteModelCtx,
+    lang_articles, lang: str, ctx: SiteModelCtx, *, options: IndexOptions | None = None,
 ) -> Iterator[IndexPage]:
     """
     Paginate one language's already-sorted article list.
@@ -160,13 +192,14 @@ def build_index_models(
     Caller is responsible for filtering articles to ``lang`` and
     sorting by datetime (newest first); this function only paginates.
     """
-    pattern = section_pattern(ctx, "index", lang)
+    options = _index_options(ctx, lang, options)
     total = len(lang_articles)
-    if total == 0:
+    if total == 0 and not options.include_empty:
         return
-    num_pages = (total + ctx.per_page - 1) // ctx.per_page
+    num_pages = max(1, (total + ctx.per_page - 1) // ctx.per_page)
+    batches = _page_batches(lang_articles, ctx.per_page) if total else iter([[]])
     for page, articles in enumerate(
-        _page_batches(lang_articles, ctx.per_page), start=1,
+        batches, start=1,
     ):
         yield IndexPage(
             lang=lang,
@@ -174,11 +207,11 @@ def build_index_models(
             total_pages=num_pages,
             articles=articles,
             output_path=build_output_path_from_pattern(
-                "index", pattern, lang=lang, page=page,
+                "index", _index_pattern(page, lang, ctx, options), lang=lang, page=page,
             ),
-            url=_index_url(page, num_pages, lang, ctx),
-            previous_url=_index_url(page - 1, num_pages, lang, ctx),
-            next_url=_index_url(page + 1, num_pages, lang, ctx),
+            url=_index_url(page, num_pages, lang, ctx, options),
+            previous_url=_index_url(page - 1, num_pages, lang, ctx, options),
+            next_url=_index_url(page + 1, num_pages, lang, ctx, options),
         )
 
 

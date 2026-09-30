@@ -94,6 +94,21 @@ def bare_pattern(pattern: str) -> str:
     return pattern.replace("/{lang}/", "/", 1)
 
 
+def validate_index_first_pattern(pattern) -> None:
+    if not isinstance(pattern, str) or not pattern.startswith('/'):
+        raise ValueError('index_first must be an absolute local directory pattern')
+    _validate_url_syntax(pattern)
+    fields = [(field, spec, conversion) for _, field, spec, conversion in Formatter().parse(pattern)
+              if field is not None]
+    if not fields or any(item != ('lang', '', None) for item in fields):
+        raise ValueError('index_first requires only plain {lang} placeholders')
+    path = pattern.format(lang='en')
+    if Path(path).suffix or any(part in ('.', '..', '') for part in path.strip('/').split('/')):
+        raise ValueError('index_first must be a local directory without dot or empty segments')
+    if '//' in path or not pattern.endswith('/'):
+        raise ValueError('index_first must end with a single slash')
+
+
 def _validate_url_syntax(pattern: str) -> None:
     if any(char in pattern for char in "?#%\\") or any(ord(char) < 32 or ord(char) == 127 for char in pattern):
         raise ValueError("URL patterns cannot contain queries, fragments, escapes, or control characters")

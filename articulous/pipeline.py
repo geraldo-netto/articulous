@@ -42,6 +42,7 @@ from .filesystem import (
     validate_output_path, validate_path_length,
 )
 from .models import (
+    IndexOptions,
     build_index_models,
     build_output_path_from_pattern,
     build_rss_model,
@@ -125,6 +126,7 @@ class BuildCtx:
     bare_default_language: tuple = ()
     url_patterns: dict = field(default_factory=dict)
     per_page: int = 10
+    index_options: IndexOptions = field(default_factory=IndexOptions)
     rss_items: int = 20
     paginate_tags: bool = False
     sitemap_listings: bool = False
@@ -172,6 +174,7 @@ def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
         bare_default_language=tuple(config["site"]["bare_default_language"]),
         url_patterns=dict(config["urls"]),
         per_page=pagination["per_page"],
+        index_options=IndexOptions(config['urls'].get('index_first'), pagination.get('empty_index', False)),
         rss_items=pagination["rss_items"],
         paginate_tags=pagination["paginate_tags"],
         sitemap_listings=config["sitemap"]["include_listings"],
@@ -1486,7 +1489,7 @@ def _collect_per_lang_plan(
             continue
         lang_articles = _sorted_store_articles(projection.articles_by_lang, lang)
         listing_articles = _sorted_store_articles(projection.listings_by_lang, lang)
-        if not (lang_articles or listing_articles):
+        if not (lang_articles or listing_articles or ctx.index_options.include_empty):
             continue
         _add_per_lang_tasks(
             plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,

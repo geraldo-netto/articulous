@@ -8,12 +8,12 @@ import json
 from pathlib import Path
 
 import pytest
-from lxml import etree
+import lxml.etree as etree
 
 from articulous.cli import CliOptions, parse_cli_args
 from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.models import build_rss_model
-from articulous.pipeline import run_build
+from articulous.pipeline import BuildCtx, run_build
 from articulous.sections import section_is_per_lang, validate_url_pattern
 
 
@@ -24,16 +24,12 @@ def _build(root):
     run_build(cli, config, root)
 
 
-def _ctx(**overrides):
-    from types import SimpleNamespace
-    base = {
-        "base_url": "https://example.test",
-        "languages": ["en", "fr"],
-        "rss_items": 5,
-        "url_patterns": {"rss": "/{lang}/rss.xml"},
-    }
-    base.update(overrides)
-    return SimpleNamespace(**base)
+def _ctx(rss_pattern: str = "/{lang}/rss.xml") -> BuildCtx:
+    return BuildCtx(
+        content_dir=Path("content"), xsl_dir=Path("xsl"), output_dir=Path("output"),
+        assets_dir=Path("assets"), base_url="https://example.test",
+        languages=["en", "fr"], rss_items=5, url_patterns={"rss": rss_pattern},
+    )
 
 
 # --- pattern policy ---
@@ -67,7 +63,7 @@ def test_rss_model_places_the_feed_under_its_language():
 
 
 def test_rss_model_without_a_language_keeps_the_single_feed():
-    feed = build_rss_model([], _ctx(url_patterns={"rss": "/rss.xml"}))
+    feed = build_rss_model([], _ctx("/rss.xml"))
     assert feed.output_path == Path("rss.xml")
 
 

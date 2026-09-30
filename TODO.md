@@ -74,7 +74,6 @@ Line numbers refer to repository paths.
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| TYPE-001 | open | S | Restore the documented Pyright check for the bare-default-language and per-language RSS tests. | `.venv/bin/pyright --pythonpath .venv/bin/python` reports 36 errors in `tests/test_bare_default_language.py` and `tests/test_rss_per_language.py`: inferred heterogeneous `BuildCtx` keyword dictionaries, `SimpleNamespace` fixtures that do not satisfy `SiteModelCtx`, and an unresolved `lxml.etree` import. These precede the TODO transfer. Use accurately typed fixtures/constructor arguments and the project's supported import typing; retain all behavioral and invalid-input assertions. Resolve when the full type check and affected tests pass without suppressions or relaxed checks. |
 
 ## observability
 

@@ -9,6 +9,7 @@ routes gets listings that behave the same way. The setting is off by default.
 import copy
 import json
 import random
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -47,29 +48,32 @@ def _config(sections, rss="/{lang}/rss.xml"):
     return config
 
 
-def _ctx(**overrides):
-    base = {
-        "base_url": "https://example.test",
-        "languages": ["en", "fr"],
-        "per_page": 2,
-        "rss_items": 5,
-        "url_patterns": dict(PATTERNS),
-        "default_language": "en",
-        "bare_default_language": ("index", "tags", "rss"),
-    }
-    base.update(overrides)
-    return SimpleNamespace(**base)
+@dataclass
+class _ModelContext:
+    base_url: str
+    languages: list[str]
+    per_page: int
+    rss_items: int
+    url_patterns: dict[str, str]
+    default_language: str
+    bare_default_language: tuple[str, ...]
 
 
-def _build_ctx(**overrides):
-    fields = dict(
+def _ctx() -> _ModelContext:
+    return _ModelContext(
+        base_url="https://example.test", languages=["en", "fr"],
+        per_page=2, rss_items=5, url_patterns=dict(PATTERNS),
+        default_language="en", bare_default_language=("index", "tags", "rss"),
+    )
+
+
+def _build_ctx() -> BuildCtx:
+    return BuildCtx(
         content_dir=Path("content"), xsl_dir=Path("xsl"), output_dir=Path("output"),
         assets_dir=Path("assets"), base_url="https://example.test",
         url_patterns=dict(PATTERNS), default_language="en",
         bare_default_language=("articles",),
     )
-    fields.update(overrides)
-    return BuildCtx(**fields)
 
 
 def _build(root):

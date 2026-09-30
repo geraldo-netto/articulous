@@ -35,24 +35,58 @@ class SiteModelCtx(Protocol):
     """
     @property
     def base_url(self) -> str:
+        """Validated HTTP(S) origin/base path, root-relative base, or empty string.
+
+        Empty means root-relative links. URI-encode the base path; model
+        builders encode route literals and ignore a trailing base slash.
+        """
         ...
     @property
     def languages(self) -> list:
+        """Nonempty, unique language identifiers containing the default language.
+
+        Use ASCII letters, digits, hyphens and underscores. Callers still
+        filter each language's model inputs; this list does not filter them.
+        """
         ...
     @property
     def per_page(self) -> int:
+        """Positive, non-boolean page size for indexes and paginated tags.
+
+        API callers must validate this before invoking tag pagination;
+        index construction also rejects invalid values at its boundary.
+        """
         ...
     @property
     def rss_items(self) -> int:
+        """Nonnegative, non-boolean RSS limit; zero produces an empty feed.
+
+        Callers supply eligible articles newest first. The RSS model only
+        slices that selection; it does not sort or check publication policy.
+        """
         ...
     @property
     def url_patterns(self) -> dict:
+        """Validated local patterns keyed by article, index, tag, rss, sitemap, search.
+
+        Supply the keys required by each invoked builder, using singular
+        article/tag keys. First-index overrides travel through IndexOptions.
+        """
         ...
     @property
     def default_language(self) -> str:
+        """Member of languages eligible for bare routes in the selected sections.
+
+        This choice affects prefix removal, not filtering of model inputs.
+        """
         ...
     @property
     def bare_default_language(self) -> tuple:
+        """Unique section names whose default-language routes omit /{lang}/.
+
+        Supported names are articles, index, tags and rss; their configured
+        patterns must contain that segment. Empty preserves every prefix.
+        """
         ...
 
 

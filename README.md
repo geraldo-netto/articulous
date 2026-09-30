@@ -24,6 +24,9 @@ Written in Python, with lxml and optional SaxonC transformation backends.
 - Dry‑run mode
 - Section‑limited builds (`--only`), language and slug filters
 - Optional SaxonC support (auto‑falls back to lxml)
+- Optional canonical index roots and empty-language landing pages
+- Python APIs for extra pages, route discovery and staged validation
+- Opt-in Linux whole-site publication with rollback and journal recovery
 
 ---
 
@@ -415,8 +418,8 @@ defaults. Unknown keys and invalid value types are rejected.
 | `saxonc`      | `home` — path to the SaxonC install (optional; `Transform` is discovered on `PATH` when null)       |
 | `sitemap`     | `include_listings` — include index/tag pages (boolean, default false) |
 | `robots`      | `enabled` — generate host-root robots.txt alongside sitemap (boolean, default false) |
-| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `bare_default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags` |
-| `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`) |
+| `site`        | `site_name`, `base_url`, `languages`, `default_language`, `bare_default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags`, `pagination.empty_index` |
+| `urls`        | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`); optional `index_first` |
 | `build`       | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean)              |
 | `logging`     | `level` (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`), `file` (optional path)                       |
 
@@ -441,8 +444,16 @@ every other language keeps `/fr/page/2/` and `/fr/tags/linux/`, which matches
 a site whose untranslated pages already live at bare routes. `articles`,
 `index`, `tags` and `rss` (once `urls.rss` names `{lang}`) may be listed; each
 listed section's pattern must contain a `/{lang}/` segment. The default is
-`[]`, so existing sites keep their prefixed URLs. Page one of a bare index is
-`/page/1/`; a site that serves its front page at `/` provides that page itself.
+`[]`, so existing sites keep their prefixed URLs. By default, page one of a bare
+index is `/page/1/`.
+
+Set `urls.index_first` to `"/{lang}/"` to make page one canonical at `/en/`,
+`/fr/`, and so on. With `"index"` in `site.bare_default_language`, the default
+language instead uses `/`. Later pages keep `urls.index`, and page two links
+back to the canonical root. No numbered page-one alias or redirect is generated.
+The default `index_first: null` preserves numbered page-one routes.
+Set `site.pagination.empty_index` to `true` to render one empty index page for
+each enabled language without published listing articles; the default is `false`.
 
 `pagination.per_page` must be positive; `pagination.rss_items` may be
 zero, producing an empty RSS feed. `languages` must be non-empty and
@@ -523,6 +534,7 @@ URL patterns are validated by section:
 | --------- | --------------------- | ------------ |
 | `article` | `{lang}`, `{slug}`    | Directory-style; `index.html` is appended |
 | `index`   | `{lang}`, `{page}`    | Directory-style; `index.html` is appended |
+| `index_first` | `{lang}` only, when non-null | First index page; must end with `/`; `index.html` is appended |
 | `tag`     | `{lang}`, `{tag}`     | Directory-style; `index.html` is appended |
 | `rss`     | none                  | File-style path, such as `/rss.xml` |
 | `sitemap` | none                  | File-style path, such as `/sitemap.xml` |
@@ -565,9 +577,9 @@ rejected before publishing. Defaults produce:
 - `output/sitemap.xml`
 - `output/search.json`
 
-Generated pages and feeds replace individual files atomically; a whole
-build is not transactional. A live generated target or any parent component
-that is a symlink is rejected. Content writes use the original staging file
+The CLI and `run_build` replace generated pages and feeds individually and
+atomically; their whole build is not transactional. A live generated target or
+any parent component that is a symlink is rejected. Content writes use the original staging file
 descriptor; SaxonC inherits that descriptor through `/dev/fd`. A replaced
 staging entry is rejected before publication. Publication and temporary-file
 cleanup stay anchored to the original destination directory. A directory replacement
@@ -617,14 +629,25 @@ device in place of a cached page/feed stops both normal and forced builds;
 the entry is preserved for explicit recovery. Remove or relocate it, then
 retry. A missing generated file is rebuilt automatically.
 
+For validation before publication, use `check_build` or the
+`prepare_build` → `render_prepared` → `validate_generated` Python lifecycle.
+These APIs capture inputs and render a fresh isolated tree; `check_build`
+leaves the published output, fingerprint cache and ownership state unchanged.
+`build_site` additionally publishes a validated generation through the Linux
+backend, with exception rollback and a recovery journal covering output and
+build state. Its two directory renames leave a brief gap in output visibility;
+it does not promise atomic whole-site visibility or power-loss durability.
+Windows and macOS publication backends remain unsupported/unvalidated.
+See the [composition and publication guide](docs/generator-composition.md)
+for extra pages, validator hooks, capability checks and recovery instructions.
+
 ---
 
 ## 🧪 Development
 
-The [generator composition assessment](docs/generator-composition.md) compares
-Articulous with Morpha's wrapper and proposes reusable route, page, validation
-and publication APIs. Its contracts are proposals, not current capabilities;
-implementation follow-ups are tracked in [TODO.md](TODO.md).
+The [composition and publication guide](docs/generator-composition.md) documents
+implemented route, page, validation and publication APIs and their regression
+coverage. Remaining decisions and declined work are tracked in [TODO.md](TODO.md).
 
 The package is covered by a pytest suite with fixture‑based site builds,
 unit tests, and section‑order fuzz tests. Rendered fixture feeds are checked

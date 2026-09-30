@@ -1,115 +1,28 @@
 # TODO
 
-Project review findings, grouped by category per `AGENTS.md`.
-
-Format: `id | status | effort | description | notes`.
-Statuses: `open`, `in-progress`, `blocked`, `parked`.
-
-Line numbers refer to repository paths.
-
----
-
-## contradictions
+## Open items
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
+| ARCH-002 | open | M | Review and implement opt-in canonical index roots and empty-language landings. | Architecture/modularity/SOLID. Contract and 2–3 day estimate: [assessment](docs/generator-composition.md#index-options). Current `models.py:build_index_models` emits numbered page one and no empty index. Preserve defaults; add root/no-alias, empty-language, complete-pagination and bounded invalid-option tests before implementation. Morpha COMPAT-003 still needs its owner to choose engine support or portal orchestration before changing redirect assertions; HOST-004 follows that decision. |
+| ARCH-003 | open | L | Review a composed route catalog, extra page models, shared tag counts and sitemap inclusion; implement after ARCH-002 fixes root semantics. | Architecture/modularity/SOLID. Contract and 4–6 day estimate: [assessment](docs/generator-composition.md#composed-routes-and-extra-pages). Design review can start now. Reuse `OutputManifest` and engine projections instead of Morpha `archive_models`, `articulous_routes` and sitemap merging. Keep content/templates/hosting portal-owned. Required coverage: static/tag-index/404 roles, cache-retained and cross-producer collisions, listing policy, native/XSLT sitemap parity and invalid paths. |
+| ARCH-004 | open | L | Review public prepare/render/validate composition APIs; implement after ARCH-003 establishes the composed plan. | Decoupling. Contract and 3–5 day estimate: [assessment](docs/generator-composition.md#prepare-render-and-validate). Design review can start now. `pipeline.py:run_build` exposes no staged validation boundary; Morpha `validate_output` supplies concrete checks. Preserve bounded planning, locks and resource lifetime; validator failures or changed staged artifacts must prevent publication and preserve prior output/cache/ownership. Retain full-build restrictions for the initial whole-site API and test rejected partial builds. |
+| ARCH-005 | open | L | Review publication guarantees and design native backend interfaces; implement after ARCH-004 provides validated stages. | System design/platform boundaries. Contract and POSIX 5–8 day estimate: [assessment](docs/generator-composition.md#native-publication-boundary). Decide atomic visibility, rollback, crash recovery and durability guarantees during this actionable review. `filesystem.py` atomically replaces individual files; Morpha `publish` uses two renames with exception rollback and manual crash recovery. Reuse engine locking/ownership behind adapters. Require fault-injection, contention, unsafe-target and recovery tests. Native Windows remains unsupported; macOS/Windows acceptance is unavailable here and must precede any new support claim. |
 
-## security
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## performance
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## scalability
+## Other items
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-
-## concurrency
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## code complexity
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## data governance
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## system design
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## code duplication
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## architecture/modularity/SOLID
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| ARCH-001 | open | M | Review reusable generator capabilities supplied or duplicated by Morpha: canonical language roots/page-one routes, pagination and route discovery, static pages, tag indexes, 404 models and sitemap inclusion. Also assess public composition APIs for generated-output validation and whole-site publication. | Moved from `morpha-portal/TODO.md:ARCH-001` (medium priority). Compare `articulous/models.py:build_index_models`, `sections.py`, `pipeline.py` and `filesystem.py` with Morpha's `portal/build.py:archive_models`, `plan`, `publish`, `portal/catalog.py:articulous_routes` and `portal/validate.py`. Reuse existing engine locking/atomic-write capabilities where appropriate; native Windows remains unsupported as documented in README. Present keep/move/split recommendations, costs and public API contracts before implementation. Required regression plan: canonical roots without page-one aliases, empty-language landings, full pagination, output collisions, sitemap inclusion and failed-build preservation. Informs Morpha's COMPAT-003/HOST-004 decisions; content, theme, contact/project data and hosting policy remain portal-owned. Backlog transfer does not approve changing existing tests/contracts. |
-
-## decoupling
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## business/design patterns/DDD
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## reliability/correctness
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## observability
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## wiring gaps
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
-## unused functions/methods
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-
----
-
-## Open — parked
-
-| id | status | effort | description | notes |
-|----|--------|--------|-------------|-------|
-| DOC-01 | parked | S | `SiteModelCtx` `@property` members carry no docstrings (articulous/models.py:34) | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
-
-## Audit picks deliberately rejected
-
-| id | description | reason |
-|----|-------------|--------|
-| PERF-01 | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
-| PERF-02 | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
-| SCAL-01 | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
-| CC-01 | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
-| DUP-01 | Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
-| REL-01 | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
-| REL-02 | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
-| UNUSED-01 | `deep_merge` (articulous/config.py:57) used only by `load_or_create_config` | Internal helper with direct unit tests; keep. |
-| UNUSED-02 | `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) are dispatched through `_add_per_lang_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
-| DOC-03 | private helpers `_passes_cli_filters` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
-| DUP-02 | `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |
+| CONTRA-002 | blocked | S | Resolve Morpha's page-one compatibility contract before migrating its redirect assertions. | Contradictions; mirrors Morpha COMPAT-003/HOST-004. `../morpha-portal/AGENTS.md:21` forbids redirects/stubs, while `portal/routes.py:index_aliases`, `portal/build.py:build`, `xsl/pages/index.xsl` and `tests/test_index_routes.py` generate or require them. Missing decision: Morpha's owner must select engine root support (ARCH-002) or portal-only index orchestration. Then remove aliases/rules and update permanent absence/root/pagination tests together, retaining the custom-404 directive. Engine design work can proceed independently. |
+| DOC-01 | deferred | S | `SiteModelCtx` `@property` members carry no docstrings (articulous/models.py:34) | Protocol members read as self-documenting from the type annotations; revisit only if external API consumers complain. |
+| PERF-01 | wont_fix | — | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
+| PERF-02 | wont_fix | — | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
+| SCAL-01 | wont_fix | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
+| CC-01 | wont_fix | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
+| DUP-01 | wont_fix | — | Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
+| REL-01 | wont_fix | — | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
+| REL-02 | wont_fix | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
+| UNUSED-01 | wont_fix | — | `deep_merge` (articulous/config.py:57) used only by `load_or_create_config` | Internal helper with direct unit tests; keep. |
+| UNUSED-02 | wont_fix | — | `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) are dispatched through `_add_per_lang_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
+| DOC-03 | wont_fix | — | private helpers `_passes_cli_filters` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
+| DUP-02 | wont_fix | — | `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |

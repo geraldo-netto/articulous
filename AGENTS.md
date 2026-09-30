@@ -33,24 +33,31 @@ Primary source for agent conduct, edit norms, response expectations — follow b
   not inline.
 - Prefer explicit, maintainable solutions over clever shortcuts.
 - Propose business/design patterns + DDD only when improve clarity or structure.
-- ALWAYS record review findings in `TODO.md` — never chat-only. Any time scan, review, audit, or "look for issues" (not just major changes), add each finding to matching category table in `TODO.md` before/while reporting.
+- ALWAYS record review findings in `TODO.md` — never chat-only. Any time scan, review, audit, or "look for issues" (not just major changes), add each finding to the appropriate lifecycle table before/while reporting. Name its review category in the description or notes.
 - ALWAYS report every contradiction encountered, of any kind, and add or update a
-  `blocked` item in the `contradictions` table in `TODO.md`. This includes conflicting
+  `contradictions` finding in `TODO.md`. This includes conflicting
   instructions, requirements, code, tests, documentation, and observed behavior.
   An existing project TODO format always wins over a shared skill's default;
   this intentional precedence is not a contradiction and must not be logged as one.
   Record both conflicting claims, source references or evidence, impact, and the
   condition needed to resolve the contradiction. Never silently choose a side or
-  omit the finding. Follow instruction precedence and continue unaffected work;
-  keep the item blocked until the contradiction is reconciled and verified, then
-  remove it under the completed-item rule below.
-- ALWAYS remove completed items from `TODO.md` — once finding implemented + tested + merged,
+  omit the finding. Follow instruction precedence and continue unaffected work.
+  Use `open` for actionable contradictions; reserve `blocked` for a named missing
+  decision, evidence or prerequisite. Move it to `open` when that obstacle is
+  removed; delete it after reconciliation and verification.
+- ALWAYS remove completed items from `TODO.md` — once finding resolved + verified,
   delete row from table outright. No "shipped" sub-sections, no struck-through entries.
-  `git log` = durable record. Exceptions: "Open — parked" section keeps open-but-deferred
-  items with why-not-now annotation; "Audit picks deliberately rejected" section keeps
-  rationale so future passes don't re-pick same items.
-- On major changes, rescan whole project + create or update `TODO.md` with one table per review category.
-  Each table use format: `id | status | effort | description | notes`.
+  `git log` = durable record. Keep deferred and declined items in **Other items**
+  with explicit reasons so future passes do not reopen them automatically.
+- Use two TODO tables: **Open items** for `open`/`in_progress`, and **Other items**
+  for `blocked`, `deferred`, `wont_fix` and other dispositions. Preserve IDs and
+  columns: `id | status | effort | description | notes`. Order Open by dependencies
+  and priority; make prerequisites explicit. Order Other with unresolved blockers
+  first, deferred work next and declined work last. Each unresolved row names the
+  exact next decision, evidence, prerequisite or review needed. Review that can
+  start now belongs in Open; review alone is not a blocker.
+- On major changes, rescan whole project + create or update `TODO.md`, covering
+  these review categories within the two lifecycle tables:
   - contradictions
   - security
   - performance

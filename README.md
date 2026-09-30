@@ -621,6 +621,11 @@ retry. A missing generated file is rebuilt automatically.
 
 ## 🧪 Development
 
+The [generator composition assessment](docs/generator-composition.md) compares
+Articulous with Morpha's wrapper and proposes reusable route, page, validation
+and publication APIs. Its contracts are proposals, not current capabilities;
+implementation follow-ups are tracked in [TODO.md](TODO.md).
+
 The package is covered by a pytest suite with fixture‑based site builds,
 unit tests, and section‑order fuzz tests. Rendered fixture feeds are checked
 for required RSS channel metadata, namespaced sitemap structure with both

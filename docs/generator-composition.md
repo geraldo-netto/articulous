@@ -506,3 +506,23 @@ publication/rollback settles; no DOM or workspace escapes. Inputs and callbacks
 are borrowed for that call. Storage scales with the admitted XML corpus; output
 report sampling does not cap findings. Source-edit and partial-failure tests
 retain the existing identity-bound transaction cleanup guarantees.
+
+## Protected-markup authoring
+
+`markup_contracts.MarkupPolicy` defines opaque/inline/block/void tags and
+translatable attributes independently of the lxml codec. `markup.encode_block`,
+`decode_block`, `block_units` and `loose_text_nodes` share protected markup
+handling. Signature comparison accepts an explicit link-rewrite callback; no
+language or route scheme is embedded. Morpha adds its `site-value` and
+`projects-list` widgets and provides its own language-link projection.
+
+An `Encoded` object owns placeholder text/snapshot bytes and borrows the original
+tree through its root/slots. Decode requires that exact, unchanged root and
+consumes the borrow on success, rejection or exception. `close()` explicitly
+settles an unused borrow. Candidate reconstruction happens on a detached tree;
+rejection preserves original node identities as well as bytes. On success the
+root remains, while its children are replaced by the validated candidate. No
+slot may be reused after consumption. Callers retain selected block/loose-node
+views only while their containing document remains owned and unchanged.
+Storage is bounded by the admitted document and translated unit. These structural
+checks establish no semantic translation accuracy.

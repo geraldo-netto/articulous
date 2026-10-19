@@ -123,3 +123,9 @@ def test_test001_projection_default_has_native_function_counters():
     with TempWorkspace() as workspace:
         projection = StreamProjection(SitemapSink(workspace), SearchSink(workspace), [], 0)
         assert projection.sections == frozenset(SECTION_NAMES)
+
+
+@pytest.mark.parametrize('start', [True, 1.0, None, '1', [], -1])
+def test_cov001_native_source_position_requires_integer(evidence, start):
+    evidence[2]['start_line'] = start
+    assert check(evidence)[1], 'COV-001: a native source position must be an actual integer'

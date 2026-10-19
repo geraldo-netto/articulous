@@ -44,11 +44,15 @@ def check_function(function, region, statements):
     if any(type(value) is not int for value in counts):
         raise ValueError('inconsistent native counters or summary')
     if (executed & missing or executed | missing != expected
+            or type(function.get('start_line')) is not int
             or function.get('start_line') != region.start
             or counts != (len(executed), len(missing), len(expected))):
         raise ValueError('inconsistent native counters or summary')
-    percent = summary.get('percent_covered')
-    actual = 100 * len(executed) / len(expected) if expected else 100
+    check_percent(summary.get('percent_covered'), len(executed), len(expected))
+
+
+def check_percent(percent, executed, expected):
+    actual = 100 * executed / expected if expected else 100
     if type(percent) not in (int, float) or not math.isclose(percent, actual, abs_tol=1e-8):
         raise ValueError('inconsistent native counters or summary')
     if not 80 <= percent <= 100:

@@ -46,17 +46,20 @@ def signal_member(descriptor, number):
 
 
 def collect_members(owner, handles, number):
-    admitted = False
+    observed = False
     for pid, identity in owned_members(owner):
         key = pid, identity[1]
         if key in handles:
-            continue
+            ready, _, _ = select.select([handles[key]], [], [], 0)
+            if not ready:
+                continue
+            os.close(handles.pop(key))
+        observed = True
         descriptor = admit_member(pid, identity)
         if descriptor is not None:
             handles[key] = descriptor
             signal_member(descriptor, number)
-            admitted = True
-    return admitted
+    return observed
 
 
 def stopped_members(handles):

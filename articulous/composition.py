@@ -8,11 +8,11 @@ from urllib.parse import quote
 from .sections import validate_base_url
 
 
-def _validate_relative_output(value):
+def _validate_relative_output(value, *, reserved=('assets',)):
     if not isinstance(value, str) or not value:
         raise ValueError('Invalid output path')
     parts = value.split('/')
-    if any(part in ('', '.', '..') for part in parts) or parts[0] == 'assets':
+    if any(part in ('', '.', '..') for part in parts) or parts[0] in reserved:
         raise ValueError('Invalid output path: empty/dot segments or reserved assets')
     if '\\' in value or ':' in value or any(ord(char) < 32 or ord(char) == 127 for char in value):
         raise ValueError('Invalid output path')

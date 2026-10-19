@@ -67,9 +67,9 @@ def recover_publication(destination: Path, cache_path: Path, *, backend=None) ->
 
 
 def build_site(cli, config, project_root: Path, *, extra_pages=(), validators=(),
-               backend=None, require_atomic=False, require_durable=False) -> ValidationReport:
+               backend=None, require_atomic=False, require_durable=False, composer=None) -> ValidationReport:
     selected = _backend(backend, require_atomic, require_durable)
-    with prepare_build(cli, config, project_root, extra_pages=extra_pages, backend=selected) as prepared:
+    with prepare_build(cli, config, project_root, extra_pages=extra_pages, backend=selected, composer=composer) as prepared:
         checked = validate_generated(render_prepared(prepared), validators=validators)
         publish_validated(checked, backend=selected, require_atomic=require_atomic, require_durable=require_durable)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

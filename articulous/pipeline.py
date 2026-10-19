@@ -33,6 +33,7 @@ from .composition import ExtraPage, Route, RouteCatalog, route_from_output, vali
 from .engines import (
     NativeEngine,
     SaxonCEngine,
+    StylesheetCapture,
     TransformEngine,
     configure_saxonc,
     make_engine,
@@ -136,6 +137,7 @@ class BuildCtx:
     output_migrations: Optional[OutputMigrations] = None
     translations: Optional[TranslationStore] = None
     extra_pages: tuple[ExtraPage, ...] = ()
+    stylesheet_capture: StylesheetCapture | None = None
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -807,16 +809,18 @@ class _XsltTask:
         timed(self.spec.cache_key, self._run)()
 
     def _run(self) -> None:
+        revision = self.engine.resolve_stylesheet_fingerprint(self.spec.xsl_path, self.spec.fingerprint[1])
+        fingerprint = (self.spec.fingerprint[0], revision, *self.spec.fingerprint[2:])
         self.engine.run(
             self.spec.xml_input,
             self.spec.xsl_path,
             self.spec.output_path,
             dry_run=self.ctx.dry_run,
-            stylesheet_fingerprint=self.spec.fingerprint[1],
+            stylesheet_fingerprint=revision,
             xml_base_uri=self.spec.xml_base_uri,
             parameters=self.spec.parameters,
         )
-        update_cache(self.cache, self.spec.cache_key, self.spec.fingerprint)
+        update_cache(self.cache, self.spec.cache_key, fingerprint)
 
 
 class _TaskQueue:
@@ -1372,6 +1376,8 @@ def _collect_extra_plan(ctx, cache, manifest):
     tasks = []
     for page in ctx.extra_pages:
         engine = make_engine(page.engine, ctx.saxonc_bin)
+        if ctx.stylesheet_capture is not None:
+            engine = ctx.stylesheet_capture.wrap(engine)
         assert isinstance(engine, TransformEngine)
         fingerprint = engine.prepare_stylesheet(page.stylesheet)
         task = _make_xslt_task(
@@ -1538,6 +1544,15 @@ def _collect_per_lang_plan(
         )
 
 
+def _translation_context(projection, cli, ctx, cache):
+    if projection.translations is None:
+        return ctx
+    ctx = replace(ctx, translations=projection.translations)
+    if cli.only_langs or cli.only_slugs:
+        projection.translations.validate_filters(cache, lambda key: _selected_output_key(key, cli))
+    return ctx
+
+
 def _collect_tasks(
     stream_factory, cli, ctx: BuildCtx, cache, workspace=None, manifest=None,
 ) -> BuildPlan:
@@ -1569,10 +1584,7 @@ def _collect_tasks(
         collect_articles=need_per_lang,
     )
     try:
-        if projection.translations is not None:
-            ctx = replace(ctx, translations=projection.translations)
-            if cli.only_langs or cli.only_slugs:
-                projection.translations.validate_filters(cache, lambda key: _selected_output_key(key, cli))
+        ctx = _translation_context(projection, cli, ctx, cache)
         if need_cross:
             plan.update(
                 _collect_cross_lang_plan(projection, ctx, cache, want, workspace, manifest)

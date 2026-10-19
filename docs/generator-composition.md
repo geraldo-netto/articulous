@@ -119,6 +119,35 @@ Display labels, sidebar limits and sorting remain theme choices.
 
 ## Prepare, render and validate
 
+Pass `composer=captured_site_callback` to `prepare_build`, `check_build` or
+`build_site` to compose against the engine's article generation. The callback
+receives the `extensions.CapturedSite` contract and returns `BuildComposition`:
+an immutable extra-page tuple and an optional template-data factory. Iterate
+`snapshot.articles(language=None)` for immutable `CapturedArticle` records,
+newest first with stable discovery-order ties. Records own their XML bytes;
+they do not expose spool paths. All publication policies use `captured_at`.
+`invalid_articles` lets a caller reject parse failures before rendering.
+
+The template factory receives that snapshot and the actual re-iterable route
+catalog after all built-in/extra-page models are planned. It returns unique
+`TemplateInput(relative_path, bytes)` values. Inputs are written into a private
+stylesheet overlay, never project sources; unsafe paths/symlinks are rejected.
+The engine then captures stylesheet dependencies and freezes their revisions.
+This order supports route-aware generated includes without a second source scan,
+dummy templates or inferring routes from a sitemap. External stylesheet resources
+are captured at their existing logical locations rather than relocated.
+
+The prepared context owns source spools, active readers, the route catalog,
+overlay and captured engines. It closes readers before reclaiming their storage;
+resuming a borrowed iterator after exit fails before another native read. A
+retained article record remains valid because its bytes are owned. Template and
+policy callbacks are synchronous trusted code, not sandboxed plugins. Exceptions,
+invalid results and capture failures release their owned resources and do not
+publish. Source/template storage scales with admitted content and generated
+inputs; callbacks fund any records they retain and must not retain live handles
+past context exit. These APIs do not promise an atomic snapshot of unrelated
+source-tree files being edited by another writer.
+
 [`articulous.builds`](../articulous/builds.py) exposes a context-managed whole-site
 lifecycle. These APIs merge and validate a copy of the supplied configuration,
 resolve paths against `project_root` and require an unfiltered build. They reject

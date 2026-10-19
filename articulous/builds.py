@@ -3,9 +3,12 @@ from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
+import shutil
 
 from .articles import ArticleStats
 from .composition import ExtraPage, RouteCatalog
+from .engines import StylesheetCapture
+from .extensions import BuildComposition, TemplateInput
 from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config
 from .filesystem import (
     TempWorkspace, cache_lock_path, lock_file, open_regular_file, private_directory,
@@ -16,6 +19,7 @@ from .pipeline import (
     _cleanup_stream_projection, _close_task_queues, _collect_tasks, _lock_path_for,
     _run_plan, build_ctx_from_config, copy_assets,
 )
+from .capture_adapter import Snapshot
 
 
 @dataclass(frozen=True)
@@ -127,16 +131,62 @@ def _capture_context(stack, original, extra_pages):
                    assets_dir=capture.output_dir / 'assets', extra_pages=extra_pages)
 
 
-def _prepare_locked(stack, cli, original, root, pages):
+def _composition_context(stack, context, composer, original):
+    if composer is None:
+        return context, None, None
+    if not callable(composer):
+        raise ValueError('Build composer must be callable')
+    overlay = context.output_dir.parent / 'inputs/xsl'
+    shutil.copytree(original.xsl_dir, overlay, symlinks=True)
+    capture = StylesheetCapture()
+    context = replace(context, xsl_dir=overlay, stylesheet_capture=capture,
+                      engines={name: capture.wrap(engine) for name, engine in context.engines.items()})
+    snapshot = Snapshot(context, stack.enter_context(TempWorkspace()))
+    stack.callback(snapshot.close)
+    composition = composer(snapshot)
+    if not isinstance(composition, BuildComposition):
+        raise ValueError('Build composer must return BuildComposition')
+    pages = context.extra_pages + composition.pages
+    mapped = tuple(_overlay_page(page, original.xsl_dir, overlay) for page in pages)
+    return replace(context, extra_pages=mapped), snapshot, composition
+
+
+def _overlay_page(page, source, overlay):
+    stylesheet = Path(page.stylesheet).absolute()
+    if stylesheet.is_relative_to(source):
+        stylesheet = overlay / stylesheet.relative_to(source)
+    return replace(page, stylesheet=stylesheet)
+
+
+def _finish_composition(context, snapshot, composition, routes):
+    if composition is None:
+        return
+    seen = set()
+    inputs = composition.templates(snapshot, routes) if composition.templates is not None else ()
+    for item in inputs:
+        if not isinstance(item, TemplateInput) or item.path in seen:
+            raise ValueError('Template inputs must be unique TemplateInput values')
+        seen.add(item.path)
+        target = context.xsl_dir / item.path
+        validate_output_path(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(item.content)
+    context.stylesheet_capture.freeze()
+
+
+def _prepare_locked(stack, cli, original, root, pages, composer=None):
     context = _capture_context(stack, original, pages)
+    context, snapshot, composition = _composition_context(stack, context, composer, original)
     workspace = stack.enter_context(TempWorkspace())
     routes = stack.enter_context(RouteCatalog())
     manifest = OutputManifest(context, routes)
     cache = {}
-    plan = _collect_tasks(_article_stream_factory(context, ArticleStats()), cli, context,
+    stream = snapshot.original_articles if snapshot is not None else _article_stream_factory(context, ArticleStats())
+    plan = _collect_tasks(stream, cli, context,
                           cache, workspace, manifest)
     stack.callback(_cleanup_stream_projection, plan.projection)
     stack.callback(_close_task_queues, plan)
+    _finish_composition(context, snapshot, composition, routes)
     prepared = PreparedBuild(context, original.output_dir, _cache_path_for(original, root),
                              routes, manifest, plan, cache, workspace)
     stack.callback(prepared.close)
@@ -156,13 +206,13 @@ def _preparation_lock(original, root, backend):
 
 
 @contextmanager
-def prepare_build(cli, config, project_root: Path, *, extra_pages=(), backend=None):
+def prepare_build(cli, config, project_root: Path, *, extra_pages=(), backend=None, composer=None):
     pages = _full_build(cli, extra_pages)
     original = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
     validate_output_path(original.output_dir)
     with ExitStack() as stack:
         stack.enter_context(_preparation_lock(original, project_root, backend))
-        yield _prepare_locked(stack, cli, original, project_root, pages)
+        yield _prepare_locked(stack, cli, original, project_root, pages, composer)
 
 
 def render_prepared(prepared: PreparedBuild) -> StagedBuild:
@@ -197,7 +247,7 @@ def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
     return ValidatedBuild(staged, tuple(diagnostics))
 
 
-def check_build(cli, config, project_root: Path, *, extra_pages=(), validators=()) -> ValidationReport:
-    with prepare_build(cli, config, project_root, extra_pages=extra_pages) as prepared:
+def check_build(cli, config, project_root: Path, *, extra_pages=(), validators=(), composer=None) -> ValidationReport:
+    with prepare_build(cli, config, project_root, extra_pages=extra_pages, composer=composer) as prepared:
         checked = validate_generated(render_prepared(prepared), validators=validators)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

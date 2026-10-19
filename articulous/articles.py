@@ -50,6 +50,7 @@ _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status",
 class PublicationState:
     name: str = "published"
     publish_at: Optional[datetime] = None
+    evaluated_at: Optional[datetime] = None
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -60,7 +61,7 @@ class PublicationState:
     def _published_now(self) -> bool:
         if self.publish_at is None:
             return False
-        now = datetime.now(tz=self.publish_at.tzinfo)
+        now = self.evaluated_at or datetime.now(tz=self.publish_at.tzinfo)
         return self.publish_at <= now
 
 

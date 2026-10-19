@@ -172,6 +172,9 @@ class TransformEngine(ABC):
         self._snapshots[(snapshot.root_uri, snapshot.fingerprint)] = snapshot
         return snapshot.fingerprint
 
+    def resolve_stylesheet_fingerprint(self, path: Path, fingerprint: str) -> str:
+        return fingerprint
+
     def _stylesheet_snapshot(self, path: Path, fingerprint: Optional[str]) -> _StylesheetSnapshot:
         uri = Path(os.path.abspath(path)).as_uri()
         snapshot = self._snapshots.get((uri, fingerprint or ""))
@@ -233,6 +236,59 @@ class NativeEngine:
     @property
     def cache_identity(self) -> str:
         return "native:v3"
+
+
+class StylesheetCapture:
+    def __init__(self):
+        self._engines = []
+
+    def wrap(self, engine):
+        if not isinstance(engine, TransformEngine):
+            return engine
+        captured = _DeferredEngine(engine)
+        self._engines.append(captured)
+        return captured
+
+    def freeze(self):
+        for engine in self._engines:
+            engine.freeze()
+
+
+class _DeferredEngine(TransformEngine):
+    name = 'captured'
+
+    def __init__(self, engine):
+        super().__init__()
+        self._engine = engine
+        self._paths = {}
+        self._frozen = False
+
+    @property
+    def cache_identity(self):
+        return self._engine.cache_identity
+
+    def prepare_stylesheet(self, path):
+        if self._frozen:
+            raise ValueError('Stylesheet capture is frozen')
+        path = Path(path)
+        self._paths[path] = ''
+        return path.as_posix()
+
+    def freeze(self):
+        for path in self._paths:
+            self._paths[path] = self._engine.prepare_stylesheet(path)
+        self._frozen = True
+
+    def resolve_stylesheet_fingerprint(self, path, fingerprint):
+        if not self._frozen:
+            raise ValueError('Stylesheet capture is not frozen')
+        return self._paths[Path(path)]
+
+    def _do_transform(self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
+                      xml_base_uri=None, parameters=None):
+        self._engine.run(xml_input, xsl_path, output_path,
+                         stylesheet_fingerprint=self.resolve_stylesheet_fingerprint(xsl_path, ''),
+                         xml_base_uri=xml_base_uri, parameters=parameters)
 
 
 class LxmlEngine(TransformEngine):

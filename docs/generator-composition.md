@@ -526,3 +526,34 @@ slot may be reused after consumption. Callers retain selected block/loose-node
 views only while their containing document remains owned and unchanged.
 Storage is bounded by the admitted document and translated unit. These structural
 checks establish no semantic translation accuracy.
+
+## Optional translation jobs
+
+`translation_contracts` defines provider/cache/job contracts and XML layout
+configuration without HTTP, SQLite or portal types. `translation_client.Translator`
+borrows a provider, cache and prompt/normalization/log callbacks for sequential
+requests. One effective prompt snapshot participates in both cache identity and
+the provider request. Identity includes provider/model/generation settings,
+languages, input and markup mode; timeout/retry budgets do not change meaning.
+Invalid cache values are evicted and invalid provider output remains retryable.
+`backends.translation_http.HttpProvider` is explicitly invoked; it starts no
+model server and closes every HTTP response on success or schema failure.
+
+`translation_cache.open_cache` owns the SQLite connection through all exits.
+`translation_jobs` shares bounded file-budget selection, provenance-chain
+confinement, handwritten/current-target filtering and queued target-change
+fences. The caller chooses corpus, languages, source preference, paths, current
+checks and execution callback; dry-run stays outside cache/provider acquisition.
+`translation_xml.mirror_xml` translates caller-configured XML fields and markup,
+checks captured source/target state again before atomic replacement, and stamps
+a clean digest only when no unit failed. Morpha owns its prompts, language names,
+article/page layouts, provenance reader, link rewrite and all-language policy.
+
+Jobs own temporary parsed trees and snapshots for one synchronous execution;
+encoded borrows are closed even on provider exceptions. File replacement owns
+its private workspace until publication or rollback settles. Provider responses
+and caches have separate owners; completing a job does not close a borrowed
+client/cache. Retry counts, HTTP deadlines and admitted corpus/response sizes
+remain caller contracts. No model download, startup or remote request is implicit
+in discovery, preview or import. Structural success is not semantic acceptance;
+Morpha REV-139/HOST-017 remain separate owner work.

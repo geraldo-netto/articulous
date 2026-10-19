@@ -117,6 +117,24 @@ input produces an empty tag index. Construct an `ExtraPage` from its XML to rend
 it; the engine does not automatically choose a tag-index route or template.
 Display labels, sidebar limits and sorting remain theme choices.
 
+`catalogue.PublicationCatalogue(records, languages)` supplies a stable article
+tuple and cached `tag_counts(language)` projections. It groups records by
+language once, counts only listing-eligible records and returns immutable
+`TagCount(slug, count, label)` values sorted by slug. Repeated normalized tags
+count once per record; the first written label is retained. This metadata
+contract preserves Morpha's C++/C# normalized-membership counts and does not
+relax the separate archive-output collision checks. Empty enabled languages
+have empty counts; disabled/invalid language identities are rejected.
+
+Catalogue records are borrowed and must remain unchanged for its lifetime;
+the engine's frozen `CapturedArticle` records satisfy this directly. Counts
+are derived once and are not another mutable publication-state owner. Retained
+storage is proportional to article references and unique language/tag pairs;
+no DOMs or native handles are retained. Site adapters own display dates,
+sidebar ordering/limits and XML conversion. Use the actual `RouteCatalog`
+for known routes, independently of sitemap inclusion, rather than rerunning
+tag pagination to discover links.
+
 `composition.ExtraArtifact(output_path, bytes)` declares a non-page generated
 file. Pass `extra_artifacts` to `run_build`, `prepare_build`, `check_build` or
 `build_site`. Artifacts share regular output-path, ownership, collision,

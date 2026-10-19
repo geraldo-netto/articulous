@@ -36,7 +36,9 @@ jobs:
         run: .venv/bin/pyright --pythonpath .venv/bin/python
 
       - name: Run pytest suite
-        run: .venv/bin/pytest -vv
+        run: |
+          .venv/bin/pytest -vv
+          .venv/bin/python -m articulous.coverage_gate coverage.json --directory articulous
 
   saxonc:
     name: SaxonC-HE 12.10 integration

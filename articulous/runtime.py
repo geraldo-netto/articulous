@@ -75,7 +75,7 @@ def file_hash(path: Path) -> str:
     """
     h = hashlib.sha256()
     with open_regular_file(path) as f:
-        for chunk in iter(lambda: f.read(65536), b""):
+        while chunk := f.read(65536):
             h.update(chunk)
     return h.hexdigest()
 

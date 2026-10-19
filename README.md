@@ -656,6 +656,10 @@ native and lxml backends, and links to generated HTML pages. The RSS fixture
 uses the test site's English first index page as its channel website.
 Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
+The subsequent native per-function gate independently inventories source, rejects
+stale or inconsistent counters, and requires at least 80% executable lines for
+each function. Empty protocol declarations must have genuinely empty native
+regions; executable functions cannot substitute empty counters.
 
 Seeded fuzz tests mutate configuration types and URL syntax, duplicate XML
 metadata, and out-of-range dates. Boundary probes cover numeric minima,
@@ -670,6 +674,7 @@ activated virtual environment, install the test extra and run:
 ```sh
 python -m pip install -e ".[test]"
 python -m pytest
+python -m articulous.coverage_gate coverage.json --directory articulous
 ruff check --no-cache .
 ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 9' articulous tests
 pyright --pythonpath .venv/bin/python

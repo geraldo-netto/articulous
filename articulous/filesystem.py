@@ -264,7 +264,7 @@ def tree_fingerprint(root: Path) -> str:
         if not path.is_dir():
             kind = 'file'
             with open_regular_file(path) as source:
-                for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                while chunk := source.read(1024 * 1024):
                     content.update(chunk)
         record = [path.relative_to(root).as_posix(), kind, content.hexdigest()]
         digest.update(json.dumps(record, ensure_ascii=True).encode() + b'\n')

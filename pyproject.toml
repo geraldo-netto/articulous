@@ -31,7 +31,7 @@ include = ["articulous*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q --cov --cov-branch --cov-report=term-missing --cov-fail-under=100"
+addopts = "-q --cov --cov-branch --cov-report=term-missing --cov-report=json --cov-fail-under=100"
 
 [tool.ruff]
 target-version = "py311"

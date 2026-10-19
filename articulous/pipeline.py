@@ -9,6 +9,7 @@ synthesise per-section model XML and hand it to the shared
 :func:`_make_xslt_task` plumbing.
 """
 from __future__ import annotations
+from operator import attrgetter
 
 import hashlib
 import heapq
@@ -566,7 +567,7 @@ class SortedArticleBatch:
 
 
 def _write_sorted_article_chunk(workspace: TempWorkspace, articles: list) -> tuple[Path, int]:
-    articles.sort(key=lambda a: a.datetime, reverse=True)
+    articles.sort(key=attrgetter("datetime"), reverse=True)
     with workspace.named_file("w+b") as f:
         for art in articles:
             pickle.dump(art, f)
@@ -576,7 +577,7 @@ def _write_sorted_article_chunk(workspace: TempWorkspace, articles: list) -> tup
 def _merge_sorted_chunks(chunks):
     streams = [_read_pickled_articles(path, count) for path, count in chunks]
     try:
-        yield from heapq.merge(*streams, key=lambda art: art.datetime, reverse=True)
+        yield from heapq.merge(*streams, key=attrgetter("datetime"), reverse=True)
     finally:
         for stream in streams:
             stream.close()
@@ -1291,6 +1292,10 @@ def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=N
 # Streaming dispatch
 # ================================================================
 
+def _default_sections():
+    return frozenset(SECTION_NAMES)
+
+
 @dataclass
 class StreamProjection:
     sitemap_urls: SitemapSink
@@ -1302,7 +1307,7 @@ class StreamProjection:
     skipped_by_publication: dict = field(default_factory=dict)
     articles_by_lang: ArticleStore | None = None
     listings_by_lang: ArticleStore | None = None
-    sections: frozenset[str] = field(default_factory=lambda: frozenset(SECTION_NAMES))
+    sections: frozenset[str] = field(default_factory=_default_sections)
     sitemap_listings: bool = False
     translations: Optional[TranslationStore] = None
 

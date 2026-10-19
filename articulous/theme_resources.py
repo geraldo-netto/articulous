@@ -17,3 +17,8 @@ def code_resources():
 def prism_provenance():
     root = files('articulous').joinpath('theme_assets')
     return json.loads(root.joinpath('third_party/prism/manifest.json').read_text())
+
+
+def search_resources():
+    root = files('articulous').joinpath('theme_assets')
+    return (ResourceFile('assets/js/search-client.js', root.joinpath('assets/js/search-client.js').read_bytes()),)

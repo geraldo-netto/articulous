@@ -6,7 +6,7 @@ const command=(method,params={})=>new Promise((resolve,reject)=>session.post(met
 const sources=new Map(), names=new Map();
 session.on('Debugger.scriptParsed',({params})=>{
   const name=params.url.split('/').pop();
-  if (!['browser-session.mjs','native-coverage.mjs'].includes(name)) return;
+  if (!['browser-session.mjs','native-coverage.mjs','search-client.js'].includes(name)) return;
   names.set(params.scriptId,name);
   sources.set(params.scriptId,command('Debugger.getScriptSource',{scriptId:params.scriptId}));
 });

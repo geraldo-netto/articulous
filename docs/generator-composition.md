@@ -629,3 +629,31 @@ Native V8 counters gate every measured tooling function at >=80%, alongside the
 existing browser asset gates. Sources are retained by native script identity
 before context destruction; missing or changed sources/counters fail. Unit faulty
 controls remain separate from production native measurements.
+
+## Optional search client
+
+`theme_resources.search_resources()` supplies `assets/js/search-client.js`.
+Its `SearchClient` factory takes an explicit origin, loader, metadata preparation,
+selection/matching policy and renderer callbacks. The library validates index
+records/URLs, owns immutable prepared data and one retryable request/cache, and
+renders every match in bounded batches (default 200, configurable). It assumes
+no language segment, tag destination, search URL, card DOM or localized labels.
+Slug normalization shares the engine contract. Declarations are packaged under
+`theme_assets/contracts/search-client.d.ts`.
+
+A nonempty search admits the first load synchronously, preserving Morpha's
+existing request/reset contract. Reset advances a revision and retains reusable
+validated data. Dispose advances the cutoff, aborts the loader/task signal, closes
+owned MessageChannel ports and clears callback/data references. Stale loads and
+render batches cannot publish or invoke released render callbacks. Custom loaders
+and schedulers must honor abort/eventual settlement; their external resources
+remain caller-owned. Storage is bounded by the admitted index, matches and
+in-flight renderer containers; there is no result cap. Morpha's static document
+owns its controller until browser context destruction. Reusable consumers must
+call `dispose` before releasing/reusing their render owner.
+
+Morpha keeps language inference under its guarded article-route contract,
+exact-tag-first/fallback matching, three-chip card presentation, selectors and
+wording. Neutral Node consumers and native Chromium consumers exercise complete
+results, malformed/retryable input, batching, callback failures and reset/disposal
+interleavings, with native >=80% function counters for the shared client.

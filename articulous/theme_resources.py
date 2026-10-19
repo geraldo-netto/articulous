@@ -1,13 +1,9 @@
 """Optional content/code resources, with one packaged source for every published byte."""
-from dataclasses import dataclass
 from importlib.resources import files
 import json
 
 
-@dataclass(frozen=True)
-class ResourceFile:
-    path: str
-    content: bytes
+from .resource_contracts import ResourceFile
 
 
 def code_resources():

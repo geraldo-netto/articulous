@@ -60,7 +60,7 @@ exclude_lines = [
 ]
 
 [tool.setuptools.package-data]
-articulous = ["theme_assets/assets/js/*.js", "theme_assets/assets/vendor/prism/*",
+articulous = ["tooling_assets/*.mjs", "theme_assets/assets/js/*.js", "theme_assets/assets/vendor/prism/*",
   "theme_assets/assets/css/vendor/prism/*", "theme_assets/xsl/*.xsl",
   "theme_assets/contracts/*.d.ts", "theme_assets/third_party/prism/*.json",
   "theme_assets/third_party/prism/patches/*"]

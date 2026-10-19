@@ -582,3 +582,50 @@ optional theme tooling; generator core adds no default JS dependency.
 Resource reads close each package input before return; records own immutable
 bytes bounded by the fixed package inventory. Exported stage files live under
 the caller's private-stage owner and are released with it.
+
+## Optional native test supervision
+
+`browser_process.run_browser` preserves explicit protocol deadlines;
+`run_browser_suite` observes settled-stage checkpoints without a total runtime
+kill cap. `run_owned` adds native exit-status checking for local tools, including
+the ImageMagick adapter. `python -m articulous.browser_process COMMAND ...` runs
+a checkpointed command. The Linux backend owns each Popen child, captured pipes,
+selector, private scratch and materialized JS helpers. It borrows stdin.
+
+The child PID remains reserved through `waitid(WNOWAIT)` observations, group
+quiescence, byte drainage and selector/pipe closure. Reaping releases that lease
+last. UTF-8 decoding happens separately: malformed diagnostics cannot prevent
+native cleanup. Signal/reuse operations never rely on a cached numeric PID after
+reaping. Uncertain fences retain the lease and scratch in a recovery broker.
+`NativeCleanupError.token` is an opaque identity; `recover_session(token)` claims
+that exact reservation, restores it on incomplete recovery and removes it only
+after settlement. Tokens with equal PID/path fields do not alias.
+
+The isolated Node session receives helper URLs through environment variables.
+`connectCDP` owns request timers/listeners and exposes `dispose`; the caller owns
+the socket. `createProfile` records directory identity. `stopBrowser` closes
+HTTP admission and deletes that profile only after native evidence and server
+closure. Linux libc pidfds bind signals to process generations; the force fence
+freezes the admission-closed cohort, collects forked members, kills through
+pidfds and waits for their native exit notifications. The containing Node group
+leader remains alive during this fence. Commands must remain inside their
+owned session/group and callers must stop new admission before teardown.
+Detached/reparented external workloads are outside this containment contract.
+Linux/libc behavior is validated locally; Windows/macOS supervision is unsupported.
+
+Native tests cover real Chromium, stubborn descendants, unrelated-process
+isolation, converter cancellation, partial initialization, retained recovery,
+malformed output and interruption around reaping. A five-state exhaustive model
+checks one group/workspace with two captured pipes; a native trace is checked
+against its independent ownership ordering. This finite model assumes trusted
+containment and eventual fence/recovery evidence; it does not prove unrestricted
+OS/kernel behavior. Leak freedom is conditional on eventual native exit, successful
+resource close and a caller/operator that performs retained recovery. Forced
+Python-owner loss leaves workspace reservation to the operator; durable unattended
+handoff remains LIFE-002. No unknown workspace may be reused or automatically
+deleted without exact identity and quiescence evidence.
+
+Native V8 counters gate every measured tooling function at >=80%, alongside the
+existing browser asset gates. Sources are retained by native script identity
+before context destruction; missing or changed sources/counters fail. Unit faulty
+controls remain separate from production native measurements.

@@ -52,7 +52,7 @@ def test_asset001_report_apply_and_unchanged(tmp_path, apply, content):
 def test_asset001_invalid_bounds_have_no_effect(tmp_path, values):
     with pytest.raises(ValueError):
         validate_options(*values)
-    with patch('articulous.backends.imagemagick.subprocess.run') as run:
+    with patch('articulous.backends.imagemagick.run_owned') as run:
         with pytest.raises(ValueError):
             list(optimize(tmp_path, FakeImages(tmp_path, b'new'), largest=values[0],
                           quality=values[1], threshold=values[2], kinds={'jpeg'}))
@@ -62,7 +62,7 @@ def test_asset001_invalid_bounds_have_no_effect(tmp_path, values):
 @pytest.mark.parametrize('suffix,count', [('jpg', 1), ('png', 2)])
 def test_asset001_process_contract(tmp_path, suffix, count):
     backend = ImageMagick()
-    with patch('articulous.backends.imagemagick.subprocess.run') as run:
+    with patch('articulous.backends.imagemagick.run_owned') as run:
         backend.shrink(tmp_path / ('a.' + suffix), tmp_path / ('b.' + suffix), 1, 100)
     assert run.call_count == count
 
@@ -110,7 +110,7 @@ def test_asset001_native_jpeg_orientation_and_format(tmp_path):
 
 
 def test_asset001_invalid_native_bounds_never_launch(tmp_path):
-    with patch('articulous.backends.imagemagick.subprocess.run') as run:
+    with patch('articulous.backends.imagemagick.run_owned') as run:
         with pytest.raises(ValueError):
             ImageMagick().shrink(tmp_path / 'a.jpg', tmp_path / 'b.jpg', 0, 82)
     run.assert_not_called()

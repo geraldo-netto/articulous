@@ -599,7 +599,9 @@ native cleanup. Signal/reuse operations never rely on a cached numeric PID after
 reaping. Uncertain fences retain the lease and scratch in a recovery broker.
 `NativeCleanupError.token` is an opaque identity; `recover_session(token)` claims
 that exact reservation, restores it on incomplete recovery and removes it only
-after settlement. Tokens with equal PID/path fields do not alias. ImageMagick
+after settlement. Cleanup interruption restores that exact token and its remaining
+workspace obligations for retry; identity checks prevent deleting replacements.
+Tokens with equal PID/path fields do not alias. ImageMagick
 transfers its borrowed image workspace and allocation identity to the same
 reservation when native settlement is uncertain. Recovery releases that directory
 only after the process fence. A failed transfer preserves and names the directory

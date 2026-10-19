@@ -179,17 +179,25 @@ def cleanup_recovery(reservation):
         cleanup_workspace(workspace.path, workspace.identity)
 
 
+def complete_recovery(token, reservation):
+    try:
+        cleanup_recovery(reservation)
+    except BaseException:
+        _RETAINED[token] = reservation
+        raise
+
+
 def recover_session(token):
     reservation = _RETAINED.pop(token)
     try:
         finish_native(reservation.session, reservation.process)
     except BaseException:
         if native_settled(reservation.session, reservation.process):
-            cleanup_recovery(reservation)
+            complete_recovery(token, reservation)
         else:
             _RETAINED[token] = reservation
         raise
-    cleanup_recovery(reservation)
+    complete_recovery(token, reservation)
 
 
 def settle_session(session, process, scratch, identity):

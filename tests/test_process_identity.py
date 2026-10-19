@@ -212,3 +212,36 @@ def test_test002_missing_native_wait_evidence_cannot_release_workspace():
     finally:
         for token in set(processes._RETAINED) - before:
             processes.recover_session(token)
+
+
+@pytest.mark.parametrize('diagnostic_error', [False, True])
+def test_life005_interrupted_cleanup_preserves_exact_recovery_owner(tmp_path, diagnostic_error):
+    from unittest.mock import Mock
+    from articulous.process_contracts import RecoveryToken
+    scratch, borrowed = tmp_path / 'native', tmp_path / 'borrowed'
+    scratch.mkdir()
+    borrowed.mkdir()
+    token = RecoveryToken(7, str(scratch))
+    reservation = processes.NativeRecovery(Mock(settled=True), Mock(),
+        processes.WorkspaceReservation(scratch, processes.workspace_identity(scratch)),
+        [processes.WorkspaceReservation(borrowed, processes.workspace_identity(borrowed))])
+    cleanup = processes.cleanup_workspace
+    def interrupted_cleanup(path, identity):
+        if path == borrowed:
+            raise KeyboardInterrupt
+        cleanup(path, identity)
+    processes._RETAINED[token] = reservation
+    try:
+        error = RuntimeError('diagnostics after native settlement') if diagnostic_error else None
+        with patch.object(processes, 'finish_native', side_effect=error):
+            with patch.object(processes, 'cleanup_workspace', side_effect=interrupted_cleanup):
+                with pytest.raises(KeyboardInterrupt):
+                    processes.recover_session(token)
+        assert processes._RETAINED.get(token) is reservation, 'LIFE-005: interruption cannot orphan remaining cleanup obligations'
+        assert borrowed.exists()
+        processes.recover_session(token)
+        assert not borrowed.exists() and token not in processes._RETAINED
+    finally:
+        processes._RETAINED.pop(token, None)
+        cleanup(scratch, reservation.workspace.identity)
+        cleanup(borrowed, reservation.borrowed[0].identity)

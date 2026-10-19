@@ -481,3 +481,28 @@ for one synchronous call. Compact records own plain strings, never parser DOM
 references. File parsers close their inputs before return; retained state is
 bounded by the admitted publication's pages, references, routes and sitemap
 entries. Diagnostics retain all findings.
+
+## Optional taxonomy authoring
+
+`taxonomy_policy.TagPolicy.from_mapping` validates caller-owned removed/merged
+rule data, rejects overlapping rules, merge chains and cycles, and reports the
+required source correction. It never rewrites a generated route. Morpha's loader
+selects `data/tag-policy.json`; exact owner vocabulary remains in that repository.
+`taxonomy_completeness` offers opt-in literal/translation-group completeness
+checks over immutable `TagSummary` records.
+
+`taxonomy_reports` shares normalization, candidate/group matching and full
+duplicate totals with a bounded sample (default 20, configurable); it does not
+select vocabulary or print editorial advice. `taxonomy_editing.apply_map` takes
+a `TaxonomyLayout` and optional `ProvenanceLayout` with caller-defined source
+reference and fingerprint projection. The XML adapter stages all edits in one
+source transaction. Only provenance already current before the edit can advance;
+stale/missing hashes stay stale. Morpha supplies its language/file schema and
+16-character digest projection. XML entity resolution and network access are
+disabled.
+
+The synchronous edit owns parsed documents and its transaction workspace until
+publication/rollback settles; no DOM or workspace escapes. Inputs and callbacks
+are borrowed for that call. Storage scales with the admitted XML corpus; output
+report sampling does not cap findings. Source-edit and partial-failure tests
+retain the existing identity-bound transaction cleanup guarantees.

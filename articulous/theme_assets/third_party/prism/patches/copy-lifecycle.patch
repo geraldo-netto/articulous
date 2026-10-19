@@ -1,0 +1,141 @@
+--- prismjs-1.30.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.js
++++ assets/js/prism-copy-to-clipboard.js
+@@ -24 +24 @@
+-	function registerClipboard(element, copyInfo) {
++	function registerClipboard(element, copyInfo, signal) {
+@@ -26,2 +26,6 @@
+-			copyTextToClipboard(copyInfo);
+-		});
++			if (!copyInfo.active() || element.disabled) { return; }
++			element.disabled = true;
++			copyTextToClipboard(copyInfo).finally(function () {
++				if (copyInfo.active()) { element.disabled = false; }
++			});
++		}, { signal: signal });
+@@ -30,34 +33,0 @@
+-	// https://stackoverflow.com/a/30810322/7595472
+-
+-	/** @param {CopyInfo} copyInfo */
+-	function fallbackCopyTextToClipboard(copyInfo) {
+-		var textArea = document.createElement('textarea');
+-		textArea.value = copyInfo.getText();
+-
+-		// Avoid scrolling to bottom
+-		textArea.style.top = '0';
+-		textArea.style.left = '0';
+-		textArea.style.position = 'fixed';
+-
+-		document.body.appendChild(textArea);
+-		textArea.focus();
+-		textArea.select();
+-
+-		try {
+-			var successful = document.execCommand('copy');
+-			setTimeout(function () {
+-				if (successful) {
+-					copyInfo.success();
+-				} else {
+-					copyInfo.error();
+-				}
+-			}, 1);
+-		} catch (err) {
+-			setTimeout(function () {
+-				copyInfo.error(err);
+-			}, 1);
+-		}
+-
+-		document.body.removeChild(textArea);
+-	}
+-	/** @param {CopyInfo} copyInfo */
+@@ -65,8 +35,5 @@
+-		if (navigator.clipboard) {
+-			navigator.clipboard.writeText(copyInfo.getText()).then(copyInfo.success, function () {
+-				// try the fallback in case `writeText` didn't work
+-				fallbackCopyTextToClipboard(copyInfo);
+-			});
+-		} else {
+-			fallbackCopyTextToClipboard(copyInfo);
+-		}
++		return Promise.resolve().then(function () {
++			if (copyInfo.active()) {
++				return navigator.clipboard.writeText(copyInfo.getText());
++			}
++		}).then(copyInfo.success, copyInfo.error);
+@@ -75,9 +42,7 @@
+-	/**
+-	 * Selects the text content of the given element.
+-	 *
+-	 * @param {Element} element
+-	 */
+-	function selectElementText(element) {
+-		// https://stackoverflow.com/a/20079910/7595472
+-		window.getSelection().selectAllChildren(element);
+-	}
++	var owners = new WeakMap();
++	Prism.plugins.copyToClipboard = {
++		dispose: function (element) {
++			var owner = owners.get(element);
++			if (owner) { owner.dispose(); }
++		}
++	};
+@@ -115,0 +81 @@
++		if (typeof navigator.clipboard?.writeText !== 'function') { return; }
+@@ -117 +83,3 @@
+-
++		var pre = element.parentElement;
++		var wrapper = pre.parentElement;
++		Prism.plugins.copyToClipboard.dispose(element);
+@@ -119 +86,0 @@
+-
+@@ -123,0 +91 @@
++		linkSpan.setAttribute('aria-live', 'polite');
+@@ -125 +93,4 @@
+-
++		var listener = new AbortController();
++		var timer;
++		var owner = { dispose: dispose };
++		owners.set(element, owner);
+@@ -129,3 +100,2 @@
+-			getText: function () {
+-				return element.textContent;
+-			},
++			active: active,
++			getText: function () { return element.textContent; },
+@@ -132,0 +103 @@
++				if (!active()) { return; }
+@@ -134 +104,0 @@
+-
+@@ -137,0 +108 @@
++				if (!active()) { return; }
+@@ -139,5 +109,0 @@
+-
+-				setTimeout(function () {
+-					selectElementText(element);
+-				}, 1);
+-
+@@ -146,2 +112 @@
+-		});
+-
++		}, listener.signal);
+@@ -150,2 +115,3 @@
+-		function resetText() {
+-			setTimeout(function () { setState('copy'); }, settings['copy-timeout']);
++		function active() {
++			return owners.get(element) === owner && element.isConnected && linkCopy.isConnected
++				&& element.parentElement === pre && pre.parentElement === wrapper && wrapper.contains(linkCopy);
+@@ -154 +120,14 @@
+-		/** @param {"copy" | "copy-error" | "copy-success"} state */
++		function dispose() {
++			listener.abort();
++			clearTimeout(timer);
++			linkCopy.disabled = true;
++			if (owners.get(element) === owner) { owners.delete(element); }
++		}
++
++		function resetText() {
++			clearTimeout(timer);
++			timer = setTimeout(function () {
++				if (active()) { setState('copy'); }
++			}, settings['copy-timeout']);
++		}
++

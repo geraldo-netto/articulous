@@ -557,3 +557,28 @@ client/cache. Retry counts, HTTP deadlines and admitted corpus/response sizes
 remain caller contracts. No model download, startup or remote request is implicit
 in discovery, preview or import. Structural success is not semantic acceptance;
 Morpha REV-139/HOST-017 remain separate owner work.
+
+## Optional content and code resources
+
+`theme_resources.code_resources()` returns immutable path/byte records from
+installed package data. The caller exports them into its private source stage;
+Morpha rejects any source file shadowing these shared paths. The bundle contains
+the sanitizer/code XSL, pinned Prism dependency bytes, maintained copy plugin and
+code adapter. Wheel import was verified locally without installing/downloading
+packages. Provenance, upstream hashes and the maintained patch live under
+`theme_assets/third_party/prism`; declarations live under `theme_assets/contracts`.
+The unchanged-upstream coverage exemption remains exact-hash only.
+
+Include `xsl/components/articulous/content.xsl`; call `render-code-block` with
+copy/success/error labels and `render-paragraph` with the desired wrapper class.
+Sanitization and exact code/leading-line handling are shared. Site-specific image,
+table, embed, widget and localization policies remain in the site's stylesheet.
+The JS adapter has no automatic DOM admission: call
+`CodeBlocks.init(document, selector)` or mount individual code containers, then
+dispose controllers before reusing those identities. The existing plugin fences
+late clipboard results, timers and listeners by controller identity. Prism remains
+optional theme tooling; generator core adds no default JS dependency.
+
+Resource reads close each package input before return; records own immutable
+bytes bounded by the fixed package inventory. Exported stage files live under
+the caller's private-stage owner and are released with it.

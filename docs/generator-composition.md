@@ -273,6 +273,19 @@ validate actual HTTP behavior at the host. No portal contract was changed here.
 
 ### Local size metrics
 
+`articulous.image_optimization.optimize` is a separate, explicit maintenance
+iterator. Supply an `image_contracts.ImageBackend`, roots, format choices and
+size/quality thresholds. `backends.imagemagick.ImageMagick` adapts installed
+`convert`, `identify` and optional `optipng`; no tool is downloaded. The iterator
+owns one private scratch workspace until exhaustion/close. Consumers that can
+stop early must close it, including on cancellation. Each conversion settles
+before its result is yielded; apply mode atomically replaces a source only if
+the result is smaller. Conversion/replacement failure leaves that source intact.
+The source batch and largest selected image bound storage; caller owns admission
+and returned `ImageResult` records. Native PNG dimensions and EXIF-oriented JPEG
+rotation/format/metadata stripping are tested on Linux; other native platforms
+have no validation claim. Missing executables remain visibly unavailable.
+
 `articulous.output_metrics.scan(output, regions=(("header", "//header"),))`
 returns an `OutputMetrics` mapping suitable for JSON serialization. The report
 functions `overall`, `repeated_markup`, `class_weight` and `one_page` accept

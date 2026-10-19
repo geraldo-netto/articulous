@@ -671,7 +671,7 @@ activated virtual environment, install the test extra and run:
 python -m pip install -e ".[test]"
 python -m pytest
 ruff check --no-cache .
-ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 10' articulous tests
+ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 9' articulous tests
 pyright --pythonpath .venv/bin/python
 ```
 
@@ -683,7 +683,10 @@ CI installs the versions in `uv.lock` with
 Python version. To use those locked dependencies locally, run that
 command with `--python 3.11` (or another CI version), then use the tools
 in `.venv/bin/`. The CI job runs Ruff, Pyright and pytest; the separate
-`C901` command above checks the repository's complexity limit.
+`C901` command above provides a supplementary complexity check. Every new or
+changed function requires SonarQube `complexity` <=9 without exemptions;
+record analyzer/version and per-function results. Ruff is not equivalent
+measurement. Missing SonarQube evidence remains tracked in `TODO.md`.
 
 A separate Linux integration job downloads the
 [SaxonC-HE 12.10 executable](https://downloads.saxonica.com/SaxonC/HE/12/index.html),

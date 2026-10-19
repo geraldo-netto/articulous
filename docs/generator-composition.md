@@ -175,6 +175,10 @@ are captured at their existing logical locations rather than relocated.
 The prepared context owns source spools, active readers, the route catalog,
 overlay and captured engines. It closes readers before reclaiming their storage;
 resuming a borrowed iterator after exit fails before another native read. A
+global merge explicitly registers and closes each child iterator; retaining
+another reference cannot postpone that settlement. Cleanup exceptions still
+run the remaining child/spool cleanup callbacks before propagation (LIFE-001).
+This is explicit resource settlement, independent of garbage collection. A
 retained article record remains valid because its bytes are owned. Template and
 policy callbacks are synchronous trusted code, not sandboxed plugins. Exceptions,
 invalid results and capture failures release their owned resources and do not

@@ -1,5 +1,6 @@
 """Translate private article spools into lifetime-scoped public snapshots."""
 from dataclasses import replace
+from contextlib import ExitStack
 from datetime import datetime, timezone
 from heapq import merge
 from operator import attrgetter
@@ -48,13 +49,16 @@ class Snapshot:
 
     def _read_original(self, language):
         self._require_open()
-        if language is not None:
-            if language not in self.languages:
-                raise ValueError('Captured language is disabled')
-            yield from self._store.sorted(language)
-            return
-        batches = [self._store.sorted(lang) for lang in sorted(self.languages)]
-        yield from merge(*batches, key=attrgetter('datetime'), reverse=True)
+        if language is not None and language not in self.languages:
+            raise ValueError('Captured language is disabled')
+        languages = (language,) if language is not None else sorted(self.languages)
+        with ExitStack() as cleanup:
+            batches = []
+            for lang in languages:
+                reader = iter(self._store.sorted(lang))
+                cleanup.callback(reader.close)
+                batches.append(reader)
+            yield from merge(*batches, key=attrgetter('datetime'), reverse=True)
 
     def original_articles(self, language=None):
         self._require_open()
@@ -82,7 +86,8 @@ class Snapshot:
 
     def close(self):
         self._closed = True
-        for source in tuple(self._active):
-            source.close()
-        self._active.clear()
-        self._store.close()
+        with ExitStack() as cleanup:
+            cleanup.callback(self._store.close)
+            cleanup.callback(self._active.clear)
+            for source in tuple(self._active):
+                cleanup.callback(source.close)

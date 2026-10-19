@@ -308,12 +308,15 @@ Morpha retains its content, localization choices, templates, concrete output
 validators and hosting policy. Engine canonical roots, extra pages, route discovery,
 validation hooks and local publication are available for an explicit migration.
 
-CONTRA-002 remains blocked on Morpha's COMPAT-003/HOST-004 decision:
-`../morpha-portal/AGENTS.md` forbids redirects/stubs, while its `index_aliases`,
-build orchestration, index template and `test_index_routes.py` still require them.
-Select engine root support or portal-only orchestration before removing aliases
-and redirect assertions together. Preserve the custom-404 server directive and
-validate actual HTTP behavior at the host. No portal contract was changed here.
+Owner decision (2026-10-19): preserve Morpha's current portal-owned language
+roots, numbered page-one redirect pages and `_redirects` rules during engine
+integration. Register the roots as extra pages and the rule file as an auxiliary
+artifact; keep the existing root/redirect/pagination regressions. Engine-owned
+canonical roots remain an available opt-in capability for other callers. This
+specific retained portal contract is the owner's explicit exception to its
+general no-compatibility policy, not authorization for additional aliases.
+Preserve the custom-404 directive and the separate live-hosting restrictions;
+local rendering does not establish actual HTTP behavior.
 
 ## Verification
 

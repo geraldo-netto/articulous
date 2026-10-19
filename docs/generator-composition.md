@@ -271,6 +271,19 @@ validate actual HTTP behavior at the host. No portal contract was changed here.
 
 ## Verification
 
+### Local size metrics
+
+`articulous.output_metrics.scan(output, regions=(("header", "//header"),))`
+returns an `OutputMetrics` mapping suitable for JSON serialization. The report
+functions `overall`, `repeated_markup`, `class_weight` and `one_page` accept
+caller-selected data/regions; site selectors and styling advice stay outside
+the engine. Each HTML file is read/parsed once per scan. DOMs and page bytes
+are released between files; retained size rows scale with page count and
+counters with distinct extensions, sections, regions and class strings.
+Callers own the returned mutable metrics. Empty trees and empty HTML are valid;
+invalid XPath expressions fail without modifying artifacts. Gzip values are
+local estimates, not measurements of HTTP encoding or transfers.
+
 ### Source editing
 
 Source maintenance uses `articulous.source_files.replace_file(path, writer)`

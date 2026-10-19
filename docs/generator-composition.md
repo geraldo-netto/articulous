@@ -271,6 +271,36 @@ validate actual HTTP behavior at the host. No portal contract was changed here.
 
 ## Verification
 
+### Source editing
+
+Source maintenance uses `articulous.source_files.replace_file(path, writer)`
+and `articulous.source_transactions.source_transaction(root)`, independently
+of generated-output publication. A transaction exposes `capture(relative)`,
+`write(relative, bytes, force=False)` and its staged `stage` path. Supply
+`final_paths=("manifest.json",)` when a caller's metadata must publish last;
+the engine has no knowledge of an import manifest's schema or location.
+`prefix` optionally selects the caller's temporary-directory label.
+
+The context owns its private workspace and every staged file/backup until
+commit or rollback settles. File streams close before replacement. Each
+destination is checked against its captured hash before publication; paths
+escaping the source root and symlink destinations are rejected. Existing
+permissions survive replacement. Callers must exclude other writers that can
+replace source directory identities during these operations; content checks
+are not a native filesystem isolation mechanism. No process-crash or power-loss
+atomicity is claimed for source edits.
+
+Workspace identity is checked before publication and recursive cleanup.
+Failed rollback retains its backups and names the workspace for caller-owned
+recovery. A cleanup failure reports the retained path without reversing a
+successful commit or masking the original error. Unknown replacement
+workspaces are preserved. Storage is proportional to the selected source
+batch and its previous contents; callers admit/fund that batch before editing.
+Keep immutable historical sources and project-specific overwrite rules in
+the calling importer. `tests/test_source_editing.py` retains boundary,
+partial-failure, replacement-identity and recovery controls alongside the
+callers' import/translation/taxonomy regressions.
+
 Permanent regression coverage lives in `test_index_roots.py`,
 `test_composition.py`, `test_prepared_build.py` and `test_publication.py`, alongside
 the existing routing, sitemap, ownership, asset, lock and output-safety suites.

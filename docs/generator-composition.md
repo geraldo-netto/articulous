@@ -445,3 +445,19 @@ power-loss durability.
 Morpha compatibility checks can be reproduced from its checkout with
 `PYTHONPATH=.:tests .venv/bin/python -m unittest -q test_index_routes test_sitemap_listings test_validation test_tag_index test_not_found test_engine_contract`.
 Those checks preserve existing portal behavior until its migration decision.
+
+## Optional local preview
+
+`python -m articulous.preview OUTPUT --port 0 --not-found /404.html` serves
+loopback only. Supply repeatable `--internal` names for site hosting artifacts.
+Dotfiles, traversal, escaped symlinks and directory listings are refused; GET
+and HEAD use the configured rendered 404, with a plain response when absent.
+Preview sends `no-store`; it defines no production hosting cache policy.
+
+The server owns each admitted socket by object identity, cuts admission on
+close, shuts down those sockets under the same lock used for worker release,
+and joins non-daemon workers before returning. Read timeouts bound idle request
+protocols; there is no aggregate session runtime cap. The caller must stop any
+separate serving loop before closing the server. Root files are borrowed for the
+server lifetime; preview is for trusted generated trees, not hostile concurrent
+filesystem mutation. Native socket settlement is tested on Linux.

@@ -20,6 +20,7 @@ test = [
 
 [project.scripts]
 articulous = "articulous.cli:main"
+articulous-preview = "articulous.preview:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

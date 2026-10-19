@@ -1572,7 +1572,9 @@ def _translation_context(projection, cli, ctx, cache):
         return ctx
     ctx = replace(ctx, translations=projection.translations)
     if cli.only_langs or cli.only_slugs:
-        projection.translations.validate_filters(cache, lambda key: _selected_output_key(key, cli))
+        def selected(key):
+            return _selected_output_key(key, cli)
+        projection.translations.validate_filters(cache, selected)
     return ctx
 
 

@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Generic, Protocol, TypeVar
 
-from .articles import PublicationPolicy, normalize_slug
+from .article_contracts import PublicationPolicy
+from .slugs import normalize_slug
 
 
 class TaggedRecord(Protocol):

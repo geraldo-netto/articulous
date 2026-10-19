@@ -9,9 +9,9 @@ import shutil
 
 from ..filesystem import (
     _directory_handle, atomic_output, cache_lock_path, lock_file, open_regular_file,
-    validate_output_path, validate_regular_file, write_text_atomic,
+    validate_output_path, write_text_atomic,
 )
-from ..ownership import load_ownership, ownership_path, save_ownership
+from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
 from ..runtime import load_cache
 
@@ -50,26 +50,6 @@ def _remove_tree(path):
     validate_output_path(path)
     with _directory_handle(path.parent) as parent:
         shutil.rmtree(path.name, dir_fd=parent)
-
-
-def _validate_owned_tree(destination):
-    validate_output_path(destination)
-    if destination.exists() and not destination.is_dir():
-        raise ValueError('Publication output must remain a directory')
-    ownership = load_ownership(destination)
-    allowed = {Path(path) for path in ownership.paths}
-    parents = {parent for path in allowed for parent in path.parents}
-    for path in destination.rglob('*'):
-        validate_output_path(path)
-        relative = path.relative_to(destination)
-        if relative.parts[0] == 'assets':
-            continue
-        if relative in allowed:
-            validate_regular_file(path)
-            continue
-        if path.is_dir() and relative in parents:
-            continue
-        raise ValueError(f'Refusing to replace unowned output: {relative}')
 
 
 class PosixPublicationBackend:
@@ -148,7 +128,7 @@ class PosixPublicationBackend:
     def publish(self, checked):
         checked.assert_unchanged()
         prepared = checked.staged.prepared
-        _validate_owned_tree(prepared.destination)
+        validate_owned_output(prepared.destination)
         transaction, data = self._begin(checked)
         try:
             self._install(checked, transaction, data)

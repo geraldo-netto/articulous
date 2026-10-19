@@ -21,7 +21,7 @@ from typing import Iterator, Protocol
 from urllib.parse import quote
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .articles import normalize_slug
+from .slugs import normalize_slug
 from .sections import bare_pattern, output_path_from_pattern, url_key_for_section, validate_index_first_pattern
 
 

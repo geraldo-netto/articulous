@@ -113,6 +113,17 @@ def _configuration(cli, config, root):
     return result
 
 
+@contextmanager
+def capture_site(cli, config, project_root: Path):
+    context = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=True)
+    with TempWorkspace() as workspace:
+        snapshot = Snapshot(context, workspace)
+        try:
+            yield snapshot
+        finally:
+            snapshot.close()
+
+
 def _full_build(cli, extra_pages):
     if cli.only_sections or cli.only_langs or cli.only_slugs:
         raise ValueError('Whole-site preparation requires an unfiltered build')

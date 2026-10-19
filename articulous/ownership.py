@@ -4,7 +4,7 @@ import stat
 from dataclasses import dataclass
 from pathlib import Path
 
-from .filesystem import open_regular_file, write_text_atomic
+from .filesystem import open_regular_file, write_text_atomic, validate_output_path, validate_regular_file
 
 
 @dataclass(frozen=True)
@@ -112,3 +112,25 @@ def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, exis
 def journal_ownership(output_dir: Path, previous: dict, planned: dict) -> None:
     existing = {path: _file_identity(output_dir / path) for path in planned.keys() - previous.keys()}
     save_ownership(output_dir, {**previous, **planned}, pending=True, existing=existing)
+
+
+def validate_owned_output(destination):
+    validate_output_path(destination)
+    if destination.exists() and not destination.is_dir():
+        raise ValueError('Publication output must remain a directory')
+    ownership = load_ownership(destination)
+    allowed = {Path(path) for path in ownership.paths}
+    parents = {parent for path in allowed for parent in path.parents}
+    for path in destination.rglob('*'):
+        validate_output_path(path)
+        relative = path.relative_to(destination)
+        if relative.parts[0] == 'assets':
+            continue
+        if relative in allowed:
+            validate_regular_file(path)
+            continue
+        if path.is_dir() and relative in parents:
+            continue
+        raise ValueError(f'Refusing to replace unowned output: {relative}')
+
+    return ownership

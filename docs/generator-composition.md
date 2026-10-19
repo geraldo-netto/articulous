@@ -154,6 +154,14 @@ overwrite, removal or hosting change.
 
 ## Prepare, render and validate
 
+`builds.capture_site(cli, config, root)` offers the same lifetime-scoped source
+capture for authoring/audit tools without rendering or publishing. It validates
+the site configuration, captures source records/policies once and creates no
+output/cache files or publication locks. Consumers may retain immutable article
+records, but must finish/close borrowed iterators within its context. Morpha's
+source requirements are applied by one `portal/source_policy.py` adapter shared
+by ordinary builds and source-audit tools.
+
 Pass `composer=captured_site_callback` to `prepare_build`, `check_build` or
 `build_site` to compose against the engine's article generation. The callback
 receives the `extensions.CapturedSite` contract and returns `BuildComposition`:
@@ -240,6 +248,25 @@ bytes unchanged. Lock files may remain after release. A changed staging-director
 identity is preserved for inspection instead of recursively deleting its replacement.
 
 ## Native publication boundary
+
+`publication_contracts.PublicationCapabilities` and `lock_contracts` contain
+independent data/interfaces. Importing capability, composition, catalogue and
+resource-lock contracts does not load CLI or native locking. The checkout
+launcher invokes `articulous.cli.main` directly; package initialization has no
+eager CLI re-export.
+
+`publication.lock_site(cli, config, root)` takes the same normalized output and
+cache locks as whole-site and incremental builders. Use it while copying a
+published generation for deployment or live comparison. It does not render,
+publish or silently recover a pending transaction. `ownership.validate_owned_output`
+is the shared read-only ownership check used by the publisher and release
+adapters; a site's report file is not ownership proof. `resource_locks.resource_lock`
+provides independent state-file exclusion, using the same native file-lock
+primitive through a lazy backend. Its path names the lock file, whose parent
+may be created; the persistent lock inode remains after release. Body exceptions
+are not misreported as contention. Callers must exclude other writers that can
+replace those lock paths. POSIX lock availability and Linux validation remain
+separate from the Linux-only publication capability.
 
 [`articulous.publication`](../articulous/publication.py) provides shared
 orchestration through the `PublicationBackend` protocol: `capabilities`, `locked`,
@@ -342,7 +369,7 @@ local rendering does not establish actual HTTP behavior.
 
 ## Verification
 
-### Local size metrics
+### Image maintenance
 
 `articulous.image_optimization.optimize` is a separate, explicit maintenance
 iterator. Supply an `image_contracts.ImageBackend`, roots, format choices and
@@ -356,6 +383,8 @@ The source batch and largest selected image bound storage; caller owns admission
 and returned `ImageResult` records. Native PNG dimensions and EXIF-oriented JPEG
 rotation/format/metadata stripping are tested on Linux; other native platforms
 have no validation claim. Missing executables remain visibly unavailable.
+
+### Local size metrics
 
 `articulous.output_metrics.scan(output, regions=(("header", "//header"),))`
 returns an `OutputMetrics` mapping suitable for JSON serialization. The report

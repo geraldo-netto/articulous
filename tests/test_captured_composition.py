@@ -160,3 +160,16 @@ def test_arch006_external_stylesheet_is_captured_without_relocation(site_root, s
         stylesheet.write_bytes(b'<broken')
         with render_prepared(prepared).open_artifact('external/index.html') as artifact:
             assert b'Captured external resource' in artifact.read()
+
+
+def test_arch009_readonly_source_capture_needs_no_render_or_publication(site_root, seo_config):
+    from articulous.builds import capture_site
+    cli, config = seo_config
+    with capture_site(cli, config, site_root) as snapshot:
+        rows = list(snapshot.articles())
+        assert rows
+        assert rows[0].source_xml in {path.read_bytes() for path in (site_root / 'content').rglob('*.xml')}
+    assert not (site_root / 'output').exists()
+    assert not (site_root / '.build-cache.json').exists()
+    with pytest.raises(ValueError, match='closed'):
+        list(snapshot.articles())

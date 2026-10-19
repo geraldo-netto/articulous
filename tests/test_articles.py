@@ -8,10 +8,10 @@ from datetime import datetime, timedelta, timezone
 import lxml.etree as etree
 import pytest
 
+from articulous.article_contracts import PublicationState
 from articulous.articles import (
     Article,
     ArticleStats,
-    PublicationState,
     _discover_article_files,
     _read_article_fields,
     _validated_publication,

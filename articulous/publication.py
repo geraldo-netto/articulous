@@ -1,23 +1,12 @@
 """Whole-site publication contracts and shared orchestration."""
-from contextlib import AbstractContextManager
-from dataclasses import dataclass
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from typing import Protocol
 
+from .publication_contracts import PublicationCapabilities
 from .builds import (
-    ValidatedBuild, ValidationReport, prepare_build, render_prepared, validate_generated,
+    ValidatedBuild, ValidationReport, _configuration, prepare_build, render_prepared, validate_generated,
 )
-
-
-@dataclass(frozen=True)
-class PublicationCapabilities:
-    platform: str
-    available: bool
-    staging: bool
-    rollback: bool
-    journal_recovery: bool
-    atomic_visibility: bool = False
-    power_loss_durability: bool = False
 
 
 class PublicationBackend(Protocol):
@@ -75,3 +64,12 @@ def build_site(cli, config, project_root: Path, *, extra_pages=(), validators=()
         checked = validate_generated(render_prepared(prepared), validators=validators)
         publish_validated(checked, backend=selected, require_atomic=require_atomic, require_durable=require_durable)
         return ValidationReport(len(prepared.routes), checked.diagnostics)
+
+
+@contextmanager
+def lock_site(cli, config, project_root: Path, *, backend=None):
+    from .pipeline import build_ctx_from_config, _cache_path_for
+    selected = _backend(backend, False, False)
+    context = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
+    with selected.locked(context.output_dir, _cache_path_for(context, project_root)):
+        yield

@@ -1,7 +1,7 @@
 """Native publication selection and validated platform capabilities."""
 import sys
 
-from ..publication import PublicationCapabilities
+from ..publication_contracts import PublicationCapabilities
 
 
 def publication_capabilities() -> PublicationCapabilities:

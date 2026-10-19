@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from articulous.articles import PublicationPolicy
+from articulous.article_contracts import PublicationPolicy
 from articulous.catalogue import PublicationCatalogue, TagCount
 
 

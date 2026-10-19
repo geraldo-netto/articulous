@@ -21,48 +21,17 @@ from typing import Callable, Iterable, Optional
 
 from lxml import etree  # type: ignore[attr-defined]
 
+from .article_contracts import PublicationPolicy, PublicationState, _PUBLICATION_POLICIES
+from .slugs import normalize_slug
 from .engines import safe_xml_parser
 from .filesystem import open_regular_file
 from .sections import validate_image_url
 
 
-@dataclass(frozen=True)
-class PublicationPolicy:
-    page: bool
-    listing: bool
-    rss: bool
-    sitemap: bool
-    search: bool
-
-
-_PUBLICATION_POLICIES = {
-    "published": PublicationPolicy(True, True, True, True, True),
-    "unlisted": PublicationPolicy(True, False, False, False, False),
-    "draft": PublicationPolicy(False, False, False, False, False),
-    "private": PublicationPolicy(False, False, False, False, False),
-    "scheduled": PublicationPolicy(False, False, False, False, False),
-}
 _SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation", "author", "image", "structured-data"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 
-@dataclass(frozen=True)
-class PublicationState:
-    name: str = "published"
-    publish_at: Optional[datetime] = None
-    evaluated_at: Optional[datetime] = None
-
-    @property
-    def policy(self) -> PublicationPolicy:
-        if self.name == "scheduled" and self._published_now():
-            return _PUBLICATION_POLICIES["published"]
-        return _PUBLICATION_POLICIES[self.name]
-
-    def _published_now(self) -> bool:
-        if self.publish_at is None:
-            return False
-        now = self.evaluated_at or datetime.now(tz=self.publish_at.tzinfo)
-        return self.publish_at <= now
 
 
 @dataclass(frozen=True)
@@ -145,14 +114,6 @@ class _ScanProgress:
             self._stats.scanned, self._stats.parsed, self._stats.skipped,
         )
         self._reported_at = now
-
-
-def normalize_slug(text: str) -> str:
-    """Convert arbitrary text into a URL-safe slug."""
-    text = text.lower()
-    text = re.sub(r"[^a-z0-9]+", "-", text)
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")
 
 
 def _as_utc(value: datetime) -> datetime:

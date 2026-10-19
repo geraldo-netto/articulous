@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
-from .articles import PublicationPolicy
+from .article_contracts import PublicationPolicy
 from .composition import ExtraArtifact, ExtraPage, Route, _validate_relative_output
 
 

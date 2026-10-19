@@ -461,3 +461,23 @@ protocols; there is no aggregate session runtime cap. The caller must stop any
 separate serving loop before closing the server. Root files are borrowed for the
 server lifetime; preview is for trusted generated trees, not hostile concurrent
 filesystem mutation. Native socket settlement is tested on Linux.
+
+## Opt-in publication validation
+
+`validation_contracts.ValidationPlan` supplies explicit output-page canonical
+URLs, searchable URLs, sitemap URLs, JSON/XML locations and site-relative
+redirects. `site_validation.validate_site` checks the staged tree before
+publication and returns scalar counts. It follows same-origin links inside the
+configured publication prefix, decodes paths/fragments, follows redirect
+fragments, ignores inert templates and remote/outside-prefix URLs, and reads
+sitemap indexes without revisiting a shard. No language or theme paths are
+assumed. Sitemap XML disables entity resolution and networking.
+
+Supply an optional HTML error callback for a stricter parser. Morpha supplies
+its existing HTML5 parser and retains its interface/mirror audits. The standalone
+portal auditor's separate scope decision (REV-092) remains unresolved.
+Validation borrows a stable staged tree and caller-owned expectation mappings
+for one synchronous call. Compact records own plain strings, never parser DOM
+references. File parsers close their inputs before return; retained state is
+bounded by the admitted publication's pages, references, routes and sitemap
+entries. Diagnostics retain all findings.

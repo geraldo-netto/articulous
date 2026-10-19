@@ -1408,7 +1408,7 @@ def build_artifacts_section(artifacts, ctx, cache, manifest):
     tasks = []
     for artifact in artifact_values(artifacts):
         path = artifact.output_path
-        route = Route('artifact:' + path, 'artifacts', ctx.base_url + '/' + quote(path, safe='/'),
+        route = Route('artifact:' + path, 'artifacts', ctx.base_url.rstrip('/') + '/' + quote(path, safe='/'),
                       path, category='excluded', sitemap=False)
         task = _make_native_task(source=artifact.content, output_path=ctx.output_dir / path,
                                  cache=cache, cache_key=route.key, engine=NativeEngine(),

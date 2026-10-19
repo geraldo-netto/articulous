@@ -81,3 +81,15 @@ def test_arch007_route_aware_artifacts_precede_template_capture(site_root, seo_c
 def test_arch007_invalid_factory_contract(factory):
     with pytest.raises(ValueError, match='artifacts'):
         BuildComposition(artifacts=factory)
+
+
+@pytest.mark.parametrize('base', ['https://artifacts.test', 'https://artifacts.test/',
+                                  'https://artifacts.test:8443/', 'https://artifacts.test/prefix/'])
+def test_art001_artifact_routes_accept_configured_base_boundaries(site_root, seo_config, base):
+    cli, config = seo_config
+    config['site']['base_url'] = base
+    with prepare_build(cli, config, site_root, extra_artifacts=[ExtraArtifact('report.txt', b'exact')]) as prepared:
+        routes = [route for route in prepared.routes if route.section == 'artifacts']
+        assert [route.url for route in routes] == [base.rstrip('/') + '/report.txt']
+        staged = render_prepared(prepared)
+        assert (staged.root / 'report.txt').read_bytes() == b'exact'

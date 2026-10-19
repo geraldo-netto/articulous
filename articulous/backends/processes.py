@@ -1,6 +1,7 @@
 """Linux process groups; retain a child PID lease until every member is quiescent."""
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 import selectors
@@ -12,7 +13,7 @@ import time
 
 from ..process_contracts import ProcessSession, RecoveryToken, NativeCleanupError, deadline_seconds
 from ..tooling_resources import tooling_resources
-from ..source_files import cleanup_workspace, workspace_identity
+from ..source_files import cleanup_workspace, require_workspace, workspace_identity
 
 _RETAINED = {}
 
@@ -154,17 +155,41 @@ def finish_native(session, process):
         session.stop()
 
 
+@dataclass(frozen=True)
+class WorkspaceReservation:
+    path: Path
+    identity: tuple[int, int, int]
+
+
+@dataclass
+class NativeRecovery:
+    session: LinuxSession | None
+    process: subprocess.Popen
+    workspace: WorkspaceReservation
+    borrowed: list[WorkspaceReservation] = field(default_factory=list)
+
+
+def defer_workspace_cleanup(token, path, identity):
+    require_workspace(path, identity)
+    _RETAINED[token].borrowed.append(WorkspaceReservation(path, identity))
+
+
+def cleanup_recovery(reservation):
+    for workspace in (reservation.workspace, *reservation.borrowed):
+        cleanup_workspace(workspace.path, workspace.identity)
+
+
 def recover_session(token):
-    session, process, scratch, identity = _RETAINED.pop(token)
+    reservation = _RETAINED.pop(token)
     try:
-        finish_native(session, process)
+        finish_native(reservation.session, reservation.process)
     except BaseException:
-        if native_settled(session, process):
-            cleanup_workspace(scratch, identity)
+        if native_settled(reservation.session, reservation.process):
+            cleanup_recovery(reservation)
         else:
-            _RETAINED[token] = session, process, scratch, identity
+            _RETAINED[token] = reservation
         raise
-    cleanup_workspace(scratch, identity)
+    cleanup_recovery(reservation)
 
 
 def settle_session(session, process, scratch, identity):
@@ -178,7 +203,7 @@ def settle_session(session, process, scratch, identity):
             cleanup_workspace(scratch, identity)
             raise
         token = RecoveryToken(process.pid, str(scratch))
-        _RETAINED[token] = session, process, scratch, identity
+        _RETAINED[token] = NativeRecovery(session, process, WorkspaceReservation(scratch, identity))
         raise NativeCleanupError(token) from error
     cleanup_workspace(scratch, identity)
 

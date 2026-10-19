@@ -2,7 +2,10 @@
 from pathlib import Path
 import tempfile
 
-from ..filesystem import private_directory
+from contextlib import contextmanager
+from ..source_files import cleanup_workspace, workspace_identity
+from ..process_contracts import NativeCleanupError
+from .processes import defer_workspace_cleanup
 from ..browser_process import run_owned
 from ..image_contracts import KINDS, validate_options
 
@@ -23,5 +26,20 @@ class ImageMagick:
             run_owned(['convert', str(path), '-resize', resize, '-strip', str(target)])
             run_owned(['optipng', '-quiet', '-o2', str(target)])
 
+    @contextmanager
     def workspace(self):
-        return private_directory(Path(tempfile.gettempdir()))
+        workspace = Path(tempfile.mkdtemp(prefix='articulous-image-'))
+        identity = workspace_identity(workspace)
+        deferred = False
+        try:
+            yield workspace
+        except NativeCleanupError as error:
+            deferred = True
+            try:
+                defer_workspace_cleanup(error.token, workspace, identity)
+            except BaseException as transfer_error:
+                raise RuntimeError(f'Image workspace requires manual recovery: {workspace}') from transfer_error
+            raise
+        finally:
+            if not deferred:
+                cleanup_workspace(workspace, identity)

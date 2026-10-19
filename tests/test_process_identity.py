@@ -37,9 +37,10 @@ def test_test002_retained_unknown_fence_is_recoverable():
                 assert isinstance(session, LinuxSession)
                 pid = session._process.pid
     token = next(token for token in processes._RETAINED if token.pid == pid)
-    retained, process, scratch, identity = processes._RETAINED[token]
+    reservation = processes._RETAINED[token]
+    scratch = reservation.workspace.path
     assert scratch.is_dir()
-    assert retained is session
+    assert reservation.session is session
     assert isinstance(session, LinuxSession)
     assert os.waitid(os.P_PID, pid, os.WEXITED | os.WNOHANG | os.WNOWAIT) is not None
     processes.recover_session(token)

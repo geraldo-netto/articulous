@@ -36,12 +36,12 @@ def running(pid):
         return False
 
 
-def cleanup_fixture(record):
-    from articulous.backends import processes
-
-    for token in list(processes._RETAINED):
-        if token.pid == record["parent"]:
-            processes.recover_session(token)
+def recover_fixture_failure():
+    from articulous.process_contracts import NativeCleanupError
+    from articulous.backends.processes import recover_session
+    error = sys.exc_info()[1]
+    if isinstance(error, NativeCleanupError):
+        recover_session(error.token)
 
 
 class BrowserProcess(unittest.TestCase):
@@ -74,7 +74,7 @@ class BrowserProcess(unittest.TestCase):
                         if record is None and path.exists():
                             record = json.loads(path.read_text())
                         if record is not None:
-                            cleanup_fixture(record)
+                            recover_fixture_failure()
         finally:
             unrelated.kill()
             unrelated.wait(timeout=5)

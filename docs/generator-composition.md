@@ -117,6 +117,23 @@ input produces an empty tag index. Construct an `ExtraPage` from its XML to rend
 it; the engine does not automatically choose a tag-index route or template.
 Display labels, sidebar limits and sorting remain theme choices.
 
+`composition.ExtraArtifact(output_path, bytes)` declares a non-page generated
+file. Pass `extra_artifacts` to `run_build`, `prepare_build`, `check_build` or
+`build_site`. Artifacts share regular output-path, ownership, collision,
+fingerprint-cache and publication/recovery checks; they are excluded from
+sitemaps. Their bytes are immutable caller inputs. HTML pages continue to use
+the rendering pipeline through `ExtraPage` or built-in sections.
+
+A `BuildComposition.artifacts` factory may derive these bytes from captured
+articles and the planned page catalog. Its artifacts are registered before the
+template-data factory runs, so templates see the complete catalog. Factories
+are synchronous and may not mutate staged output. All declared artifact bytes
+must be admitted/funded by the caller; failed planning/rendering/validation
+publishes none of them. Engine ownership is authoritative: a site report is
+metadata, not a second ownership marker. Hosting directives and deployment
+rules remain caller policy; declaring `.htaccess` locally authorizes no remote
+overwrite, removal or hosting change.
+
 ## Prepare, render and validate
 
 Pass `composer=captured_site_callback` to `prepare_build`, `check_build` or

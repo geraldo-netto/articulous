@@ -29,7 +29,7 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import validate_output_layout, validate_state_paths
-from .composition import ExtraPage, Route, RouteCatalog, route_from_output, validate_page_url
+from .composition import ExtraArtifact, ExtraPage, Route, RouteCatalog, artifact_values, route_from_output, validate_page_url
 from .engines import (
     NativeEngine,
     SaxonCEngine,
@@ -137,6 +137,7 @@ class BuildCtx:
     output_migrations: Optional[OutputMigrations] = None
     translations: Optional[TranslationStore] = None
     extra_pages: tuple[ExtraPage, ...] = ()
+    extra_artifacts: tuple[ExtraArtifact, ...] = ()
     stylesheet_capture: StylesheetCapture | None = None
 
     def xsl_for(self, section: str) -> Path:
@@ -734,6 +735,8 @@ def _source_values(source):
 
 
 def _source_hash(source) -> str:
+    if isinstance(source, bytes):
+        return hashlib.sha256(source).hexdigest()
     if isinstance(source, SitemapSlice):
         return source.fingerprint
     if isinstance(source, _JsonLinesSink):
@@ -933,9 +936,10 @@ def _make_native_task(
     writer: Callable,
     ctx: BuildCtx,
     manifest: Optional[OutputManifest] = None,
+    route: Route | None = None,
 ) -> Optional[Callable]:
     output_path = _record_planned_output(
-        manifest, ctx, cache_key, output_path,
+        manifest, ctx, cache_key, output_path, route,
     )
     fingerprint = (_source_hash(source), engine.cache_identity, _output_relpath(ctx, output_path))
     if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
@@ -1390,6 +1394,25 @@ def _collect_extra_plan(ctx, cache, manifest):
     return tasks
 
 
+def _write_extra_artifact(output, content):
+    with output.open('wb') as destination:
+        destination.write(content)
+
+
+def build_artifacts_section(artifacts, ctx, cache, manifest):
+    tasks = []
+    for artifact in artifact_values(artifacts):
+        path = artifact.output_path
+        route = Route('artifact:' + path, 'artifacts', ctx.base_url + '/' + quote(path, safe='/'),
+                      path, category='excluded', sitemap=False)
+        task = _make_native_task(source=artifact.content, output_path=ctx.output_dir / path,
+                                 cache=cache, cache_key=route.key, engine=NativeEngine(),
+                                 writer=_write_extra_artifact, ctx=ctx, manifest=manifest, route=route)
+        if task is not None:
+            tasks.append(task)
+    return tasks
+
+
 def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> None:
     if not projection.sitemap_listings:
         return
@@ -1595,6 +1618,8 @@ def _collect_tasks(
             )
         if ctx.extra_pages:
             plan['pages'] = _collect_extra_plan(ctx, cache, manifest)
+        if ctx.extra_artifacts:
+            plan['artifacts'] = build_artifacts_section(ctx.extra_artifacts, ctx, cache, manifest)
     except BaseException:
         _close_task_queues(plan)
         _cleanup_stream_projection(projection)
@@ -1866,12 +1891,13 @@ def _record_retained_routes(cli, ctx, cache, old_manifest, manifest):
         manifest.record_route(route)
 
 
-def run_build(cli, config, project_root: Path, *, extra_pages=(), route_catalog=None) -> None:
+def run_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), route_catalog=None) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
 
     validate_state_paths(config, cli, project_root)
-    ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages))
+    ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages),
+                  extra_artifacts=artifact_values(extra_artifacts))
     cache_path = _cache_path_for(ctx, project_root)
     with lock_file(cache_lock_path(cache_path)), lock_file(_lock_path_for(ctx, project_root)):
         with TempWorkspace() as workspace:

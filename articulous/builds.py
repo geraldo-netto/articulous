@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 
 from .articles import ArticleStats
-from .composition import ExtraPage, RouteCatalog
+from .composition import ExtraPage, RouteCatalog, artifact_values
 from .engines import StylesheetCapture
 from .extensions import BuildComposition, TemplateInput
 from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config
@@ -17,7 +17,7 @@ from .filesystem import (
 from .pipeline import (
     BuildCtx, BuildPlan, OutputManifest, _article_stream_factory, _cache_path_for,
     _cleanup_stream_projection, _close_task_queues, _collect_tasks, _lock_path_for,
-    _run_plan, build_ctx_from_config, copy_assets,
+    _run_plan, build_artifacts_section, build_ctx_from_config, copy_assets,
 )
 from .capture_adapter import Snapshot
 
@@ -122,13 +122,14 @@ def _full_build(cli, extra_pages):
     return pages
 
 
-def _capture_context(stack, original, extra_pages):
+def _capture_context(stack, original, extra_pages, extra_artifacts=()):
     original.output_dir.parent.mkdir(parents=True, exist_ok=True)
     private = stack.enter_context(private_directory(original.output_dir.parent))
     capture = replace(original, output_dir=private / 'inputs', dry_run=False, force=True)
     copy_assets(capture)
     return replace(capture, output_dir=private / 'output',
-                   assets_dir=capture.output_dir / 'assets', extra_pages=extra_pages)
+                   assets_dir=capture.output_dir / 'assets', extra_pages=extra_pages,
+                   extra_artifacts=extra_artifacts)
 
 
 def _composition_context(stack, context, composer, original):
@@ -174,8 +175,16 @@ def _finish_composition(context, snapshot, composition, routes):
     context.stylesheet_capture.freeze()
 
 
-def _prepare_locked(stack, cli, original, root, pages, composer=None):
-    context = _capture_context(stack, original, pages)
+def _finish_artifacts(context, snapshot, composition, routes, manifest, plan, cache):
+    if composition is None or composition.artifacts is None:
+        return
+    artifacts = artifact_values(composition.artifacts(snapshot, routes))
+    tasks = build_artifacts_section(artifacts, context, cache, manifest)
+    plan.setdefault('artifacts', []).extend(tasks)
+
+
+def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=()):
+    context = _capture_context(stack, original, pages, artifacts)
     context, snapshot, composition = _composition_context(stack, context, composer, original)
     workspace = stack.enter_context(TempWorkspace())
     routes = stack.enter_context(RouteCatalog())
@@ -186,6 +195,7 @@ def _prepare_locked(stack, cli, original, root, pages, composer=None):
                           cache, workspace, manifest)
     stack.callback(_cleanup_stream_projection, plan.projection)
     stack.callback(_close_task_queues, plan)
+    _finish_artifacts(context, snapshot, composition, routes, manifest, plan, cache)
     _finish_composition(context, snapshot, composition, routes)
     prepared = PreparedBuild(context, original.output_dir, _cache_path_for(original, root),
                              routes, manifest, plan, cache, workspace)
@@ -206,13 +216,14 @@ def _preparation_lock(original, root, backend):
 
 
 @contextmanager
-def prepare_build(cli, config, project_root: Path, *, extra_pages=(), backend=None, composer=None):
+def prepare_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), backend=None, composer=None):
     pages = _full_build(cli, extra_pages)
+    artifacts = artifact_values(extra_artifacts)
     original = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
     validate_output_path(original.output_dir)
     with ExitStack() as stack:
         stack.enter_context(_preparation_lock(original, project_root, backend))
-        yield _prepare_locked(stack, cli, original, project_root, pages, composer)
+        yield _prepare_locked(stack, cli, original, project_root, pages, composer, artifacts)
 
 
 def render_prepared(prepared: PreparedBuild) -> StagedBuild:
@@ -247,7 +258,7 @@ def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
     return ValidatedBuild(staged, tuple(diagnostics))
 
 
-def check_build(cli, config, project_root: Path, *, extra_pages=(), validators=(), composer=None) -> ValidationReport:
-    with prepare_build(cli, config, project_root, extra_pages=extra_pages, composer=composer) as prepared:
+def check_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), validators=(), composer=None) -> ValidationReport:
+    with prepare_build(cli, config, project_root, extra_pages=extra_pages, extra_artifacts=extra_artifacts, composer=composer) as prepared:
         checked = validate_generated(render_prepared(prepared), validators=validators)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

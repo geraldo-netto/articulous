@@ -64,6 +64,24 @@ class ExtraPage:
             raise ValueError('not-found pages must be excluded from the sitemap')
 
 
+@dataclass(frozen=True)
+class ExtraArtifact:
+    output_path: str
+    content: bytes
+
+    def __post_init__(self):
+        _validate_relative_output(self.output_path)
+        if not isinstance(self.content, bytes):
+            raise ValueError('Artifact content must be bytes')
+
+
+def artifact_values(values):
+    result = tuple(values)
+    if not all(isinstance(item, ExtraArtifact) for item in result):
+        raise ValueError('Extra artifacts must contain ExtraArtifact values')
+    return result
+
+
 class RouteCatalog:
     def __init__(self):
         self._db = sqlite3.connect('')

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Protocol
 
 from .articles import PublicationPolicy
-from .composition import ExtraPage, Route, _validate_relative_output
+from .composition import ExtraArtifact, ExtraPage, Route, _validate_relative_output
 
 
 @dataclass(frozen=True)
@@ -56,15 +56,19 @@ class TemplateInput:
 
 
 TemplateFactory = Callable[[CapturedSite, Iterable[Route]], Iterable[TemplateInput]]
+ArtifactFactory = Callable[[CapturedSite, Iterable[Route]], Iterable[ExtraArtifact]]
 
 
 @dataclass(frozen=True)
 class BuildComposition:
     pages: tuple[ExtraPage, ...] = ()
     templates: TemplateFactory | None = None
+    artifacts: ArtifactFactory | None = None
 
     def __post_init__(self):
         if not isinstance(self.pages, tuple) or not all(isinstance(page, ExtraPage) for page in self.pages):
             raise ValueError('Composition pages must be an ExtraPage tuple')
         if self.templates is not None and not callable(self.templates):
             raise ValueError('Composition templates must be callable')
+        if self.artifacts is not None and not callable(self.artifacts):
+            raise ValueError('Composition artifacts must be callable')

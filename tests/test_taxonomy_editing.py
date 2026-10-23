@@ -154,43 +154,34 @@ class TagMapTests(unittest.TestCase):
         for state in ("current", "stale", "missing", "empty"):
             for mapping in maps:
                 with self.subTest(state=state, mapping=mapping):
-                    self.setUp()
-                    source = self.content / "en/a.xml"
-                    target = self.content / "es/a.xml"
-                    tree = etree.parse(str(target))
-                    etree.SubElement(tree.getroot(), "tag").text = "target-only"
-                    etree.SubElement(tree.getroot(), "translated-from").text = "en"
-                    old_hash = (
-                        None if state in ("missing", "empty") else source_hash(source)
-                    )
-                    if state != "missing":
-                        etree.SubElement(tree.getroot(), "source-hash").text = old_hash
-                    tree.write(str(target))
-                    if state == "stale":
-                        source.write_bytes(
-                            source.read_bytes().replace(
-                                b"Prose", b"Changed source prose"
-                            )
-                        )
-                    before = self.snapshot()
-                    self.apply(mapping)
-                    root = etree.parse(str(target)).getroot()
-                    expected = (
-                        source_hash(source)
-                        if state == "current"
-                        else ("" if state == "empty" else old_hash)
-                    )
-                    self.assertEqual(expected, root.findtext("source-hash"))
-                    if state != "current":
-                        self.assertNotEqual(
-                            source_hash(source), root.findtext("source-hash")
-                        )
-                    if (
-                        not mapping
-                        or "unrelated" in mapping
-                        or mapping == {"alpha": "alpha"}
-                    ):
-                        self.assertEqual(before, self.snapshot())
+                    self._check_hash_case(state, mapping)
+
+    def _prepare_hash_case(self, state):
+        self.setUp()
+        source = self.content / "en/a.xml"
+        target = self.content / "es/a.xml"
+        tree = etree.parse(str(target))
+        etree.SubElement(tree.getroot(), "tag").text = "target-only"
+        etree.SubElement(tree.getroot(), "translated-from").text = "en"
+        old_hash = None if state in ("missing", "empty") else source_hash(source)
+        if state != "missing":
+            etree.SubElement(tree.getroot(), "source-hash").text = old_hash
+        tree.write(str(target))
+        if state == "stale":
+            source.write_bytes(source.read_bytes().replace(b"Prose", b"Changed source prose"))
+        return source, target, old_hash
+
+    def _check_hash_case(self, state, mapping):
+        source, target, old_hash = self._prepare_hash_case(state)
+        before = self.snapshot()
+        self.apply(mapping)
+        root = etree.parse(str(target)).getroot()
+        expected = source_hash(source) if state == "current" else ("" if state == "empty" else old_hash)
+        self.assertEqual(expected, root.findtext("source-hash"))
+        if state != "current":
+            self.assertNotEqual(source_hash(source), root.findtext("source-hash"))
+        if not mapping or "unrelated" in mapping or mapping == {"alpha": "alpha"}:
+            self.assertEqual(before, self.snapshot())
 
     def test_rev054_missing_source_keeps_provenance_stale(self):
         target = self.content / "es/a.xml"

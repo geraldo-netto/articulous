@@ -114,6 +114,19 @@ def journal_ownership(output_dir: Path, previous: dict, planned: dict) -> None:
     save_ownership(output_dir, {**previous, **planned}, pending=True, existing=existing)
 
 
+def _validate_owned_entry(path, destination, allowed, parents):
+    validate_output_path(path)
+    relative = path.relative_to(destination)
+    if relative.parts[0] == 'assets':
+        return
+    if relative in allowed:
+        validate_regular_file(path)
+        return
+    if path.is_dir() and relative in parents:
+        return
+    raise ValueError(f'Refusing to replace unowned output: {relative}')
+
+
 def validate_owned_output(destination):
     validate_output_path(destination)
     if destination.exists() and not destination.is_dir():
@@ -122,15 +135,6 @@ def validate_owned_output(destination):
     allowed = {Path(path) for path in ownership.paths}
     parents = {parent for path in allowed for parent in path.parents}
     for path in destination.rglob('*'):
-        validate_output_path(path)
-        relative = path.relative_to(destination)
-        if relative.parts[0] == 'assets':
-            continue
-        if relative in allowed:
-            validate_regular_file(path)
-            continue
-        if path.is_dir() and relative in parents:
-            continue
-        raise ValueError(f'Refusing to replace unowned output: {relative}')
+        _validate_owned_entry(path, destination, allowed, parents)
 
     return ownership

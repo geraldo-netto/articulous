@@ -1583,6 +1583,15 @@ def _translation_context(projection, cli, ctx, cache):
     return ctx
 
 
+def _planning_inputs(workspace, manifest):
+    if isinstance(workspace, dict) and manifest is None:
+        return TempWorkspace(), workspace
+    if workspace is None:
+        workspace = TempWorkspace()
+    assert isinstance(workspace, TempWorkspace)
+    return workspace, manifest
+
+
 def _collect_tasks(
     stream_factory, cli, ctx: BuildCtx, cache, workspace=None, manifest=None,
 ) -> BuildPlan:
@@ -1591,12 +1600,7 @@ def _collect_tasks(
 
     Returns a dict-like plan ready for parallel execution.
     """
-    if isinstance(workspace, dict) and manifest is None:
-        manifest = workspace
-        workspace = None
-    if workspace is None:
-        workspace = TempWorkspace()
-    assert isinstance(workspace, TempWorkspace)
+    workspace, manifest = _planning_inputs(workspace, manifest)
     wanted = set(cli.only_sections) if cli.only_sections else None
 
     def want(section: str) -> bool:

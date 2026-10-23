@@ -689,9 +689,13 @@ Python version. To use those locked dependencies locally, run that
 command with `--python 3.11` (or another CI version), then use the tools
 in `.venv/bin/`. The CI job runs Ruff, Pyright and pytest; the separate
 `C901` command above provides a supplementary complexity check. Every new or
-changed function requires SonarQube `complexity` <=9 without exemptions;
-record analyzer/version and per-function results. Ruff is not equivalent
-measurement. Missing SonarQube evidence remains tracked in `TODO.md`.
+changed function requires cyclomatic complexity <=9 without exemptions, measured
+by SonarQube or an equivalent installed local analyzer. Record analyzer/version,
+counting conventions, supported syntax and per-function results; validate analyzer
+gaps rather than treating missing results as passes. Remaining inventory and
+unsupported-language measurement work is tracked in `TODO.md` under CC-002.
+The [offline complexity workflow](reviews/complexity/README.md) records calibrated
+Lizard/ESLint measurements and verifies their source identities without downloads.
 
 A separate Linux integration job downloads the
 [SaxonC-HE 12.10 executable](https://downloads.saxonica.com/SaxonC/HE/12/index.html),

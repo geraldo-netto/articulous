@@ -98,6 +98,13 @@ def usable_translation(text, wanted, markup):
                and not node.attrib for node in fragment.iterdescendants())
 
 
+def _slot_placement(node, fragment, original, identities, names, policy):
+    expected = identities.get(original.getparent())
+    parent = node.getparent()
+    actual = None if parent is fragment else names[parent.tag]
+    return actual == expected and not (opaque(original, policy) and (node.text or len(node)))
+
+
 def valid_slots(fragment, slots, policy):
     identities = {node: index for index, node in slots.items()}
     names = {f'{PH}{index}': index for index in slots}
@@ -109,11 +116,7 @@ def valid_slots(fragment, slots, policy):
         if index in seen:
             return False
         seen.add(index)
-        original = slots[index]
-        expected = identities.get(original.getparent())
-        parent = node.getparent()
-        actual = None if parent is fragment else names[parent.tag]
-        if actual != expected or (opaque(original, policy) and (node.text or len(node))):
+        if not _slot_placement(node, fragment, slots[index], identities, names, policy):
             return False
     return seen == set(slots)
 
@@ -185,18 +188,27 @@ def block_units(body, policy=DEFAULT_POLICY):
     return chosen
 
 
+def _outside_blocks(node, blocks, policy):
+    return not in_skipped(node, policy) and not (
+        node in blocks or any(ancestor in blocks for ancestor in node.iterancestors()))
+
+
+def _loose_text(element, blocks, policy):
+    return (isinstance(element.tag, str) and _outside_blocks(element, blocks, policy)
+            and (element.text or '').strip() and element.tag.lower() not in policy.block_tags)
+
+
+def _loose_tail(element, blocks, policy):
+    parent = element.getparent()
+    return (element.tail or '').strip() and parent is not None and _outside_blocks(parent, blocks, policy)
+
+
 def loose_text_nodes(body, blocks, policy=DEFAULT_POLICY):
     block_set = set(blocks)
-    def inside_block(node):
-        return node in block_set or any(ancestor in block_set for ancestor in node.iterancestors())
     found = []
     for element in body.iter():
-        if (isinstance(element.tag, str) and not in_skipped(element, policy)
-                and not inside_block(element) and (element.text or '').strip()
-                and element.tag.lower() not in policy.block_tags):
+        if _loose_text(element, block_set, policy):
             found.append((element, 'text'))
-        parent = element.getparent()
-        if ((element.tail or '').strip() and parent is not None
-                and not in_skipped(parent, policy) and not inside_block(parent)):
+        if _loose_tail(element, block_set, policy):
             found.append((element, 'tail'))
     return found

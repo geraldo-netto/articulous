@@ -79,14 +79,20 @@ def test_valid001_redirect_loops_and_missing_targets(publication, target):
 @pytest.mark.parametrize('defect', ['canonical', 'missing-page', 'duplicate-search', 'missing-search', 'duplicate-sitemap', 'foreign-sitemap', 'missing-sitemap', 'invalid-html', 'empty-html'])
 def test_valid001_output_fault_controls(publication, defect):
     root, base, plan = publication
+    if defect == 'invalid-html':
+        with pytest.raises(ValueError, match='HTML parse errors'):
+            validate_site(root, base, plan, html_errors=reported_errors)
+        return
+    corrupt_output(root, base, defect)
+    with pytest.raises(ValueError):
+        validate_site(root, base, plan)
+
+
+def corrupt_output(root, base, defect):
     if defect == 'canonical':
         (root / 'index.html').write_text(html_page(base + '/wrong'))
     elif defect == 'missing-page':
         (root / 'old.html').unlink()
-    elif defect == 'invalid-html':
-        with pytest.raises(ValueError, match='HTML parse errors'):
-            validate_site(root, base, plan, html_errors=reported_errors)
-        return
     elif defect == 'empty-html':
         (root / 'index.html').write_text('')
     elif defect.endswith('search'):
@@ -96,8 +102,6 @@ def test_valid001_output_fault_controls(publication, defect):
         url = base + '/' if defect.startswith('duplicate') else base + '/missing'
         urls = [url, url] if defect.startswith('duplicate') else [url]
         (root / 'map.xml').write_text('<urlset>' + ''.join('<loc>' + value + '</loc>' for value in urls) + '</urlset>')
-    with pytest.raises(ValueError):
-        validate_site(root, base, plan)
 
 
 def reported_errors(source):

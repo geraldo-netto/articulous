@@ -90,11 +90,15 @@ def await_members(handles, deadline):
         pending.difference_update(ready)
 
 
-def fence_group(owner, phase, timeout):
+def require_owned_group(owner, phase):
     if phase not in ('terminate', 'fence'):
         raise ValueError('Invalid browser fence phase')
     if sys.platform != 'linux' or os.getppid() != owner or os.getpgrp() != owner or os.getsid(0) != owner:
         raise RuntimeError('Browser fence requires an Articulous-owned isolated Linux session')
+
+
+def fence_group(owner, phase, timeout):
+    require_owned_group(owner, phase)
     handles = {}
     try:
         if phase == 'terminate':

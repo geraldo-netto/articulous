@@ -23,11 +23,13 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 - Define success criteria before changes. Verify against criteria + iterate until satisfied.
 - Input-handling changes must include reproducible fuzz tests for invalid and
   out-of-bounds inputs, with valid boundary cases to prevent over-rejection.
-- Every new or changed function/method must have SonarQube `complexity` <=9,
+- Every new or changed function/method must have cyclomatic complexity <=9,
   including tests, tools and drafts, without exemptions or suppressions. Split
-  cohesive responsibilities when necessary. Record per-function measurements
-  and analyzer/version; Ruff C901 and local estimates are supplementary evidence,
-  not SonarQube acceptance. Track unavailable measurement in TODO.md. Do not
+  cohesive responsibilities when necessary. Owner clarification (2026-10-24):
+  SonarQube or an equivalent installed local analyzer is acceptable. Record
+  per-function measurements, analyzer/version, counting conventions and syntax
+  support; validate analyzer gaps rather than treating missing results as passes.
+  Track unavailable measurement in TODO.md. Do not
   download an analyzer on the metered connection without owner authorization.
 - Avoid code duplication. Apply SOLID only when improve clarity or structure.
 - Default no comments. Add one only when WHY non-obvious (hidden constraint, subtle

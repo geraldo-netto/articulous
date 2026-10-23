@@ -133,11 +133,11 @@ def _full_build(cli, extra_pages):
     return pages
 
 
-def _capture_context(stack, original, extra_pages, extra_artifacts=()):
+def _capture_context(stack, original, extra_pages, cache, extra_artifacts=()):
     original.output_dir.parent.mkdir(parents=True, exist_ok=True)
     private = stack.enter_context(private_directory(original.output_dir.parent))
     capture = replace(original, output_dir=private / 'inputs', dry_run=False, force=True)
-    copy_assets(capture)
+    copy_assets(capture, cache)
     return replace(capture, output_dir=private / 'output',
                    assets_dir=capture.output_dir / 'assets', extra_pages=extra_pages,
                    extra_artifacts=extra_artifacts)
@@ -195,12 +195,12 @@ def _finish_artifacts(context, snapshot, composition, routes, manifest, plan, ca
 
 
 def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=()):
-    context = _capture_context(stack, original, pages, artifacts)
+    cache = {}
+    context = _capture_context(stack, original, pages, cache, artifacts)
     context, snapshot, composition = _composition_context(stack, context, composer, original)
     workspace = stack.enter_context(TempWorkspace())
     routes = stack.enter_context(RouteCatalog())
     manifest = OutputManifest(context, routes)
-    cache = {}
     stream = snapshot.original_articles if snapshot is not None else _article_stream_factory(context, ArticleStats())
     plan = _collect_tasks(stream, cli, context,
                           cache, workspace, manifest)
@@ -241,7 +241,9 @@ def render_prepared(prepared: PreparedBuild) -> StagedBuild:
     prepared.require_state('prepared')
     prepared.state = 'failed'
     prepared.context.output_dir.mkdir(parents=True)
-    copy_assets(prepared.context, prepared.cache)
+    validate_output_path(prepared.context.assets_dir)
+    if prepared.context.assets_dir.exists():
+        prepared.context.assets_dir.rename(prepared.context.output_dir / 'assets')
     _run_plan(prepared.plan, prepared.context)
     _cleanup_stream_projection(prepared.plan.projection)
     prepared.workspace.cleanup()

@@ -232,6 +232,12 @@ plan and fingerprints all staged file contents and directory paths. Source edits
 after capture apply to the next build. The prepared context owns locks, the route
 catalog and temporary resources; staged and validated handles expire when it exits.
 
+Assets are copied safely into private inputs once during preparation. Rendering
+renames that captured directory into staged output on the same filesystem;
+the private-stage owner retains cleanup responsibility throughout the handoff.
+No hardlinks or borrowed source files survive capture. Content and stylesheet
+capture still use their existing snapshot boundaries.
+
 `StagedBuild.routes` exposes the catalog and `open_artifact(relative)` opens a
 regular file for streaming reads. Paths must stay inside the stage; absolute,
 dot-segment, backslash and drive-style paths are rejected. Callers choose read

@@ -632,10 +632,44 @@ checks one group/workspace with two captured pipes; a native trace is checked
 against its independent ownership ordering. This finite model assumes trusted
 containment and eventual fence/recovery evidence; it does not prove unrestricted
 OS/kernel behavior. Leak freedom is conditional on eventual native exit, successful
-resource close and a caller/operator that performs retained recovery. Forced
-Python-owner loss leaves workspace reservation to the operator; durable unattended
-handoff remains LIFE-002. No unknown workspace may be reused or automatically
-deleted without exact identity and quiescence evidence.
+resource close and a caller/operator that performs retained recovery.
+
+A retained native session also owns a private `WORKSPACE.recovery.json` file
+beside its scratch directory. The versioned record contains the Linux boot ID,
+owner and native PID/start-time generations, and every acknowledged scratch or
+borrowed directory allocation identity. Replacement is atomic; file and parent
+directory are synced before successful handoff. Records are bounded to 1 MiB.
+The journal stays outside the directories it protects and is removed last, after
+all cleanup succeeds. Interrupted cleanup can retry already absent directories;
+replacement identities, storage failures and unavailable native evidence retain
+the reservation. Recovery serializes claims on the journal's exact file identity.
+New sessions skip scratch names with existing journals, including after partial
+cleanup. Journal updates must match the existing boot/process reservation and
+cover its workspace obligations before replacing it.
+
+After Python-owner loss, an operator can run:
+
+```sh
+python -m articulous.backends.processes /tmp/articulous-owned-EXAMPLE.recovery.json
+```
+
+This command refuses a live owner, a live native generation, a live contained
+group or changed identities. It never signals a numeric PID. The operator must
+first establish any required native stop fence with identity-bound tooling;
+recovery observes quiescence before releasing directories. A changed boot ID
+establishes that the earlier kernel's processes cannot still access them.
+
+The owner-loss model exhausts eight states for one owner, one native group, one
+scratch directory, one borrowed directory and one durable journal. It checks
+retention while either actor is live and reachability of full cleanup after
+owner loss and a native fence. Conditional eventual cleanup assumes operator
+retry, eventual native exit, successful storage/close operations, readable and
+complete same-namespace `/proc` evidence, unchanged allocation identities and
+the existing admission-closed group containment contract. It does not cover
+detached workloads, kernel failures or automated termination by an external
+supervisor. Owner loss before a durable reservation is established, or during a
+failed workspace handoff, still requires manual recovery. No unknown workspace
+may be reused or deleted without exact identity and quiescence evidence.
 
 Native V8 counters gate every measured tooling function at >=80%, alongside the
 existing browser asset gates. Sources are retained by native script identity

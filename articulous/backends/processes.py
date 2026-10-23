@@ -14,6 +14,7 @@ import time
 from ..process_contracts import ProcessSession, RecoveryToken, NativeCleanupError, deadline_seconds
 from ..tooling_resources import tooling_resources
 from ..source_files import cleanup_workspace, require_workspace, workspace_identity
+from ..recovery_contracts import RecoveryRecord
 
 _RETAINED = {}
 
@@ -167,21 +168,28 @@ class NativeRecovery:
     process: subprocess.Popen
     workspace: WorkspaceReservation
     borrowed: list[WorkspaceReservation] = field(default_factory=list)
+    record: RecoveryRecord | None = None
 
 
 def defer_workspace_cleanup(token, path, identity):
+    from .recovery import persist_reservation
     require_workspace(path, identity)
     _RETAINED[token].borrowed.append(WorkspaceReservation(path, identity))
+    persist_reservation(_RETAINED[token])
 
 
 def cleanup_recovery(reservation):
     for workspace in (reservation.workspace, *reservation.borrowed):
         cleanup_workspace(workspace.path, workspace.identity)
+        if workspace.path.exists() or workspace.path.is_symlink():
+            raise RuntimeError(f'Native workspace cleanup is incomplete: {workspace.path}')
 
 
 def complete_recovery(token, reservation):
+    from .recovery import remove_record
     try:
         cleanup_recovery(reservation)
+        remove_record(reservation)
     except BaseException:
         _RETAINED[token] = reservation
         raise
@@ -200,6 +208,13 @@ def recover_session(token):
     complete_recovery(token, reservation)
 
 
+def recover_orphan(path):
+    if sys.platform != 'linux':
+        raise NotImplementedError('Durable native recovery is validated only on Linux')
+    from .recovery import recover_orphan as recover
+    recover(path, group_running)
+
+
 def settle_session(session, process, scratch, identity):
     if process is None:
         cleanup_workspace(scratch, identity)
@@ -212,6 +227,11 @@ def settle_session(session, process, scratch, identity):
             raise
         token = RecoveryToken(process.pid, str(scratch))
         _RETAINED[token] = NativeRecovery(session, process, WorkspaceReservation(scratch, identity))
+        try:
+            from .recovery import persist_reservation
+            persist_reservation(_RETAINED[token])
+        except BaseException as storage_error:
+            raise NativeCleanupError(token) from storage_error
         raise NativeCleanupError(token) from error
     cleanup_workspace(scratch, identity)
 
@@ -227,11 +247,22 @@ def session_environment(scratch):
                 ARTICULOUS_NATIVE_COVERAGE=(tools / 'native-coverage.mjs').as_uri())
 
 
+def _allocate_workspace():
+    from .recovery import journal_path
+    while True:
+        scratch = Path(tempfile.mkdtemp(prefix='articulous-owned-'))
+        identity = workspace_identity(scratch)
+        journal = journal_path(scratch)
+        if not journal.exists() and not journal.is_symlink():
+            return scratch
+        require_workspace(scratch, identity)
+        scratch.rmdir()
+
 @contextmanager
 def open_session(command: Sequence[str]) -> Iterator[ProcessSession]:
     if sys.platform != 'linux':
         raise NotImplementedError('Native browser supervision is validated only on Linux')
-    scratch = Path(tempfile.mkdtemp(prefix='articulous-owned-'))
+    scratch = _allocate_workspace()
     identity = workspace_identity(scratch)
     process, session = None, None
     try:
@@ -242,3 +273,16 @@ def open_session(command: Sequence[str]) -> Iterator[ProcessSession]:
         yield session
     finally:
         settle_session(session, process, scratch, identity)
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description='Recover a retained native reservation after owner loss')
+    parser.add_argument('journal', type=Path)
+    args = parser.parse_args(argv)
+    recover_orphan(args.journal)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

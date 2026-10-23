@@ -1,11 +1,11 @@
-"""ARCH-009/BUILD-007: shared boundaries load without native lock imports."""
+"""ARCH-009/BUILD-007/LIFE-002: shared boundaries avoid eager native lock imports."""
 import subprocess
 import sys
 
 
 def test_arch009_package_and_publication_capabilities_import_without_native_modules():
     script = '''
-import builtins
+import builtins, subprocess
 original = builtins.__import__
 def guarded(name, *args, **kwargs):
     if name == 'fcntl':
@@ -16,7 +16,9 @@ from articulous.resource_locks import resource_lock
 from articulous.extensions import BuildComposition
 from articulous.catalogue import PublicationCatalogue
 from articulous.backends import publication_capabilities
+from articulous.browser_process import run_browser
 assert publication_capabilities().platform
+assert callable(run_browser)
 '''
     result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

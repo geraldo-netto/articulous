@@ -4,12 +4,23 @@ from typing import Protocol
 import math
 
 
+@dataclass(frozen=True)
+class SessionOptions:
+    tooling: bool = True
+    checkpoint_output: bool = False
+
+    def __post_init__(self):
+        if type(self.tooling) is not bool or type(self.checkpoint_output) is not bool:
+            raise ValueError('Native session options must be boolean')
+
+
 class ProcessSession(Protocol):
     @property
     def returncode(self) -> int | None:
         ...
 
     def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+        """Return complete output; checkpoint mode limits timeout snapshots to new stderr lines."""
         ...
 
     def stop(self) -> tuple[str, str]:

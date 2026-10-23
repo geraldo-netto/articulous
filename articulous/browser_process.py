@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 from .backends.processes import open_session
-from .process_contracts import deadline_seconds
+from .process_contracts import SessionOptions, deadline_seconds
 
 
 def command_arguments(command: object) -> list[str]:
@@ -55,7 +55,7 @@ def settled_checkpoint(stderr: str | bytes | None, previous: str, report) -> str
     return latest
 
 
-def run_browser_suite(command: object, *, checkpoint: object = 30, report=report_progress) -> subprocess.CompletedProcess[str]:
+def run_browser_suite(command: object, *, checkpoint: object = 30, report=report_progress, tooling=True) -> subprocess.CompletedProcess[str]:
     """Observe a protocol-bounded finite suite; checkpoint expiry is not failure.
 
     The caller owns case admission; native CDP commands retain their 10-second
@@ -66,7 +66,7 @@ def run_browser_suite(command: object, *, checkpoint: object = 30, report=report
     arguments = command_arguments(command)
     seconds = deadline_seconds(checkpoint)
     previous = ''
-    with open_session(arguments) as session:
+    with open_session(arguments, options=SessionOptions(tooling=tooling, checkpoint_output=True)) as session:
         while True:
             try:
                 stdout, stderr = session.communicate(seconds)
@@ -75,8 +75,8 @@ def run_browser_suite(command: object, *, checkpoint: object = 30, report=report
                 previous = settled_checkpoint(error.stderr, previous, report)
 
 
-def run_owned(command):
-    result = run_browser_suite(command)
+def run_owned(command, *, tooling=True):
+    result = run_browser_suite(command, tooling=tooling)
     result.check_returncode()
     return result
 

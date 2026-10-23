@@ -598,6 +598,23 @@ the ImageMagick adapter. `python -m articulous.browser_process COMMAND ...` runs
 a checkpointed command. The Linux backend owns each Popen child, captured pipes,
 selector, private scratch and materialized JS helpers. It borrows stdin.
 
+`process_contracts.SessionOptions` independently defines helper admission and
+checkpoint snapshot policy. Browser entry points admit the fixed helper
+inventory by default. ImageMagick commands pass `tooling=False` through
+`run_owned`, avoiding helper reads/writes and removing inherited helper URLs.
+Admitted helpers still use session-owned captured bytes and the same cleanup
+fence; converter targets retain their existing borrowed-workspace ownership.
+
+Checkpointed suites copy only new complete stderr lines into timeout records;
+they do not snapshot stdout at checkpoints. Two session-owned cursors scan each
+new stderr byte once and commit only after snapshot allocation succeeds.
+Temporary buffer views are released on success and failure. Partial lines stay
+in the authoritative buffer until complete, and completion returns full stdout
+and stderr. Fixed-deadline sessions retain accumulated timeout diagnostics.
+The containing session owns diagnostic buffers until released; callers fund
+their admitted finite command output. Checkpointing imposes no new output or
+runtime cap, and cancellation follows the same native fence and recovery path.
+
 The child PID remains reserved through `waitid(WNOWAIT)` observations, group
 quiescence, byte drainage and selector/pipe closure. Reaping releases that lease
 last. UTF-8 decoding happens separately: malformed diagnostics cannot prevent

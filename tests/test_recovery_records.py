@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import random
 import stat
+import sys
 from unittest.mock import Mock, patch
 
 import pytest
@@ -243,7 +244,7 @@ def test_life002_atomic_record_write_failure_retains_local_owner():
         with patch.object(processes, 'await_group_exit', side_effect=TimeoutError('fence')):
             with patch.object(recovery, 'write_record', side_effect=OSError('storage unavailable')):
                 with pytest.raises(RuntimeError, match='recovery') as failure:
-                    with processes.open_session([os.sys.executable, '-c', 'pass']):
+                    with processes.open_session([sys.executable, '-c', 'pass']):
                         pass
         token = (set(processes._RETAINED) - before).pop()
         assert isinstance(failure.value.__cause__, OSError)
@@ -293,7 +294,7 @@ def test_life002_durable_reservation_prevents_scratch_name_reuse(record, tmp_pat
     fresh = tmp_path / 'fresh'
     fresh.mkdir()
     with patch.object(processes.tempfile, 'mkdtemp', side_effect=[str(reserved), str(fresh)]):
-        with processes.open_session([os.sys.executable, '-c', 'import os; print(os.environ["TMPDIR"])']) as session:
+        with processes.open_session([sys.executable, '-c', 'import os; print(os.environ["TMPDIR"])']) as session:
             assert session.communicate()[0].strip() == str(fresh), 'LIFE-002: a journal reserves its scratch name across partial cleanup'
     assert path.exists()
 

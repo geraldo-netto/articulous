@@ -4,6 +4,7 @@ import random
 import sys
 import time
 from pathlib import Path
+from typing import SupportsIndex, cast
 
 import pytest
 
@@ -89,9 +90,10 @@ def test_perf004_unterminated_line_scanning_is_linear():
     scans = []
 
     class MeasuredBuffer(bytearray):
-        def rfind(self, token, start=0):
-            scans.append(len(self) - start)
-            return super().rfind(token, start)
+        def rfind(self, token, start: SupportsIndex | None = None, end: SupportsIndex | None = None):
+            first, stop, _ = slice(start, end).indices(len(self))
+            scans.append(max(0, stop - first))
+            return super().rfind(token, start, end)
 
     with processes.open_session([sys.executable, '-c', 'pass']) as session:
         assert isinstance(session, processes.LinuxSession)
@@ -101,6 +103,9 @@ def test_perf004_unterminated_line_scanning_is_linear():
             assert session._checkpoint_stderr() == b''
         assert sum(scans) == 16 * 1024
         assert len(session.communicate()[1]) == 16 * 1024
+        buffer = session._buffers['stderr']
+        for start, end in ((None, None), (0, 4), (-4, None), (4, 2), (0, -1)):
+            assert buffer.rfind(b'x', start, end) == bytearray(buffer).rfind(b'x', start, end), 'QA-001: preserve bytearray bounds'
 
 
 def test_perf004_failed_snapshot_keeps_cursor_and_releases_borrow(monkeypatch):
@@ -148,7 +153,7 @@ def test_perf004_bounded_option_fuzz(seed):
         value = randomizer.choice([None, number, str(number), [number], {'flag': number}, float('nan')])
         field = randomizer.choice(['tooling', 'checkpoint_output'])
         with pytest.raises(ValueError, match='boolean'):
-            SessionOptions(**{field: value})
+            SessionOptions(**{field: cast(bool, value)})
 
 
 def test_perf004_invalid_options_rejected_before_resource_admission(monkeypatch):
@@ -157,7 +162,7 @@ def test_perf004_invalid_options_rejected_before_resource_admission(monkeypatch)
 
     monkeypatch.setattr(processes.tempfile, 'mkdtemp', forbidden_admission)
     with pytest.raises(ValueError, match='SessionOptions'):
-        with processes.open_session(['unused'], options=None):
+        with processes.open_session(['unused'], options=cast(SessionOptions, None)):
             pytest.fail('invalid options accepted')
 
 

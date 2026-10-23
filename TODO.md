@@ -4,7 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| QA-001 | open | S | Restore the offline Pyright gate in native recovery and session regression tests. | Reliability/correctness; contradictions: .github/workflows/main.yml requires Pyright acceptance, but pyright --pythonpath .venv/bin/python reports seven errors in tests/test_durable_recovery.py:106 (possibly unbound token), tests/test_recovery_records.py:246/296 (os.sys), and tests/test_session_materialization.py:92/151/160 (override contract and deliberate invalid-input types). Preserve fault coverage and cleanup ownership; resolve with explicit types/identities and a passing unchanged gate. |
 
 
 

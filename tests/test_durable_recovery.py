@@ -89,6 +89,7 @@ def test_life002_live_owner_cannot_be_claimed():
 def test_life002_failed_cleanup_keeps_durable_reservation():
     before = set(processes._RETAINED)
     reservation = None
+    token = None
     try:
         with patch.object(processes, 'await_group_exit', side_effect=TimeoutError('fence')):
             with pytest.raises(RuntimeError, match='recovery'):
@@ -103,6 +104,7 @@ def test_life002_failed_cleanup_keeps_durable_reservation():
         assert Path(token.workspace + '.recovery.json').exists()
     finally:
         if reservation is not None and reservation.workspace.path.exists():
+            assert token is not None
             processes._RETAINED.setdefault(token, reservation)
         for token in set(processes._RETAINED) - before:
             processes.recover_session(token)

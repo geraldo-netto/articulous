@@ -1,5 +1,6 @@
 // REV-064: union native execution across page loads, without excluding any asset.
 import assert from 'node:assert/strict';
+import {parseJavaScript} from './javascript-syntax.mjs';
 
 // Capture on scriptParsed, before navigation can destroy the owning context.
 // Cache by native ID, never by URL: each measured version must match exactly.
@@ -85,8 +86,8 @@ function measureFunction(measured, fn, lines, children) {
   }
 }
 
-function recordFunction(file,source,fn,functions,lines,children) {
-  const outer=fn.ranges[0],key=`${file}:${outer.startOffset}:${outer.endOffset}`;
+function recordFunction(file,source,fn,functions,lines,children,identity) {
+  const outer=fn.ranges[0],key=`${file}:${identity}`;
   if (!functions.has(key)) functions.set(key,{file,function:fn.functionName || '(module/callback)',
     line:source.slice(0,outer.startOffset).split('\n').length,executable:new Set(),covered:new Set(),called:false});
   measureFunction(functions.get(key),fn,lines,children);
@@ -101,10 +102,90 @@ export function coverageRows(files) {
   const functions=new Map();
   for (const [file,{source,runs}] of files) {
     const lines=sourceLines(source);
-    const children=runs.flat().map(fn=>fn.ranges[0]);
-    for (const fn of runs.flat()) recordFunction(file,source,fn,functions,lines,children);
+    const children=sourceFunctions(source);
+    const counters=completeCounters(source,runs,children);
+    for (const {fn,identity} of counters) recordFunction(file,source,fn,functions,lines,children,identity);
   }
   const coverage=[...functions.values()].map(functionRow);
   for (const fn of coverage) assert.ok(fn.percent>=80,`Per-function coverage below 80%: ${JSON.stringify(fn)}`);
   return coverage;
+}
+
+function methodStart(node,parent,tokens) {
+  if (parent?.type==='MethodDefinition') {
+    return parent.static ? tokens.find(token=>token.start>parent.start).start : parent.start;
+  }
+  if (parent?.type==='Property' && (parent.method || parent.kind!=='init')) return parent.start;
+  return node.start;
+}
+
+function sourceFunctions(source) {
+  const {tree,tokens}=parseJavaScript(source), pending=[[tree,null]], functions=[];
+  while (pending.length) {
+    const [node,parent]=pending.pop();
+    assert.ok(!['PropertyDefinition','StaticBlock'].includes(node.type),'Native coverage for implicit class scopes is unsupported');
+    if (['FunctionDeclaration','FunctionExpression','ArrowFunctionExpression'].includes(node.type)) {
+      functions.push({startOffset:methodStart(node,parent,tokens),endOffset:node.end});
+    }
+    for (const child of syntaxChildren(node)) pending.push([child,node]);
+  }
+  return functions;
+}
+
+function syntaxChildren(node) {
+  return Object.values(node).flat().filter(value=>value && typeof value==='object' && typeof value.type==='string');
+}
+
+function checkedRange(range,length) {
+  assert.ok(Number.isSafeInteger(range.startOffset) && Number.isSafeInteger(range.endOffset),'Invalid native counter offsets');
+  assert.ok(range.startOffset>=0 && (range.startOffset<range.endOffset || length===0) && range.endOffset<=length,'Invalid native counter bounds');
+  assert.ok(Number.isSafeInteger(range.count) && range.count>=0,'Invalid native counter count');
+}
+
+function checkedFunction(fn,length) {
+  assert.equal(typeof fn.functionName,'string','Invalid native function name');
+  assert.ok(Array.isArray(fn.ranges) && fn.ranges.length>0,'Invalid native counter ranges');
+  const parents=[];
+  for (const range of fn.ranges) {
+    checkedRange(range,length);
+    while (parents.length && range.startOffset>=parents.at(-1).endOffset) parents.pop();
+    if (parents.length) {
+      const parent=parents.at(-1);
+      assert.ok(range.startOffset>=parent.startOffset && range.endOffset<=parent.endOffset,'Invalid native counter nesting');
+      assert.ok(range.startOffset!==parent.startOffset || range.endOffset!==parent.endOffset,'Invalid native counter duplicate range');
+    }
+    parents.push(range);
+  }
+  const outer=fn.ranges[0];
+  assert.ok(fn.ranges.every(range=>range.startOffset>=outer.startOffset && range.endOffset<=outer.endOffset),'Invalid native counter containment');
+}
+
+function rangeIdentity(range) {
+  return `${range.startOffset}:${range.endOffset}`;
+}
+
+function counterIdentity(fn,index,length) {
+  const range=fn.ranges[0];
+  if (index===0 && fn.functionName==='' && range.startOffset===0 && range.endOffset===length) return 'module';
+  return rangeIdentity(range);
+}
+
+function runCounters(run,length,expected,seen) {
+  const current=new Set();
+  return run.map((fn,index)=>{
+    checkedFunction(fn,length);
+    const identity=counterIdentity(fn,index,length);
+    assert.ok(identity==='module' || expected.has(identity),'Unexpected native function boundary');
+    assert.ok(!current.has(identity),'Duplicate native function counter');
+    current.add(identity);seen.add(identity);
+    return {fn,identity};
+  });
+}
+
+function completeCounters(source,runs,functions) {
+  const expected=new Set(functions.map(rangeIdentity)),seen=new Set();
+  const counters=runs.flatMap(run=>runCounters(run,source.length,expected,seen));
+  for (const identity of expected) assert.ok(seen.has(identity),`Missing native counters for function ${identity}`);
+  assert.ok(seen.has('module'),'Missing native counters for module');
+  return counters;
 }

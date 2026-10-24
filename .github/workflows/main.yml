@@ -7,6 +7,8 @@ jobs:
   test:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    env:
+      ARTICULOUS_ACORN: ${{ github.workspace }}/node_modules/acorn
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +33,9 @@ jobs:
 
       - name: Run Ruff
         run: .venv/bin/ruff check .
+
+      - name: Install locked JavaScript verification parser
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Run Pyright
         env:

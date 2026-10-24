@@ -8566,19 +8566,19 @@
       {
         "functions": [
           {
-            "body_sha256": "a2eb78e790db515c7519a545d7c5eddf3a3013168dd367949cc8d0826740447a",
+            "body_sha256": "e54ddaa48dcbe1a53710723d9e524f8c11cfb07431482863a4a5bce1889a71a9",
             "column": 0,
             "complexity": 2,
-            "end_column": 76,
+            "end_column": 101,
             "end_line": 9,
             "line": 6,
             "name": "tooling_resources",
-            "projection_sha256": "36b20b3aae4661846e0ddd84fad76b21e8e1b93f9e3e355ed43f162fe497af8f"
+            "projection_sha256": "6ffb607a60bedf75c49aba50215f081ac3c66a55bf309c32d8b0814e70590a18"
           }
         ],
         "language": "python",
         "path": "articulous/tooling_resources.py",
-        "sha256": "bf78b40037a0d4a8e29377bb0159afaa62300c3df4e741358d721b3c87c8acab"
+        "sha256": "0b3ebfffc2de0cf09916ac8e8372b175ea24bf52d1e786315dd65df10ce6de47"
       },
       {
         "functions": [
@@ -25041,12 +25041,29 @@
       {
         "functions": [
           {
+            "body_sha256": "47fd01e2320a050eaa3d2c1858d8e5e2a352850b1f96da8be58f76e69f3894b0",
+            "column": 7,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 9,
+            "line": 5,
+            "name": "Function 'parseJavaScript'",
+            "projection_sha256": "47fd01e2320a050eaa3d2c1858d8e5e2a352850b1f96da8be58f76e69f3894b0"
+          }
+        ],
+        "language": "javascript",
+        "path": "articulous/tooling_assets/javascript-syntax.mjs",
+        "sha256": "641e5855366a250817859686be7bdfe7c73aaadd56b4e9f92288abc80f383ef0"
+      },
+      {
+        "functions": [
+          {
             "body_sha256": "03d233628e687ba18155eb62489bae9cc2326261e36b823d2c92efb876c45afd",
             "column": 0,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 27,
-            "line": 6,
+            "end_line": 28,
+            "line": 7,
             "name": "Function 'scriptSources'",
             "projection_sha256": "03d233628e687ba18155eb62489bae9cc2326261e36b823d2c92efb876c45afd"
           },
@@ -25055,8 +25072,8 @@
             "column": 2,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 14,
-            "line": 8,
+            "end_line": 15,
+            "line": 9,
             "name": "Function 'retain'",
             "projection_sha256": "5bc750755b0fa8248971be2cf0f36f9ffce1502b65cbf3bb7a9afe98bf5e7ee9"
           },
@@ -25065,8 +25082,8 @@
             "column": 14,
             "complexity": 1,
             "end_column": 54,
-            "end_line": 11,
-            "line": 11,
+            "end_line": 12,
+            "line": 12,
             "name": "Arrow function",
             "projection_sha256": "6fb5ca37e238e2834049742c059a7fddd8bc5460448a3669f2eda1ef52112ded"
           },
@@ -25075,8 +25092,8 @@
             "column": 56,
             "complexity": 1,
             "end_column": 74,
-            "end_line": 11,
-            "line": 11,
+            "end_line": 12,
+            "line": 12,
             "name": "Arrow function",
             "projection_sha256": "dcfd943db8234d22af18fe1e94ab8c8a8870b8579364815705771f194116ae1b"
           },
@@ -25085,8 +25102,8 @@
             "column": 37,
             "complexity": 4,
             "end_column": 3,
-            "end_line": 21,
-            "line": 15,
+            "end_line": 22,
+            "line": 16,
             "name": "Arrow function",
             "projection_sha256": "6ec28193567a45b996179853d49c163b8f2141577791471a86a12e7195fd6df1"
           },
@@ -25095,8 +25112,8 @@
             "column": 9,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 26,
-            "line": 22,
+            "end_line": 27,
+            "line": 23,
             "name": "Async arrow function",
             "projection_sha256": "1c8c04956f7f344f04641c4d87bedc6db3f4c740033b950a10df7abeb787709a"
           },
@@ -25105,8 +25122,8 @@
             "column": 7,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 51,
-            "line": 29,
+            "end_line": 52,
+            "line": 30,
             "name": "Function 'collector'",
             "projection_sha256": "88d11cf394d4f5eb0be9b3b43b0db88ea3e68ade480a5181530c81cf2384be71"
           },
@@ -25115,8 +25132,8 @@
             "column": 2,
             "complexity": 5,
             "end_column": 3,
-            "end_line": 44,
-            "line": 33,
+            "end_line": 45,
+            "line": 34,
             "name": "Async function 'capture'",
             "projection_sha256": "4afdef7f076ed9f4401769ab7ef2b4ad16b6ea244b915155e0cefaf557fb90d0"
           },
@@ -25125,8 +25142,8 @@
             "column": 2,
             "complexity": 1,
             "end_column": 3,
-            "end_line": 48,
-            "line": 45,
+            "end_line": 49,
+            "line": 46,
             "name": "Function 'report'",
             "projection_sha256": "e7442d006de6bd696acea3b0bdece32639aabb9bfc065d4cc8954157e7f50759"
           },
@@ -25135,8 +25152,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 59,
-            "line": 53,
+            "end_line": 60,
+            "line": 54,
             "name": "Function 'sourceLines'",
             "projection_sha256": "808edb9972ef9619a49884726f47ae5e61ea7a7394db410167c7ea3928db423e"
           },
@@ -25145,8 +25162,8 @@
             "column": 32,
             "complexity": 1,
             "end_column": 3,
-            "end_line": 58,
-            "line": 55,
+            "end_line": 59,
+            "line": 56,
             "name": "Arrow function",
             "projection_sha256": "b3ec7ab35d7d9912753b9e705b171a0dacb90b8ebf61d776cb77bfdd27941438"
           },
@@ -25155,8 +25172,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 1,
-            "end_line": 65,
-            "line": 61,
+            "end_line": 66,
+            "line": 62,
             "name": "Function 'executablePosition'",
             "projection_sha256": "451dc8de6801075f5b14b911b38430d7f08a0fe4ababd8570e8d111a602e3833"
           },
@@ -25165,8 +25182,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 69,
-            "line": 67,
+            "end_line": 70,
+            "line": 68,
             "name": "Function 'childOwns'",
             "projection_sha256": "05861cb2966a19a41875e6853f07b4d774e4f40d7920b45d6cc6e67f36772677"
           },
@@ -25175,8 +25192,8 @@
             "column": 23,
             "complexity": 4,
             "end_column": 160,
-            "end_line": 68,
-            "line": 68,
+            "end_line": 69,
+            "line": 69,
             "name": "Arrow function",
             "projection_sha256": "0db13582914ff0d933c17fcbafa43df344eff3453ca92c2f7662e8e14e017f9b"
           },
@@ -25185,8 +25202,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 1,
-            "end_line": 74,
-            "line": 71,
+            "end_line": 75,
+            "line": 72,
             "name": "Function 'tightestRange'",
             "projection_sha256": "1d654c4e67ad6aca2278d02b04b103ac8d3a49f67f06e1c18da4fd1953360206"
           },
@@ -25195,8 +25212,8 @@
             "column": 26,
             "complexity": 2,
             "end_column": 88,
-            "end_line": 72,
-            "line": 72,
+            "end_line": 73,
+            "line": 73,
             "name": "Arrow function",
             "projection_sha256": "f0b81acb3cfa98e43ffe9b72aee2db3a9e3fd9e1c610b0dd752fc6f9f0fbceff"
           },
@@ -25205,8 +25222,8 @@
             "column": 10,
             "complexity": 1,
             "end_column": 72,
-            "end_line": 73,
-            "line": 73,
+            "end_line": 74,
+            "line": 74,
             "name": "Arrow function",
             "projection_sha256": "e3f5af4b520e8d0cc9b9d5b855cb294258e2d8823e0cc97b4181bff7d29c723a"
           },
@@ -25215,55 +25232,185 @@
             "column": 0,
             "complexity": 6,
             "end_column": 1,
-            "end_line": 86,
-            "line": 76,
+            "end_line": 87,
+            "line": 77,
             "name": "Function 'measureFunction'",
             "projection_sha256": "43fa2cce896aded6a19bb061e69c218a8409977a1614a3b38eb27628f9c895b5"
           },
           {
-            "body_sha256": "a4a0b2620dde2f47251fbcc80e7ed38a5e9606b21444487516804483b346a0d5",
+            "body_sha256": "faf017a25ce373a6032856b92dcf96c2e9aa0f8277c3ddc55fe4f2fc76a8efcf",
             "column": 0,
             "complexity": 3,
             "end_column": 1,
-            "end_line": 93,
-            "line": 88,
+            "end_line": 94,
+            "line": 89,
             "name": "Function 'recordFunction'",
-            "projection_sha256": "a4a0b2620dde2f47251fbcc80e7ed38a5e9606b21444487516804483b346a0d5"
+            "projection_sha256": "faf017a25ce373a6032856b92dcf96c2e9aa0f8277c3ddc55fe4f2fc76a8efcf"
           },
           {
             "body_sha256": "9a500fa2e826b438a7d116c10d7483524953b7e504190e7b5cee011f777baa16",
             "column": 0,
             "complexity": 3,
             "end_column": 1,
-            "end_line": 98,
-            "line": 95,
+            "end_line": 99,
+            "line": 96,
             "name": "Function 'functionRow'",
             "projection_sha256": "9a500fa2e826b438a7d116c10d7483524953b7e504190e7b5cee011f777baa16"
           },
           {
-            "body_sha256": "ea5e0c7841002a109b27460d5da7741006faeeb2f8e917ceb7c645d0e9c24c00",
+            "body_sha256": "f3580811443b0dd9946867911124acc56f3abc4fbb5fe19fd3672c13c9ef8857",
             "column": 7,
             "complexity": 4,
             "end_column": 1,
-            "end_line": 110,
-            "line": 100,
+            "end_line": 112,
+            "line": 101,
             "name": "Function 'coverageRows'",
-            "projection_sha256": "ea5e0c7841002a109b27460d5da7741006faeeb2f8e917ceb7c645d0e9c24c00"
+            "projection_sha256": "f3580811443b0dd9946867911124acc56f3abc4fbb5fe19fd3672c13c9ef8857"
           },
           {
-            "body_sha256": "0379ebc265b3af13ff169c6edf1b684d1225a103e7acd225dd9c7c29be799195",
-            "column": 35,
+            "body_sha256": "4134321854809cd35bf0b673721a45e007e13e8e5a377351974d3af73b4f5119",
+            "column": 0,
+            "complexity": 8,
+            "end_column": 1,
+            "end_line": 120,
+            "line": 114,
+            "name": "Function 'methodStart'",
+            "projection_sha256": "4134321854809cd35bf0b673721a45e007e13e8e5a377351974d3af73b4f5119"
+          },
+          {
+            "body_sha256": "2a803c41df1c1221a3686e675962592a29e06d76c9dee15fd1164b5a0f8cec0f",
+            "column": 39,
             "complexity": 1,
-            "end_column": 51,
-            "end_line": 104,
-            "line": 104,
+            "end_column": 70,
+            "end_line": 116,
+            "line": 116,
             "name": "Arrow function",
-            "projection_sha256": "0379ebc265b3af13ff169c6edf1b684d1225a103e7acd225dd9c7c29be799195"
+            "projection_sha256": "2a803c41df1c1221a3686e675962592a29e06d76c9dee15fd1164b5a0f8cec0f"
+          },
+          {
+            "body_sha256": "0510cae23afba73552e1abd8edb897e15120369c50084f824ab2be7f7f4c4952",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 1,
+            "end_line": 133,
+            "line": 122,
+            "name": "Function 'sourceFunctions'",
+            "projection_sha256": "0510cae23afba73552e1abd8edb897e15120369c50084f824ab2be7f7f4c4952"
+          },
+          {
+            "body_sha256": "68a1bd5017897d0252d39b32b8a23dd62d4a66ecfaac0e00ad38bd17a13de2e2",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 137,
+            "line": 135,
+            "name": "Function 'syntaxChildren'",
+            "projection_sha256": "68a1bd5017897d0252d39b32b8a23dd62d4a66ecfaac0e00ad38bd17a13de2e2"
+          },
+          {
+            "body_sha256": "8881fe1825bf092d300f52504e96e822070abcd08a0bda8396c26ae652ef6619",
+            "column": 43,
+            "complexity": 3,
+            "end_column": 114,
+            "end_line": 136,
+            "line": 136,
+            "name": "Arrow function",
+            "projection_sha256": "8881fe1825bf092d300f52504e96e822070abcd08a0bda8396c26ae652ef6619"
+          },
+          {
+            "body_sha256": "33de89326967f68785f0eb4c186c7167863eaf5b773ee989ca0180f1d09c4a33",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 1,
+            "end_line": 143,
+            "line": 139,
+            "name": "Function 'checkedRange'",
+            "projection_sha256": "33de89326967f68785f0eb4c186c7167863eaf5b773ee989ca0180f1d09c4a33"
+          },
+          {
+            "body_sha256": "c4345bde9c353d1756f553e9bbb5e4bf5e94062b1921f50b52d0bc02ac6b9eae",
+            "column": 0,
+            "complexity": 8,
+            "end_column": 1,
+            "end_line": 161,
+            "line": 145,
+            "name": "Function 'checkedFunction'",
+            "projection_sha256": "c4345bde9c353d1756f553e9bbb5e4bf5e94062b1921f50b52d0bc02ac6b9eae"
+          },
+          {
+            "body_sha256": "3831416dcfef8ad674871e65552dab6f7785b4764af0feeb78320f940ff96ad3",
+            "column": 28,
+            "complexity": 2,
+            "end_column": 107,
+            "end_line": 160,
+            "line": 160,
+            "name": "Arrow function",
+            "projection_sha256": "3831416dcfef8ad674871e65552dab6f7785b4764af0feeb78320f940ff96ad3"
+          },
+          {
+            "body_sha256": "0176c6aa1f4dcf4fa2ce4f857afebb7c3cb171b4bc3bd015a3094169ee89b6b8",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 165,
+            "line": 163,
+            "name": "Function 'rangeIdentity'",
+            "projection_sha256": "0176c6aa1f4dcf4fa2ce4f857afebb7c3cb171b4bc3bd015a3094169ee89b6b8"
+          },
+          {
+            "body_sha256": "16ac94b04eb2bbd5f9da8f8e937ed80eef02d8b5bcad546a12ef6ed4438922f2",
+            "column": 0,
+            "complexity": 5,
+            "end_column": 1,
+            "end_line": 171,
+            "line": 167,
+            "name": "Function 'counterIdentity'",
+            "projection_sha256": "16ac94b04eb2bbd5f9da8f8e937ed80eef02d8b5bcad546a12ef6ed4438922f2"
+          },
+          {
+            "body_sha256": "cbe86882ff831dedad5265390d17efb43e46012fc46e7d8dcd0380780c595e61",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 183,
+            "line": 173,
+            "name": "Function 'runCounters'",
+            "projection_sha256": "cbe86882ff831dedad5265390d17efb43e46012fc46e7d8dcd0380780c595e61"
+          },
+          {
+            "body_sha256": "41c6d2a4890f261638cdbbde30881d679cac056a3de325b1338917f50bd5bd0a",
+            "column": 17,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 182,
+            "line": 175,
+            "name": "Arrow function",
+            "projection_sha256": "41c6d2a4890f261638cdbbde30881d679cac056a3de325b1338917f50bd5bd0a"
+          },
+          {
+            "body_sha256": "0c387b7ca3961f82bb268bc012bf221dcf8a3ba5c4b63d0e2e1087800073e923",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 1,
+            "end_line": 191,
+            "line": 185,
+            "name": "Function 'completeCounters'",
+            "projection_sha256": "0c387b7ca3961f82bb268bc012bf221dcf8a3ba5c4b63d0e2e1087800073e923"
+          },
+          {
+            "body_sha256": "e16472bd13cac5183cd9474ac355a3dcda50cfceb65d113cc35b866db90ae5d6",
+            "column": 30,
+            "complexity": 1,
+            "end_column": 79,
+            "end_line": 187,
+            "line": 187,
+            "name": "Arrow function",
+            "projection_sha256": "e16472bd13cac5183cd9474ac355a3dcda50cfceb65d113cc35b866db90ae5d6"
           }
         ],
         "language": "javascript",
         "path": "articulous/tooling_assets/native-coverage.mjs",
-        "sha256": "04981d3ce330e65c27f8d5edf0867ef0cf6b5c5eb39a3cca8351fc2f67632e52"
+        "sha256": "c1936344f13f46a5f70be1615737b18add2374d09bb749a695499f30c891689d"
       },
       {
         "functions": [
@@ -25683,47 +25830,47 @@
         "functions": [],
         "language": "javascript",
         "path": "tests/tooling/coverage-report.mjs",
-        "sha256": "bd1db82ca5993addfe265f23f46a74911b83c80b2ae0a1aee972ff4ce18ef2db"
+        "sha256": "1e2f60d7e95bb75278ee593668b73b77cab0873efb32ef181077bf069d6450e8"
       },
       {
         "functions": [
           {
-            "body_sha256": "aaedfe2a8b4b8b46ca6f8a27f2bd1d98e878ec3d09b4740478e43a7b861addd4",
+            "body_sha256": "6790d0a8ecbc648caddfdfbe2f5025a75cb659986300321811b9752fb74f8b24",
             "column": 0,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 19,
-            "line": 5,
+            "end_line": 20,
+            "line": 6,
             "name": "Function 'fixture'",
-            "projection_sha256": "aaedfe2a8b4b8b46ca6f8a27f2bd1d98e878ec3d09b4740478e43a7b861addd4"
+            "projection_sha256": "6790d0a8ecbc648caddfdfbe2f5025a75cb659986300321811b9752fb74f8b24"
           },
           {
             "body_sha256": "5ccd3aa9f097126612bb6c84f9fa7aaa6350f0aac3ad84dd72a90554ee3e478f",
             "column": 2,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 12,
-            "line": 8,
+            "end_line": 13,
+            "line": 9,
             "name": "Async function 'command'",
             "projection_sha256": "5ccd3aa9f097126612bb6c84f9fa7aaa6350f0aac3ad84dd72a90554ee3e478f"
           },
           {
-            "body_sha256": "302b577fe74c4778861230948555b6ed7f2af97d2ed911b7fe7900f4588f1b33",
+            "body_sha256": "f123c663f602b1d0c915c7c753a945452af987c574936e43c9326d5a5e9487c1",
             "column": 2,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 17,
-            "line": 13,
+            "end_line": 18,
+            "line": 14,
             "name": "Function 'parsed'",
-            "projection_sha256": "302b577fe74c4778861230948555b6ed7f2af97d2ed911b7fe7900f4588f1b33"
+            "projection_sha256": "f123c663f602b1d0c915c7c753a945452af987c574936e43c9326d5a5e9487c1"
           },
           {
             "body_sha256": "deb939b27eca1dc5cf8d35aad85aedd8ce91783823934460a75675b7cde3741a",
             "column": 39,
             "complexity": 1,
             "end_column": 58,
-            "end_line": 18,
-            "line": 18,
+            "end_line": 19,
+            "line": 19,
             "name": "Method 'forget'",
             "projection_sha256": "deb939b27eca1dc5cf8d35aad85aedd8ce91783823934460a75675b7cde3741a"
           },
@@ -25732,8 +25879,8 @@
             "column": 16,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 33,
-            "line": 33,
+            "end_line": 34,
+            "line": 34,
             "name": "Arrow function",
             "projection_sha256": "39efcc4c1ebab722061a64ec9649087ae4fb7fbedfa040d24710df33f19fcc5c"
           },
@@ -25742,25 +25889,185 @@
             "column": 24,
             "complexity": 2,
             "end_column": 2,
-            "end_line": 43,
-            "line": 40,
+            "end_line": 44,
+            "line": 41,
             "name": "Async arrow function",
             "projection_sha256": "88b90ff0df38773d091c8128aaa2c3f4f1a9720fa49212df4972f7e28e0c7516"
           },
           {
-            "body_sha256": "a19b9ce827ffa2f3beef82118955b95be1fb58ebbb77a5134d4d28925b5969b0",
+            "body_sha256": "628e8be0715d714f787b15dfda6a6dc59be22cf25b77af3a24684773e26e197e",
             "column": 15,
             "complexity": 1,
-            "end_column": 95,
-            "end_line": 52,
-            "line": 52,
+            "end_column": 109,
+            "end_line": 54,
+            "line": 54,
             "name": "Arrow function",
-            "projection_sha256": "a19b9ce827ffa2f3beef82118955b95be1fb58ebbb77a5134d4d28925b5969b0"
+            "projection_sha256": "628e8be0715d714f787b15dfda6a6dc59be22cf25b77af3a24684773e26e197e"
+          },
+          {
+            "body_sha256": "82ddd89cb515d6f927e90be1bfac02ef7041ab8b826d4ee383a4803e0d0ce69e",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 74,
+            "end_line": 60,
+            "line": 60,
+            "name": "Arrow function",
+            "projection_sha256": "82ddd89cb515d6f927e90be1bfac02ef7041ab8b826d4ee383a4803e0d0ce69e"
+          },
+          {
+            "body_sha256": "19684b0df9f686c75fd6a3c59b47cd23a84bd24ffe71227a7d3e0e3e6242cc64",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 1,
+            "end_line": 66,
+            "line": 63,
+            "name": "Function 'counter'",
+            "projection_sha256": "19684b0df9f686c75fd6a3c59b47cd23a84bd24ffe71227a7d3e0e3e6242cc64"
+          },
+          {
+            "body_sha256": "b8ee3e01188c5f95613a0caaf14e202b099a9baad5c8a4a8e99a2cf10497abbf",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 71,
+            "line": 69,
+            "name": "Function 'checked'",
+            "projection_sha256": "b8ee3e01188c5f95613a0caaf14e202b099a9baad5c8a4a8e99a2cf10497abbf"
+          },
+          {
+            "body_sha256": "83d22a1e7366775480c9dacea73cbaf0f1f62c770ec8c0ac5fd6ed27bf5b5f3e",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 41,
+            "end_line": 76,
+            "line": 76,
+            "name": "Arrow function",
+            "projection_sha256": "83d22a1e7366775480c9dacea73cbaf0f1f62c770ec8c0ac5fd6ed27bf5b5f3e"
+          },
+          {
+            "body_sha256": "30b63b093f95fc8c98157262dc04dda8413583271d9ecf77220b1a8c37a3b4a9",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 37,
+            "end_line": 77,
+            "line": 77,
+            "name": "Arrow function",
+            "projection_sha256": "30b63b093f95fc8c98157262dc04dda8413583271d9ecf77220b1a8c37a3b4a9"
+          },
+          {
+            "body_sha256": "d2fa7a7cc94f21143358b736ba24d829577ca6c96f6163b182b8f5c20bac8f84",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 47,
+            "end_line": 78,
+            "line": 78,
+            "name": "Arrow function",
+            "projection_sha256": "d2fa7a7cc94f21143358b736ba24d829577ca6c96f6163b182b8f5c20bac8f84"
+          },
+          {
+            "body_sha256": "6cc8df6c741735af5dbf5ae8e868fba04f724a23194b6dec30f7905aaf1454c7",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 75,
+            "end_line": 79,
+            "line": 79,
+            "name": "Arrow function",
+            "projection_sha256": "6cc8df6c741735af5dbf5ae8e868fba04f724a23194b6dec30f7905aaf1454c7"
+          },
+          {
+            "body_sha256": "52271051d1ab9271e134b7636c89c809a6ead0244ab390ffc92863d2110d00de",
+            "column": 17,
+            "complexity": 1,
+            "end_column": 51,
+            "end_line": 83,
+            "line": 83,
+            "name": "Arrow function",
+            "projection_sha256": "52271051d1ab9271e134b7636c89c809a6ead0244ab390ffc92863d2110d00de"
+          },
+          {
+            "body_sha256": "72e6fb8f3c01c9cd5cda49fed7ad8a26713ab3916798e01bea1f6d1ca2d7db72",
+            "column": 16,
+            "complexity": 1,
+            "end_column": 68,
+            "end_line": 91,
+            "line": 91,
+            "name": "Arrow function",
+            "projection_sha256": "72e6fb8f3c01c9cd5cda49fed7ad8a26713ab3916798e01bea1f6d1ca2d7db72"
+          },
+          {
+            "body_sha256": "235f75a55ad7f7319b1b8727bcd9487ded4ac304f0b3195216a3ba6b7ec64cfc",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 64,
+            "end_line": 93,
+            "line": 93,
+            "name": "Arrow function",
+            "projection_sha256": "235f75a55ad7f7319b1b8727bcd9487ded4ac304f0b3195216a3ba6b7ec64cfc"
+          },
+          {
+            "body_sha256": "d04c71330bf76d8bb05bd4f49cf1947b3c5c3d4ce6e6d6458a0b01e689b493c6",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 87,
+            "end_line": 94,
+            "line": 94,
+            "name": "Arrow function",
+            "projection_sha256": "d04c71330bf76d8bb05bd4f49cf1947b3c5c3d4ce6e6d6458a0b01e689b493c6"
+          },
+          {
+            "body_sha256": "532f42fbcfa3ef1ad49208280aed721827fca69b0e6a74d107c4b3250e8e035a",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 93,
+            "end_line": 99,
+            "line": 99,
+            "name": "Arrow function",
+            "projection_sha256": "532f42fbcfa3ef1ad49208280aed721827fca69b0e6a74d107c4b3250e8e035a"
+          },
+          {
+            "body_sha256": "eaf72071bf2aaa79f85e7e71842e37997912c9af041f218a4d9366e1ed1a6605",
+            "column": 15,
+            "complexity": 1,
+            "end_column": 80,
+            "end_line": 101,
+            "line": 101,
+            "name": "Arrow function",
+            "projection_sha256": "eaf72071bf2aaa79f85e7e71842e37997912c9af041f218a4d9366e1ed1a6605"
+          },
+          {
+            "body_sha256": "04af61def18ac8764f08b9a81d101bb3f0bd52e786215378525ca6966698e655",
+            "column": 16,
+            "complexity": 1,
+            "end_column": 52,
+            "end_line": 104,
+            "line": 104,
+            "name": "Arrow function",
+            "projection_sha256": "04af61def18ac8764f08b9a81d101bb3f0bd52e786215378525ca6966698e655"
+          },
+          {
+            "body_sha256": "af678175ddd7c55d46c1b6cdfab1b3d2bbcbe98de0b94e1c41385877dd0fbf89",
+            "column": 60,
+            "complexity": 1,
+            "end_column": 93,
+            "end_line": 111,
+            "line": 111,
+            "name": "Arrow function",
+            "projection_sha256": "af678175ddd7c55d46c1b6cdfab1b3d2bbcbe98de0b94e1c41385877dd0fbf89"
+          },
+          {
+            "body_sha256": "54b59c6ea1e8ad3fc58d391536b33cd20f973c1bd778d779b01b3a715394ab09",
+            "column": 62,
+            "complexity": 1,
+            "end_column": 97,
+            "end_line": 114,
+            "line": 114,
+            "name": "Arrow function",
+            "projection_sha256": "54b59c6ea1e8ad3fc58d391536b33cd20f973c1bd778d779b01b3a715394ab09"
           }
         ],
         "language": "javascript",
         "path": "tests/tooling/native-coverage-regressions.mjs",
-        "sha256": "7508a6dda392033558a2036956dfa91f9165604aecc8d62c4c635eeb780c4e33"
+        "sha256": "994f214a8a6c9481385c108035d456a0ac36ec4850c7665dd32a662555c8d359"
       },
       {
         "functions": [
@@ -25795,14 +26102,14 @@
             "projection_sha256": "15379e3ae32ad2d7ed026bac61dc9e5f1463869a65205edf3d8a5f68138a7c42"
           },
           {
-            "body_sha256": "16cfb49e3ce7307d77562908da14eac85a7d29dbcd6e01eddcac1af2bf30ab81",
+            "body_sha256": "7b4e00023dab7203cadfd65ea39b81cecf2d686e4fec45bfe239850ae18e1088",
             "column": 35,
             "complexity": 2,
             "end_column": 1,
             "end_line": 12,
             "line": 7,
             "name": "Arrow function",
-            "projection_sha256": "16cfb49e3ce7307d77562908da14eac85a7d29dbcd6e01eddcac1af2bf30ab81"
+            "projection_sha256": "7b4e00023dab7203cadfd65ea39b81cecf2d686e4fec45bfe239850ae18e1088"
           },
           {
             "body_sha256": "cbe538d45ee39d2afaa0d96eb08f833117885664357481cf4627b74e784a8faa",
@@ -25817,7 +26124,7 @@
         ],
         "language": "javascript",
         "path": "tests/tooling/native-node-coverage.mjs",
-        "sha256": "2888252e72c07907cd00966a0c84de712c1094413fff8de9608fb32a7b2ec827"
+        "sha256": "ad7e5d2a7388fdafc378c23fd3b2427e95691827ba4923ad4b6d41d8fa8d5660"
       },
       {
         "functions": [

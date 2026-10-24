@@ -6,5 +6,5 @@ for(const path of process.argv.slice(2))for(const script of JSON.parse(readFileS
  if(files.get(script.name).source!==script.source)throw new Error('Native source identity changed');
  files.get(script.name).runs.push(script.functions);
 }
-if(files.size!==2)throw new Error('Missing native tooling counters');
+if(files.size!==3)throw new Error('Missing native tooling counters');
 console.log(JSON.stringify(coverageRows(files)));

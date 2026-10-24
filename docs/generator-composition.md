@@ -725,6 +725,19 @@ existing browser asset gates. Sources are retained by native script identity
 before context destruction; missing or changed sources/counters fail. Unit faulty
 controls remain separate from production native measurements.
 
+The coverage gate independently parses each source with installed Acorn 8.17.0
+(ES2022 modules) and requires counters for every explicit function, method and
+module body. Missing lazy/nested functions cannot disappear from acceptance.
+Ranges must have finite integer counts, valid source boundaries and nested
+containment; duplicate or unknown function boundaries fail. Module counters
+cannot substitute for a function spanning the same source range. Native mapping
+for implicit class-field initializers and static blocks is unsupported and fails
+explicitly; no maintained measured module uses those scopes. ASTs and inventory
+records are scoped to a report call and bounded by its admitted source/counters.
+Only scalar coverage rows escape; the caller retains ownership of source data.
+Configure `ARTICULOUS_ACORN` for an existing parser outside Node's lookup path;
+the tooling performs no dependency download.
+
 ## Optional search client
 
 `theme_resources.search_resources()` supplies `assets/js/search-client.js`.

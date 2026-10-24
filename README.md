@@ -692,6 +692,19 @@ For offline checks, reuse installed dependencies and skip installation commands.
 `PYRIGHT_PYTHON_IGNORE_WARNINGS=1` disables the Python launcher's registry query
 for update warnings; use its already installed bundled engine. Do not request
 `latest` or install missing tools on a metered connection without authorization.
+The native JavaScript coverage gate uses the installed Acorn 8.17.0 parser.
+Set `ARTICULOUS_ACORN` to its package directory when it is outside the normal
+Node lookup path, for example the existing local cache:
+
+```sh
+export ARTICULOUS_ACORN=/home/netto/.npm/_npx/515228b7c8d004a2/node_modules/acorn
+```
+
+`package-lock.json` pins that verification dependency for manual CI runs.
+The parser and test commands never install it automatically; CI's explicit
+`npm ci --ignore-scripts --no-audit --no-fund` step requires network access unless
+its dependency is already cached. No local installation is needed to reuse the
+cache above.
 
 CI installs the versions in `uv.lock` with
 `uv sync --locked --extra test --no-build --no-install-project` for each

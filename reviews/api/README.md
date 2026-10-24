@@ -139,3 +139,33 @@ and ownership remain downstream of successful validation.
 Verification: 2,720 tests and 359 subtests passed; 100% line/branch coverage,
 865 production functions passed individual coverage, and calibrated complexity
 acceptance passed with every changed/new function <=9.
+
+## API-002: independent transformation interface
+
+`transform_contracts` defines path/byte inputs, read-only parameters, execution
+capabilities, the synchronous structural engine protocol and `TransformFailure`.
+It imports no concrete XML, filesystem or process implementation. Concrete
+adapters share `XsltEngine`; external engines need no implementation inheritance.
+The independent fake exercises captured revision resolution, real task dispatch,
+cache settlement and automatic worker policy through the production pipeline.
+
+Operational errors cross the public preparation/render boundary as the neutral
+error contract, preserving native status and chained adapter diagnostics. Capture
+does not wrap an already neutral failure again. Current callers/tests use the
+contract; lxml/subprocess-specific exceptions remain private adapter observations.
+Saxon version, nonzero native status, prohibited-resource checks and atomic prior
+output assertions remain intact. Fixed invalid input/capability/parameter cases
+reject before output admission.
+
+An engine's build context owns captured stylesheet revisions and compiled caches;
+wrappers retain that owner for their own containing context. Native borrows are
+synchronous and settle through existing adapter scopes before error projection.
+Parameter validation is pure, bounded by admitted mapping entries and string
+sizes, and retains no caller state. Failure values retain scalar contract data;
+chained diagnostics may retain Python frames, whose native resources have already
+settled. Existing Linux acceptance does not establish other-platform support or
+unrestricted native memory safety.
+
+Verification: 2,749 tests and 359 subtests passed; 100% line/branch coverage,
+880 production functions passed individual coverage, calibrated complexity
+acceptance passed, Ruff passed, and installed Pyright reported zero diagnostics.

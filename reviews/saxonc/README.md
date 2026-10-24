@@ -8,7 +8,8 @@ the pin in `.github/workflows/main.yml`:
 The executable and matching libraries are extracted under
 `/home/netto/.cache/articulous/SaxonCHE-linux-x86_64-12-10-0`.
 
-The unchanged `tests/test_saxonc_integration.py` suite passed **all 16 tests**
+At the source revision/hash recorded in `native.json`, the unchanged
+`tests/test_saxonc_integration.py` suite passed **all 16 tests**
 with zero failures, errors or skips in 4.63 seconds, using Python 3.11.15 and
 pytest 9.0.3. This includes the exact HE 12.10 version assertion, literal
 parameters, reciprocal alternates, safe and large JSON-LD, all-section rendering
@@ -17,6 +18,9 @@ external-entity denial and preservation of prior output after compilation failur
 TEST-003 is resolved. Archive, executable, library and test-source hashes are
 recorded in `native.json`. This acceptance run establishes the tested Linux
 behavior; it is not a native memory-leak or unrestricted lifetime-safety proof.
+Later API-002 acceptance uses the independent `TransformFailure` error contract
+while preserving the version, native status, security and output-preservation
+assertions; its current full-suite evidence is in `../api/README.md`.
 
 To repeat without further transfers:
 

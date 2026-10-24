@@ -17,6 +17,7 @@ import pytest
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG, validate_config
 from articulous.engines import LxmlEngine, SaxonCEngine, stylesheet_hash
+from articulous.transform_contracts import TransformFailure
 from articulous.filesystem import TempWorkspace, cache_lock_path, lock_file
 from articulous.pipeline import (
     ArticleStore,
@@ -876,7 +877,7 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
         engine=LxmlEngine(), ctx=ctx,
     )
     assert task is not None
-    with pytest.raises(etree.XSLTParseError):
+    with pytest.raises(TransformFailure):
         task()
     assert "bad" not in cache
 

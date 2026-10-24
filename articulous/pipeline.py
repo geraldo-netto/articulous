@@ -36,12 +36,11 @@ from .composition import route_from_output, validate_page_url
 from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
     NativeEngine,
-    SaxonCEngine,
     StylesheetCapture,
-    TransformEngine,
     configure_saxonc,
     make_engine,
 )
+from .transform_contracts import TransformEngine, require_transform
 from .filesystem import (
     StagedOutput, TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, copy_asset_file,
     lock_file, open_regular_file,
@@ -971,8 +970,7 @@ def _encode_xml(content: str) -> bytes:
 
 def _section_runtime(ctx: BuildCtx, section: str) -> tuple[Path, str, TransformEngine]:
     xsl_path = ctx.xsl_for(section)
-    engine = ctx.engine_for(section)
-    assert isinstance(engine, TransformEngine)
+    engine = require_transform(ctx.engine_for(section))
     return xsl_path, engine.prepare_stylesheet(xsl_path), engine
 
 
@@ -1393,7 +1391,7 @@ def _collect_extra_plan(ctx, cache, manifest):
         engine = make_engine(page.engine, ctx.saxonc_bin)
         if ctx.stylesheet_capture is not None:
             engine = ctx.stylesheet_capture.wrap(engine)
-        assert isinstance(engine, TransformEngine)
+        engine = require_transform(engine)
         fingerprint = engine.prepare_stylesheet(page.stylesheet)
         task = _make_xslt_task(
             xml_input=page.model, xsl_path=page.stylesheet, xsl_hash=fingerprint,
@@ -1539,8 +1537,7 @@ def _sorted_store_articles(store: ArticleStore | None, lang: str):
 
 def _tasks_for(plan: dict, section: str, ctx: BuildCtx, cache) -> _TaskQueue:
     if section not in plan:
-        engine = ctx.engine_for(section)
-        assert isinstance(engine, TransformEngine)
+        engine = require_transform(ctx.engine_for(section))
         plan[section] = _TaskQueue(ctx, cache, engine)
     return plan[section]
 
@@ -1772,9 +1769,9 @@ def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     """
     Pick a sensible ``max_workers`` for ``run_parallel_tasks``.
 
-    Without a SaxonC engine, ``"auto"`` uses ``max(4, cpu_count or 4)``.
-    SaxonC tasks launch an external Transform process, so any configured
-    SaxonC engine lowers the automatic count to ``cpu_count or 4``.
+    In-process engines use ``max(4, cpu_count or 4)`` for ``"auto"``.
+    An engine reporting external-process execution uses ``cpu_count or 4``.
+    Capture wrappers preserve the underlying execution capability.
 
     Explicit integer/string values in ``ctx.parallelism`` pass through
     unchanged.
@@ -1782,8 +1779,8 @@ def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
     if ctx.parallelism != "auto":
         return ctx.parallelism
     cpu = os.cpu_count() or 4
-    has_saxon = any(isinstance(e, SaxonCEngine) for e in ctx.engines.values())
-    return cpu if has_saxon else max(4, cpu)
+    external = any(e.capabilities.external_process for e in ctx.engines.values())
+    return cpu if external else max(4, cpu)
 
 
 def _can_prune_outputs(cli) -> bool:

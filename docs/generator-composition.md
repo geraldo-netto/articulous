@@ -284,6 +284,23 @@ validates and discards its stage, leaving published output, cache and ownership
 bytes unchanged. Lock files may remain after release. A changed staging-directory
 identity is preserved for inspection instead of recursively deleting its replacement.
 
+## Transformation boundary
+
+`transform_contracts.TransformEngine` defines the structural engine interface,
+path/byte inputs, read-only string parameters and synchronous `None` result
+without importing lxml, storage or native adapters. Independent providers can
+implement it directly. `ExecutionCapabilities.external_process` controls automatic
+worker selection and remains visible through stylesheet-capture wrappers.
+
+Concrete adapters use the shared `engines.XsltEngine` implementation. Their public
+preparation/render boundary reports `TransformFailure(operation, detail,
+returncode=None)` rather than requiring callers to catch lxml/subprocess types;
+original exceptions remain chained for adapter diagnostics. Invalid parameter
+types and capture states reject explicitly. Inputs and parameter mappings are
+stable caller borrows until synchronous return or failure; retained stylesheet
+snapshots belong to the engine's containing build context. Existing atomic-output
+and native-process cleanup scopes settle before an adapter returns or raises.
+
 ## Native publication boundary
 
 `publication_contracts.PublicationCapabilities` and `lock_contracts` contain

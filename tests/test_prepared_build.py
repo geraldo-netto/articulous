@@ -3,7 +3,6 @@ from dataclasses import replace
 import random
 from unittest.mock import Mock
 
-import lxml.etree as etree
 import pytest
 
 from articulous.builds import (
@@ -11,6 +10,7 @@ from articulous.builds import (
 )
 from articulous.pipeline import run_build
 from articulous.publication import publish_validated
+from articulous.transform_contracts import TransformFailure
 from test_composition import page
 
 
@@ -146,7 +146,7 @@ def test_arch004_validator_exception_and_modification(site_root, seo_config):
 def test_arch004_render_failure_and_lock_release(site_root, seo_config):
     cli, config = seo_config
     invalid = replace(page(config), model=b'<broken')
-    with pytest.raises(etree.XMLSyntaxError, match='Start Tag'):
+    with pytest.raises(TransformFailure, match='Start Tag'):
         check_build(cli, config, site_root, extra_pages=[invalid])
     assert check_build(cli, config, site_root).routes > 0
     with prepare_build(cli, config, site_root):

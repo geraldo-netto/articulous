@@ -30,6 +30,7 @@ from articulous.articles import (
     parse_article_xml,
 )
 from articulous.engines import LxmlEngine, safe_xml_parser
+from articulous.transform_contracts import TransformFailure
 from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.models import (
     SiteModelCtx,
@@ -387,6 +388,6 @@ def test_make_xslt_task_empty_bytes_raises_at_run(tmp_path):
         ctx=ctx,
     )
     assert task is not None
-    with pytest.raises(etree.XMLSyntaxError):
+    with pytest.raises(TransformFailure):
         task()
     assert "k" not in cache

@@ -480,6 +480,10 @@ home is checked at `<home>/bin/Transform`; `PATH` discovery is used only
 when no home is set. A nonzero exit from a selected executable fails
 the build; it does not trigger fallback.
 
+Public engine preparation/render failures use the independent
+`transform_contracts.TransformFailure` error, with operation, detail and optional
+native return code. Concrete adapter exceptions remain chained for diagnostics.
+
 lxml blocks XSLT document reads and writes to files or network resources,
 while allowing local stylesheet includes/imports. SaxonC is invoked with
 `-ext:off`, `-xi:off` and `-config:<temporary-configuration.xml>` to disable

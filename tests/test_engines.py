@@ -19,7 +19,6 @@ from articulous.engines import (
     REQUIRED_XSL_FILES,
     SECTION_XSL,
     SaxonCEngine,
-    TransformEngine,
     VALID_ENGINES,
     _SnapshotResolver,
     _snapshot_stylesheet,
@@ -32,6 +31,7 @@ from articulous.engines import (
     validate_engines,
 )
 from articulous.filesystem import TempWorkspace
+from articulous.transform_contracts import TransformEngine, TransformFailure
 
 
 MINIMAL_XSLT = (
@@ -381,7 +381,7 @@ def test_lxml_engine_propagates_xslt_parse_error(tmp_path, caplog):
     out = tmp_path / "out.html"
     engine = LxmlEngine()
     with caplog.at_level(logging.ERROR):
-        with pytest.raises(etree.XSLTParseError):
+        with pytest.raises(TransformFailure):
             engine.run(b"<root/>", xsl, out)
     assert any("lxml transform failed" in r.message for r in caplog.records)
 
@@ -400,7 +400,7 @@ def test_lxml_engine_blocks_xslt_document_reads(tmp_path, caplog):
     engine = LxmlEngine()
     out = tmp_path / "out.txt"
     with caplog.at_level(logging.ERROR):
-        with pytest.raises(etree.XSLTApplyError):
+        with pytest.raises(TransformFailure):
             engine.run(b"<root/>", xsl, out)
     assert any("lxml transform failed" in r.message for r in caplog.records)
 
@@ -524,7 +524,7 @@ def test_saxon_materialization_failure_cleans_input(tmp_path, monkeypatch, opera
         raise OSError("materialization failed")
 
     monkeypatch.setattr(TempWorkspace, "named_file", failing_file)
-    with pytest.raises(OSError, match="materialization failed"):
+    with pytest.raises(TransformFailure, match="materialization failed"):
         SaxonCEngine(tmp_path / "unused").run(b"<root/>", xsl, tmp_path / "out")
     assert len(allocated) == 1
     assert not allocated[0].exists()
@@ -561,7 +561,7 @@ def test_saxon_partial_failure_preserves_published_output(tmp_path):
         raise subprocess.CalledProcessError(1, cmd)
 
     with mock.patch("articulous.engines.subprocess.run", side_effect=fail_transform):
-        with pytest.raises(subprocess.CalledProcessError):
+        with pytest.raises(TransformFailure):
             SaxonCEngine(tmp_path / "Transform").run(xml, xsl, output)
     assert output.read_text() == "published"
     assert len(list(tmp_path.iterdir())) == 3

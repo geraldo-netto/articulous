@@ -1,8 +1,9 @@
 """
 Transform engines and the dependency-check machinery that backs them.
 
-XSLT engines subclass :class:`TransformEngine` and implement
-``_do_transform``. The base class owns their dry-run check. NativeEngine
+Concrete XSLT adapters share :class:`XsltEngine` snapshot and dry-run machinery.
+Consumers depend on the independent structural ``TransformEngine`` contract;
+external providers need not inherit implementation storage. NativeEngine
 identifies native writers implemented by the build pipeline.
 
 Section-to-XSL metadata lives in :mod:`articulous.sections` so config,
@@ -19,7 +20,7 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import ClassVar, Optional
 from urllib.parse import urljoin, urlsplit
 from urllib.request import url2pathname
 
@@ -27,6 +28,10 @@ from lxml import etree  # type: ignore[attr-defined]
 
 from .filesystem import StagedOutput, TempWorkspace, atomic_output, open_regular_file, validate_output_path
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
+from .transform_contracts import (
+    ExecutionCapabilities, TransformEngine, TransformFailure, TransformParameters,
+    XmlInput, require_parameters,
+)
 
 __all__ = [
     "LxmlEngine",
@@ -34,7 +39,6 @@ __all__ = [
     "REQUIRED_XSL_FILES",
     "SECTION_XSL",
     "SaxonCEngine",
-    "TransformEngine",
     "check_dependencies",
     "configure_saxonc",
     "make_engine",
@@ -47,6 +51,13 @@ __all__ = [
 VALID_ENGINES = {"saxonc", "lxml", "native"}
 NATIVE_SECTIONS = {"sitemap", "search"}
 _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
+_ADAPTER_ERRORS = (ValueError, TypeError, OSError, etree.Error, subprocess.CalledProcessError)
+_LOCAL_EXECUTION = ExecutionCapabilities()
+_EXTERNAL_EXECUTION = ExecutionCapabilities(True)
+
+
+def _transform_failure(operation, error):
+    return TransformFailure(operation, str(error), getattr(error, 'returncode', None))
 
 
 def safe_xml_parser() -> etree.XMLParser:
@@ -143,10 +154,7 @@ class _SnapshotResolver(etree.Resolver):
 # Engine strategy
 # ------------------------------------------------------------
 
-XmlInput = Union[Path, bytes]
-
-
-class TransformEngine(ABC):
+class XsltEngine(ABC):
     """
     Abstract base class for XSLT transformation engines.
 
@@ -168,7 +176,10 @@ class TransformEngine(ABC):
         self._snapshots: dict[tuple[str, str], _StylesheetSnapshot] = {}
 
     def prepare_stylesheet(self, path: Path) -> str:
-        snapshot = _snapshot_stylesheet(path)
+        try:
+            snapshot = _snapshot_stylesheet(path)
+        except _ADAPTER_ERRORS as error:
+            raise _transform_failure('prepare_stylesheet', error) from error
         self._snapshots[(snapshot.root_uri, snapshot.fingerprint)] = snapshot
         return snapshot.fingerprint
 
@@ -189,6 +200,10 @@ class TransformEngine(ABC):
     def cache_identity(self) -> str:
         ...
 
+    @property
+    def capabilities(self) -> ExecutionCapabilities:
+        return _LOCAL_EXECUTION
+
     def run(
         self,
         xml_input: XmlInput,
@@ -197,9 +212,22 @@ class TransformEngine(ABC):
         dry_run: bool = False,
         stylesheet_fingerprint: Optional[str] = None,
         xml_base_uri: Optional[str] = None,
-        parameters: Optional[dict[str, str]] = None,
+        parameters: TransformParameters | None = None,
     ) -> None:
         """Run the transform unless dry-run is set; returns ``None``."""
+        try:
+            require_parameters(parameters)
+            self._run_transform(xml_input, xsl_path, output_path, dry_run,
+                                stylesheet_fingerprint, xml_base_uri, parameters)
+        except TransformFailure:
+            raise
+        except _ADAPTER_ERRORS as error:
+            raise _transform_failure('transform', error) from error
+
+    def _run_transform(self, xml_input, xsl_path, output_path, dry_run,
+                       stylesheet_fingerprint, xml_base_uri, parameters):
+        if type(dry_run) is not bool:
+            raise ValueError('Transform dry_run must be boolean')
         xsl_path = Path(xsl_path)
         output_path = Path(output_path)
         normalised: XmlInput = (
@@ -225,13 +253,14 @@ class TransformEngine(ABC):
         output_path: Path,
         stylesheet_fingerprint: Optional[str] = None,
         xml_base_uri: Optional[str] = None,
-        parameters: Optional[dict[str, str]] = None,
+        parameters: TransformParameters | None = None,
     ) -> None:
         ...
 
 
 class NativeEngine:
     name = "native"
+    capabilities = _LOCAL_EXECUTION
 
     @property
     def cache_identity(self) -> str:
@@ -254,7 +283,7 @@ class StylesheetCapture:
             engine.freeze()
 
 
-class _DeferredEngine(TransformEngine):
+class _DeferredEngine(XsltEngine):
     name = 'captured'
 
     def __init__(self, engine):
@@ -267,9 +296,13 @@ class _DeferredEngine(TransformEngine):
     def cache_identity(self):
         return self._engine.cache_identity
 
+    @property
+    def capabilities(self):
+        return self._engine.capabilities
+
     def prepare_stylesheet(self, path):
         if self._frozen:
-            raise ValueError('Stylesheet capture is frozen')
+            raise TransformFailure('capture', 'Stylesheet capture is frozen')
         path = Path(path)
         self._paths[path] = ''
         return path.as_posix()
@@ -281,8 +314,11 @@ class _DeferredEngine(TransformEngine):
 
     def resolve_stylesheet_fingerprint(self, path, fingerprint):
         if not self._frozen:
-            raise ValueError('Stylesheet capture is not frozen')
-        return self._paths[Path(path)]
+            raise TransformFailure('capture', 'Stylesheet capture is not frozen')
+        try:
+            return self._paths[Path(path)]
+        except (KeyError, TypeError, ValueError) as error:
+            raise TransformFailure('capture', 'Stylesheet was not captured') from error
 
     def _do_transform(self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None,
                       xml_base_uri=None, parameters=None):
@@ -291,7 +327,7 @@ class _DeferredEngine(TransformEngine):
                          xml_base_uri=xml_base_uri, parameters=parameters)
 
 
-class LxmlEngine(TransformEngine):
+class LxmlEngine(XsltEngine):
     name = "lxml"
 
     def __init__(self):
@@ -384,12 +420,16 @@ def _saxon_configuration(workspace):
         return Path(configuration.name)
 
 
-class SaxonCEngine(TransformEngine):
+class SaxonCEngine(XsltEngine):
     name = "saxonc"
 
     def __init__(self, saxonc_bin: Path):
         super().__init__()
         self.saxonc_bin = saxonc_bin
+
+    @property
+    def capabilities(self) -> ExecutionCapabilities:
+        return _EXTERNAL_EXECUTION
 
     @property
     def cache_identity(self) -> str:

@@ -12,6 +12,7 @@ from lxml import etree  # type: ignore[attr-defined]
 from articulous.cli import CliOptions, parse_cli_args
 from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.engines import SaxonCEngine
+from articulous.transform_contracts import TransformFailure
 from articulous.pipeline import run_build
 
 
@@ -153,7 +154,7 @@ def test_real_saxonc_denies_external_reads(tmp_path, saxonc_engine, external_res
     stylesheet = _stylesheet(tmp_path / "read.xsl", f'<xsl:value-of select="{function}(\'{resources[protocol]}\')"/>')
     output = tmp_path / "output.xml"
     output.write_bytes(b"previous")
-    with pytest.raises(subprocess.CalledProcessError) as failure:
+    with pytest.raises(TransformFailure) as failure:
         saxonc_engine.run(b"<root/>", stylesheet, output)
     assert failure.value.returncode != 0
     captured = capfd.readouterr()
@@ -170,7 +171,7 @@ def test_real_saxonc_denies_secondary_writes(tmp_path, saxonc_engine, capfd):
     )
     output = tmp_path / "output.xml"
     output.write_bytes(b"previous")
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(TransformFailure):
         saxonc_engine.run(b"<root/>", stylesheet, output)
     captured = capfd.readouterr()
     assert "disabled" in captured.out + captured.err
@@ -197,7 +198,7 @@ def test_real_saxonc_denies_external_entities(tmp_path, saxonc_engine, external_
     xml = f'<!DOCTYPE root [<!ENTITY secret SYSTEM "{resources[protocol]}">]><root>&secret;</root>'
     stylesheet = _stylesheet(tmp_path / "entity.xsl", '<xsl:value-of select="root"/>')
     output = tmp_path / "output.xml"
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(TransformFailure):
         saxonc_engine.run(xml.encode(), stylesheet, output)
     captured = capfd.readouterr()
     assert "prohibited" in captured.out + captured.err
@@ -209,7 +210,7 @@ def test_real_saxonc_compile_failure_preserves_output(tmp_path, saxonc_engine, c
     stylesheet = _stylesheet(tmp_path / "invalid.xsl", '<xsl:value-of select="("/>')
     output = tmp_path / "output.xml"
     output.write_bytes(b"previous")
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(TransformFailure):
         saxonc_engine.run(b"<root/>", stylesheet, output)
     captured = capfd.readouterr()
     assert "XPST0003" in captured.out + captured.err

@@ -11,7 +11,7 @@ from .pidfds import open_pidfd, send_signal
 def process_identity(pid):
     try:
         fields = Path(f'/proc/{pid}/stat').read_text().rpartition(') ')[2].split()
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return None
     return int(fields[2]), int(fields[19]), fields[0]
 

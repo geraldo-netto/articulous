@@ -21,7 +21,7 @@ def boot_identity():
 def process_state(pid):
     try:
         fields = Path(f'/proc/{pid}/stat').read_text().rpartition(') ')[2].split()
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return None
     return ProcessGeneration(pid, int(fields[19])), fields[0]
 

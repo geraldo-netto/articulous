@@ -7,10 +7,44 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+import pytest
 
 from articulous.browser_process import run_browser
 from articulous.backends.processes import await_group_exit, group_running, open_session
+
+
+@pytest.mark.parametrize('missing', [FileNotFoundError, ProcessLookupError])
+@pytest.mark.parametrize('state,expected', [('Z', False), ('S', True)])
+def test_review015_disappearing_task_does_not_hide_live_group_members(missing, state, expected):
+    vanished = Mock()
+    vanished.read_text.side_effect = missing('task disappeared')
+    member = Mock()
+    member.read_text.return_value = f'12 (owned (child)) {state} 1 42 42'
+    with patch('articulous.backends.processes.Path.glob', return_value=[vanished, member]):
+        assert group_running(42) is expected
+
+
+@pytest.mark.parametrize('name', ['process_state', 'process_identity'])
+@pytest.mark.parametrize('error', [FileNotFoundError, ProcessLookupError, PermissionError])
+def test_review015_identity_reads_distinguish_absence_from_unknown(name, error):
+    from articulous.backends import browser_fence, recovery
+    functions = {'process_state': recovery.process_state, 'process_identity': browser_fence.process_identity}
+    with patch.object(Path, 'read_text', side_effect=error('native read')):
+        if error is PermissionError:
+            with pytest.raises(PermissionError):
+                functions[name](42)
+        else:
+            assert functions[name](42) is None
+
+
+def test_review015_unknown_group_read_failure_is_not_quiescence():
+    entry = Mock()
+    entry.read_text.side_effect = PermissionError('unavailable evidence')
+    with patch('articulous.backends.processes.Path.glob', return_value=[entry]):
+        with pytest.raises(PermissionError):
+            group_running(42)
 
 
 TREE = """

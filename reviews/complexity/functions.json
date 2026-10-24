@@ -483,14 +483,14 @@
       {
         "functions": [
           {
-            "body_sha256": "8682b9a31f3fc3f3a95289c64fe3a6c36a39e4a98cda6e12873dcbe7817118aa",
+            "body_sha256": "ec5734221352bff409c992a554895c7f3fd18ad165af26df1fd39feff95830a7",
             "column": 0,
             "complexity": 2,
             "end_column": 53,
             "end_line": 16,
             "line": 11,
             "name": "process_identity",
-            "projection_sha256": "e374c41e1f6f3b1c5c91045f4b0169066eaa684099b2a591f171bb55aba2bce4"
+            "projection_sha256": "9e1091b6043f8ef5b799d6bd9b61d4e6fdcd2423c82155f4a40e20be8a88776a"
           },
           {
             "body_sha256": "dabd4cc9f445fbc91d062f31913100bbed5f3dcbb89633cf014e65db9e1b8e03",
@@ -595,7 +595,7 @@
         ],
         "language": "python",
         "path": "articulous/backends/browser_fence.py",
-        "sha256": "dfd1c02b43c379a7c563f8928125dfca2edcd0d1ca1f8f5f2fa5a993c6c052b1"
+        "sha256": "7a6f5e745a156f97ab55bdd2ff55cfe00b1fd9a0ae9d3b7ce8bbe65fcf068b77"
       },
       {
         "functions": [
@@ -928,14 +928,14 @@
       {
         "functions": [
           {
-            "body_sha256": "ae04cc17b4a127984662c1f87512cb7b0cb8dcb8bb438f5b1d8d4ecde7347e8b",
+            "body_sha256": "a81de1cedd931de7485495f7a2a2de80a0b2b5af363332f16a11150b164335c8",
             "column": 0,
             "complexity": 5,
             "end_column": 16,
             "end_line": 30,
             "line": 22,
             "name": "group_running",
-            "projection_sha256": "52a94b72399097f418778fac8e25e8e3aaea0619d1b72265ec06f1e8e3e3d239"
+            "projection_sha256": "56dbef204891e17c05a68d0156cc1b4fcf08363abec589e2c97edf3006d93491"
           },
           {
             "body_sha256": "51da24577cefd0b1954992334c99da08942ec2401435c99daf26d982076f62f8",
@@ -1200,7 +1200,7 @@
         ],
         "language": "python",
         "path": "articulous/backends/processes.py",
-        "sha256": "b62053c7402f5d0ec4df9ab82d441d12187bcf08c68545c73457d1de98353837"
+        "sha256": "d99a0d5ed671b4feef58762a522df28692c497f79d15133131a1c79296b796cc"
       },
       {
         "functions": [
@@ -1215,14 +1215,14 @@
             "projection_sha256": "799d53235d7de2a9c3d2cdcd5f2684bba90370c7e06ea273e3b5ebf01d7b1f0b"
           },
           {
-            "body_sha256": "4c3792e4bff522d096fe77af37bd5394ec1dc0e16c1c2bad0ccc878940ca8836",
+            "body_sha256": "44da252f5b1ee6576979da4aa2664f5c4bed8ad4023a47af599b7d09728196bf",
             "column": 0,
             "complexity": 2,
             "end_column": 61,
             "end_line": 26,
             "line": 21,
             "name": "process_state",
-            "projection_sha256": "b940ac5944b30229c47fbc2567231aa919cdbead6c9830055bcd5a1667d5a671"
+            "projection_sha256": "41fed8ee990cc46ce71adbc699569a9c139f481515c184ceae5a2d5c2ce6f9f6"
           },
           {
             "body_sha256": "6ace9675d3830a03c7abfb64effe9fae56ccddeccfd73bde07e0fbfa9300bb3d",
@@ -1377,7 +1377,7 @@
         ],
         "language": "python",
         "path": "articulous/backends/recovery.py",
-        "sha256": "54bfa13bddf54e79fbcea7ad8526ea2b7046c78a52b278a66389ef2a36bf1194"
+        "sha256": "c267ea1203d76d8d505769be18408a31ea6e27bc85381ecd1e5d768e92100522"
       },
       {
         "functions": [
@@ -10382,12 +10382,42 @@
       {
         "functions": [
           {
+            "body_sha256": "a341ffa66842eded7b37067584a9af114e3ffc887f0acbb98e7646b6577dbe8b",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 44,
+            "end_line": 26,
+            "line": 20,
+            "name": "test_review015_disappearing_task_does_not_hide_live_group_members",
+            "projection_sha256": "607d2f142ec497487b99eb06ca43119d04a0264bcc49768c86a2c974b38438b1"
+          },
+          {
+            "body_sha256": "531d6c06bb0fc07e9c5deb02e6b2bff44eddaa30f49d6145c06dba77353faf6b",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 46,
+            "end_line": 39,
+            "line": 31,
+            "name": "test_review015_identity_reads_distinguish_absence_from_unknown",
+            "projection_sha256": "e8a24bf2dff7c938f1060d6207a2a6048e8a35f8d4a49de195f3d8ed2c587467"
+          },
+          {
+            "body_sha256": "2ade16f244a7178397b7db15eb2cf0f287f245e8183fc42eb837ca0f9fb7fa69",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 29,
+            "end_line": 47,
+            "line": 42,
+            "name": "test_review015_unknown_group_read_failure_is_not_quiescence",
+            "projection_sha256": "7bcaa45f2b6557a39d3ce753fc15645d2f011bc8f42e47143932760f48496034"
+          },
+          {
             "body_sha256": "a23a618d9a1f8fe67825d32d2e935c1cec0bff9e17eb49ba46ed472bdf3207fb",
             "column": 0,
             "complexity": 2,
             "end_column": 20,
-            "end_line": 36,
-            "line": 31,
+            "end_line": 70,
+            "line": 65,
             "name": "running",
             "projection_sha256": "62e721ef8c241b495eadd50bf9558d7851f502447aa583af39129c2dc198dc87"
           },
@@ -10396,8 +10426,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 36,
-            "end_line": 44,
-            "line": 39,
+            "end_line": 78,
+            "line": 73,
             "name": "recover_fixture_failure",
             "projection_sha256": "930192d3be5e3e76d56bb93d8c3f26ae41d3fc83689369a59d654f728048e1a2"
           },
@@ -10406,8 +10436,8 @@
             "column": 4,
             "complexity": 7,
             "end_column": 37,
-            "end_line": 80,
-            "line": 48,
+            "end_line": 114,
+            "line": 82,
             "name": "BrowserProcess.test_build009_timeout_stops_owned_tree_and_keeps_unrelated_process",
             "projection_sha256": "900afcef82742f62d59413a631cfd278dfe4f9132cd6020f865f7e2ed1a1b4d1"
           },
@@ -10416,8 +10446,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 64,
-            "end_line": 91,
-            "line": 82,
+            "end_line": 125,
+            "line": 116,
             "name": "BrowserProcess.test_build009_normal_exit_preserves_output_and_cleans_scratch",
             "projection_sha256": "42f0ff2f9d312a0c094fb6fc060b5ed52f87104c4478732af9902a75128ff301"
           },
@@ -10426,8 +10456,8 @@
             "column": 4,
             "complexity": 3,
             "end_column": 47,
-            "end_line": 117,
-            "line": 93,
+            "end_line": 151,
+            "line": 127,
             "name": "BrowserProcess.test_build009_bounded_invalid_requests_are_rejected_before_launch",
             "projection_sha256": "39c78424cacb9e4299fbb5d3ab060ed5c8a89d33e5d69e4e49b8b60a872ceeb6"
           },
@@ -10436,8 +10466,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 48,
-            "end_line": 129,
-            "line": 119,
+            "end_line": 163,
+            "line": 153,
             "name": "BrowserProcess.test_build009_startup_failure_and_exception_cleanup",
             "projection_sha256": "7c723d74f32354e5477acedd74b4857b7c2a72d6a6675f449805edfedd999bcb"
           },
@@ -10446,8 +10476,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 74,
-            "end_line": 138,
-            "line": 131,
+            "end_line": 172,
+            "line": 165,
             "name": "BrowserProcess.test_build009_unsupported_backend_is_explicit",
             "projection_sha256": "c154084a3dbbee1b457aaeab2e76ce65d82ae3922b96b540f1b0a38b26f1b039"
           },
@@ -10456,8 +10486,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 55,
-            "end_line": 155,
-            "line": 140,
+            "end_line": 189,
+            "line": 174,
             "name": "BrowserProcess.test_build009_cleanup_wait_is_bounded",
             "projection_sha256": "b90421a80034b3cfe3dc7c1984af3858e3a8e3a2dfc03c4eddc7d9817249e216"
           },
@@ -10466,15 +10496,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 50,
-            "end_line": 173,
-            "line": 157,
+            "end_line": 207,
+            "line": 191,
             "name": "BrowserProcess.test_build009_group_state_handles_disappearing_processes_and_zombies",
             "projection_sha256": "a260a7893fbfca3f5bc0092da069fb1087b83d6fff0459110bb5cc36b01f3915"
           }
         ],
         "language": "python",
         "path": "tests/test_browser_process.py",
-        "sha256": "5cbb6f7dd75b1a832d9e22dea048462de0b9373cc8aa0a18ccd6378a609e9db4"
+        "sha256": "f705a37da556b55b5c17d9c0185cb63ba23f79ed082943f60adc34b405cd597d"
       },
       {
         "functions": [

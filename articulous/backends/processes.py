@@ -23,7 +23,7 @@ def group_running(group: int) -> bool:
     for entry in Path('/proc').glob('[0-9]*/stat'):
         try:
             fields = entry.read_text().rpartition(') ')[2].split()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             continue
         if int(fields[2]) == group and fields[0] != 'Z':
             return True

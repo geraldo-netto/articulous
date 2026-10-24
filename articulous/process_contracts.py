@@ -8,9 +8,10 @@ import math
 class SessionOptions:
     tooling: bool = True
     checkpoint_output: bool = False
+    seal_on_exit: bool = False
 
     def __post_init__(self):
-        if type(self.tooling) is not bool or type(self.checkpoint_output) is not bool:
+        if any(type(value) is not bool for value in (self.tooling, self.checkpoint_output, self.seal_on_exit)):
             raise ValueError('Native session options must be boolean')
 
 

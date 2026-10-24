@@ -6,6 +6,7 @@ from xml.sax.saxutils import escape
 
 import lxml.etree as etree
 import pytest
+import subprocess
 
 from articulous.articles import parse_article_xml
 from articulous.pipeline import run_build
@@ -129,7 +130,7 @@ def test_seo10_large_saxon_parameters_use_literal_stylesheet_values(tmp_path, mo
     value = "Quoted ' Unicode café " * 10000
     observed = []
 
-    def transform(command, check, pass_fds):
+    def transform(command, pass_fds):
         assert all(len(argument.encode()) < 32768 for argument in command)
         path = next(argument[5:] for argument in command if argument.startswith("-xsl:"))
         root = etree.parse(path)
@@ -137,7 +138,8 @@ def test_seo10_large_saxon_parameters_use_literal_stylesheet_values(tmp_path, mo
         observed.append(node.get("select"))
         assert len(node) == 0
         os.write(pass_fds[0], b"<out/>")
+        return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr("articulous.engines.subprocess.run", transform)
+    monkeypatch.setattr("articulous.engines.run_transform_command", transform)
     SaxonCEngine(tmp_path / "Transform").run(b"<root/>", stylesheet, tmp_path / "out.xml", parameters={name: value})
     assert observed == ["'" + value.replace("'", "''") + "'"]

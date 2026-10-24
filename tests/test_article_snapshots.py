@@ -7,6 +7,7 @@ import tracemalloc
 
 import lxml.etree as etree
 import pytest
+import subprocess
 
 import articulous.pipeline as pipeline
 from articulous.articles import ArticleSnapshot, parse_article_xml
@@ -128,14 +129,15 @@ def test_saxon_snapshot_materializes_effective_document_base(site_root, monkeypa
     expected = (source.parent / "media").as_uri() + "/" if xml_base else source.as_uri()
     observed = []
 
-    def inspect_transform(command, check, pass_fds):
+    def inspect_transform(command, pass_fds):
         xml_path = next(argument[3:] for argument in command if argument.startswith("-s:"))
         root = etree.parse(xml_path).getroot()
         observed.append(root.base)
         assert root.attrib["{http://www.w3.org/XML/1998/namespace}base"] == expected
         assert root.findtext("description") == "Inaugural article."
+        return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr("articulous.engines.subprocess.run", inspect_transform)
+    monkeypatch.setattr("articulous.engines.run_transform_command", inspect_transform)
     SaxonCEngine(site_root / "Transform").run(
         captured, site_root / "xsl/pages/article.xsl", site_root / "output/article.html",
         xml_base_uri=source.as_uri(),

@@ -16,6 +16,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -26,7 +27,9 @@ from urllib.request import url2pathname
 
 from lxml import etree  # type: ignore[attr-defined]
 
-from .filesystem import StagedOutput, TempWorkspace, atomic_output, open_regular_file, validate_output_path
+from .filesystem import StagedOutput, atomic_output, open_regular_file, validate_output_path
+from .backends.saxon import run_transform_command
+from .native_workspace import native_workspace
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 from .configuration_contracts import VALID_ENGINES, valid_engine_name
 from .transform_contracts import (
@@ -386,6 +389,14 @@ def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:
     return etree.tostring(root)
 
 
+def _saxon_input_bytes(xml_input, base_uri):
+    if isinstance(xml_input, bytes):
+        return _xml_with_base(xml_input, base_uri)
+    with open_regular_file(xml_input) as source:
+        content = source.read()
+    return _xml_with_base(content, base_uri or xml_input.resolve().as_uri())
+
+
 def _materialize_parameter(root, name: str, value: str) -> None:
     nodes = root.xpath("./xsl:param[@name=$name]", namespaces=_XSL_NAMESPACE, name=name)
     if nodes:
@@ -418,6 +429,13 @@ def _saxon_configuration(workspace):
         return Path(configuration.name)
 
 
+def _emit_native_output(stdout, stderr):
+    if stdout:
+        sys.stdout.write(stdout)
+    if stderr:
+        sys.stderr.write(stderr)
+
+
 class SaxonCEngine(XsltEngine):
     name = "saxonc"
 
@@ -437,7 +455,7 @@ class SaxonCEngine(XsltEngine):
             revision = f"{stat.st_size}:{stat.st_mtime_ns}"
         except OSError:
             revision = "missing"
-        return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none"
+        return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none:owned-inputs=v1"
 
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,
@@ -451,14 +469,13 @@ class SaxonCEngine(XsltEngine):
         )
         root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
         parameters = _saxon_parameters(root, parameters)
-        with TempWorkspace() as workspace:
+        with native_workspace() as workspace:
             with workspace.named_file("w+b", suffix=".xsl") as stylesheet:
                 stylesheet.write(etree.tostring(root))
                 captured_xsl = Path(stylesheet.name)
-            if isinstance(xml_input, bytes):
-                with workspace.named_file("w+b", suffix=".xml") as f:
-                    f.write(_xml_with_base(xml_input, xml_base_uri))
-                    xml_input = Path(f.name)
+            with workspace.named_file("w+b", suffix=".xml") as f:
+                f.write(_saxon_input_bytes(xml_input, xml_base_uri))
+                xml_input = Path(f.name)
             self._run_saxon(xml_input, captured_xsl, output_path, parameters)
 
     def _run_saxon(self, xml_path: Path, xsl_path: Path, output_path: Path, parameters=None):
@@ -474,7 +491,7 @@ class SaxonCEngine(XsltEngine):
                     f"SaxonC {label} path begins with '-', which can be "
                     f"misparsed by the Saxon CLI: {p}"
                 )
-        with TempWorkspace() as workspace, atomic_output(resolved["output"], generated=True) as staged:
+        with native_workspace() as workspace, atomic_output(resolved["output"], generated=True) as staged:
             assert isinstance(staged, StagedOutput)
             configuration = _saxon_configuration(workspace)
             cmd = [
@@ -489,10 +506,13 @@ class SaxonCEngine(XsltEngine):
             cmd.extend(f"{key}={value}" for key, value in (parameters or {}).items())
             logging.debug(f"Running SaxonC: {' '.join(cmd)}")
             try:
-                subprocess.run(cmd, check=True, pass_fds=(staged.fd,))
-            except subprocess.CalledProcessError:
+                result = run_transform_command(cmd, pass_fds=(staged.fd,))
+            except subprocess.CalledProcessError as error:
+                _emit_native_output(error.stdout, error.stderr)
                 logging.exception("SaxonC transform failed")
                 raise
+            else:
+                _emit_native_output(result.stdout, result.stderr)
 
 
 # ------------------------------------------------------------

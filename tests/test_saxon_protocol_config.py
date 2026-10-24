@@ -24,8 +24,9 @@ def test_saxon001_configuration_settles_after_native_exit(tmp_path, monkeypatch,
         assert '-ext:off' in command and '-xi:off' in command
         if outcome == 'failure':
             raise subprocess.CalledProcessError(2, command)
+        return subprocess.CompletedProcess(command, 0, '', '')
 
-    monkeypatch.setattr('articulous.engines.subprocess.run', native)
+    monkeypatch.setattr('articulous.engines.run_transform_command', native)
     engine = SaxonCEngine(tmp_path / 'Transform')
     output = tmp_path / 'out.xml'
     output.write_text('previous')

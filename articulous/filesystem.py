@@ -353,13 +353,14 @@ def lock_file(path: Path, stale_after: float = 3600):
 
 
 class TempWorkspace:
-    def __init__(self):
+    def __init__(self, directory: Path | None = None):
         self._paths: list[Path] = []
+        self._directory = directory
 
     def named_file(self, mode: str = "w+", encoding: str = "utf-8", suffix: str = ""):
         encoding_arg = None if "b" in mode else encoding
         f = tempfile.NamedTemporaryFile(
-            mode, encoding=encoding_arg, suffix=suffix, delete=False,
+            mode, encoding=encoding_arg, suffix=suffix, delete=False, dir=self._directory,
         )
         self._paths.append(Path(f.name))
         return f

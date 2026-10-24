@@ -436,7 +436,7 @@ def test_saxon_engine_invokes_subprocess(tmp_path):
     xsl = tmp_path / "x.xsl"
     xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
-    with mock.patch("articulous.engines.subprocess.run") as run_mock:
+    with mock.patch("articulous.engines.run_transform_command", return_value=subprocess.CompletedProcess([], 0, "", "")) as run_mock:
         e._do_transform(xml, xsl, out)
     assert run_mock.called
     cmd = run_mock.call_args[0][0]
@@ -456,14 +456,14 @@ def test_saxon_engine_materialises_bytes_to_tempfile(tmp_path):
     out = tmp_path / "out.html"
     captured = {}
 
-    def fake_run(cmd, check, pass_fds):
+    def fake_run(cmd, pass_fds):
         # -s:VAL — extract VAL and confirm it exists during the call
         s_arg = [a for a in cmd if a.startswith("-s:")][0]
         captured["tmp"] = Path(s_arg[3:])
         captured["existed_during_run"] = captured["tmp"].exists()
-        return mock.Mock(returncode=0)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
 
-    with mock.patch("articulous.engines.subprocess.run", side_effect=fake_run):
+    with mock.patch("articulous.engines.run_transform_command", side_effect=fake_run):
         e._do_transform(b"<root/>", xsl, out)
 
     assert captured["existed_during_run"] is True
@@ -479,15 +479,16 @@ def test_saxon_uses_captured_stylesheet_and_original_base(tmp_path, monkeypatch)
     xsl.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
     captured = []
 
-    def inspect_transform(cmd, check, pass_fds):
+    def inspect_transform(cmd, pass_fds):
         path = Path(next(arg[5:] for arg in cmd if arg.startswith("-xsl:")))
         captured.append(path)
         root = etree.parse(str(path)).getroot()
         assert root.base == xsl.as_uri()
         assert root.find(".//out") is not None
         assert root.find(".//changed") is None
+        return subprocess.CompletedProcess(cmd, 0, "", "")
 
-    monkeypatch.setattr("articulous.engines.subprocess.run", inspect_transform)
+    monkeypatch.setattr("articulous.engines.run_transform_command", inspect_transform)
     engine.run(b"<root/>", xsl, tmp_path / "page.xml", stylesheet_fingerprint=fingerprint)
     assert len(captured) == 1
     assert not captured[0].exists()
@@ -497,7 +498,7 @@ def test_saxon_rejects_dependencies_before_subprocess(tmp_path):
     main = tmp_path / "main.xsl"
     main.write_text(_including_stylesheet("included.xsl"))
     (tmp_path / "included.xsl").write_text(MINIMAL_XSLT)
-    with mock.patch("articulous.engines.subprocess.run") as run:
+    with mock.patch("articulous.engines.run_transform_command") as run:
         with pytest.raises(ValueError, match="SaxonC stylesheets must be standalone"):
             SaxonCEngine(tmp_path / "Transform").run(b"<root/>", main, tmp_path / "page.xml")
     run.assert_not_called()
@@ -538,7 +539,7 @@ def test_saxon_engine_propagates_subprocess_failure(tmp_path, caplog):
     xsl.write_text(MINIMAL_XSLT)
     out = tmp_path / "out.html"
     with mock.patch(
-        "articulous.engines.subprocess.run",
+        "articulous.engines.run_transform_command",
         side_effect=subprocess.CalledProcessError(1, "cmd"),
     ):
         with caplog.at_level(logging.ERROR):
@@ -555,12 +556,12 @@ def test_saxon_partial_failure_preserves_published_output(tmp_path):
     output = tmp_path / "page.html"
     output.write_text("published")
 
-    def fail_transform(cmd, check, pass_fds):
+    def fail_transform(cmd, pass_fds):
         staged = Path(next(arg[3:] for arg in cmd if arg.startswith("-o:")))
         staged.write_text("partial")
         raise subprocess.CalledProcessError(1, cmd)
 
-    with mock.patch("articulous.engines.subprocess.run", side_effect=fail_transform):
+    with mock.patch("articulous.engines.run_transform_command", side_effect=fail_transform):
         with pytest.raises(TransformFailure):
             SaxonCEngine(tmp_path / "Transform").run(xml, xsl, output)
     assert output.read_text() == "published"

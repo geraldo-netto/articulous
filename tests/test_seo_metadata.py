@@ -2,6 +2,7 @@
 import os
 
 import pytest
+import subprocess
 import lxml.etree as etree
 
 from articulous.engines import SaxonCEngine
@@ -43,11 +44,12 @@ def test_seo01_saxon_parameters_are_literal_arguments(tmp_path, monkeypatch, val
     _metadata_stylesheet(stylesheet)
     seen = []
 
-    def transform(command, check, pass_fds):
+    def transform(command, pass_fds):
         seen.extend(command)
         os.write(pass_fds[0], b"<metadata/>")
+        return subprocess.CompletedProcess(command, 0, "", "")
 
-    monkeypatch.setattr("articulous.engines.subprocess.run", transform)
+    monkeypatch.setattr("articulous.engines.run_transform_command", transform)
     SaxonCEngine(tmp_path / "Transform").run(
         b"<article/>", stylesheet, tmp_path / "page.xml",
         parameters={"articulous-site": value},

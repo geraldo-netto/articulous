@@ -105,11 +105,20 @@ class LinuxSession:
         deadline = time.monotonic() + seconds if seconds is not None else None
         while not self._drained:
             self._read_ready(.01)
-            if self._observe_exit() is not None and not self._selector.get_map():
-                self._drained = True
-                return
-            if seconds is not None and deadline is not None and time.monotonic() >= deadline:
+            if self._observe_exit() is not None:
+                if self._options.seal_on_exit:
+                    self._seal_exited_group()
+                if not self._selector.get_map():
+                    self._drained = True
+                    return
+            if deadline is not None and time.monotonic() >= deadline:
                 raise self._timeout(seconds)
+
+    def _seal_exited_group(self):
+        if not self._quiet:
+            self.signal_group(signal.SIGKILL)
+            await_group_exit(self._process.pid)
+            self._quiet = True
 
     def communicate(self, timeout=None):
         if not self.settled:
@@ -284,10 +293,22 @@ def _allocate_workspace():
         scratch.rmdir()
 
 
+def _require_descriptors(values):
+    from .pidfds import native_integer
+    if not isinstance(values, tuple):
+        raise ValueError('Inherited descriptors must be a unique tuple')
+    for descriptor in values:
+        native_integer(descriptor, 0)
+        os.fstat(descriptor)
+    if len(set(values)) != len(values):
+        raise ValueError('Inherited descriptors must be a unique tuple')
+
+
 @contextmanager
-def open_session(command: Sequence[str], *, options: SessionOptions = SessionOptions()) -> Iterator[ProcessSession]:
+def open_session(command: Sequence[str], *, options: SessionOptions = SessionOptions(), pass_fds=()) -> Iterator[ProcessSession]:
     if not isinstance(options, SessionOptions):
         raise ValueError('Native session requires SessionOptions')
+    _require_descriptors(pass_fds)
     if sys.platform != 'linux':
         raise NotImplementedError('Native browser supervision is validated only on Linux')
     scratch = _allocate_workspace()
@@ -296,7 +317,8 @@ def open_session(command: Sequence[str], *, options: SessionOptions = SessionOpt
     try:
         environment = session_environment(scratch, options)
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   text=True, encoding='utf-8', start_new_session=True, env=environment)
+                                   text=True, encoding='utf-8', start_new_session=True, env=environment,
+                                   pass_fds=pass_fds)
         session = LinuxSession(process, options)
         yield session
     finally:

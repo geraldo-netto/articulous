@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 from .backends.processes import open_session
-from .process_contracts import SessionOptions, deadline_seconds
+from .process_contracts import ProcessSession, SessionOptions, deadline_seconds
 
 
 def command_arguments(command: object) -> list[str]:
@@ -65,14 +65,19 @@ def run_browser_suite(command: object, *, checkpoint: object = 30, report=report
     """
     arguments = command_arguments(command)
     seconds = deadline_seconds(checkpoint)
-    previous = ''
     with open_session(arguments, options=SessionOptions(tooling=tooling, checkpoint_output=True)) as session:
-        while True:
-            try:
-                stdout, stderr = session.communicate(seconds)
-                return completed_session(arguments, session, stdout, stderr)
-            except subprocess.TimeoutExpired as error:
-                previous = settled_checkpoint(error.stderr, previous, report)
+        return observe_session(arguments, session, seconds, report)
+
+
+def observe_session(arguments: list[str], session: ProcessSession, seconds: float, report=report_progress):
+    """Borrow an admitted session through complete output observation; its caller owns settlement."""
+    previous = ''
+    while True:
+        try:
+            stdout, stderr = session.communicate(seconds)
+            return completed_session(arguments, session, stdout, stderr)
+        except subprocess.TimeoutExpired as error:
+            previous = settled_checkpoint(error.stderr, previous, report)
 
 
 def run_owned(command, *, tooling=True):

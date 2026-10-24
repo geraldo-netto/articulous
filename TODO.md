@@ -4,7 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REVIEW-020 | open | M | Settle Saxon process descendants before publishing output or releasing input borrows. | P1 resource lifetime/concurrency/correctness, contradictions; engines.py:492 uses subprocess.run with an inherited staging descriptor, whereas transform_contracts.py:62-67 and docs/generator-composition.md promise all native borrows settle before return/failure. Controlled local Transform forked a child retaining that descriptor and exited successfully: the real adapter returned with published bytes initial, then the descendant changed them to initial-late. No post code was evaluated; the deliberately faulty native adapter was contained and reaped by an outer owned session. Integrate descriptor handoff with an owned process-tree fence before atomic commit/workspace cleanup; retain funded recovery obligations if fencing fails. Required permanent regressions: delayed descendant writes/reads, success/nonzero exit, cancellation, failed fence/recovery and prior-output preservation, with exact process identity/descriptor settlement evidence. |
 
 ## Other items
 

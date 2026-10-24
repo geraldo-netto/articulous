@@ -54,7 +54,8 @@ def _file_identity(path: Path) -> list[int] | None:
 
 def _valid_identity(identity) -> bool:
     return identity is None or (
-        isinstance(identity, list) and len(identity) == 2 and all(type(value) is int for value in identity)
+        isinstance(identity, list) and len(identity) == 2
+        and all(type(value) is int and value >= 0 for value in identity)
     )
 
 
@@ -73,10 +74,12 @@ def _published_paths(output_dir: Path, paths: dict, existing) -> dict:
 def _decode_ownership(output_dir: Path, data) -> Ownership:
     if not isinstance(data, dict) or data.get("output_dir") != str(output_dir.resolve()):
         raise ValueError(f"Invalid output ownership identity at {ownership_path(output_dir)}")
+    if type(data.get('version')) is not int or data['version'] not in (1, 2):
+        raise ValueError(f"Invalid output ownership version at {ownership_path(output_dir)}")
     if data.get("version") == 1:
         outputs = _validate_outputs(data.get("outputs"))
         return Ownership({path: key for key, path in outputs.items()})
-    if data.get("version") != 2 or not isinstance(data.get("pending", False), bool):
+    if not isinstance(data.get("pending", False), bool):
         raise ValueError(f"Invalid output ownership version or recovery flag at {ownership_path(output_dir)}")
     paths = _validate_outputs(data.get("paths"), path_keys=True)
     return _current_ownership(output_dir, data, paths)

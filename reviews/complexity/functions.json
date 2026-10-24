@@ -6101,42 +6101,42 @@
             "projection_sha256": "cd3a42330598cea64066bc65badfdc27cfaf6744d4d88ff2d61db3cbcbe85bb9"
           },
           {
-            "body_sha256": "e784a7ed186241316c6cf12f679aff0138f687c2558de25b2d017a9225823b7f",
+            "body_sha256": "c10614efc90d2e1f848a1776bfd1d84b50e44e93cd9dea3daa4395eef8f69075",
             "column": 0,
-            "complexity": 5,
+            "complexity": 6,
             "end_column": 5,
-            "end_line": 58,
+            "end_line": 59,
             "line": 55,
             "name": "_valid_identity",
-            "projection_sha256": "9125b776bf51173ba39cd2d98d1469c7430d953f6dad727fec8b95b4e870c28c"
+            "projection_sha256": "8b335a9724139e2392ca7728e288cbbb9da769eab499e66f62bf97cd7bd8b044"
           },
           {
             "body_sha256": "286e7c4096ca82d6b05af7edd169b1674621e6aff0926e80402e8707b9b1dc47",
             "column": 0,
             "complexity": 10,
             "end_column": 78,
-            "end_line": 70,
-            "line": 61,
+            "end_line": 71,
+            "line": 62,
             "name": "_published_paths",
             "projection_sha256": "5ca9cc3a46bcf6dc33f86a86ccfe68327321fac685a604b4927cfc1351cae932"
           },
           {
-            "body_sha256": "6bd52654cfa07c1a38dbd070ab3d9b7c4b162bde75409cf2b05dec03042b4618",
+            "body_sha256": "98b2451052ef243f4f6003f914b08549dfafea699e91918cffc2e4e99dd30580",
             "column": 0,
-            "complexity": 7,
+            "complexity": 8,
             "end_column": 54,
-            "end_line": 82,
-            "line": 73,
+            "end_line": 85,
+            "line": 74,
             "name": "_decode_ownership",
-            "projection_sha256": "cbfbabcf02232024be5c1f6e5e33d3a3e55e7a8fcfb56e472179a0d0de33ec6f"
+            "projection_sha256": "49925d4ed52b477dae531eae4fa29487bce91fed4312288f78852096dcc5349c"
           },
           {
             "body_sha256": "11d8d1c3e80bb7b66a993f7343648407007fa04c1f863508e6b4c7d38a741598",
             "column": 0,
             "complexity": 7,
             "end_column": 17,
-            "end_line": 99,
-            "line": 85,
+            "end_line": 102,
+            "line": 88,
             "name": "_decode_routes",
             "projection_sha256": "0c5829b60175ea0c3711acdc9aaf221386d70afe5545a87a2e4fa0cdd29cc302"
           },
@@ -6145,8 +6145,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 69,
-            "end_line": 106,
-            "line": 102,
+            "end_line": 109,
+            "line": 105,
             "name": "_current_ownership",
             "projection_sha256": "6b6b4e33c16f4d334de6d2d5eba5544e4927ddf1ca57a5c2505761ebc60c29bf"
           },
@@ -6155,8 +6155,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 20,
-            "end_line": 122,
-            "line": 109,
+            "end_line": 125,
+            "line": 112,
             "name": "load_ownership",
             "projection_sha256": "5414d17cc2fc523644606d9fe4f0e63343b4d57d9734dc74cecea9f24ffd5799"
           },
@@ -6165,8 +6165,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 33,
-            "end_line": 136,
-            "line": 125,
+            "end_line": 139,
+            "line": 128,
             "name": "save_ownership",
             "projection_sha256": "37ef736b3d6206ebc8c652f5eac6e1a99c27d2a464a4ffd3e5b370f0dd22f991"
           },
@@ -6175,8 +6175,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 103,
-            "end_line": 141,
-            "line": 139,
+            "end_line": 144,
+            "line": 142,
             "name": "journal_ownership",
             "projection_sha256": "1a6c81344831bcba05ec1ece5fb8cdc10b0fbfcebf3bd43d468252dcb78eb132"
           },
@@ -6185,8 +6185,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 71,
-            "end_line": 154,
-            "line": 144,
+            "end_line": 157,
+            "line": 147,
             "name": "_validate_owned_entry",
             "projection_sha256": "b92dbf3f5d552966a8a6b08c7f3bca10e284c78e70b57f1ee892a37e9116a893"
           },
@@ -6195,15 +6195,15 @@
             "column": 0,
             "complexity": 7,
             "end_column": 20,
-            "end_line": 167,
-            "line": 157,
+            "end_line": 170,
+            "line": 160,
             "name": "validate_owned_output",
             "projection_sha256": "cffcced5d52668d67217264c22ca8ab34a87d0e3739af2a837c30a2f392f516f"
           }
         ],
         "language": "python",
         "path": "articulous/ownership.py",
-        "sha256": "f6593e009b549990bc3bc0d1f37ece048d407df3a867ba7b8cb70ac48b8b26e2"
+        "sha256": "ef4a4aca1c7998b51ad4c846aa60b5357cd8b1ed2cc4ad31c35a8a26fb5e337b"
       },
       {
         "functions": [
@@ -17951,6 +17951,43 @@
         "language": "python",
         "path": "tests/test_ownership.py",
         "sha256": "eeb045164e8f3bb53ae9849cc02cfbdc95019a758e93fe73fc812480e5d79b6b"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "65cb3f47bfb4c92208bfbac50a82d855acf34c40cc817be9ea52ca4cdc313022",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 38,
+            "end_line": 19,
+            "line": 11,
+            "name": "test_review021_exact_version_type",
+            "projection_sha256": "d1045a1428401d2a292b0a056633841b3231ad105795bb64856ccfb75e858dd7"
+          },
+          {
+            "body_sha256": "ceabbd8d3f023b0c192576b74342add963b2ae4e45f399f9ae12221efffd5125",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 45,
+            "end_line": 40,
+            "line": 24,
+            "name": "test_review021_invalid_identity_components_preserve_files",
+            "projection_sha256": "b7afee47f618f75cd236eed85851fc3f1ae7405ca46f0767dbc0e6b87a940f62"
+          },
+          {
+            "body_sha256": "c7e74f62a85b3262557fa65257e62682ec8ae85b0c8e113f753c1051eeaf7f47",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 63,
+            "end_line": 49,
+            "line": 44,
+            "name": "test_review021_valid_identity_boundaries",
+            "projection_sha256": "f1ec13c8f0993686a500bd3500a4929cf5d0ce88e7d8fe7309cc32997f5b7931"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_ownership_admission.py",
+        "sha256": "6b6b7025d227782a77de2ab0b858ebc546b3fc7c315b911d99118ead1484ef41"
       },
       {
         "functions": [

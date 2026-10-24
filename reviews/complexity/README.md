@@ -103,6 +103,6 @@ CC-002's aggregate contract composes the two independent metric workflows.
 Permanent controls reject missing/unknown components, wrong schemas, a stale
 XSLT source while Python/JavaScript stay current, and a failed XSLT measurement
 before publication. The normal quality workflow invokes aggregate acceptance
-after pytest and individual-function coverage. Unsupported runtime evidence is
-separate: the exact SaxonC-HE 12.10 integration run remains TEST-003 while the
-owner keeps transfers disabled; cached PE 12.9 functional results are supplemental.
+after pytest and individual-function coverage. Runtime evidence is separate:
+the exact SaxonC-HE 12.10 integration run passed all 16 unchanged tests on Linux
+x86_64; see [native acceptance evidence](../saxonc/README.md).

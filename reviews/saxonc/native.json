@@ -1,9 +1,29 @@
 {
-  "executable_sha256": "5f20d942cb0f8376cfa63e562794c713c11c4febbcf98b03387902ffc11023e4",
+  "date": "2026-10-24",
+  "source_commit": "9b0a0623a3914dce078ca5ffa128ef9c63b19d4d",
+  "platform": "Linux x86_64",
+  "python": "3.11.15",
+  "pytest": "9.0.3",
+  "path": "/backups/disk2/software/SaxonCHE-linux-x86_64-12-10-0.zip",
+  "archive_bytes": 40032605,
+  "sha256": "8db496a54568fac34950d4e581e832087c82dd0924545f67a5c56031c003d9ce",
+  "installation": "/home/netto/.cache/articulous/SaxonCHE-linux-x86_64-12-10-0",
+  "executable_sha256": "2edf399b2ca440c18051cf3a894e80290dd1c13fd5589fdd25844fdbddc6a572",
+  "library_sha256": {
+    "SaxonCCoreHE/lib/libsaxonc-core-he.so.12.10.0": "e9e834b0830f682e9ebc264f93d58cc63803333eb5bc74513539734d9e81c9df",
+    "SaxonCHE/lib/libsaxonc-he.so.12.10.0": "33785f3325ea4e640b268a131179b8df13f12308839e2b2bf6304ea76ed849a7"
+  },
+  "test_source": "tests/test_saxonc_integration.py",
+  "test_source_sha256": "befde228cde3992fb72990205ac15e7a96b1245b380bfe99f26cec09b282d0c7",
+  "command": ".venv/bin/pytest --no-cov -vv --tb=short --junitxml=/tmp/articulous-saxonc-he-12.10.xml tests/test_saxonc_integration.py",
+  "tests": 16,
+  "passed": 16,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "pytest_elapsed_seconds": 4.63,
   "functional_passed": 15,
-  "path": "/backups/disk2/software/SaxonCPE-linux-x86_64-12-9-0.zip",
   "required_version": "SaxonC-HE 12.10",
-  "sha256": "a373cc4b7c572a1d090ec1fce96eae3d26822c8d1e80e03824c58fed396181e2",
-  "version": "SaxonC-PE 12.9",
-  "version_mismatch": 1
+  "version": "SaxonC-HE 12.10",
+  "version_mismatch": 0
 }

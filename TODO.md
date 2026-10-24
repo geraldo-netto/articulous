@@ -9,7 +9,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| TEST-003 | blocked | S | Complete the exact SaxonC-HE 12.10 native integration acceptance run. | Reliability/correctness; cached SaxonC-PE 12.9 supplemental validation now passes all 15 functional/security tests after SAXON-001 (6ee64b0); the unchanged pinned-version test correctly rejects PE 12.9. Evidence: reviews/saxonc. Missing prerequisite: executable SaxonC-HE 12.10 and its matching libraries. Owner explicitly chose offline cached PE 12.9 validation and declined the archive transfer on 2026-10-24; no download is authorized. Provide the pinned installation locally or explicitly resume its transfer, then run all 16 tests without changing the version or security assertions. |
 | PERF-01 | wont_fix | — | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
 | PERF-02 | wont_fix | — | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
 | SCAL-01 | wont_fix | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |

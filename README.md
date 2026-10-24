@@ -480,8 +480,8 @@ while allowing local stylesheet includes/imports. SaxonC is invoked with
 `-ext:off`, `-xi:off` and `-config:<temporary-configuration.xml>` to disable
 external functions, XInclude and external resource URIs. The configuration uses
 `<global allowedProtocols="#none"/>` in the Saxon configuration namespace.
-Cached PE 12.9 validates this invocation; exact HE 12.10 acceptance remains
-tracked as TEST-003 (see [offline validation](reviews/saxonc/README.md)).
+SaxonC-HE 12.10 passes all 16 native integration checks, including these
+restrictions (see [native validation](reviews/saxonc/README.md)).
 SaxonC requires standalone stylesheets: external includes and imports
 are rejected. Use lxml for stylesheets with local includes or imports.
 Planning captures stylesheet bytes and local dependencies; workers compile

@@ -682,11 +682,16 @@ python -m pytest
 python -m articulous.coverage_gate coverage.json --directory articulous
 ruff check --no-cache .
 ruff check --no-cache --select C901 --config 'lint.mccabe.max-complexity = 9' articulous tests
-pyright --pythonpath .venv/bin/python
+PYRIGHT_PYTHON_IGNORE_WARNINGS=1 pyright --pythonpath .venv/bin/python
 ```
 
 CI runs only on manual dispatch. In GitHub Actions, select
 **Test Articulous Generator** and choose **Run workflow**.
+
+For offline checks, reuse installed dependencies and skip installation commands.
+`PYRIGHT_PYTHON_IGNORE_WARNINGS=1` disables the Python launcher's registry query
+for update warnings; use its already installed bundled engine. Do not request
+`latest` or install missing tools on a metered connection without authorization.
 
 CI installs the versions in `uv.lock` with
 `uv sync --locked --extra test --no-build --no-install-project` for each

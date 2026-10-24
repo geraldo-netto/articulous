@@ -33,6 +33,8 @@ jobs:
         run: .venv/bin/ruff check .
 
       - name: Run Pyright
+        env:
+          PYRIGHT_PYTHON_IGNORE_WARNINGS: "1"
         run: .venv/bin/pyright --pythonpath .venv/bin/python
 
       - name: Run pytest suite

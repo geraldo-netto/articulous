@@ -18,10 +18,16 @@ def url_origin(parsed):
     return parsed.scheme, parsed.hostname, parsed.port or default
 
 
+def _same_publication_origin(parsed, origin):
+    if not origin.scheme and not origin.netloc:
+        return not parsed.scheme and not parsed.netloc
+    return parsed.scheme in ('http', 'https') and url_origin(parsed) == url_origin(origin)
+
+
 def local_path(output, value, base):
     parsed = urlsplit(urljoin(base.rstrip('/') + '/', value))
     origin = urlsplit(base)
-    if parsed.scheme not in ('http', 'https') or url_origin(parsed) != url_origin(origin):
+    if not _same_publication_origin(parsed, origin):
         return None
     prefix = unquote(origin.path).rstrip('/') + '/'
     decoded = unquote(parsed.path)

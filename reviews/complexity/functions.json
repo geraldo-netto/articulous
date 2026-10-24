@@ -4068,29 +4068,29 @@
             "projection_sha256": "eae0e1d89e3fc98830882f36ed626cb3969a4853aef6c0abf06be428cf3decee"
           },
           {
-            "body_sha256": "6f20a0cb81a3b50a125cd4972d1519c13b2a6f81b52f9fa14b907aa3607011f2",
+            "body_sha256": "ae7c029effca068ee0c23c6a25d1f06e40f10e26075b241ab85fd22bce10fc17",
             "column": 0,
             "complexity": 5,
             "end_column": 51,
-            "end_line": 403,
+            "end_line": 404,
             "line": 378,
             "name": "apply_cli_overrides",
-            "projection_sha256": "300116b1086dd5d53edd174b4c83c3569ff05a953032d83a2cd18164ff54d2f5"
+            "projection_sha256": "d5ab02a0eb07d27481a9b3c7f0c38402e1c4b4b037f044bac2beb0a2b0ff3590"
           },
           {
-            "body_sha256": "0727f1e2800d682fc1d237972a9f897a477904226192fb91bcd5a242b704d6bb",
+            "body_sha256": "b5ab5bfb6b4fb34620bf6515b3b22e6af1056fa2c151dd5b9b8bdccc54eebeac",
             "column": 0,
             "complexity": 4,
             "end_column": 55,
             "end_line": 418,
-            "line": 406,
+            "line": 407,
             "name": "normalize_configuration",
-            "projection_sha256": "5578c2ac7fba5bfd364ac7e170aeb12f602ff8cfeae866f10510ec94e3e567b0"
+            "projection_sha256": "fe439f15ade479864d2262080867022d07bc632cc4e376a9235a0c6f8a73bb1f"
           }
         ],
         "language": "python",
         "path": "articulous/config.py",
-        "sha256": "fbc7706dba2aca73cedadf2c0ad08395e5db41aea13fd0c84008aae531538d32"
+        "sha256": "4c84ba426d3d1fc45d8888848f50d9eb963077cc828c26709b00f60f9a366b93"
       },
       {
         "functions": [
@@ -12627,6 +12627,33 @@
         "language": "python",
         "path": "tests/test_cli.py",
         "sha256": "3a17ea4f01e16bc2074aa3d8d749e92ef98fe4a1c305186d1a34c8a228740aa5"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "6d91eea783c096405c2a4b7ea2c8f055e3969cd16a3cee970aada7b1c4f7ecbc",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 46,
+            "end_line": 32,
+            "line": 12,
+            "name": "test_review014_cli_and_api_preserve_symlink_destination",
+            "projection_sha256": "7b1d55b08b7be929e72aab25196edec3dcbd8e13a2686812e4bc80ad4d5a6790"
+          },
+          {
+            "body_sha256": "ba9a2a58b6358bcee169ba4bf63590bb27cbd50e57a7b0ae9490ab7df07d7e55",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 37,
+            "end_line": 42,
+            "line": 35,
+            "name": "test_review014_cli_rejects_empty_symlink_before_publication",
+            "projection_sha256": "2f788462a4d2158d6c442fa6eda02c204ecce8ecb15c67183ac2337662acabde"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_cli_output_admission.py",
+        "sha256": "91426142e5a736ce5f553fc00f1e20e8807c47a0c29e93c7bd78cd921955f0a5"
       },
       {
         "functions": [

@@ -384,6 +384,7 @@ def apply_cli_overrides(config: SiteConfiguration | dict, cli: ConfigurationOpti
     ``content_dir: "../../etc"`` will be rejected with ValueError
     instead of silently resolving outside the project tree.
     """
+    validate_output_path(project_root / config['paths']['output_dir'])
     if cli.force_full_build:
         config["build"]["force_full_build"] = True
     if cli.verbose:
@@ -409,7 +410,6 @@ def normalize_configuration(config: ConfigurationInput, request: ConfigurationOp
             raise ConfigurationError('Configuration must be an object')
         result = deep_merge(deepcopy(DEFAULT_CONFIG), deepcopy(dict(config)))
         admitted = admit_configuration(result)
-        validate_output_path(root / admitted['paths']['output_dir'])
         apply_cli_overrides(admitted, request, root)
         return admitted
     except ConfigurationError:

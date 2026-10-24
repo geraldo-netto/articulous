@@ -1,5 +1,6 @@
 """Transactional XML tag corrections with caller-defined provenance semantics."""
 from pathlib import Path
+from graphlib import TopologicalSorter
 import lxml.etree as etree
 
 from .source_transactions import source_transaction
@@ -69,7 +70,11 @@ def stage_document(transaction, relative, tree):
 
 def refresh_provenance(trees, current, transaction, provenance):
     refreshed = 0
-    for relative, source_relative in current.items():
+    dependencies = {relative: (source,) for relative, source in current.items()}
+    for relative in TopologicalSorter(dependencies).static_order():
+        if relative not in current:
+            continue
+        source_relative = current[relative]
         tree = trees[relative]
         node = tree.getroot().find(provenance.hash_element)
         staged = transaction.stage / source_relative

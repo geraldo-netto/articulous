@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import lxml.etree as etree
+import pytest
 from articulous.taxonomy_contracts import ProvenanceLayout, TaxonomyLayout
 from articulous.taxonomy_editing import apply_map
 
@@ -236,3 +237,55 @@ class NeutralLayout(unittest.TestCase):
 
 def key_map(value):
     return {value: "new"}
+
+
+def provenance_document(root, language, source=None, source_digest=None):
+    path = root / language / 'item.xml'
+    path.parent.mkdir(exist_ok=True)
+    article = etree.Element('article')
+    etree.SubElement(article, 'tag').text = 'old'
+    if source is not None:
+        etree.SubElement(article, 'translated-from').text = source
+        etree.SubElement(article, 'source-hash').text = source_digest
+    path.write_bytes(etree.tostring(article))
+    return path
+
+
+def provenance_layout(project=digest):
+    return TaxonomyLayout('tag', '*/*.xml', ProvenanceLayout(
+        'translated-from', 'source-hash', source_reference, project))
+
+
+@pytest.fixture
+def provenance_root(tmp_path):
+    root = tmp_path / 'content'
+    root.mkdir()
+    return root
+
+
+@pytest.mark.parametrize('languages', [('a', 'y', 'z'), ('z', 'y', 'a')])
+def test_review002_dependency_order_refreshes_final_source_bytes(provenance_root, languages):
+    tmp_path = provenance_root
+    first, middle, last = languages
+    source = provenance_document(tmp_path, last)
+    translated = provenance_document(tmp_path, middle, last, source_hash(source))
+    leaf = provenance_document(tmp_path, first, middle, source_hash(translated))
+    stale = provenance_document(tmp_path, 'stale', middle, 'stale-hash')
+    edits = apply_map(tmp_path, {'old': 'new'}, provenance_layout())
+    assert (edits.rewritten, edits.refreshed) == (4, 2)
+    assert etree.parse(str(leaf)).findtext('source-hash') == source_hash(translated)
+    assert etree.parse(str(translated)).findtext('source-hash') == source_hash(source)
+    assert etree.parse(str(stale)).findtext('source-hash') == 'stale-hash'
+    assert not list(tmp_path.parent.glob('.articulous-edit-*'))
+
+
+@pytest.mark.parametrize('links', [{'a': 'a'}, {'a': 'b', 'b': 'a'}])
+def test_review002_cycles_reject_without_publication(provenance_root, links):
+    tmp_path = provenance_root
+    for language, source in links.items():
+        provenance_document(tmp_path, language, source, 'current')
+    before = {path: path.read_bytes() for path in tmp_path.rglob('*.xml')}
+    with pytest.raises(ValueError, match='cycle'):
+        apply_map(tmp_path, {'old': 'new'}, provenance_layout(lambda _: 'current'))
+    assert {path: path.read_bytes() for path in before} == before
+    assert not list(tmp_path.parent.glob('.articulous-edit-*'))

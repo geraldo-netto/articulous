@@ -8284,8 +8284,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 83,
-            "end_line": 19,
-            "line": 9,
+            "end_line": 20,
+            "line": 10,
             "name": "validate_map",
             "projection_sha256": "0717d9bfade7c86028446e5cda3cc9ae0de6579d05cd30c3068587131848b519"
           },
@@ -8294,8 +8294,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 16,
-            "end_line": 29,
-            "line": 22,
+            "end_line": 30,
+            "line": 23,
             "name": "capture_documents",
             "projection_sha256": "60c364ece9631fccb685e2de57d5ed42417a3bf63357990c2e1c7367cd15ec40"
           },
@@ -8304,8 +8304,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 18,
-            "end_line": 44,
-            "line": 32,
+            "end_line": 45,
+            "line": 33,
             "name": "current_provenance",
             "projection_sha256": "585cf0e83f089918d60a0127488837f45ca3462ad39443506786a69d5136d7d4"
           },
@@ -8314,8 +8314,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 15,
-            "end_line": 63,
-            "line": 47,
+            "end_line": 64,
+            "line": 48,
             "name": "replace_tags",
             "projection_sha256": "8c9b85eb7cb2fd878e322e4ba465875174895e843ac6d6adac8353ee4c186cf8"
           },
@@ -8324,35 +8324,35 @@
             "column": 0,
             "complexity": 1,
             "end_column": 105,
-            "end_line": 67,
-            "line": 66,
+            "end_line": 68,
+            "line": 67,
             "name": "stage_document",
             "projection_sha256": "d0462f195274bc06014dc04e032b3703fd023c79e9bbcd4b441370513dddfb54"
           },
           {
-            "body_sha256": "344d935952161d755863833348fea317a84f512dc834350fe307ed9fabf3996e",
+            "body_sha256": "8f49171670ae72059ae554bad86c3d4203158e9541de6f1a027b782848a0d368",
             "column": 0,
-            "complexity": 5,
+            "complexity": 7,
             "end_column": 20,
-            "end_line": 87,
-            "line": 70,
+            "end_line": 92,
+            "line": 71,
             "name": "refresh_provenance",
-            "projection_sha256": "c6ebf6d4925fc4362f5ef2e35b8e55c2ea8f41767c02e4a93fdcbba2ac21b9d5"
+            "projection_sha256": "683ab26adc80d45340d55d50ac6a7686b9e03cbd74870ba49525148c543009f3"
           },
           {
             "body_sha256": "bb1567bea5fecb26a54a8433e686f3425e34e3588f3fd6b5ee800a149f9564f9",
             "column": 0,
             "complexity": 3,
             "end_column": 46,
-            "end_line": 102,
-            "line": 90,
+            "end_line": 107,
+            "line": 95,
             "name": "apply_map",
             "projection_sha256": "ad092e3e29b2a982cea7412c7968d8e9d83b5fc5693284fe1a6e0ddd23ad8a12"
           }
         ],
         "language": "python",
         "path": "articulous/taxonomy_editing.py",
-        "sha256": "beedb5c53d6dab7e795cd647bbe3e9e8d7a9b6a257dee30d038ebe98148b52a5"
+        "sha256": "388d634b2c3acdd25889443a3990a61e5e8b63cc59be275df277523d8b59ccce"
       },
       {
         "functions": [
@@ -22809,8 +22809,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 61,
-            "end_line": 16,
-            "line": 15,
+            "end_line": 17,
+            "line": 16,
             "name": "source_hash",
             "projection_sha256": "61346d7cf6019bdb37173c51a4cefb131ad56c5c7cb4131894d430d730be2f6a"
           },
@@ -22819,8 +22819,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 20,
-            "line": 19,
+            "end_line": 21,
+            "line": 20,
             "name": "source_reference",
             "projection_sha256": "8362af7e1e04efeb70831e0d05356d615ba876768c3a7dfa271c552f251f4aa2"
           },
@@ -22829,8 +22829,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 27,
-            "end_line": 24,
-            "line": 23,
+            "end_line": 25,
+            "line": 24,
             "name": "digest",
             "projection_sha256": "2ee3238ee1a4853da239e8d6c12aae49425f6ed26d45319a16d3ce18a9c6d322"
           },
@@ -22839,8 +22839,8 @@
             "column": 4,
             "complexity": 3,
             "end_column": 17,
-            "end_line": 39,
-            "line": 28,
+            "end_line": 40,
+            "line": 29,
             "name": "TagMapTests.setUp",
             "projection_sha256": "527f56664e7d3e4f1017833204dd56b31a0bd1e59ca94e3786d40ffe3ef1ae7f"
           },
@@ -22849,8 +22849,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 9,
-            "end_line": 45,
-            "line": 41,
+            "end_line": 46,
+            "line": 42,
             "name": "TagMapTests.snapshot",
             "projection_sha256": "d7ca454b3435ee45d6a3363cc4d48df51b03623f4a819fdfeadffd82649c22c1"
           },
@@ -22859,8 +22859,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 13,
-            "end_line": 59,
-            "line": 47,
+            "end_line": 60,
+            "line": 48,
             "name": "TagMapTests.apply",
             "projection_sha256": "3950be9c1d7d9ac161ef192e39fe8e428bf907e0266a67d51be92c73c8d1a815"
           },
@@ -22869,8 +22869,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 57,
-            "end_line": 76,
-            "line": 61,
+            "end_line": 77,
+            "line": 62,
             "name": "TagMapTests.test_rev053_invalid_maps_reject_before_any_write",
             "projection_sha256": "77ae2ac45c6122e70457e3a5dd071557a4d516af94371c03bddd82e6f749d277"
           },
@@ -22879,8 +22879,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 49,
-            "end_line": 83,
-            "line": 78,
+            "end_line": 84,
+            "line": 79,
             "name": "TagMapTests.test_rev053_late_parse_failure_leaves_all_files_unchanged",
             "projection_sha256": "87661381a0f77fa78848a1aa8666d22f94aa27adc82b35852c9b40531a49f821"
           },
@@ -22889,8 +22889,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 49,
-            "end_line": 97,
-            "line": 85,
+            "end_line": 98,
+            "line": 86,
             "name": "TagMapTests.test_rev053_late_stage_failure_leaves_all_files_unchanged",
             "projection_sha256": "800bfd8af23e01d117526e4845e3172b4521c42f8bd0e807e7d73d21e58ab0c2"
           },
@@ -22899,8 +22899,8 @@
             "column": 8,
             "complexity": 2,
             "end_column": 41,
-            "end_line": 92,
-            "line": 89,
+            "end_line": 93,
+            "line": 90,
             "name": "TagMapTests.test_rev053_late_stage_failure_leaves_all_files_unchanged.write",
             "projection_sha256": "27eb06532be876ad31bb57e22fe19288b5fb310f46003421e9724b5b26f5758d"
           },
@@ -22909,8 +22909,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 49,
-            "end_line": 111,
-            "line": 99,
+            "end_line": 112,
+            "line": 100,
             "name": "TagMapTests.test_rev053_late_publish_failure_rolls_back_all_files",
             "projection_sha256": "c8dee21857db224d1f3ed1a22ac92bf6287d19205e368940f22476a679967961"
           },
@@ -22919,8 +22919,8 @@
             "column": 8,
             "complexity": 3,
             "end_column": 45,
-            "end_line": 106,
-            "line": 103,
+            "end_line": 107,
+            "line": 104,
             "name": "TagMapTests.test_rev053_late_publish_failure_rolls_back_all_files.replace",
             "projection_sha256": "cee9340c90be286aadd5a9720dc0080685c1fd51d8bc4f6e3fb2a6ec3ced185f"
           },
@@ -22929,8 +22929,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 13,
-            "end_line": 125,
-            "line": 113,
+            "end_line": 126,
+            "line": 114,
             "name": "TagMapTests.test_rev053_multilingual_merge_drop_and_noop",
             "projection_sha256": "7e2704bd7cdb5e7558b17541d93d3cee7de5219ecbe60e8f59d37bb5bfd1bac0"
           },
@@ -22939,8 +22939,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 89,
-            "end_line": 130,
-            "line": 127,
+            "end_line": 131,
+            "line": 128,
             "name": "TagMapTests.test_rev053_empty_strings_and_unicode_keep_existing_map_contract",
             "projection_sha256": "1304e20a64489aff022623b6a4915685709fec175a505c3a24dc08ff0916c7b1"
           },
@@ -22949,8 +22949,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 75,
-            "end_line": 143,
-            "line": 132,
+            "end_line": 144,
+            "line": 133,
             "name": "TagMapTests.test_rev053_provenance_is_published_with_tags",
             "projection_sha256": "3a6409d27f4df7c723507cade0cd802a09c307b161b94f877dc5c26a3d13386c"
           },
@@ -22959,8 +22959,8 @@
             "column": 4,
             "complexity": 3,
             "end_column": 57,
-            "end_line": 157,
-            "line": 145,
+            "end_line": 158,
+            "line": 146,
             "name": "TagMapTests.test_rev054_only_previously_current_hashes_advance",
             "projection_sha256": "cc7c84e2ea228c6a8f88556675953711a92bdaf272b1fa640f11d19497246121"
           },
@@ -22969,8 +22969,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 39,
-            "end_line": 172,
-            "line": 159,
+            "end_line": 173,
+            "line": 160,
             "name": "TagMapTests._prepare_hash_case",
             "projection_sha256": "eaabf38c37aa2edc3376fbfb53a8cd555a8a7b7cd2704be0e9e58d730b52f066"
           },
@@ -22979,8 +22979,8 @@
             "column": 4,
             "complexity": 7,
             "end_column": 53,
-            "end_line": 184,
-            "line": 174,
+            "end_line": 185,
+            "line": 175,
             "name": "TagMapTests._check_hash_case",
             "projection_sha256": "decf47ff9cc770faa655c44e6967a60687a51ef2cc1e3d9015c63a55072c04fc"
           },
@@ -22989,8 +22989,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 53,
-            "end_line": 195,
-            "line": 186,
+            "end_line": 196,
+            "line": 187,
             "name": "TagMapTests.test_rev054_missing_source_keeps_provenance_stale",
             "projection_sha256": "222e5fba17f5caa835cf4700916008907c3580286c0976b1bfbc4e245a14abf2"
           },
@@ -22999,8 +22999,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 57,
-            "end_line": 219,
-            "line": 197,
+            "end_line": 220,
+            "line": 198,
             "name": "TagMapTests.test_rev111_changed_read_only_source_aborts_target_only_map",
             "projection_sha256": "3a7d5a8736d5a737b3ecbe579ccc40ed4f46be9d278046a2e4b9a61fad3b1fe0"
           },
@@ -23009,8 +23009,8 @@
             "column": 8,
             "complexity": 1,
             "end_column": 39,
-            "end_line": 213,
-            "line": 211,
+            "end_line": 214,
+            "line": 212,
             "name": "TagMapTests.test_rev111_changed_read_only_source_aborts_target_only_map.concurrent_edit",
             "projection_sha256": "a6cf0cbc4273e2fba201e8ae6a3c109005f1c9ceda791a340f49c29ca732c3b2"
           },
@@ -23019,8 +23019,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 13,
-            "end_line": 234,
-            "line": 223,
+            "end_line": 235,
+            "line": 224,
             "name": "NeutralLayout.test_edit002_neutral_schema_without_provenance",
             "projection_sha256": "d3b3251a95140bad619e07edcf1b15d582f1998bfda6447c8d43ed87fba0d9f7"
           },
@@ -23029,15 +23029,75 @@
             "column": 0,
             "complexity": 1,
             "end_column": 25,
-            "end_line": 238,
-            "line": 237,
+            "end_line": 239,
+            "line": 238,
             "name": "key_map",
             "projection_sha256": "c0f9e8d8a4072472578594909c8fd89f2f21c146105add2936d1e708f2e76af9"
+          },
+          {
+            "body_sha256": "1a3752488125a89e7c96750e6bd8e60e1a96c4d55c084b1792ff7e731ea6d849",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 15,
+            "end_line": 251,
+            "line": 242,
+            "name": "provenance_document",
+            "projection_sha256": "fbc8ce7c69b7f73bd17c60cbf219018c67ed636e6de37625f4dd88bf2ee2d8ec"
+          },
+          {
+            "body_sha256": "aaa0119072380cc80b37212c8d7fc13fdda84b78da4165aa379d50eab6231753",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 69,
+            "end_line": 256,
+            "line": 254,
+            "name": "provenance_layout",
+            "projection_sha256": "1c3ec229552aed482a7af5dbd9d3da557ff539ce5925c63702bd1e6d1bc920bb"
+          },
+          {
+            "body_sha256": "36658a8e79f5410c242d0d65a0d48f11c148abc1d5a4f133aa5e51ce1273037a",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 15,
+            "end_line": 263,
+            "line": 260,
+            "name": "provenance_root",
+            "projection_sha256": "a0ed0c7b0dd764fd43734cc136f1df55e8166b56234720260d3b8987e4cc64fb"
+          },
+          {
+            "body_sha256": "d5f44abea953ee87f03a32577f5111d885cc1ae603494972c66ad7515e698b81",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 63,
+            "end_line": 279,
+            "line": 267,
+            "name": "test_review002_dependency_order_refreshes_final_source_bytes",
+            "projection_sha256": "7d6f132dbbb325c98563ebebbecdb3e3a137544ac38071d71ceabce4ff0beb47"
+          },
+          {
+            "body_sha256": "cda0fd63248b105a34f3d89d0edf226a79e7e43538476ee3f70f83da4327c6f8",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 63,
+            "end_line": 291,
+            "line": 283,
+            "name": "test_review002_cycles_reject_without_publication",
+            "projection_sha256": "d8cc905acba9f4cc51c885a10e478548e36b694b46506221d86bad9385e6f1aa"
+          },
+          {
+            "body_sha256": "c6054d648f09560b9bab7ff8bee6490faa7cc4db71886739e5a5230b8392a17f",
+            "column": 62,
+            "complexity": 1,
+            "end_column": 81,
+            "end_line": 289,
+            "line": 289,
+            "name": "test_review002_cycles_reject_without_publication.<lambda>@289:62",
+            "projection_sha256": "2cf6496eb799a062eff9e1e8b21b3c3cbfc1e8451a28b7d402b46f59d063f180"
           }
         ],
         "language": "python",
         "path": "tests/test_taxonomy_editing.py",
-        "sha256": "0064fbb281b0435ff32000f569648dd807cf0ca935d082e6dfb213c737f10522"
+        "sha256": "fcb68e36388db7a4103cb02254dc9fcdcb1eb291116fffe0f717b6827d2f906d"
       },
       {
         "functions": [

@@ -43,3 +43,20 @@ context for retry or cleanup; no native resources are newly admitted.
 Verification: 2,643 tests and 359 subtests passed; 100% line/branch coverage and
 individual coverage acceptance. Calibrated complexity acceptance passed; all
 changed/new function measurements remain in `../complexity/functions.json`.
+
+## API-005: partial-build extras
+
+The permanent resupplied-extra regression failed before the fix with
+`Duplicate generated output path: about/index.html`. Nine new cases cover page
+and artifact repeats/edits under section/language/slug filters, stable page-key
+moves, rejection of different retained owners, and dry-run preservation.
+
+Explicit extra identities now participate in selection before migration planning,
+collision validation, route discovery and ownership settlement. The existing
+manifest remains the single output owner; selection sets are synchronous derived
+values bounded by declared extras. No resource ownership or native cleanup
+boundary changes. Omitted artifact paths remain retained in partial builds.
+
+Verification: 2,652 tests and 359 subtests passed; 100% line/branch coverage,
+individual >=80% function coverage and calibrated complexity acceptance. Exact
+per-function measurements are retained in `../complexity/functions.json`.

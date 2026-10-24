@@ -1711,14 +1711,21 @@ def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache,
     return cache, roots
 
 
-def _retained_outputs(cli, old_manifest: dict) -> dict:
+def _extra_output_keys(ctx):
+    return {page.route.key for page in ctx.extra_pages} | {
+        'artifact:' + artifact.output_path for artifact in ctx.extra_artifacts
+    }
+
+
+def _retained_outputs(cli, old_manifest: dict, extra_keys=()) -> dict:
     return {} if _can_prune_outputs(cli) else {
-        path: key for path, key in old_manifest.items() if not _selected_output_key(key, cli)
+        path: key for path, key in old_manifest.items()
+        if key not in extra_keys and not _selected_output_key(key, cli)
     }
 
 
 def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifest) -> None:
-    retained = _retained_outputs(cli, old_manifest)
+    retained = _retained_outputs(cli, old_manifest, _extra_output_keys(ctx))
     if not retained:
         return
     owners = OutputManifest()
@@ -1728,7 +1735,7 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
 
 
 def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
-    retained = _retained_outputs(cli, old_manifest)
+    retained = _retained_outputs(cli, old_manifest, _extra_output_keys(ctx))
     next_manifest = {**retained, **{path: key for key, path in current_manifest.items()}}
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
@@ -1900,7 +1907,7 @@ def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_man
 
 def _record_retained_routes(cli, ctx, cache, old_manifest, manifest):
     stored = cache.get('__routes__', {})
-    for path, key in _retained_outputs(cli, old_manifest).items():
+    for path, key in _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)).items():
         data = stored.get(key) if isinstance(stored, dict) else None
         route = Route(**data) if isinstance(data, dict) else route_from_output(ctx.base_url, key, path)
         if route.key != key or route.output_path != path:
@@ -1929,7 +1936,7 @@ def run_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifact
                 if ownership.pending:
                     ctx = replace(ctx, force=True)
                 ctx = replace(ctx, output_migrations=OutputMigrations(
-                    ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest),
+                    ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)),
                 ))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)

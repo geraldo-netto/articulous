@@ -107,6 +107,12 @@ Duplicate keys, duplicate destinations, file/parent overlaps, path escapes and
 the reserved `assets/` namespace fail during planning. Explicit extra pages are
 planned even when built-in sections are filtered; `pages` is not a CLI `--only`
 section. Native and XSLT sitemaps apply the same extra-page inclusion policy.
+Resupplying an extra selects its existing ownership during partial builds, so
+repeating or editing it does not collide with itself. Moving an extra page under
+the same stable key retires its old output. Omitted extras remain retained during
+partial builds; artifacts use their output path as identity, so retiring an old
+artifact path requires a full build without that declaration. Different retained
+owners still block colliding destinations.
 
 `build_tag_index_model(articles, lang, ctx)` returns a `TagIndex` containing
 `TagSummary(tag, slug, count, url)` entries and a `to_xml()` method. Pass the same

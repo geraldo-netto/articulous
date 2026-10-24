@@ -1,6 +1,7 @@
 """VALID-001: neutral publication URLs, compact DOM-free references and faulty output."""
 from articulous.site_validation import local_path
 from articulous.validation_contracts import ValidationPlan
+from urllib.parse import quote
 
 
 import json
@@ -64,6 +65,39 @@ def test_valid001_origin_ports_and_escape(tmp_path):
     assert local_path(tmp_path, 'https://example.test:443/blog', 'https://example.test/blog') == tmp_path / 'index.html'
     with pytest.raises(ValueError, match='escapes'):
         local_path(tmp_path, 'https://example.test/blog/%2e%2e/secret', 'https://example.test/blog')
+
+
+@pytest.mark.parametrize('name', ['a#b', 'a?b', 'a%b', 'a%23b', '日本語', 'a b'])
+@pytest.mark.parametrize('prefix', ['', '/blog%23name'])
+def test_review004_filesystem_routes_are_encoded_before_url_resolution(tmp_path, name, prefix):
+    from articulous.site_validation import validate_pages
+    base = 'https://example.test' + prefix
+    directory = tmp_path / name
+    directory.mkdir()
+    path = directory / 'index.html'
+    canonical = base + '/' + quote(name, safe='') + '/'
+    path.write_text(html_page(canonical, '<img src="image.png"><a href="#café">self</a><b id="café">anchor</b>'))
+    (directory / 'image.png').write_bytes(b'image')
+    plan = ValidationPlan({f'{name}/index.html': canonical}, frozenset(), frozenset(), '', '', {})
+    failures = []
+    pages = read_pages(tmp_path, failures)
+    validate_pages(tmp_path, base, plan, pages, failures)
+    assert failures == []
+    (directory / 'image.png').unlink()
+    validate_pages(tmp_path, base, plan, pages, failures)
+    assert failures == [f'{name}/index.html: missing image.png']
+
+
+def test_review004_encoded_redirect_routes_preserve_fragment_checks(publication):
+    root, base, plan = publication
+    (root / 'old#name.html').write_text(html_page(base + '/'))
+    plan.redirects['/old%23name.html'] = '/'
+    failures = []
+    pages = read_pages(root, failures)
+    check_link(root, 'old%23name.html#café', base + '/', base, plan.redirects, pages, failures, 'encoded')
+    assert failures == []
+    check_link(root, 'old%23name.html#missing', base + '/', base, plan.redirects, pages, failures, 'encoded')
+    assert failures == ['encoded: missing fragment old%23name.html#missing']
 
 
 @pytest.mark.parametrize('target', ['/old.html', '/missing.html'])

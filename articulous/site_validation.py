@@ -1,5 +1,5 @@
 """Check generated artifacts before making a completed build visible."""
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit
 import json
 
 import lxml.etree as etree
@@ -9,7 +9,8 @@ from .validation_contracts import PageReferences, ValidationPlan, ValidationResu
 
 def page_route(output, path):
     route = '/' + path.relative_to(output).as_posix()
-    return route.removesuffix('index.html') if path.name == 'index.html' else route
+    route = route.removesuffix('index.html') if path.name == 'index.html' else route
+    return quote(route, safe='/')
 
 
 def url_origin(parsed):

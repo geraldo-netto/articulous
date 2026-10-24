@@ -112,6 +112,36 @@ def test_cc005_immutable_source_admission(source):
         metric.parse_stylesheet(source)
 
 
+@pytest.mark.parametrize('body', [
+    '<out xsl:use-when="false()"/>', '<out xsl:unknown="a"/>',
+    '<out xsl:use-attribute-sets="missing"/>',
+    '<xsl:if test="a" xsl:use-when="false()"/>',
+])
+def test_cc006_unsupported_reserved_attributes_are_rejected(body):
+    with pytest.raises(ValueError, match='Unsupported XSLT'):
+        metric.measure_source(controls.stylesheet(body), native)
+
+
+@pytest.mark.parametrize('body', [
+    '<out xsl:version="1.0" xsl:exclude-result-prefixes="xsl"/>',
+    '<out xsl:extension-element-prefixes=""/>',
+    '<out title="ordinary" data-test="a and b"/>',
+    '<out xmlns:meta="urn:meta" meta:use-when="false()"/>',
+])
+def test_cc006_supported_metadata_and_literal_boundaries(body):
+    assert metric.measure_source(controls.stylesheet(body), native)[0]['complexity'] == 1
+
+
+def test_cc006_bounded_reserved_attribute_property():
+    randomizer = random.Random(6006)
+    for _ in range(64):
+        name = 'unsupported-' + str(randomizer.randrange(2**32))
+        with pytest.raises(ValueError, match='Unsupported XSLT'):
+            metric.measure_source(controls.stylesheet('<out xsl:' + name + '="text"/>'), native)
+        literal = '<out xmlns:meta="urn:meta" meta:' + name + '="a and b"/>'
+        assert metric.measure_source(controls.stylesheet(literal), native)[0]['complexity'] == 1
+
+
 def test_cc005_match_select_avt_and_sort_scopes():
     body = '''<xsl:for-each select="a[b]">
 <xsl:sort select="c[d]" order="{'ascending'}"/>

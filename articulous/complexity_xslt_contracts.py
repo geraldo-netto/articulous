@@ -15,6 +15,7 @@ INSTRUCTIONS = frozenset(('stylesheet', 'transform', 'template', 'param', 'varia
     'with-param', 'sort', 'number', 'comment', 'processing-instruction',
     'message', 'fallback'))
 EXPRESSIONS = frozenset(('select', 'test', 'match', 'value', 'count', 'from'))
+LITERAL_ATTRIBUTES = frozenset(('version', 'exclude-result-prefixes', 'extension-element-prefixes'))
 AVT_ATTRIBUTES = {'attribute': ('name', 'namespace'), 'element': ('name', 'namespace'),
     'processing-instruction': ('name',), 'sort': ('lang', 'data-type', 'order', 'case-order'),
     'number': ('format', 'lang', 'letter-value', 'grouping-separator', 'grouping-size')}

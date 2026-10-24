@@ -11,7 +11,7 @@ from lxml import etree  # type: ignore[attr-defined]
 from .complexity_python import digest
 from .complexity_xslt_calibration import calibrate, check_calibration
 from .complexity_xslt_contracts import (
-    ATTRIBUTES, AVT_ATTRIBUTES, CONTROL, EXPRESSIONS, INSTRUCTIONS, MAX_AVT_EXPRESSIONS,
+    ATTRIBUTES, AVT_ATTRIBUTES, CONTROL, EXPRESSIONS, INSTRUCTIONS, LITERAL_ATTRIBUTES, MAX_AVT_EXPRESSIONS,
     MAX_STYLESHEET_BYTES, XSL, XSLT_METRIC, XPathCompiler, XPathDecisions,
 )
 from .engines import safe_xml_parser, safe_xslt_access_control
@@ -42,14 +42,23 @@ def require_instruction(node):
         if name.localname not in INSTRUCTIONS:
             raise ValueError('Unsupported XSLT instruction: ' + name.localname)
         require_attributes(node, name.localname)
+    else:
+        require_literal_attributes(node)
     require_extensions(node)
 
 
 def require_attributes(node, instruction):
     for key in node.attrib:
         name = etree.QName(key)
-        if name.namespace is None and key not in ATTRIBUTES[instruction]:
+        if name.namespace == XSL or (name.namespace is None and key not in ATTRIBUTES[instruction]):
             raise ValueError('Unsupported XSLT attribute: ' + key)
+
+
+def require_literal_attributes(node):
+    for key in node.attrib:
+        name = etree.QName(key)
+        if name.namespace == XSL and name.localname not in LITERAL_ATTRIBUTES:
+            raise ValueError('Unsupported XSLT literal metadata: ' + key)
 
 
 def require_extensions(node):
@@ -89,12 +98,15 @@ def attribute_expressions(node):
         for key, value in node.attrib.items():
             if key in EXPRESSIONS:
                 yield key, value
-        keys = AVT_ATTRIBUTES.get(name.localname, ())
-    else:
-        keys = node.attrib.keys()
-    for key in keys:
+    for key in avt_keys(node, name):
         for value in avt_expressions(node.get(key, '')):
             yield key, value
+
+
+def avt_keys(node, name):
+    if name.namespace == XSL:
+        return AVT_ATTRIBUTES.get(name.localname, ())
+    return tuple(key for key in node.attrib if etree.QName(key).namespace != XSL)
 
 
 def template_records(template, compiler: XPathCompiler):

@@ -28,6 +28,11 @@ Unknown instructions/attributes, includes, imports, non-template globals,
 forward-compatible versions, DTDs and extension instructions are rejected.
 Moving decisions into an unmeasured global/import cannot pass. EXSLT function
 calls such as `exsl:node-set` remain calls, not executed analyzer extensions.
+Literal elements allow only the scoped reserved metadata `xsl:version`,
+`xsl:exclude-result-prefixes` and `xsl:extension-element-prefixes`; those static
+attributes are not AVTs. Unsupported reserved metadata such as `xsl:use-when`
+and qualified XSLT-instruction attributes fail admission (CC-006). Ordinary and
+foreign-namespace literal attributes retain their normal AVT handling.
 
 The worker first compiles original XPath for syntax admission. It then compiles
 a projection with literal strings replaced by one fixed literal, preserving

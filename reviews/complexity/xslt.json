@@ -44,6 +44,12 @@
         "name": "computed-name"
       },
       {
+        "actual": 2,
+        "body": "<out xsl:version=\"1.0\" xsl:exclude-result-prefixes=\"xsl\" value=\"{a and b}\"/>",
+        "expected": 2,
+        "name": "literal-metadata"
+      },
+      {
         "actual": 9,
         "body": "<xsl:if test=\"a and b and c and d and e and f and g and h\"/>",
         "expected": 9,

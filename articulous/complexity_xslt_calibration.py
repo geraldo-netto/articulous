@@ -19,6 +19,7 @@ TEMPLATE_CASES = (
     ('avt', '<out value="{{literal}} {a[b] and c}"/>', 3),
     ('quoted-braces', '''<out value="{contains('}', '{')}"/>''', 1),
     ('computed-name', '''<xsl:element name="{'out'}"/>''', 1),
+    ('literal-metadata', '<out xsl:version="1.0" xsl:exclude-result-prefixes="xsl" value="{a and b}"/>', 2),
     ('threshold', '<xsl:if test="a and b and c and d and e and f and g and h"/>', 9),
 )
 

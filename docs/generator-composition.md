@@ -254,6 +254,10 @@ sizes. `validate_generated` verifies manifest targets, runs each validator and
 checks the fingerprint again. A validator returns an iterable of `Diagnostic`
 values or `None`; severity `error` rejects the build, while `warning` is retained
 in the report. Exceptions and staged mutations also prevent publication.
+Every revalidation retires earlier validation handles before checking artifacts
+or invoking callbacks. Rejection leaves the generation rendered and requires a
+fresh successful validation. Earlier handles stay invalid after a later success;
+use the newly returned handle to publish.
 
 Validators are trusted, read-only caller code. The engine does not sandbox them
 or implement HTML/link/fragment/canonical/search checks for every theme. Provide

@@ -1,6 +1,7 @@
 """ARCH-004: immutable preparation, bounded readers and validation before publication."""
 from dataclasses import replace
 import random
+from unittest.mock import Mock
 
 import lxml.etree as etree
 import pytest
@@ -9,6 +10,7 @@ from articulous.builds import (
     Diagnostic, check_build, prepare_build, render_prepared, validate_generated,
 )
 from articulous.pipeline import run_build
+from articulous.publication import publish_validated
 from test_composition import page
 
 
@@ -71,6 +73,46 @@ def test_arch004_errors_and_bad_lifecycle(site_root, seo_config):
             validate_generated(staged, validators=[lambda _: [Diagnostic('missing canonical')]])
     with pytest.raises(ValueError, match='severity'):
         Diagnostic('bad', 'other')
+
+
+@pytest.mark.parametrize('failure', [
+    [Diagnostic('API-004 rejected')], ValueError('API-004 callback failed'),
+    ['malformed diagnostic'], 42,
+])
+def test_api004_revalidation_revokes_prior_handle(site_root, seo_config, failure):
+    cli, config = seo_config
+    validator = Mock(return_value=failure)
+    if isinstance(failure, Exception):
+        validator.side_effect = failure
+    with prepare_build(cli, config, site_root) as prepared:
+        staged = render_prepared(prepared)
+        prior = validate_generated(staged)
+        with pytest.raises(ValueError):
+            validate_generated(staged, validators=[validator])
+        with pytest.raises(ValueError):
+            publish_validated(prior)
+        assert not (site_root / 'output').exists()
+        fresh = validate_generated(staged)
+        with pytest.raises(ValueError):
+            prior.assert_unchanged()
+        publish_validated(fresh)
+        assert (site_root / 'output/rss.xml').is_file()
+
+
+def test_api004_artifact_rejection_revokes_handle_after_restoration(site_root, seo_config):
+    cli, config = seo_config
+    with prepare_build(cli, config, site_root) as prepared:
+        staged = render_prepared(prepared)
+        prior = validate_generated(staged)
+        artifact = staged.root / 'rss.xml'
+        original = artifact.read_bytes()
+        artifact.write_bytes(b'changed')
+        with pytest.raises(ValueError, match='changed'):
+            validate_generated(staged)
+        artifact.write_bytes(original)
+        with pytest.raises(ValueError):
+            prior.assert_unchanged()
+        validate_generated(staged).assert_unchanged()
 
 
 @pytest.mark.parametrize('seed', range(24))

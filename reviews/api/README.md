@@ -26,3 +26,20 @@ conventions in `../complexity/README.md`). Changed/new production complexities:
 `PosixPublicationBackend._validate_journal` 7, `_validate_identity` 6; both new
 test/helper functions measure 1. Per-function evidence is in
 `../complexity/functions.json`.
+
+## API-004: validation handle revocation
+
+Both permanent revalidation regressions failed before their fixes. Diagnostic
+errors, callback exceptions, malformed return values and changed artifacts now
+retire the prior validation revision before checks run. A fresh success produces
+a new revision; old handles cannot regain publication rights after restoration.
+
+The prepared generation remains the sole state/revision owner. Handles borrow it
+until context cutoff; revision numbers never decrease or reuse an admitted
+validation identity. Validation is synchronous and retains only caller-funded
+diagnostics. Errors leave the rendered generation owned by its preparation
+context for retry or cleanup; no native resources are newly admitted.
+
+Verification: 2,643 tests and 359 subtests passed; 100% line/branch coverage and
+individual coverage acceptance. Calibrated complexity acceptance passed; all
+changed/new function measurements remain in `../complexity/functions.json`.

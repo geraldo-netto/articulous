@@ -51,6 +51,7 @@ class PreparedBuild:
     workspace: TempWorkspace
     state: str = 'prepared'
     closed: bool = False
+    validation_revision: int = 0
 
     def require_state(self, *states):
         if self.closed:
@@ -97,9 +98,12 @@ class StagedBuild:
 class ValidatedBuild:
     staged: StagedBuild
     diagnostics: tuple[Diagnostic, ...]
+    revision: int
 
     def assert_unchanged(self):
         self.staged.prepared.require_state('validated')
+        if self.revision != self.staged.prepared.validation_revision:
+            raise ValueError('Validation handle has been superseded')
         self.staged.assert_unchanged()
 
 
@@ -257,18 +261,34 @@ def _validate_manifest(staged):
             pass
 
 
+def _validator_diagnostics(validator, staged):
+    values = validator(staged)
+    if values is None:
+        return ()
+    try:
+        diagnostics = tuple(values)
+    except TypeError as error:
+        raise ValueError('Validators must return Diagnostic values or None') from error
+    if not all(isinstance(item, Diagnostic) for item in diagnostics):
+        raise ValueError('Validators must return Diagnostic values or None')
+    return diagnostics
+
+
 def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
+    staged.prepared.require_state('rendered', 'validated')
+    staged.prepared.state = 'rendered'
+    staged.prepared.validation_revision += 1
     staged.assert_unchanged()
     _validate_manifest(staged)
     diagnostics = []
     for validator in validators:
-        diagnostics.extend(validator(staged) or ())
+        diagnostics.extend(_validator_diagnostics(validator, staged))
     errors = [item.message for item in diagnostics if item.severity == 'error']
     if errors:
         raise ValueError('\n'.join(errors))
     staged.assert_unchanged()
     staged.prepared.state = 'validated'
-    return ValidatedBuild(staged, tuple(diagnostics))
+    return ValidatedBuild(staged, tuple(diagnostics), staged.prepared.validation_revision)
 
 
 def check_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), validators=(), composer=None) -> ValidationReport:

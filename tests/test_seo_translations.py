@@ -1,5 +1,8 @@
 """SEO-06: explicit translations render reciprocal, valid hreflang links."""
 import random
+from datetime import datetime, timedelta, timezone
+from itertools import chain, repeat
+from unittest.mock import Mock
 from xml.sax.saxutils import escape
 
 import lxml.etree as etree
@@ -155,3 +158,70 @@ def test_seo06_relative_urls_omit_annotations(site_root, seo_config):
     _translation_pair(site_root)
     run_build(cli, config, site_root)
     assert not _alternates(site_root / "output/en/articles/first-post/index.html")
+
+
+def scheduled_pair(root, deadline):
+    _translation_pair(root)
+    path = root / 'content/en/first-post.xml'
+    extra = f'<status>scheduled</status><publish-at>{deadline.isoformat()}</publish-at>'
+    path.write_text(path.read_text().replace('</article>', extra + '</article>'))
+
+
+def advancing_clock(monkeypatch, instant):
+    from articulous import article_contracts, capture_adapter, pipeline
+    clock = Mock()
+    clock.now.side_effect = chain([instant], repeat(instant + timedelta(days=1)))
+    for module in (article_contracts, capture_adapter, pipeline):
+        monkeypatch.setattr(module, 'datetime', clock, raising=False)
+    return clock
+
+
+@pytest.mark.parametrize('mode', ['incremental', 'prepared', 'composed'])
+@pytest.mark.parametrize('offset', [-1, 0])
+def test_review003_one_publication_instant_for_every_projection(site_root, seo_config, monkeypatch, mode, offset):
+    from articulous.publication import build_site
+    from articulous.extensions import BuildComposition
+    cli, config = seo_config
+    deadline = datetime(2035, 1, 1, tzinfo=timezone.utc)
+    scheduled_pair(site_root, deadline)
+    clock = advancing_clock(monkeypatch, deadline + timedelta(seconds=offset))
+    if mode == 'incremental':
+        run_build(cli, config, site_root)
+    else:
+        composer = (lambda _: BuildComposition()) if mode == 'composed' else None
+        build_site(cli, config, site_root, composer=composer)
+    output = site_root / 'output'
+    en = output / 'en/articles/first-post/index.html'
+    expected = {'fr': 'https://example.test/fr/articles/premier-article/'}
+    if offset == 0:
+        expected['en'] = 'https://example.test/en/articles/first-post/'
+        assert _alternates(en) == expected
+    assert en.exists() == (offset == 0)
+    assert _alternates(output / 'fr/articles/premier-article/index.html') == expected
+    for filename in ('rss.xml', 'sitemap.xml', 'search.json', 'en/page/1/index.html'):
+        assert ('first-post' in (output / filename).read_text()) == (offset == 0)
+    clock.now.assert_called_once()
+
+
+def test_review003_stream_close_settles_retained_discovery(site_root, seo_config, monkeypatch):
+    from articulous import pipeline
+    from articulous.articles import ArticleStats
+    _, config = seo_config
+    settled = []
+    article = parse_article_xml(site_root / 'content/en/first-post.xml')
+
+    def discovery():
+        try:
+            yield article
+        finally:
+            settled.append(True)
+
+    retained = discovery()
+    monkeypatch.setattr(pipeline, 'iter_articles', lambda *args, **kwargs: retained)
+    reader = pipeline._article_stream_factory(pipeline.build_ctx_from_config(config, False), ArticleStats())()
+    next(reader)
+    try:
+        reader.close()
+        assert settled == [True]
+    finally:
+        retained.close()

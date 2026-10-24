@@ -1,5 +1,4 @@
 """Translate private article spools into lifetime-scoped public snapshots."""
-from dataclasses import replace
 from contextlib import ExitStack
 from datetime import datetime, timezone
 from heapq import merge
@@ -35,9 +34,8 @@ class Snapshot:
     def _capture(self, context):
         stats = ArticleStats()
         try:
-            for article in _article_stream_factory(context, stats)():
-                state = replace(article.publication_state, evaluated_at=self.captured_at)
-                self._store.append(article.lang, replace(article, publication=state))
+            for article in _article_stream_factory(context, stats, self.captured_at)():
+                self._store.append(article.lang, article)
             self._invalid_articles = stats.skipped
         except BaseException:
             self.close()

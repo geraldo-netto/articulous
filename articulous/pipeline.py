@@ -22,6 +22,8 @@ import stat
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field, replace
+from datetime import datetime, timezone
+from contextlib import closing
 from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -1638,18 +1640,22 @@ def _collect_tasks(
     return BuildPlan(plan, projection)
 
 
-def _article_stream_factory(ctx: BuildCtx, stats: ArticleStats):
+def _article_stream_factory(ctx: BuildCtx, stats: ArticleStats, evaluated_at=None):
     url_builder = _article_url_builder(ctx)
     allowed_langs = frozenset(ctx.languages)
+    evaluated_at = evaluated_at or datetime.now(timezone.utc)
 
     def stream_factory():
-        return iter_articles(
+        with closing(iter_articles(
             ctx.content_dir,
             default_lang=ctx.default_language,
             url_builder=url_builder,
             allowed_langs=allowed_langs,
             stats=stats,
-        )
+        )) as source:
+            for article in source:
+                state = replace(article.publication_state, evaluated_at=evaluated_at)
+                yield replace(article, publication=state)
 
     return stream_factory
 

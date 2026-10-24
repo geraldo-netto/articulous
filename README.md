@@ -159,7 +159,9 @@ Notes:
 - `scheduled` articles publish only when `<publish-at>` is present and
   its ISO-8601 timestamp has been reached. A missing or invalid timestamp
   keeps the article unpublished and emits a warning. Scheduling is
-  evaluated during a build; no background scheduler runs the generator.
+  evaluated once per build, before article discovery; that timestamp governs
+  pages, translation links and all shared projections. A captured composition
+  uses its capture timestamp. No background scheduler runs the generator.
 - Targeted builds remove retired article pages within their selected
   sections, languages, and slugs using the persistent ownership sidecar.
   Legacy cache ownership is used only to initialize a missing sidecar;

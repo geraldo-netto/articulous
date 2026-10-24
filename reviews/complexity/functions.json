@@ -721,12 +721,32 @@
       {
         "functions": [
           {
+            "body_sha256": "947af2667a0193aac2ac1126583c24125214298d9a4ff42152c73ba77d202b55",
+            "column": 0,
+            "complexity": 7,
+            "end_column": 50,
+            "end_line": 27,
+            "line": 19,
+            "name": "_validate_journal_header",
+            "projection_sha256": "ef09ea491b592a06e44ff671366f35950f473d5b6721f4826a47f737a8fbc7b3"
+          },
+          {
+            "body_sha256": "fe96e98147c2947e6fa329c21bf027f922e8e974c194cb87f5425446f173bf79",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 57,
+            "end_line": 32,
+            "line": 30,
+            "name": "_validate_identity_part",
+            "projection_sha256": "6cc0c930e3add46d1816f8cd7bf1cd8f49b090d83dcb031babb7bee52385d436"
+          },
+          {
             "body_sha256": "5388795a966cf105680f408f514322f0537d7d96acbaafa38e1b0ac8694cc269",
             "column": 0,
             "complexity": 2,
             "end_column": 45,
-            "end_line": 24,
-            "line": 19,
+            "end_line": 40,
+            "line": 35,
             "name": "_identity",
             "projection_sha256": "b3a41252c00cba48a88509cdd94adfc4c1723205c14c99c0c68debbedab6636c"
           },
@@ -735,8 +755,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 19,
-            "end_line": 35,
-            "line": 27,
+            "end_line": 51,
+            "line": 43,
             "name": "_saved_file",
             "projection_sha256": "60e88b24e58f033599f83dd21f8a84464748a6c418aadfb83489a9caf72fbc11"
           },
@@ -745,8 +765,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 33,
-            "end_line": 46,
-            "line": 38,
+            "end_line": 62,
+            "line": 54,
             "name": "_restore_file",
             "projection_sha256": "5883e7df334b4cd68ef876e51a41d4f2a9deca0e65ed6d94448091543698093e"
           },
@@ -755,8 +775,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 52,
-            "line": 49,
+            "end_line": 68,
+            "line": 65,
             "name": "_remove_tree",
             "projection_sha256": "f1841a34a29fb3d705b3b2e64263b31522221133f26e222f6bed6ca3b6789b67"
           },
@@ -765,8 +785,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 84,
-            "end_line": 59,
-            "line": 56,
+            "end_line": 75,
+            "line": 72,
             "name": "PosixPublicationBackend.__init__",
             "projection_sha256": "c6219ad0be1bc9b8bc344cce9e73435d32175cfcba4bef1735e1c716e6532bc7"
           },
@@ -775,8 +795,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 17,
-            "end_line": 67,
-            "line": 62,
+            "end_line": 83,
+            "line": 78,
             "name": "PosixPublicationBackend.locked",
             "projection_sha256": "fc1662865eb52ba867d212d9ec721f55df59a6872065068687043eff690b0a81"
           },
@@ -785,8 +805,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 81,
-            "end_line": 70,
-            "line": 69,
+            "end_line": 86,
+            "line": 85,
             "name": "PosixPublicationBackend._transaction",
             "projection_sha256": "4e63400ad126a797cba29b1b91cc16d17b95b9ab89d5ce18e1daf4efc52831bc"
           },
@@ -795,8 +815,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 100,
-            "end_line": 79,
-            "line": 72,
+            "end_line": 95,
+            "line": 88,
             "name": "PosixPublicationBackend._rename",
             "projection_sha256": "1a200a6212d414c6ff7684c08af49bbb246b34e01755f1b88441a43d8b3a59ab"
           },
@@ -805,8 +825,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 73,
-            "end_line": 83,
-            "line": 81,
+            "end_line": 99,
+            "line": 97,
             "name": "PosixPublicationBackend._set_phase",
             "projection_sha256": "cb638abce9b8ebb9f730df871aa5412ab68a21a210c3d1a0e7c9a39623cbd673"
           },
@@ -815,8 +835,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 32,
-            "end_line": 101,
-            "line": 85,
+            "end_line": 117,
+            "line": 101,
             "name": "PosixPublicationBackend._begin",
             "projection_sha256": "9067aa1669685ddf4689a54dd2cdb19cad50365c45350977956a0033691c11ad"
           },
@@ -825,8 +845,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 80,
-            "end_line": 105,
-            "line": 103,
+            "end_line": 121,
+            "line": 119,
             "name": "PosixPublicationBackend._write_state",
             "projection_sha256": "4f2fee84da69486ec44787ef6ba237717ed80b989df8b19de23a34135a9ff0cd"
           },
@@ -835,8 +855,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 55,
-            "end_line": 118,
-            "line": 107,
+            "end_line": 134,
+            "line": 123,
             "name": "PosixPublicationBackend._install",
             "projection_sha256": "08cc4dcd95a7de54bcc7d496b1a5fabcd7582ceb09b4b355321a5cb61c9756d2"
           },
@@ -845,8 +865,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 102,
-            "end_line": 135,
-            "line": 120,
+            "end_line": 151,
+            "line": 136,
             "name": "PosixPublicationBackend.publish",
             "projection_sha256": "dae29b6143a17874fc3e781887fdaf8d4d721100b7e232a1cedd269cde7c7d21"
           },
@@ -855,38 +875,38 @@
             "column": 4,
             "complexity": 2,
             "end_column": 19,
-            "end_line": 144,
-            "line": 137,
+            "end_line": 160,
+            "line": 153,
             "name": "PosixPublicationBackend._read_journal",
             "projection_sha256": "c9afd88df510d026657d655ac784a07b279f40cc5d7f9ab49501958b4d690507"
           },
           {
-            "body_sha256": "e58c5d51b88caacc7d3295baa922465f41136cd424a7dd8d06e6e795751e85f7",
+            "body_sha256": "f055917920a50c239c1c7ad296105ca11b68b2e5ed9dc97550b8ace1f70a4bc9",
             "column": 4,
-            "complexity": 10,
+            "complexity": 7,
             "end_column": 58,
-            "end_line": 158,
-            "line": 146,
+            "end_line": 174,
+            "line": 162,
             "name": "PosixPublicationBackend._validate_journal",
-            "projection_sha256": "e3fef9c569e78f29c721c39ef9bd60fbed7a1f8d021aea04a65b38bb0f9d7328"
+            "projection_sha256": "4e76715dafd74fb0a33cd3307ee2b868efb2c82a11b3bd042015acfc5475d6de"
           },
           {
-            "body_sha256": "6e6d054c7973247c8d84a4c4d7197c8a9628129a6722d3e57bb479be9d9ba243",
+            "body_sha256": "cd34b7ce4ebbf44be239f6388d33b66c8a06bfedb556ffb8705bb6200fafa47c",
             "column": 4,
             "complexity": 6,
-            "end_column": 61,
-            "end_line": 163,
-            "line": 160,
+            "end_column": 41,
+            "end_line": 182,
+            "line": 176,
             "name": "PosixPublicationBackend._validate_identity",
-            "projection_sha256": "4332c397ec12b16d25c16a37b55f30032d132d8a58b6d4d2f8bb5aa677216e0c"
+            "projection_sha256": "eb56c640d39a249a85fa01acdbe044ba3c4b8c85022c66678a6ea742fc8845bc"
           },
           {
             "body_sha256": "b3d28f718127187589c4afebe52e7efc00dc63fce7f46273269b864e2f7f561f",
             "column": 4,
             "complexity": 2,
             "end_column": 89,
-            "end_line": 167,
-            "line": 165,
+            "end_line": 186,
+            "line": 184,
             "name": "PosixPublicationBackend._expect",
             "projection_sha256": "da98f30c6d63c3c0f11e88ac784ac9f91d3ba73e8af165c92899fe35cf064656"
           },
@@ -895,8 +915,8 @@
             "column": 4,
             "complexity": 5,
             "end_column": 76,
-            "end_line": 182,
-            "line": 169,
+            "end_line": 201,
+            "line": 188,
             "name": "PosixPublicationBackend._rollback",
             "projection_sha256": "78a1d2c144212a46cdfd51b2874c07150e712d64ed566eb64eb9a7fe0f8d6bf1"
           },
@@ -905,8 +925,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 33,
-            "end_line": 189,
-            "line": 184,
+            "end_line": 208,
+            "line": 203,
             "name": "PosixPublicationBackend._cleanup",
             "projection_sha256": "60cfe29dd7ab3db4a5cce137e7bdad79308f3abca2bca7f8d8ae8af646e6bb60"
           },
@@ -915,15 +935,15 @@
             "column": 4,
             "complexity": 3,
             "end_column": 40,
-            "end_line": 202,
-            "line": 191,
+            "end_line": 221,
+            "line": 210,
             "name": "PosixPublicationBackend.recover",
             "projection_sha256": "2557f656294f9230d9c77fc70d1fc5bc49397b6a2fc11ef3622a0dcd80b01ae6"
           }
         ],
         "language": "python",
         "path": "articulous/backends/posix.py",
-        "sha256": "111f85c87ed753e1d386ef732e87aa65876c82ab9fa4333ea9497fad3144e307"
+        "sha256": "0b49bf3a950578c0f1d20b195433cc4109453adb2a033614cf897f21a7f94509"
       },
       {
         "functions": [
@@ -19518,12 +19538,32 @@
             "projection_sha256": "d1d3bc1744211373f2800ecfb4964e2753d13998c0647038bd2de45a28d4dc94"
           },
           {
+            "body_sha256": "a5b51d0ba5900b0548bf16b9cadf08db56d1d3b1f6d54f3961d9672fc1996bdc",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 35,
+            "end_line": 304,
+            "line": 287,
+            "name": "test_api007_invalid_identity_preserves_recovery_obligations",
+            "projection_sha256": "25667cc48ddb8f24da670dd665c12ce4c4c6cc28f9b83e4522869dd7a4b282f4"
+          },
+          {
+            "body_sha256": "aa17d08c39bbf90a63cd1bac63be17dab661f58246e0aaaa403c58a86258881b",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 5,
+            "end_line": 314,
+            "line": 307,
+            "name": "api007_journal",
+            "projection_sha256": "6d3172f8e767d191895b5ae67b58fc029d7bee788873293b282d26dffd4585f3"
+          },
+          {
             "body_sha256": "98491f9471f666bf0768eff9eaa230afeee3f6bf0afc64360093078620b8e863",
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 291,
-            "line": 282,
+            "end_line": 326,
+            "line": 317,
             "name": "test_arch005_state_hardlink_is_rejected_after_preparation",
             "projection_sha256": "486d979a9cd69c7de0c173d6609a97c021c6f2925e2c03b4753815bb284c19d5"
           },
@@ -19532,8 +19572,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 70,
-            "end_line": 305,
-            "line": 294,
+            "end_line": 340,
+            "line": 329,
             "name": "test_arch005_failed_journal_creation_leaves_previous_generation",
             "projection_sha256": "3963f32e7752d18b3ca9a52691e06d85c6bc1bafc4e7333aa59952c8748503c0"
           },
@@ -19542,8 +19582,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 44,
-            "end_line": 300,
-            "line": 299,
+            "end_line": 335,
+            "line": 334,
             "name": "test_arch005_failed_journal_creation_leaves_previous_generation.fail",
             "projection_sha256": "1ae08b7e44e578d3382cbdcf2833d5b546642e57079e5b53a1a6bf50996afb17"
           },
@@ -19552,8 +19592,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 51,
-            "end_line": 314,
-            "line": 308,
+            "end_line": 349,
+            "line": 343,
             "name": "test_arch005_rename_never_overwrites_unexpected_destination",
             "projection_sha256": "74761c0d2612de32aff0fe5f5f9e6e3bd6a02908735bb8de2569da78eb5acdfc"
           },
@@ -19562,8 +19602,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 53,
-            "end_line": 325,
-            "line": 317,
+            "end_line": 360,
+            "line": 352,
             "name": "test_arch005_output_root_must_remain_a_directory",
             "projection_sha256": "49118b91f5667c65748e37dddf58dc7863952cbf84e8e39734530f6f30bcecef"
           },
@@ -19572,15 +19612,15 @@
             "column": 0,
             "complexity": 3,
             "end_column": 37,
-            "end_line": 343,
-            "line": 329,
+            "end_line": 378,
+            "line": 364,
             "name": "test_arch005_owned_path_type_changes_are_preserved",
             "projection_sha256": "d0803c97742467c3e0ff7c5410f141ebdf261b3652cb4a1eced446b583b562df"
           }
         ],
         "language": "python",
         "path": "tests/test_publication.py",
-        "sha256": "9ecb9b19c1dfeddc1725937342977db277dcbebed9f5887e3b5cfceea1714c07"
+        "sha256": "1f28eac8b7b8b229e1ee6539acfa0672b9b38026f70d698d7a4cadf517f7face"
       },
       {
         "functions": [

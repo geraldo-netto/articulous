@@ -73,9 +73,8 @@ parser implementation digests are recorded and checked across measurement.
 
 The policy applies to new/changed functions. `baseline.json` pins exact callable
 identities from the preserved pre-policy revision
-`d879c1c3b8f5523fc41dc9ebf4e54a2934411ac3`. Five unchanged functions exceed 9:
-`articles.parse_article_xml` (10), `PosixPublicationBackend._validate_journal`
-(10), `ownership._published_paths` (10), `publication._backend` (12) and
+`d879c1c3b8f5523fc41dc9ebf4e54a2934411ac3`. Four unchanged functions exceed 9:
+`articles.parse_article_xml` (10), `ownership._published_paths` (10), `publication._backend` (12) and
 `sections.validate_index_first_pattern` (13). Any edit to those identities removes
 their baseline eligibility. This preserves the agreed scope without suppressions.
 

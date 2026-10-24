@@ -16,6 +16,22 @@ from . import publication_capabilities
 from ..publication_contracts import PublicationInput
 
 
+def _validate_journal_header(data, destination, cache):
+    fields = {'version', 'destination', 'cache', 'phase', 'previous', 'new',
+              'stage', 'stage_identity', 'cache_before', 'ownership_before'}
+    if not isinstance(data, dict) or set(data) != fields:
+        raise ValueError('Invalid journal fields')
+    if type(data['version']) is not int or data['version'] != 1:
+        raise ValueError('Wrong journal version')
+    if data['destination'] != str(destination) or data['cache'] != str(cache):
+        raise ValueError('Wrong journal identity')
+
+
+def _validate_identity_part(part):
+    if type(part) is not int or part < 0:
+        raise ValueError('Invalid journal file identity')
+
+
 def _identity(path):
     validate_output_path(path)
     if not path.exists():
@@ -144,23 +160,26 @@ class PosixPublicationBackend:
         return data
 
     def _validate_journal(self, data, destination, cache):
-        if data['version'] != 1 or data['destination'] != str(destination) or data['cache'] != str(cache):
-            raise ValueError('Wrong journal identity')
+        _validate_journal_header(data, destination, cache)
         if data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed'):
             raise ValueError('Invalid journal phase')
         stage = Path(data['stage'])
         if stage.parent != destination.parent or not stage.name.startswith('.articulous-stage-'):
             raise ValueError('Invalid journal staging path')
-        for key in ('previous', 'new', 'stage_identity'):
+        self._validate_identity(data['previous'], optional=True)
+        for key in ('new', 'stage_identity'):
             self._validate_identity(data[key])
         for key in ('cache_before', 'ownership_before'):
             if data[key] is not None:
                 base64.b64decode(data[key], validate=True)
 
-    def _validate_identity(self, value):
-        if value is not None and not (isinstance(value, list) and len(value) == 2 and
-                                      all(type(part) is int for part in value)):
+    def _validate_identity(self, value, *, optional=False):
+        if value is None and optional:
+            return
+        if not isinstance(value, list) or len(value) != 2:
             raise ValueError('Invalid journal file identity')
+        for part in value:
+            _validate_identity_part(part)
 
     def _expect(self, path, identity):
         if _identity(path) != identity:

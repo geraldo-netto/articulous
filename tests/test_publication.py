@@ -279,6 +279,41 @@ def test_arch005_journal_field_fuzz_preserves_stage(site_root, seo_config, chang
         assert transaction.is_dir()
 
 
+@pytest.mark.parametrize('phase', ['prepared', 'old_moved', 'installed', 'committed'])
+@pytest.mark.parametrize('changes', [
+    {'new': None}, {'stage_identity': None}, {'version': True},
+    {'new': [-1, 1]}, {'new': [0, -1]}, {'new': [False, 1]},
+])
+def test_api007_invalid_identity_preserves_recovery_obligations(tmp_path, phase, changes):
+    destination, cache = tmp_path / 'output', tmp_path / 'cache.json'
+    transaction = tmp_path / '.output.articulous-transaction'
+    previous = transaction / 'previous'
+    previous.mkdir(parents=True)
+    (previous / 'index.html').write_bytes(b'last good generation')
+    stage = tmp_path / '.articulous-stage-api007'
+    stage.mkdir()
+    (stage / 'input.xml').write_bytes(b'captured input')
+    data = api007_journal(destination, cache, previous, stage, phase)
+    data.update(changes)
+    journal = transaction / 'journal.json'
+    journal.write_text(json.dumps(data))
+    before = snapshot(transaction), snapshot(stage)
+    with pytest.raises(ValueError, match='journal'):
+        recover_publication(destination, cache)
+    assert (snapshot(transaction), snapshot(stage)) == before
+    assert not destination.exists()
+
+
+def api007_journal(destination, cache, previous, stage, phase):
+    prior, staged = previous.stat(), stage.stat()
+    return {
+        'version': 1, 'destination': str(destination), 'cache': str(cache),
+        'previous': [prior.st_dev, prior.st_ino], 'new': [staged.st_dev, staged.st_ino],
+        'stage': str(stage), 'stage_identity': [staged.st_dev, staged.st_ino],
+        'cache_before': None, 'ownership_before': None, 'phase': phase,
+    }
+
+
 def test_arch005_state_hardlink_is_rejected_after_preparation(site_root, seo_config):
     cli, config = seo_config
     with prepare_build(cli, config, site_root) as prepared:

@@ -14,6 +14,7 @@ Start with [getting started](docs/getting-started.md), then use
 | Guide | Use it to |
 |-------|-----------|
 | [Getting started](docs/getting-started.md) | Install Articulous and prepare a site folder. |
+| [Architecture](docs/architecture.md) | Understand build flow, module boundaries, contracts and resource ownership. |
 | [Building and recovery](docs/building.md) | Plan, build selected sections, inspect logs and recover after failure. |
 | [Articles](docs/articles.md) | Write XML articles, set publication status and provide metadata. |
 | [Templates](docs/templates.md) | Supply XSL templates and render metadata, pagination and translation links. |

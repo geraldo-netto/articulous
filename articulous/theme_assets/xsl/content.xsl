@@ -10,14 +10,33 @@
   <xsl:template match="@*" mode="content">
     <xsl:param name="attribute" select="name()"/>
     <xsl:variable name="name" select="translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
-    <xsl:variable name="value" select="translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ &#9;&#10;&#13;','abcdefghijklmnopqrstuvwxyz')"/>
-    <xsl:variable name="url" select="contains('|href|src|action|formaction|poster|',concat('|',$name,'|'))"/>
-    <xsl:variable name="image" select="$name='src' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and starts-with($value,'data:image/')"/>
-    <xsl:variable name="dimension" select="$name='width' or $name='height'"/>
-    <xsl:variable name="image-dimension" select="$dimension and namespace-uri()='' and namespace-uri(..)='' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and string(.)!='' and translate(.,'0123456789','')=''"/>
-    <xsl:if test="not(starts-with($name,'on') or contains('|style|srcdoc|',concat('|',$name,'|')) or ($dimension and not($image-dimension)) or ($url and (starts-with($value,'javascript:') or starts-with($value,'vbscript:') or (starts-with($value,'data:') and not($image)))))">
+    <xsl:variable name="allowed"><xsl:call-template name="content-attribute-allowed"><xsl:with-param name="name" select="$name"/></xsl:call-template></xsl:variable>
+    <xsl:if test="string($allowed)='yes'">
       <xsl:attribute name="{$attribute}" namespace="{namespace-uri()}"><xsl:value-of select="."/></xsl:attribute>
     </xsl:if>
+  </xsl:template>
+  <xsl:template name="content-attribute-allowed">
+    <xsl:param name="name"/>
+    <xsl:choose>
+      <xsl:when test="starts-with($name,'on') or contains('|style|srcdoc|',concat('|',$name,'|'))"/>
+      <xsl:when test="$name='width' or $name='height'"><xsl:call-template name="content-image-dimension-allowed"/></xsl:when>
+      <xsl:when test="contains('|href|src|action|formaction|poster|',concat('|',$name,'|'))"><xsl:call-template name="content-url-allowed"><xsl:with-param name="name" select="$name"/></xsl:call-template></xsl:when>
+      <xsl:otherwise>yes</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  <xsl:template name="content-image-dimension-allowed">
+    <xsl:if test="namespace-uri()='' and namespace-uri(..)='' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and string(.)!='' and translate(.,'0123456789','')=''">yes</xsl:if>
+  </xsl:template>
+  <xsl:template name="content-url-allowed">
+    <xsl:param name="name"/>
+    <xsl:variable name="value" select="translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ &#9;&#10;&#13;','abcdefghijklmnopqrstuvwxyz')"/>
+    <xsl:choose>
+      <xsl:when test="starts-with($value,'javascript:') or starts-with($value,'vbscript:')"/>
+      <xsl:when test="starts-with($value,'data:')">
+        <xsl:if test="$name='src' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and starts-with($value,'data:image/')">yes</xsl:if>
+      </xsl:when>
+      <xsl:otherwise>yes</xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   <xsl:template name="render-code-block">
     <xsl:param name="error-label"/><xsl:param name="success-label"/><xsl:param name="copy-label"/><pre tabindex="0" data-toolbar-order="copy-to-clipboard">

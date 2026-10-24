@@ -22925,6 +22925,123 @@
     {
       "functions": [
         {
+          "body_sha256": "bc31a45b75d26180fba1ab4d68a21a3000c0897fc81a1c1cc12e0156497cbb91",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 31,
+          "end_line": 29,
+          "line": 23,
+          "name": "stylesheet_source",
+          "projection_sha256": "aff00147076217a676cd2c749df3300388ec8aa36ccb90fd30ebe748e62b871a"
+        },
+        {
+          "body_sha256": "b9f5559f6732cb5cf432386112ddd98a715a9128df85138335d3f24d0d5ffb83",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 64,
+          "end_line": 35,
+          "line": 33,
+          "name": "render",
+          "projection_sha256": "dcc56eac6159ca896a08ba8e703aa96b101567a90fdfc70abfb0b91f1f833835"
+        },
+        {
+          "body_sha256": "4baac7ed8e3a613db6e20f0d7e0f5f126cd8a8522bf8bfc46c4848d173e8cac0",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 43,
+          "end_line": 43,
+          "line": 38,
+          "name": "rendered_attributes",
+          "projection_sha256": "05ffdac84e453c5dbad92b23ed038f14c6c5de8610c8f7810053252f4cc80792"
+        },
+        {
+          "body_sha256": "a61f8d08e80cdc3c03f9f94903d748438734767a049df6546adfcd4d78b88b9b",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 38,
+          "end_line": 50,
+          "line": 48,
+          "name": "test_cc004_url_protocol_contract",
+          "projection_sha256": "5145fa083d5da7f4c38a29652b21764a117bfd9c163edb17536e133fe56956a1"
+        },
+        {
+          "body_sha256": "813ebc3c4d37f4961ae1683a6833f164a102269d523d25accd65a1f7ef6a1c18",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 63,
+          "end_line": 55,
+          "line": 54,
+          "name": "test_cc004_active_attributes_are_rejected",
+          "projection_sha256": "6f8343b2d030a51b72f2743ed98ea86492e7bc79c8591e69a25b651406d4ffd7"
+        },
+        {
+          "body_sha256": "84b22fe3693cb378d1cdba3e96730c3a6729164be37b3c435c089920e2b3e865",
+          "column": 0,
+          "complexity": 3,
+          "end_column": 80,
+          "end_line": 63,
+          "line": 61,
+          "name": "test_cc004_dimension_context_and_ascii_boundaries",
+          "projection_sha256": "1a57b549e367923e5a4527a7db0240a71f5b5c4cd26c333842abff5e929b3dce"
+        },
+        {
+          "body_sha256": "2db2c5a0a8a09cb2f24fdd4fc3b4e27499ee8d36d6ffeec57c70191a7bca6c6c",
+          "column": 0,
+          "complexity": 2,
+          "end_column": 80,
+          "end_line": 71,
+          "line": 68,
+          "name": "test_cc004_data_images_keep_original_context_contract",
+          "projection_sha256": "fb8c5b9e90b549b361498a59d3b7a1b143e44bc90b87f262a14feff9b85fbe5a"
+        },
+        {
+          "body_sha256": "607d5a40d1eac3b6fede7b9963dea1922ae14d4f8dce1695439b057fe8a6c0dd",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 75,
+          "end_line": 77,
+          "line": 75,
+          "name": "test_cc004_unrelated_attributes_keep_literal_values",
+          "projection_sha256": "403661cad4fdb9a91ead84ff29f358cbd67e0d28ef8771ed273aed54a5b08380"
+        },
+        {
+          "body_sha256": "5ba58498f914fb59cfa015a38f1d180f853e1f5506379b234f33af5cac498f00",
+          "column": 0,
+          "complexity": 2,
+          "end_column": 74,
+          "end_line": 88,
+          "line": 80,
+          "name": "test_cc004_bounded_attribute_value_property",
+          "projection_sha256": "545b59ece4a985be9dba9880dbd460dc381cf371d321b6ac56d34351fbe6368d"
+        },
+        {
+          "body_sha256": "3a43c2073bcaaced131b6b84e16228e697e7ce5e06618ff48c856dda8dc4b76a",
+          "column": 0,
+          "complexity": 2,
+          "end_column": 31,
+          "end_line": 97,
+          "line": 91,
+          "name": "native_packet",
+          "projection_sha256": "b92a2e342f6f610c8c7f68a161fa656ba069c70fb57772ab8825182ed2d769a1"
+        },
+        {
+          "body_sha256": "ebc6210d600f27e277d4f58f1076b8693cd04366ea1aa9cedb759eea2925ef5a",
+          "column": 0,
+          "complexity": 3,
+          "end_column": 99,
+          "end_line": 103,
+          "line": 100,
+          "name": "test_cc004_batch_preserves_element_order_and_identity",
+          "projection_sha256": "53cafdeefe1f18b7ef4d7547c807bceec73d2c1bf2f8f78e3c3e95e655ae06d7"
+        }
+      ],
+      "language": "python",
+      "path": "tests/test_theme_attribute_policy.py",
+      "sha256": "f89c569ed308693487cb424492e1bb4ee1ba13aa9883a76a57c5c4333c1876fe"
+    },
+    {
+      "functions": [
+        {
           "body_sha256": "17fea487b46cdeb3a7d7c3e64e17e039ef253f9c12dea64cb71ea1ecdde72d77",
           "column": 0,
           "complexity": 4,
@@ -23349,6 +23466,23 @@
       "language": "python",
       "path": "tests/test_xml_validation.py",
       "sha256": "09167d96b1d29880feb5f754f7333fba0afb9a2e368bf27166d9eaa40ad80628"
+    },
+    {
+      "functions": [
+        {
+          "body_sha256": "af43b8d927fe1c7007713100d273caa33cc91bca7e61b318140b947b3fc2b7b1",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 57,
+          "end_line": 11,
+          "line": 8,
+          "name": "test_cc004_packaged_template_complexity",
+          "projection_sha256": "311df9f5f8995d1eae8b06cbef25d3d8792b549c04f08cab07f7b2cc0a646182"
+        }
+      ],
+      "language": "python",
+      "path": "tests/test_xslt_acceptance.py",
+      "sha256": "df76badc3db25d53187159e6eff2adaae4c995041b9150da52871db15e398e17"
     },
     {
       "functions": [

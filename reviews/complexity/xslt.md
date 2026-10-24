@@ -83,3 +83,20 @@ for original/projection admission and trace failure. Cleanup liveness assumes
 synchronous calls return or owned exit/fence eventually settles; unknown native
 obligations remain under that process owner. These checks establish the wrapper's
 bounded contract, not unrestricted memory safety of libxml2 internals.
+
+CC-004 decomposes the attribute sanitizer's score of 18 into attribute dispatch,
+image-dimension admission and URL admission helpers. All 12 resulting templates
+measure at most 9. Helpers borrow the current attribute and immutable scalar
+parameters during one synchronous transform. Intermediate result fragments and
+copied attributes belong to the engine's transform/result document; admission
+emits at most one attribute and rejection emits none. No cross-transform state,
+callback or new native resource owner is introduced.
+
+`test_cc004_packaged_template_complexity` fails on the previous sanitizer and
+passes after decomposition. The permanent attribute suite covers protocol,
+event/style/srcdoc rejection, namespace/case context, ASCII numeric boundaries,
+unrelated literal attributes, bounded malformed-value properties and element
+identity/order. Its pre-refactor cases pass unchanged afterward. A separate
+90-element packet produces identical elements, attributes and text on libxslt
+and cached SaxonC-PE 12.9; source identities are in `theme-native.json`.
+That native run also exposed ambiguous fallback priorities, tracked as THEME-002.

@@ -1,0 +1,10 @@
+{
+  "backends": [
+    "libxslt",
+    "SaxonC-PE 12.9"
+  ],
+  "case_count": 90,
+  "equal_elements_attributes_text": true,
+  "source_sha256": "f9165ef8dcbac571657a7bb0678c9321a1a1608e3027ca2f0f9a37f51b6bb6e1",
+  "stylesheet_sha256": "578d34a08d14adc960435ce44375b798184e0376397625052db5b23f95d2f31f"
+}

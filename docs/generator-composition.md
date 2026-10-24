@@ -384,7 +384,15 @@ size/quality thresholds. `backends.imagemagick.ImageMagick` adapts installed
 owns one private scratch workspace until exhaustion/close. Consumers that can
 stop early must close it, including on cancellation. Each conversion settles
 before its result is yielded; apply mode atomically replaces a source only if
-the result is smaller. Conversion/replacement failure leaves that source intact.
+the result is smaller and its captured file identity, metadata and content still
+match. Changed, deleted, replaced and symlink sources are rejected. The final
+check and replacement hold the persistent sibling `.<filename>.articulous.lock`
+via `resource_locks.resource_lock`; cooperating writers must acquire that same
+lock and leave its inode in place. Callers must exclude uncooperative writers
+and directory replacement during this handoff: content checks alone cannot
+provide filesystem isolation. Conversion/replacement failure leaves owner edits
+intact. The lock descriptor and replacement staging directory settle before yield;
+the persistent lock file is retained for subsequent acquisitions.
 The source batch and largest selected image bound storage; caller owns admission
 and returned `ImageResult` records. Native PNG dimensions and EXIF-oriented JPEG
 rotation/format/metadata stripping are tested on Linux; other native platforms

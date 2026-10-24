@@ -114,3 +114,94 @@ def test_asset001_invalid_native_bounds_never_launch(tmp_path):
         with pytest.raises(ValueError):
             ImageMagick().shrink(tmp_path / 'a.jpg', tmp_path / 'b.jpg', 0, 82)
     run.assert_not_called()
+
+
+def image_case(tmp_path):
+    root = tmp_path / 'images'
+    root.mkdir()
+    source = root / 'photo.jpg'
+    source.write_bytes(b'original source')
+    return root, source, FakeImages(tmp_path, b'new')
+
+
+def apply_images(root, backend):
+    return list(optimize(root, backend, largest=1, quality=82, threshold=0,
+                         kinds={'jpeg'}, apply=True))
+
+
+def mutate_image(source, change):
+    if change == 'delete':
+        source.unlink()
+    elif change == 'replace':
+        replacement = source.with_suffix('.replacement')
+        replacement.write_bytes(source.read_bytes())
+        replacement.replace(source)
+    else:
+        source.write_bytes(b'concurrent owner edit')
+
+
+@pytest.mark.parametrize('change', ['edit', 'delete', 'replace'])
+def test_review012_conversion_rejects_changed_generation(tmp_path, change):
+    root, source, backend = image_case(tmp_path)
+    shrink = backend.shrink
+
+    def concurrent_change(*args):
+        shrink(*args)
+        mutate_image(source, change)
+
+    with patch.object(backend, 'shrink', side_effect=concurrent_change):
+        with pytest.raises(ValueError, match='changed during optimization'):
+            apply_images(root, backend)
+    assert backend.closed
+    assert not list(root.glob('.photo.jpg-*'))
+    if change == 'delete':
+        assert not source.exists()
+    else:
+        expected = b'original source' if change == 'replace' else b'concurrent owner edit'
+        assert source.read_bytes() == expected
+
+
+def test_review012_rechecks_after_copy_and_releases_lock(tmp_path):
+    import shutil
+    from articulous.resource_locks import resource_lock
+    root, source, backend = image_case(tmp_path)
+    copy = shutil.copyfile
+
+    def concurrent_copy(*args):
+        copy(*args)
+        source.write_bytes(b'late owner edit')
+
+    with patch('articulous.image_optimization.shutil.copyfile', side_effect=concurrent_copy):
+        with pytest.raises(ValueError, match='changed during optimization'):
+            apply_images(root, backend)
+    assert source.read_bytes() == b'late owner edit'
+    assert backend.closed
+    assert not list(root.glob('.photo.jpg-*'))
+    with resource_lock(source.with_name('.photo.jpg.articulous.lock')):
+        with pytest.raises(RuntimeError, match='Resource lock is held'):
+            apply_images(root, backend)
+    assert source.read_bytes() == b'late owner edit'
+    assert apply_images(root, backend)[0].after == 3
+
+
+def test_review012_rejects_symlink_sources(tmp_path):
+    root, source, backend = image_case(tmp_path)
+    target = root / 'owner'
+    source.rename(target)
+    source.symlink_to(target)
+    with pytest.raises(ValueError, match='regular file'):
+        apply_images(root, backend)
+    assert backend.closed
+    assert target.read_bytes() == b'original source'
+
+
+def test_review012_content_and_metadata_are_both_checked(tmp_path):
+    from articulous.image_optimization import image_generation, require_image
+    _, source, _ = image_case(tmp_path)
+    generation = image_generation(source)
+    with patch('articulous.image_optimization.fingerprint', return_value=b'wrong'):
+        with pytest.raises(ValueError, match='changed during optimization'):
+            require_image(source, generation, b'expected')
+    with patch('articulous.image_optimization.image_generation', side_effect=[generation, None]):
+        with pytest.raises(ValueError, match='changed during optimization'):
+            require_image(source, generation, __import__('hashlib').sha256(source.read_bytes()).digest())

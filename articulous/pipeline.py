@@ -1059,13 +1059,16 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
 
     for page in build_index_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
+        output_path = ctx.output_dir / page.output_path
+        cache_key = f"index:{page.lang}:{page.page}"
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
-            output_path=ctx.output_dir / page.output_path,
+            output_path=output_path,
             cache=cache,
-            cache_key=f"index:{page.lang}:{page.page}",
+            cache_key=cache_key,
+            route=Route(cache_key, 'index', page.url, _output_relpath(ctx, output_path), page.lang, 'listing'),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1088,13 +1091,16 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
 
     for page in build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags):
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
+        output_path = ctx.output_dir / page.output_path
+        cache_key = _tag_cache_key(page)
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
-            output_path=ctx.output_dir / page.output_path,
+            output_path=output_path,
             cache=cache,
-            cache_key=_tag_cache_key(page),
+            cache_key=cache_key,
+            route=Route(cache_key, 'tags', page.url, _output_relpath(ctx, output_path), page.lang, 'listing'),
             engine=engine,
             ctx=ctx,
             manifest=manifest,

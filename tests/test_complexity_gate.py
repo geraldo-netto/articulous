@@ -4,6 +4,8 @@ from pathlib import Path
 import ast
 from copy import deepcopy
 from types import SimpleNamespace
+import random
+import subprocess
 
 import pytest
 
@@ -346,11 +348,9 @@ def evidence(tmp_path, record):
                          'functions': [record]}]}
     calibration = tmp_path / gate.JS_CALIBRATION
     calibration.parent.mkdir(parents=True)
-    calibration.write_text('')
-    report['files'].append({'path': gate.JS_CALIBRATION, 'language': 'javascript',
-                           'sha256': worker.digest(b''),
-                           'functions': [dict(record, name=name, complexity=cc, line=index + 1,
-                                              end_line=index + 2) for index, (name, cc) in enumerate(gate.JS_EXPECTED)]})
+    original = Path(__file__).resolve().parent / 'fixtures/complexity/calibration.js'
+    calibration.write_bytes(original.read_bytes())
+    report['files'].append(gate.load_json(original.with_suffix('.json')))
     manifest = tmp_path / gate.PRISM
     manifest.parent.mkdir(parents=True)
     manifest.write_text('{"upstream_unmodified": {"LICENSE": "ignored"}}')
@@ -504,3 +504,97 @@ def test_cc002_stale_xslt_fails_with_unchanged_python_and_javascript(evidence):
     path.write_text(path.read_text() + ' ')
     with pytest.raises(ValueError, match='Stale XSLT'):
         gate.check_all(root, aggregate)
+
+
+def test_review008_missing_javascript_inventory_is_rejected():
+    root = Path(__file__).resolve().parents[1]
+    report = gate.load_json(root / gate.EVIDENCE)['python_javascript']
+    entry = deepcopy(next(item for item in report['files'] if item['path'].endswith('/code-blocks.js')))
+    entry['functions'] = []
+    with pytest.raises(ValueError, match='JavaScript function'):
+        gate.check_file(root, entry, {})
+
+
+@pytest.fixture
+def javascript_entry(tmp_path):
+    prefix = "const marker = '🌏'; "
+    fragment = "function f(){return '😀';}"
+    source = prefix + fragment + '\nf();'
+    path = tmp_path / 'unicode.js'
+    path.write_text(source)
+    start = len(prefix.encode('utf-16-le')) // 2
+    end = start + len(fragment.encode('utf-16-le')) // 2
+    fingerprint = worker.digest(fragment.encode())
+    row = {'name': "Function 'f'", 'line': 1, 'column': start, 'end_line': 1,
+           'end_column': end, 'body_sha256': fingerprint, 'projection_sha256': fingerprint, 'complexity': 1}
+    return tmp_path, {'path': path.name, 'language': 'javascript',
+                      'sha256': worker.digest(source.encode()), 'functions': [row]}
+
+
+def test_review008_utf16_boundaries_and_order_independent_inventory(javascript_entry, evidence):
+    root, entry = javascript_entry
+    assert gate.check_file(root, entry, {}) == 1
+    root, report = evidence
+    entry = report['files'][1]
+    entry['functions'].reverse()
+    assert gate.check_file(root, entry, {}) == 13
+
+
+@pytest.mark.parametrize('field,value', [
+    ('column', 0), ('end_column', 100), ('body_sha256', '0' * 64),
+    ('projection_sha256', '0' * 64), ('name', 'Class field initializer'),
+])
+def test_review008_javascript_identity_fault_controls(javascript_entry, field, value):
+    root, entry = javascript_entry
+    entry['functions'][0][field] = value
+    with pytest.raises(ValueError, match='JavaScript function'):
+        gate.check_file(root, entry, {})
+
+
+def test_review008_extra_alias_counter_cannot_replace_completeness(javascript_entry):
+    root, entry = javascript_entry
+    entry['functions'].append(dict(entry['functions'][0], name="Function 'alias'"))
+    with pytest.raises(ValueError, match='JavaScript function'):
+        gate.check_file(root, entry, {})
+
+
+def test_review008_seeded_boundary_mutations(javascript_entry):
+    root, original = javascript_entry
+    source = (root / original['path']).read_text()
+    tree = native.javascript_tree(root / original['path'])
+    assert gate.check_functions(original, {}, source, tree=tree) == 1
+    rng = random.Random(8008)
+    for _ in range(64):
+        entry = deepcopy(original)
+        field = rng.choice(['line', 'column', 'end_line', 'end_column'])
+        entry['functions'][0][field] += rng.choice([-1, 1]) * rng.randrange(1, 33)
+        with pytest.raises(ValueError):
+            gate.check_functions(entry, {}, source, tree=tree)
+
+
+@pytest.mark.parametrize('tree', [None, [], {}, {'type': 'Expression'}])
+def test_review008_missing_parser_inventory_is_not_acceptance(tree):
+    with pytest.raises(ValueError, match='independent JavaScript function'):
+        gate.check_javascript_functions([], '', tree)
+
+
+def test_review008_source_changes_during_parse_are_rejected(javascript_entry, monkeypatch):
+    root, entry = javascript_entry
+    tree = native.javascript_tree(root / entry['path'])
+
+    def changed(path):
+        path.write_text('modified after admission')
+        return tree
+
+    monkeypatch.setattr(native, 'javascript_tree', changed)
+    with pytest.raises(ValueError, match='source changed during inventory'):
+        gate.check_file(root, entry, {})
+
+
+def test_review008_invalid_syntax_fails_even_with_empty_report(tmp_path):
+    path = tmp_path / 'invalid.js'
+    path.write_text('function broken(')
+    entry = {'path': path.name, 'language': 'javascript', 'functions': [],
+             'sha256': worker.digest(path.read_bytes())}
+    with pytest.raises(subprocess.CalledProcessError):
+        gate.check_file(tmp_path, entry, {})

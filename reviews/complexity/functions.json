@@ -2192,8 +2192,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 70,
-            "end_line": 28,
-            "line": 24,
+            "end_line": 29,
+            "line": 25,
             "name": "source_paths",
             "projection_sha256": "1d703e4bf186a41aedff60a4564654aedf37fb7eae948943079f0a2d28459686"
           },
@@ -2202,8 +2202,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 17,
-            "end_line": 43,
-            "line": 31,
+            "end_line": 44,
+            "line": 32,
             "name": "upstream_files",
             "projection_sha256": "0fbf383a8659864343af9374cbf1f885aab11c71213fb9a027f2f0c00a67598e"
           },
@@ -2212,8 +2212,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 30,
-            "end_line": 51,
-            "line": 46,
+            "end_line": 52,
+            "line": 47,
             "name": "load_json",
             "projection_sha256": "ad82067109baf02efafe644394325429eb5441443e865a5970c595c20084a351"
           },
@@ -2222,8 +2222,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 30,
-            "end_line": 62,
-            "line": 54,
+            "end_line": 63,
+            "line": 55,
             "name": "baseline_data",
             "projection_sha256": "1172267230996549345916bdb83c17a7543f4646f410943f533a186eb74ddb73"
           },
@@ -2232,8 +2232,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 61,
-            "end_line": 69,
-            "line": 65,
+            "end_line": 70,
+            "line": 66,
             "name": "python_identities",
             "projection_sha256": "53d4edb99c5ef098ee9bf1ac4f214842d553964ac58d7c8d245005373c95d135"
           },
@@ -2242,8 +2242,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 85,
-            "end_line": 78,
-            "line": 72,
+            "end_line": 79,
+            "line": 73,
             "name": "check_python_function",
             "projection_sha256": "c2e5ee086dfce0f0ae46c82c50fe3bf25588bdd24683acd9a09c4ef940dc9cd7"
           },
@@ -2252,38 +2252,68 @@
             "column": 0,
             "complexity": 4,
             "end_column": 15,
-            "end_line": 86,
-            "line": 81,
+            "end_line": 87,
+            "line": 82,
             "name": "unique_functions",
             "projection_sha256": "bc24ef92dadf80e7577990c00968c8332b9d694cb4c07fb29e450cd9b2b16b13"
           },
           {
-            "body_sha256": "91376feddf53ebfe3f05f86e5fed8c626971cc730a89ff735a5a877bf1bdefc9",
+            "body_sha256": "56179707004702ae72bd38291ab2ba9bde72fa88d424b67dd3a46834bd8b2e46",
             "column": 0,
-            "complexity": 8,
-            "end_column": 20,
-            "end_line": 99,
-            "line": 89,
-            "name": "check_functions",
-            "projection_sha256": "1086d50cc60a0c5296528ac274443179d07a753649ef78e5ca8bd89a34daf845"
+            "complexity": 1,
+            "end_column": 37,
+            "end_line": 95,
+            "line": 90,
+            "name": "javascript_region_identity",
+            "projection_sha256": "7f160750e330ae40769085a37217911da29742f8ba6b886962b53958c0b89b6c"
           },
           {
-            "body_sha256": "c6b98e332ece6a2434df1be090a046d015152b33de592df585a29be816770405",
+            "body_sha256": "74aaec29cad4b0c69b0911bb54497e04203a379c65895e06634166c2855f31d5",
             "column": 0,
-            "complexity": 4,
-            "end_column": 66,
-            "end_line": 112,
-            "line": 102,
+            "complexity": 1,
+            "end_column": 51,
+            "end_line": 100,
+            "line": 98,
+            "name": "javascript_record_identity",
+            "projection_sha256": "d1a1fdc20386dddecb1c1091de1229afa2c65255fd7bdcbb7460cdb0eda8611e"
+          },
+          {
+            "body_sha256": "ff91712c6e20e06f5cdf7c95b27b2ad1430b92aba82e28c792ee5fe6c610d4ed",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 77,
+            "end_line": 111,
+            "line": 103,
+            "name": "check_javascript_functions",
+            "projection_sha256": "5849791a58eb884adcac2b64e9f147b446a75ac8e5121468ac33cca3754dcb0f"
+          },
+          {
+            "body_sha256": "f4d9a6161695f91a527ed11cf83033e069477f9a1074b4b52c450be33a7283f4",
+            "column": 0,
+            "complexity": 9,
+            "end_column": 20,
+            "end_line": 126,
+            "line": 114,
+            "name": "check_functions",
+            "projection_sha256": "f64bb84b63e855e6c905b103e7b24e7c4ff6bdbf900cf98560a518fb12a4c9eb"
+          },
+          {
+            "body_sha256": "3a6a00a8af000a002f83dd77c7579b128da7845dcbbdb7c7d7be48471a8a6f76",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 77,
+            "end_line": 144,
+            "line": 129,
             "name": "check_file",
-            "projection_sha256": "fb10283ed932d590519eb74083d81ea38d3aacf4293edb914b104bda71a20b22"
+            "projection_sha256": "c9705caaf086f2f03dc243a2a796098024b2903b980bf21a7bd0ff1152ccaaf5"
           },
           {
             "body_sha256": "43881ea75fff06f2f09058905c9357e8ec40f395bcc812c142f87bf42a24ca66",
             "column": 0,
             "complexity": 8,
             "end_column": 66,
-            "end_line": 124,
-            "line": 115,
+            "end_line": 156,
+            "line": 147,
             "name": "check_python_calibration",
             "projection_sha256": "eae526334ce9a7da61d6b5d5ddbfc9962005033a190632a216529626b0ddb6bf"
           },
@@ -2292,8 +2322,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 66,
-            "end_line": 134,
-            "line": 127,
+            "end_line": 166,
+            "line": 159,
             "name": "check_javascript_calibration",
             "projection_sha256": "afa196f4cc283dcf37062133636a421cb295d40d52b821d58dc7b3e71b62e7bf"
           },
@@ -2302,8 +2332,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 78,
-            "end_line": 151,
-            "line": 137,
+            "end_line": 183,
+            "line": 169,
             "name": "check_report",
             "projection_sha256": "92a5bcb55e02a4a960341300b02cae2bc4554d54abde71d28872d56ff9feab0e"
           },
@@ -2312,8 +2342,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 17,
-            "end_line": 164,
-            "line": 154,
+            "end_line": 196,
+            "line": 186,
             "name": "measured_report",
             "projection_sha256": "aa2c1596c7d9de53163568e9d4eb1932a88f88e9d4dbdf474523c42de35e0234"
           },
@@ -2322,8 +2352,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 17,
-            "end_line": 174,
-            "line": 167,
+            "end_line": 206,
+            "line": 199,
             "name": "measured_all",
             "projection_sha256": "d970c5cc33e5011c78ff466b061241e692e4c09d830c88d36b09eff49cd47c13"
           },
@@ -2332,8 +2362,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 181,
-            "line": 177,
+            "end_line": 213,
+            "line": 209,
             "name": "check_all",
             "projection_sha256": "265cd50e10eedcd8f3fa3402f74016051a594fe412a78310100f57eac3fd0e2b"
           },
@@ -2342,15 +2372,15 @@
             "column": 0,
             "complexity": 3,
             "end_column": 12,
-            "end_line": 199,
-            "line": 184,
+            "end_line": 231,
+            "line": 216,
             "name": "main",
             "projection_sha256": "5996c9779426714d48e75fc601c12426e615816766e9124d41577b9809fb8eaf"
           }
         ],
         "language": "python",
         "path": "articulous/complexity_gate.py",
-        "sha256": "79e03a6e81a02de33948235d6eea7e35f53d47b48bd4daa4db9a31d09c6814d2"
+        "sha256": "28e350f9f9c5ca144b90923d384879c5d90a72043a1825e8be5116a93579eea2"
       },
       {
         "functions": [
@@ -2375,12 +2405,22 @@
             "projection_sha256": "07a907353bb04f971fe41183b770a315453e6c9274af8954757ca6299b8b0d01"
           },
           {
+            "body_sha256": "65001d2fea43c76335488213708c1ba5de34ac66a4069864e83ac7ec05468616",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 100,
+            "end_line": 34,
+            "line": 29,
+            "name": "javascript_tree",
+            "projection_sha256": "ffe1e62ab371d25ccb6353409a5c447819484a956683381ebfa7ae83e14bb6e2"
+          },
+          {
             "body_sha256": "129ea2a6233746fe8a86ca51e7390de6ea2d0bfa2316fc3caf85893c52a724c4",
             "column": 0,
             "complexity": 5,
             "end_column": 54,
-            "end_line": 36,
-            "line": 29,
+            "end_line": 44,
+            "line": 37,
             "name": "function_regions",
             "projection_sha256": "c9c88679b94798f536db839f94adab6592b6d8e4421a4b7048d1a1d8e69eae6a"
           },
@@ -2389,8 +2429,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 63,
-            "end_line": 45,
-            "line": 39,
+            "end_line": 53,
+            "line": 47,
             "name": "own_regions",
             "projection_sha256": "8ff37b199219d664a498edeb011aa0bf9c4ff33c7ecaa89d72e25406149f357d"
           },
@@ -2399,8 +2439,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 52,
-            "end_line": 53,
-            "line": 48,
+            "end_line": 61,
+            "line": 56,
             "name": "function_region",
             "projection_sha256": "90a765d6d25b6c60128bc53256de66231120e7102563087ebcf54c6ae0543d44"
           },
@@ -2409,8 +2449,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 57,
-            "line": 56,
+            "end_line": 65,
+            "line": 64,
             "name": "location",
             "projection_sha256": "56f974f77375b4081dfd3ed29ccbe78a051040d65f4a183b4e0ffb7433c5b2e0"
           },
@@ -2419,8 +2459,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 19,
-            "end_line": 69,
-            "line": 60,
+            "end_line": 77,
+            "line": 68,
             "name": "diagnostic_region",
             "projection_sha256": "989cdf70548e2b7ce20c3941f37462b819d7c95e1a62c11e9f7d2e1ece02e50d"
           },
@@ -2429,8 +2469,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 21,
-            "end_line": 76,
-            "line": 72,
+            "end_line": 84,
+            "line": 80,
             "name": "diagnostic_kind",
             "projection_sha256": "309154bc433c70e89cfcc3af78d63961dce858c5394032f22f52422d401fd0cb"
           },
@@ -2439,8 +2479,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 58,
-            "end_line": 80,
-            "line": 79,
+            "end_line": 88,
+            "line": 87,
             "name": "region_length",
             "projection_sha256": "b4f24232e08a828a6988ccd635d83570f17cead4bd881a06e8752776fb54b052"
           },
@@ -2449,8 +2489,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 40,
-            "end_line": 93,
-            "line": 83,
+            "end_line": 101,
+            "line": 91,
             "name": "diagnostic_record",
             "projection_sha256": "9a7ef8469e8fbb236830cf6d7e3866e80bb7f32306b02b400173bc762d660edb"
           },
@@ -2459,8 +2499,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 18,
-            "end_line": 108,
-            "line": 96,
+            "end_line": 116,
+            "line": 104,
             "name": "javascript_records",
             "projection_sha256": "d2fc544ee7a48ba4312ad8203bb615fd442424b7528f9ccf414e11aa8123ec1d"
           },
@@ -2469,8 +2509,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 76,
-            "end_line": 116,
-            "line": 111,
+            "end_line": 124,
+            "line": 119,
             "name": "installed_javascript",
             "projection_sha256": "a5de5462a1eacbcbd788945582d7194751d045392729defc39026f69002a53e9"
           },
@@ -2479,8 +2519,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 18,
-            "end_line": 127,
-            "line": 119,
+            "end_line": 135,
+            "line": 127,
             "name": "javascript_results",
             "projection_sha256": "92b5cf63c9f4d1bdc33ba9b5992bc239f20920b09b286e38a2e8c29407ec9df1"
           },
@@ -2489,8 +2529,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 40,
-            "end_line": 140,
-            "line": 130,
+            "end_line": 148,
+            "line": 138,
             "name": "javascript_measurements",
             "projection_sha256": "0c24e4bb2c9f56203668931a9ba4cd5c25d6bc84e87c14a441fc0a96e9af5d1d"
           },
@@ -2499,15 +2539,15 @@
             "column": 0,
             "complexity": 4,
             "end_column": 74,
-            "end_line": 152,
-            "line": 143,
+            "end_line": 160,
+            "line": 151,
             "name": "javascript_file",
             "projection_sha256": "7385ae1a2d396c476dbd626fc4d1ef2e71af41e241f5212737202651824adf9b"
           }
         ],
         "language": "python",
         "path": "articulous/complexity_native.py",
-        "sha256": "7eb0f0a04fcb480e437d4d890191d7af6963354101593cd0c45d189de10afdae"
+        "sha256": "ecff74a4e62dfb2e674d2c69533470845e9668372501189c118471b1e6284798"
       },
       {
         "functions": [
@@ -11420,8 +11460,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 60,
-            "end_line": 36,
-            "line": 17,
+            "end_line": 38,
+            "line": 19,
             "name": "test_cc003_javascript_results_are_matched_by_file_identity",
             "projection_sha256": "5fa0e238bfc4de67b5e002732dcb81cc359e5c9628f74c04ca8552cbce052056"
           },
@@ -11430,8 +11470,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 58,
-            "end_line": 23,
-            "line": 22,
+            "end_line": 25,
+            "line": 24,
             "name": "test_cc003_javascript_results_are_matched_by_file_identity.metadata",
             "projection_sha256": "16814085a1116a2652e46d3bc078cf772860954b01cfffc67e8742c9989175d1"
           },
@@ -11440,8 +11480,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 89,
-            "end_line": 26,
-            "line": 25,
+            "end_line": 28,
+            "line": 27,
             "name": "test_cc003_javascript_results_are_matched_by_file_identity.output",
             "projection_sha256": "c54f562c67f1eff5800c4e1e9a201d0a7953221243ca4e1d60b4ddd30e209bd2"
           },
@@ -11450,8 +11490,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 30,
-            "line": 28,
+            "end_line": 32,
+            "line": 30,
             "name": "test_cc003_javascript_results_are_matched_by_file_identity.file_result",
             "projection_sha256": "3e7c3a0d7c591344bb5f6b27287ff7f46ca83c38fcc871faf263460de5a39cbf"
           },
@@ -11460,8 +11500,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 34,
-            "end_line": 43,
-            "line": 40,
+            "end_line": 45,
+            "line": 42,
             "name": "record",
             "projection_sha256": "925018da44698b55617bcdb45d1698c178cddc36582571daa0a42e72131c3b7c"
           },
@@ -11470,8 +11510,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 55,
-            "line": 52,
+            "end_line": 57,
+            "line": 54,
             "name": "test_cc003_invalid_function_records",
             "projection_sha256": "b9cfeea0be7f97ff2c1727cd4e094d068105b63f19d349b35b26830670717c51"
           },
@@ -11480,8 +11520,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 40,
-            "end_line": 61,
-            "line": 59,
+            "end_line": 63,
+            "line": 61,
             "name": "test_cc003_invalid_record_shapes",
             "projection_sha256": "ab512833983416619a2a95a12f0651ad323da69875efaebd75a475463fbb8c4e"
           },
@@ -11490,8 +11530,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 67,
-            "line": 65,
+            "end_line": 69,
+            "line": 67,
             "name": "test_cc003_invalid_paths",
             "projection_sha256": "1aee2af3ad42994e69eb1bb400b09b079a855bee6bb18f417f68e5a831d8bd1c"
           },
@@ -11500,8 +11540,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 44,
-            "end_line": 76,
-            "line": 70,
+            "end_line": 78,
+            "line": 72,
             "name": "test_cc003_bounded_property_records",
             "projection_sha256": "c6565dff23d22a707b2596a9e8eb164cc434a83926fd6ce5f06c31d6683b7831"
           },
@@ -11510,8 +11550,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 51,
-            "end_line": 90,
-            "line": 79,
+            "end_line": 92,
+            "line": 81,
             "name": "test_cc003_encoding_and_nested_scope_projection",
             "projection_sha256": "327dbd1923360b53bbea45b22e15c0416a3c8bc188d9d5c8fdcc2aa9e21b5c92"
           },
@@ -11520,8 +11560,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 57,
-            "end_line": 104,
-            "line": 93,
+            "end_line": 106,
+            "line": 95,
             "name": "test_cc003_class_and_async_projection_boundaries",
             "projection_sha256": "cdd1d2871ec7ec3b099ba2023ddc9d1b367e6ad8bd3653d3ccb4ab50eeaf41da"
           },
@@ -11530,9 +11570,9 @@
             "column": 58,
             "complexity": 1,
             "end_column": 73,
-            "end_line": 102,
-            "line": 102,
-            "name": "test_cc003_class_and_async_projection_boundaries.<lambda>@102:58",
+            "end_line": 104,
+            "line": 104,
+            "name": "test_cc003_class_and_async_projection_boundaries.<lambda>@104:58",
             "projection_sha256": "434fcc990b6968532db2f4267c989d072083f5e5da9546d95e8f91a161570d60"
           },
           {
@@ -11540,8 +11580,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 80,
-            "end_line": 111,
-            "line": 107,
+            "end_line": 113,
+            "line": 109,
             "name": "test_cc003_callable_header_decisions_are_preserved",
             "projection_sha256": "a34232704518120ab0f6f17dde7b0189abe80853d362ebfa438ef6f8c1d0f1e1"
           },
@@ -11550,8 +11590,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 80,
-            "end_line": 118,
-            "line": 114,
+            "end_line": 120,
+            "line": 116,
             "name": "test_cc003_formatted_string_decisions_are_visible_to_native_analyzer",
             "projection_sha256": "d5dea6c82ebcd2ebe508e0c250ac73618893af8897fa04296c090f8d4d918031"
           },
@@ -11560,8 +11600,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 38,
-            "end_line": 131,
-            "line": 121,
+            "end_line": 133,
+            "line": 123,
             "name": "test_cc003_annotations_and_unsupported_syntax",
             "projection_sha256": "c7299e2ac781c4295689bf98947ee798d2629463eae91ef2c4dd957fd7798712"
           },
@@ -11570,8 +11610,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 78,
-            "end_line": 140,
-            "line": 134,
+            "end_line": 142,
+            "line": 136,
             "name": "analyzer_for",
             "projection_sha256": "c0956e98c54c2bcbed3377efb50b57bf0810ee586ef971a6dc080f8e9ba638d8"
           },
@@ -11580,9 +11620,9 @@
             "column": 28,
             "complexity": 1,
             "end_column": 76,
-            "end_line": 140,
-            "line": 140,
-            "name": "analyzer_for.<lambda>@140:28",
+            "end_line": 142,
+            "line": 142,
+            "name": "analyzer_for.<lambda>@142:28",
             "projection_sha256": "a9d1346b18356a9c85412bad5b97670744231f18db5738414c034e6b2825f18f"
           },
           {
@@ -11590,8 +11630,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 84,
-            "end_line": 149,
-            "line": 143,
+            "end_line": 151,
+            "line": 145,
             "name": "test_cc003_worker_measurement_and_missing_boundary",
             "projection_sha256": "0106099ef0ced1e949dab97f0500a12ecdbba25752dad17fdaff88a8dc4327a7"
           },
@@ -11600,8 +11640,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 68,
-            "end_line": 159,
-            "line": 152,
+            "end_line": 161,
+            "line": 154,
             "name": "test_cc003_projection_identity_survives_unparse_quote_changes",
             "projection_sha256": "0bb14187fdb670bf5acb317227ec8eebe6088926d832835e34fc2dd488840ae7"
           },
@@ -11610,9 +11650,9 @@
             "column": 46,
             "complexity": 1,
             "end_column": 73,
-            "end_line": 155,
-            "line": 155,
-            "name": "test_cc003_projection_identity_survives_unparse_quote_changes.<lambda>@155:46",
+            "end_line": 157,
+            "line": 157,
+            "name": "test_cc003_projection_identity_survives_unparse_quote_changes.<lambda>@157:46",
             "projection_sha256": "c3b7086ef81101463c76f66452708d843f2ad6bf9082b9890b69884f0cbcfe87"
           },
           {
@@ -11620,8 +11660,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 98,
-            "end_line": 176,
-            "line": 162,
+            "end_line": 178,
+            "line": 164,
             "name": "test_cc003_calibration_controls",
             "projection_sha256": "1ba68cb9159d9d3f0a2322607ee3ef549b07343e186d75ed47722cbf7eb71817"
           },
@@ -11630,8 +11670,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 68,
-            "end_line": 166,
-            "line": 165,
+            "end_line": 168,
+            "line": 167,
             "name": "test_cc003_calibration_controls.measured",
             "projection_sha256": "cc97c2c72151cd0011a81184df33c9a41e8e28589cb76e695e94630d43a2451a"
           },
@@ -11640,8 +11680,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 187,
-            "line": 185,
+            "end_line": 189,
+            "line": 187,
             "name": "test_cc003_invalid_python_provenance",
             "projection_sha256": "82dbd0cf176cce567c1e4f677458f86384b18722b140935f5e4581d2968c3198"
           },
@@ -11650,8 +11690,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 77,
-            "end_line": 198,
-            "line": 190,
+            "end_line": 200,
+            "line": 192,
             "name": "test_cc003_worker_entry_points",
             "projection_sha256": "abef5aa4a208d86fe76a500f5ea62315f4da9c57ccc08433a4df85a9be094aaa"
           },
@@ -11660,9 +11700,9 @@
             "column": 54,
             "complexity": 1,
             "end_column": 106,
-            "end_line": 192,
-            "line": 192,
-            "name": "test_cc003_worker_entry_points.<lambda>@192:54",
+            "end_line": 194,
+            "line": 194,
+            "name": "test_cc003_worker_entry_points.<lambda>@194:54",
             "projection_sha256": "d38666a40be66bc38f0f9b0c4f866aebdea3e1d46cec4ec5a31157378ea7ac34"
           },
           {
@@ -11670,9 +11710,9 @@
             "column": 45,
             "complexity": 1,
             "end_column": 69,
-            "end_line": 193,
-            "line": 193,
-            "name": "test_cc003_worker_entry_points.<lambda>@193:45",
+            "end_line": 195,
+            "line": 195,
+            "name": "test_cc003_worker_entry_points.<lambda>@195:45",
             "projection_sha256": "dc23627a6505207f698380a11c5579af79826002f602ed8b676e4b9fb2f24ef2"
           },
           {
@@ -11680,9 +11720,9 @@
             "column": 54,
             "complexity": 1,
             "end_column": 94,
-            "end_line": 196,
-            "line": 196,
-            "name": "test_cc003_worker_entry_points.<lambda>@196:54",
+            "end_line": 198,
+            "line": 198,
+            "name": "test_cc003_worker_entry_points.<lambda>@198:54",
             "projection_sha256": "e6413da468eb00c72d6d33b1ae6771598fa1d5c9bbeda35fd331018e8a111259"
           },
           {
@@ -11690,8 +11730,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 50,
-            "end_line": 213,
-            "line": 201,
+            "end_line": 215,
+            "line": 203,
             "name": "test_cc003_installed_analyzer_and_baseline",
             "projection_sha256": "9d87a6945ddb3753dfde767105798970cac95032ae12466ca0e3c6bf73b4784b"
           },
@@ -11700,9 +11740,9 @@
             "column": 59,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 202,
-            "line": 202,
-            "name": "test_cc003_installed_analyzer_and_baseline.<lambda>@202:59",
+            "end_line": 204,
+            "line": 204,
+            "name": "test_cc003_installed_analyzer_and_baseline.<lambda>@204:59",
             "projection_sha256": "c732df79a074759e4b36a475d0fca0329408feb92da27ee476b0681f5a8e9978"
           },
           {
@@ -11710,9 +11750,9 @@
             "column": 62,
             "complexity": 1,
             "end_column": 80,
-            "end_line": 203,
-            "line": 203,
-            "name": "test_cc003_installed_analyzer_and_baseline.<lambda>@203:62",
+            "end_line": 205,
+            "line": 205,
+            "name": "test_cc003_installed_analyzer_and_baseline.<lambda>@205:62",
             "projection_sha256": "6cd1e64a28b4e063225afa362eaea744b441e3dc3279a0136b2245cd44cf77b2"
           },
           {
@@ -11720,8 +11760,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 45,
-            "end_line": 209,
-            "line": 206,
+            "end_line": 211,
+            "line": 208,
             "name": "test_cc003_installed_analyzer_and_baseline.run",
             "projection_sha256": "9e40448afde4ab1bf28fecee4e44484968364da3db76b3296ec5f4f05483aa2c"
           },
@@ -11730,8 +11770,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 86,
-            "end_line": 225,
-            "line": 216,
+            "end_line": 227,
+            "line": 218,
             "name": "test_cc003_native_command_and_python_adapter",
             "projection_sha256": "71543c589445459b6e0300016be0aaff475c5c5787f34c973307a048e35f83a3"
           },
@@ -11740,9 +11780,9 @@
             "column": 77,
             "complexity": 1,
             "end_column": 110,
-            "end_line": 217,
-            "line": 217,
-            "name": "test_cc003_native_command_and_python_adapter.<lambda>@217:77",
+            "end_line": 219,
+            "line": 219,
+            "name": "test_cc003_native_command_and_python_adapter.<lambda>@219:77",
             "projection_sha256": "17c184ef1daa96cefa417e7d593f00918d42b08bedb727a0ff837109ab57e2b7"
           },
           {
@@ -11750,9 +11790,9 @@
             "column": 53,
             "complexity": 1,
             "end_column": 76,
-            "end_line": 218,
-            "line": 218,
-            "name": "test_cc003_native_command_and_python_adapter.<lambda>@218:53",
+            "end_line": 220,
+            "line": 220,
+            "name": "test_cc003_native_command_and_python_adapter.<lambda>@220:53",
             "projection_sha256": "a6067db1a4fe498755ae97a923a4e33334a10e8b1ea9c970c4ea7dadb9dc8031"
           },
           {
@@ -11760,9 +11800,9 @@
             "column": 30,
             "complexity": 2,
             "end_column": 79,
-            "end_line": 221,
-            "line": 221,
-            "name": "test_cc003_native_command_and_python_adapter.<lambda>@221:30",
+            "end_line": 223,
+            "line": 223,
+            "name": "test_cc003_native_command_and_python_adapter.<lambda>@223:30",
             "projection_sha256": "370e50c8e108b608a877d7440ea955359b48230c0e871e5281e74437e41a1471"
           },
           {
@@ -11770,9 +11810,9 @@
             "column": 43,
             "complexity": 1,
             "end_column": 107,
-            "end_line": 224,
-            "line": 224,
-            "name": "test_cc003_native_command_and_python_adapter.<lambda>@224:43",
+            "end_line": 226,
+            "line": 226,
+            "name": "test_cc003_native_command_and_python_adapter.<lambda>@226:43",
             "projection_sha256": "a44371cae52f26fe921577979f008ccf8069c9c3eae32f0f33492bed1973fd14"
           },
           {
@@ -11780,8 +11820,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 59,
-            "end_line": 232,
-            "line": 229,
+            "end_line": 234,
+            "line": 231,
             "name": "test_cc003_native_python_missing_results",
             "projection_sha256": "1b3ace343d066a0bd3ad7e4d65f92de373f9488e88dcb80a1bb40d65071b4b4f"
           },
@@ -11790,9 +11830,9 @@
             "column": 43,
             "complexity": 1,
             "end_column": 70,
-            "end_line": 230,
-            "line": 230,
-            "name": "test_cc003_native_python_missing_results.<lambda>@230:43",
+            "end_line": 232,
+            "line": 232,
+            "name": "test_cc003_native_python_missing_results.<lambda>@232:43",
             "projection_sha256": "53a708d989b0f3ad90f5d0e882ecc4d42d566ea922bff4fa281048ed62101726"
           },
           {
@@ -11800,8 +11840,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 94,
-            "end_line": 237,
-            "line": 235,
+            "end_line": 239,
+            "line": 237,
             "name": "region_node",
             "projection_sha256": "7455c76116cb562e7c256b5e62876420fdcf04e2ce92000726960ce6d303e7e5"
           },
@@ -11810,8 +11850,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 40,
-            "end_line": 242,
-            "line": 240,
+            "end_line": 244,
+            "line": 242,
             "name": "diagnostic",
             "projection_sha256": "c527d57ec3c3e51b04fca7b4d9168e4eee0ad27ada2daf8d38173c163a4a7f17"
           },
@@ -11820,8 +11860,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 90,
-            "end_line": 256,
-            "line": 245,
+            "end_line": 258,
+            "line": 247,
             "name": "test_cc003_javascript_boundaries_and_implicit_scopes",
             "projection_sha256": "29c062a8df8c561c3e096c19f83577b1333e1c4ab76a9a717392cad176c32ced"
           },
@@ -11830,8 +11870,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 59,
-            "end_line": 277,
-            "line": 260,
+            "end_line": 279,
+            "line": 262,
             "name": "test_cc003_javascript_fault_controls",
             "projection_sha256": "c33a483f1b22261df3196d5cfd4a4e13cca583913f3420992f14640dbe4c0695"
           },
@@ -11840,8 +11880,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 71,
-            "end_line": 289,
-            "line": 280,
+            "end_line": 291,
+            "line": 282,
             "name": "test_cc003_installed_javascript_metadata",
             "projection_sha256": "1e85a4d615e5b88061d4d6e5ca7a44a01b776ed1cb619b57fb65b447ff555722"
           },
@@ -11850,8 +11890,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 81,
-            "end_line": 309,
-            "line": 293,
+            "end_line": 311,
+            "line": 295,
             "name": "test_cc003_javascript_file_lifetime",
             "projection_sha256": "361e88dc3e23cb396b23d17dbf98ff5485aaa724f2e75a89d00c5c111ad0c229"
           },
@@ -11860,8 +11900,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 40,
-            "end_line": 300,
-            "line": 297,
+            "end_line": 302,
+            "line": 299,
             "name": "test_cc003_javascript_file_lifetime.command",
             "projection_sha256": "3bb90d5c3bb8ef4266db6a988b007cad55c62ae0663136e08d3c8f22edd5326e"
           },
@@ -11870,8 +11910,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 79,
-            "end_line": 332,
-            "line": 313,
+            "end_line": 334,
+            "line": 315,
             "name": "test_cc003_javascript_inventory_lifetime",
             "projection_sha256": "f6477bdea7a4e43ce70f809fd9ec70801aa97b894a0d24ff7d09a0cbd24bfcf1"
           },
@@ -11880,9 +11920,9 @@
             "column": 56,
             "complexity": 1,
             "end_column": 80,
-            "end_line": 322,
-            "line": 322,
-            "name": "test_cc003_javascript_inventory_lifetime.<lambda>@322:56",
+            "end_line": 324,
+            "line": 324,
+            "name": "test_cc003_javascript_inventory_lifetime.<lambda>@324:56",
             "projection_sha256": "07e1178ea7afde6cd34eaa862b4e33258b4c03514f5ce6f3ea2825a443ff22aa"
           },
           {
@@ -11890,8 +11930,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 34,
-            "end_line": 327,
-            "line": 324,
+            "end_line": 329,
+            "line": 326,
             "name": "test_cc003_javascript_inventory_lifetime.command",
             "projection_sha256": "bff5a27c163cdbe916a3022d17727169c132cfedf3bcf2dd871a5b471e6d0902"
           },
@@ -11900,20 +11940,20 @@
             "column": 51,
             "complexity": 1,
             "end_column": 64,
-            "end_line": 330,
-            "line": 330,
-            "name": "test_cc003_javascript_inventory_lifetime.<lambda>@330:51",
+            "end_line": 332,
+            "line": 332,
+            "name": "test_cc003_javascript_inventory_lifetime.<lambda>@332:51",
             "projection_sha256": "933561fdfdc68a773fe6e41ed6701bbd1bfcf186b11c8722f14e033700bee68e"
           },
           {
-            "body_sha256": "46ae5e4db0c1966891fd3d69835959098d19c94d32c33f08a640b4fae898d6d6",
+            "body_sha256": "288391dcec3144910110feb3c424b48ebfafba7ac02e82c332c8d2a524a5af62",
             "column": 0,
-            "complexity": 3,
+            "complexity": 2,
             "end_column": 27,
             "end_line": 360,
-            "line": 336,
+            "line": 338,
             "name": "evidence",
-            "projection_sha256": "91b9add6cf794cf3b8b34b52f5f6702ac2050c0f3e724b8817e516214c77aaf2"
+            "projection_sha256": "277c878a20949781a1581157bbe51fed5fb5454d40a7bf1a748fea923eab89af"
           },
           {
             "body_sha256": "900251a70e30189c9b20fa406994cd90297e0337386b38704e5928fbef4c670f",
@@ -12184,11 +12224,111 @@
             "line": 495,
             "name": "test_cc002_stale_xslt_fails_with_unchanged_python_and_javascript",
             "projection_sha256": "0923091e4466572a54fb594290327fdc180d498888581cf92ba7ace795c9ea37"
+          },
+          {
+            "body_sha256": "701f6fea1bd3a93c108bc7e02416e892045995bce67186750bfaa6bc2bfbed8b",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 40,
+            "end_line": 515,
+            "line": 509,
+            "name": "test_review008_missing_javascript_inventory_is_rejected",
+            "projection_sha256": "569add77555d7f07937ad3f815bdd5596626e183338463cee8a9972453836f19"
+          },
+          {
+            "body_sha256": "ddab783210e8c647db46c19dd5c55439ce985f3567f38b21415f0d7fd1a993ef",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 83,
+            "end_line": 531,
+            "line": 519,
+            "name": "javascript_entry",
+            "projection_sha256": "386f4b7ce10dbd9620eee2ee872d77d29d65b7062f43c4bfa973cb62c8d2f9e2"
+          },
+          {
+            "body_sha256": "d6cd8e291654f6f2161a111d4c50fc78c4de39c123114659ec6f60e00814d64c",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 49,
+            "end_line": 540,
+            "line": 534,
+            "name": "test_review008_utf16_boundaries_and_order_independent_inventory",
+            "projection_sha256": "c3aa653c2eeb1e8f675854acc8975f4aeed3a513f0aa6a1260d63d222bdb1833"
+          },
+          {
+            "body_sha256": "b8442ea8196b6921226feb52b4407485561bb969f7377bc914b15641d7358a19",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 40,
+            "end_line": 551,
+            "line": 547,
+            "name": "test_review008_javascript_identity_fault_controls",
+            "projection_sha256": "54dbc10ff1d85613bdb7aab878f27bcfa3aafdda253c0619bee93ba10ea86e95"
+          },
+          {
+            "body_sha256": "b72303e0326d302efdf5b92103bc9c33d169d6dc1e8c8f5790f1855758309c9c",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 40,
+            "end_line": 558,
+            "line": 554,
+            "name": "test_review008_extra_alias_counter_cannot_replace_completeness",
+            "projection_sha256": "deda37460bcaca69a6ead40dbfd11ca9c61130b14ec6e3c3df59455e77a68b64"
+          },
+          {
+            "body_sha256": "dbb2e4570ef5bc5f21a91593c0d4975c61921195fbcff37095ee4e10e95233c8",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 62,
+            "end_line": 572,
+            "line": 561,
+            "name": "test_review008_seeded_boundary_mutations",
+            "projection_sha256": "cd9c9561102e383701dafcf74bf0bec7db264c2744368411ae0a656a6d6eddc5"
+          },
+          {
+            "body_sha256": "6dc77ed09a72f8029f4c3534eced159864cf9b80b65bf526158fd49bd45fcbc5",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 53,
+            "end_line": 578,
+            "line": 576,
+            "name": "test_review008_missing_parser_inventory_is_not_acceptance",
+            "projection_sha256": "18ac945db3f621c6ddee15836d023f992ee3ba0f45ce438739b97ce2526395a3"
+          },
+          {
+            "body_sha256": "d32c130b97bf4600692ca3ebf50b0d7bc17753ed8f5f296394925656503bf2da",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 40,
+            "end_line": 591,
+            "line": 581,
+            "name": "test_review008_source_changes_during_parse_are_rejected",
+            "projection_sha256": "0cc012112ffa9ce8f2159e2befc93f5106e337470b874017b97a5c2e7d5f5348"
+          },
+          {
+            "body_sha256": "9f6375cf8352eb2754555dc4168c30409b594ffce0b7164044f0b607ccd8f61c",
+            "column": 4,
+            "complexity": 1,
+            "end_column": 19,
+            "end_line": 587,
+            "line": 585,
+            "name": "test_review008_source_changes_during_parse_are_rejected.changed",
+            "projection_sha256": "5663bf1e847245dc4fb3a6ebff92fbf604509f752a436ca53535b58961c30127"
+          },
+          {
+            "body_sha256": "09240e2b3736de2a7e97991806466f25c5e4107e2dbbf86f8542e9732dfdbe76",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 44,
+            "end_line": 600,
+            "line": 594,
+            "name": "test_review008_invalid_syntax_fails_even_with_empty_report",
+            "projection_sha256": "3457b5c169ee9d3c2156dd470a9a28a88446e5afe01922a1f3db787c8a719094"
           }
         ],
         "language": "python",
         "path": "tests/test_complexity_gate.py",
-        "sha256": "fce309b9e8973e1337ffaf4f0f24d80505bd0921fc7baa5ec2649ebc0957ce99"
+        "sha256": "066b3d50b2dda65350d6d39f6ba9e9a64a3dd3661892ada7bcb7a7580df50dcc"
       },
       {
         "functions": [

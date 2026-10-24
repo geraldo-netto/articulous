@@ -7,6 +7,7 @@ access or modification of the cached analyzers is required.
 From the repository root:
 
 ```sh
+export ARTICULOUS_ACORN=/home/netto/.npm/_npx/515228b7c8d004a2/node_modules/acorn
 .venv/bin/python -m articulous.complexity_gate measure \
   --python-analyzer /usr/bin/python3 \
   --eslint /home/netto/.npm/_npx/515228b7c8d004a2/node_modules/eslint
@@ -19,11 +20,19 @@ per-template report. Both components record source identities, analyzer versions
 and calibration. Both must validate before the aggregate is atomically published.
 Missing, invalid or stale components fail the whole check; the Python/JavaScript
 component alone cannot satisfy aggregate acceptance. There is no legacy fallback.
-The check validates a trusted snapshot without rerunning analyzers or
-authenticating an edited report. Remeasure after source edits. `xslt.json` remains
+The check validates a trusted snapshot without rerunning complexity analyzers or
+authenticating an edited report. It independently parses JavaScript with installed
+Acorn 8.17.0, compares the complete multiset of callable kinds, UTF-16 source
+boundaries and body/projection hashes, and rejects changes during parsing.
+Missing, extra and mismatched JavaScript functions fail even when the enclosing
+file hash still matches. Record ordering is immaterial. Remeasure after source edits. `xslt.json` remains
 the standalone XSLT workflow's snapshot; the aggregate embeds its own measured
 XSLT component. CI runs the aggregate check using installed test dependencies;
-it does not install Lizard or ESLint to check committed evidence.
+it does not install Lizard or ESLint to check committed evidence. The manual CI
+workflow explicitly installs the lockfile-pinned Acorn verification dependency;
+local checks reuse the installed parser selected by `ARTICULOUS_ACORN` and perform
+no installation or network transfer. Parser workers borrow persistent source files
+through owned process settlement; parsed trees are released after each file check.
 
 The inventory includes root Python entry points, all Python files under
 `articulous` and `tests`, and maintained JS/MJS in those trees. Stock Prism JS is

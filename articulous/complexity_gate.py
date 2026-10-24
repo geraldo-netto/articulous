@@ -2,6 +2,7 @@
 import argparse
 import ast
 import json
+from collections import Counter
 from pathlib import Path
 
 from . import complexity_native as native
@@ -86,8 +87,34 @@ def unique_functions(values):
     return rows
 
 
-def check_functions(entry, baseline, content):
+def javascript_region_identity(region, encoded):
+    node = region['node']
+    fingerprint = digest(encoded[2 * node['start']:2 * node['end']].decode('utf-16-le').encode())
+    start, end = node['loc']['start'], node['loc']['end']
+    return (region['kind'], start['line'], start['column'], end['line'], end['column'],
+            fingerprint, fingerprint)
+
+
+def javascript_record_identity(row):
+    return (native.diagnostic_kind(row.name), row.line, row.column, row.end_line, row.end_column,
+            row.body_sha256, row.projection_sha256)
+
+
+def check_javascript_functions(rows, content, tree):
+    if not isinstance(tree, dict) or tree.get('type') != 'Program':
+        raise ValueError('Missing independent JavaScript function inventory')
+    source = content.decode() if isinstance(content, bytes) else content
+    encoded = source.encode('utf-16-le')
+    expected = Counter(javascript_region_identity(region, encoded) for region in native.function_regions(tree))
+    actual = Counter(map(javascript_record_identity, rows))
+    if actual != expected:
+        raise ValueError('JavaScript function inventory or identity changed')
+
+
+def check_functions(entry, baseline, content, *, tree=None):
     rows = unique_functions(entry['functions'])
+    if entry['language'] == 'javascript':
+        check_javascript_functions(rows, content, tree)
     identities = python_identities(content) if entry['language'] == 'python' else None
     for row in rows:
         if identities is not None:
@@ -109,7 +136,12 @@ def check_file(root, entry, baseline):
     content = (root / name).read_bytes()
     if digest(content) != entry['sha256']:
         raise ValueError('Stale complexity source: ' + name)
-    return check_functions(entry, baseline.get(name, {}), content)
+    tree = None
+    if expected_language == 'javascript':
+        tree = native.javascript_tree(root / name)
+        if (root / name).read_bytes() != content:
+            raise ValueError('JavaScript source changed during inventory check')
+    return check_functions(entry, baseline.get(name, {}), content, tree=tree)
 
 
 def check_python_calibration(python):

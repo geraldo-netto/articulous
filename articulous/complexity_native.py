@@ -26,6 +26,14 @@ def python_measurements(root, files, interpreter):
     return result
 
 
+def javascript_tree(path):
+    parser = Path(__file__).with_name('tooling_assets') / 'javascript-syntax.mjs'
+    script = ("import {readFileSync} from 'node:fs';"
+              "const {parseJavaScript}=await import(process.argv[1]);"
+              "process.stdout.write(JSON.stringify(parseJavaScript(readFileSync(process.argv[2],'utf8')).tree));")
+    return json.loads(command(['node', '--input-type=module', '-e', script, parser.as_uri(), path]))
+
+
 def function_regions(node, parent=None):
     if isinstance(node, dict):
         yield from own_regions(node, parent)

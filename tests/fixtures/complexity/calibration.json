@@ -1,0 +1,137 @@
+{
+  "functions": [
+    {
+      "body_sha256": "a420050fef68dda4a70b716f69811c9fbce5ff12c837c2b826ded67b4a1feca4",
+      "column": 7,
+      "complexity": 1,
+      "end_column": 1,
+      "end_line": 3,
+      "line": 1,
+      "name": "Function 'straight'",
+      "projection_sha256": "a420050fef68dda4a70b716f69811c9fbce5ff12c837c2b826ded67b4a1feca4"
+    },
+    {
+      "body_sha256": "e2c87d745373171c8d2839d13558716f5c08d9cbbd1166ab4b746a108dd9eae4",
+      "column": 7,
+      "complexity": 4,
+      "end_column": 1,
+      "end_line": 7,
+      "line": 4,
+      "name": "Function 'choices'",
+      "projection_sha256": "e2c87d745373171c8d2839d13558716f5c08d9cbbd1166ab4b746a108dd9eae4"
+    },
+    {
+      "body_sha256": "e0ff15c19690e8a05c2825819e05d1964bc251aa3da6b81986b5e26ac624e0c4",
+      "column": 7,
+      "complexity": 1,
+      "end_column": 1,
+      "end_line": 10,
+      "line": 8,
+      "name": "Function 'outer'",
+      "projection_sha256": "e0ff15c19690e8a05c2825819e05d1964bc251aa3da6b81986b5e26ac624e0c4"
+    },
+    {
+      "body_sha256": "e66f8e626677cb70cc11a612fdcd5cbe61ed2a0ba7a05e65865f878cc8f82d64",
+      "column": 9,
+      "complexity": 2,
+      "end_column": 56,
+      "end_line": 9,
+      "line": 9,
+      "name": "Function 'inner'",
+      "projection_sha256": "e66f8e626677cb70cc11a612fdcd5cbe61ed2a0ba7a05e65865f878cc8f82d64"
+    },
+    {
+      "body_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf",
+      "column": 21,
+      "complexity": 2,
+      "end_column": 43,
+      "end_line": 11,
+      "line": 11,
+      "name": "Arrow function",
+      "projection_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf"
+    },
+    {
+      "body_sha256": "9222db90a7fc615572dd563c405d84e26680f1db8e50d308fddb3bb2735684eb",
+      "column": 29,
+      "complexity": 1,
+      "end_column": 45,
+      "end_line": 12,
+      "line": 12,
+      "name": "Method 'show'",
+      "projection_sha256": "9222db90a7fc615572dd563c405d84e26680f1db8e50d308fddb3bb2735684eb"
+    },
+    {
+      "body_sha256": "7e68c75be5e699e4924a7ef4f8b0698559241b8b07bc111dc560f79a27a252fa",
+      "column": 54,
+      "complexity": 1,
+      "end_column": 70,
+      "end_line": 12,
+      "line": 12,
+      "name": "Method 'restore'",
+      "projection_sha256": "7e68c75be5e699e4924a7ef4f8b0698559241b8b07bc111dc560f79a27a252fa"
+    },
+    {
+      "body_sha256": "62542c9ce00191f20a32638644f3bc3ea1b52003c2a81b98de9ac98b5e38741a",
+      "column": 7,
+      "complexity": 4,
+      "end_column": 64,
+      "end_line": 13,
+      "line": 13,
+      "name": "Function 'optional'",
+      "projection_sha256": "62542c9ce00191f20a32638644f3bc3ea1b52003c2a81b98de9ac98b5e38741a"
+    },
+    {
+      "body_sha256": "9470419f12d2ae688211e08860c5148ca6ee93d7d4ec9713ca69bd31a3269867",
+      "column": 7,
+      "complexity": 9,
+      "end_column": 1,
+      "end_line": 24,
+      "line": 14,
+      "name": "Function 'boundary'",
+      "projection_sha256": "9470419f12d2ae688211e08860c5148ca6ee93d7d4ec9713ca69bd31a3269867"
+    },
+    {
+      "body_sha256": "31d29bb2bff1b6c0b3eb6debf7c538c6edf60799672d6c078a95835ab6f3964b",
+      "column": 10,
+      "complexity": 2,
+      "end_column": 22,
+      "end_line": 26,
+      "line": 26,
+      "name": "Class field initializer",
+      "projection_sha256": "31d29bb2bff1b6c0b3eb6debf7c538c6edf60799672d6c078a95835ab6f3964b"
+    },
+    {
+      "body_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf",
+      "column": 12,
+      "complexity": 2,
+      "end_column": 34,
+      "end_line": 27,
+      "line": 27,
+      "name": "Method 'factory'",
+      "projection_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf"
+    },
+    {
+      "body_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf",
+      "column": 12,
+      "complexity": 1,
+      "end_column": 34,
+      "end_line": 27,
+      "line": 27,
+      "name": "Class field initializer",
+      "projection_sha256": "a9bc8ffd396bc74ba6d84d9674b871b2f64bc9ec32eae339a024b33055aaccaf"
+    },
+    {
+      "body_sha256": "b05fe1f1babd6662509d2c0345dfc784b31e5cbd7452c604db2164cfaf387e9f",
+      "column": 2,
+      "complexity": 2,
+      "end_column": 52,
+      "end_line": 28,
+      "line": 28,
+      "name": "Class static block",
+      "projection_sha256": "b05fe1f1babd6662509d2c0345dfc784b31e5cbd7452c604db2164cfaf387e9f"
+    }
+  ],
+  "language": "javascript",
+  "path": "tests/fixtures/complexity/calibration.js",
+  "sha256": "a1fc391e099e63cc61b2aa88097b7681cd0d86b1a46c4ec11db9fda5830f051a"
+}

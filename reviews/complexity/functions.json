@@ -9950,8 +9950,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 72,
-            "end_line": 18,
-            "line": 10,
+            "end_line": 19,
+            "line": 11,
             "name": "hreflang",
             "projection_sha256": "58ff4e0cba142994bee7069d05cdee0750f1d3fa299c1b057d20a03fe8643eba"
           },
@@ -9960,28 +9960,38 @@
             "column": 0,
             "complexity": 3,
             "end_column": 51,
-            "end_line": 26,
-            "line": 21,
+            "end_line": 27,
+            "line": 22,
             "name": "_cached_metadata",
             "projection_sha256": "b8b99dda2647597978404465d271c8e24deb53a376c4d103d4fe361cd1e96793"
           },
           {
-            "body_sha256": "ebefbd3f7e16150b049f300eb15737ad6f6e9be8b5497688d720147084de5f20",
+            "body_sha256": "2fec5401732f94a9b3855eccffc9770e8b90b63cb04a8df66674b7ee45723fa5",
             "column": 4,
-            "complexity": 1,
-            "end_column": 118,
-            "end_line": 36,
-            "line": 30,
+            "complexity": 2,
+            "end_column": 17,
+            "end_line": 37,
+            "line": 31,
             "name": "TranslationStore.__init__",
-            "projection_sha256": "4cea81c5195ef2f423cec32f525b59faa11c284f9aeebf4d0b24023b85cfe8b6"
+            "projection_sha256": "694c2fd724f9663eb66d27ddb5c4ec25b24d14cb0a05057bae297c552e259545"
+          },
+          {
+            "body_sha256": "9ed58625ab922e1a1249c4aff52599ba915d6e58045a62a4e69c8109e94e8378",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 20,
+            "end_line": 47,
+            "line": 39,
+            "name": "TranslationStore._initialize",
+            "projection_sha256": "da7be4da5ebaf8161bd25ddfec1bc82d547cb5b16bb6f076cafe2df593504d17"
           },
           {
             "body_sha256": "cd2d7c916b270223813bca1ff2529043bdc2acf0ebc7d13a07d8eaa471a2a718",
             "column": 4,
             "complexity": 4,
             "end_column": 115,
-            "end_line": 48,
-            "line": 38,
+            "end_line": 59,
+            "line": 49,
             "name": "TranslationStore.add",
             "projection_sha256": "8f8e702b5732db5a03dd22269a7e33f96217e18b3caa99e14e0aca3a495d0d6e"
           },
@@ -9990,8 +10000,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 127,
-            "end_line": 52,
-            "line": 50,
+            "end_line": 63,
+            "line": 61,
             "name": "TranslationStore.markup",
             "projection_sha256": "8d3047609cd156d6cd66eebdda67ffd28cea32b928267ef9ca755b3de6d004f2"
           },
@@ -10000,8 +10010,8 @@
             "column": 4,
             "complexity": 3,
             "end_column": 99,
-            "end_line": 64,
-            "line": 54,
+            "end_line": 75,
+            "line": 65,
             "name": "TranslationStore.validate_filters",
             "projection_sha256": "8a8cf3eb8be4dc98a771b4f830f69353efa90e5ee28b1298cd94d7364e34fadb"
           },
@@ -10010,8 +10020,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 18,
-            "end_line": 75,
-            "line": 66,
+            "end_line": 86,
+            "line": 77,
             "name": "TranslationStore._load_previous",
             "projection_sha256": "9b8db2b325c100c28bfde122e9ec0463b26bb211405d4b6b7b4182df96215679"
           },
@@ -10020,8 +10030,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 49,
-            "end_line": 79,
-            "line": 77,
+            "end_line": 90,
+            "line": 88,
             "name": "TranslationStore._current_markup",
             "projection_sha256": "2a6b58a60d3bb92e77fff1a5abdb6cb894d48e8e47002f199c7e5bfd07bab5c5"
           },
@@ -10030,8 +10040,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 36,
-            "end_line": 83,
-            "line": 81,
+            "end_line": 94,
+            "line": 92,
             "name": "TranslationStore._previous_markup",
             "projection_sha256": "fe1e6e90b265e3683710ae283b25bf31988f42c6ae1918f6e862f0fbca0b7e0b"
           },
@@ -10040,15 +10050,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 86,
-            "line": 85,
+            "end_line": 97,
+            "line": 96,
             "name": "TranslationStore.close",
             "projection_sha256": "74057718a748a1e38e147f7158b2c3e1bba50bd6ce60fcaf436eb475bbc3f9bd"
           }
         ],
         "language": "python",
         "path": "articulous/translations.py",
-        "sha256": "4ca4504a10b21f037f8f9f32f1ffd011a1645b7dcea381e4c9ca15913e73e789"
+        "sha256": "1694f755871ece16c65353f4451d1ab6b5d04a7bebdc08b950a1066ff15a0c01"
       },
       {
         "functions": [],
@@ -25939,6 +25949,33 @@
         "language": "python",
         "path": "tests/test_translation_authoring.py",
         "sha256": "a2ae90f1616bb666dcb4720a28818e6bebc90076562dfddb102e1a962fb60d49"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "48ca871ad0f39df243b265b5968083bdde309b67ae174ef8f5fa3fe42514d17a",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 46,
+            "end_line": 18,
+            "line": 11,
+            "name": "test_review019_failed_setup_closes_connection",
+            "projection_sha256": "a17067af4f125ee7a7b84181103dadbffe8fcdaca5763f63ab2debbbb2832ab8"
+          },
+          {
+            "body_sha256": "a54a0d4ac0cb3894a236ca205b91452e4109e56f8360a379c994cf40b7ce8d8a",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 46,
+            "end_line": 31,
+            "line": 21,
+            "name": "test_review019_setup_releases_cursors_and_keeps_connection",
+            "projection_sha256": "bdfd7bf1b6a42dd9a5490aa1435e3da17d388dfb9e40891dce0d5052dbc1a758"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_translation_setup.py",
+        "sha256": "0b7323331a8a0f099c4b3576787f8b7f801a3b1bf5bf6590b657776e9990db4d"
       },
       {
         "functions": [

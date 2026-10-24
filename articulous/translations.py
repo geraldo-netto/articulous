@@ -2,6 +2,7 @@
 import json
 import re
 import sqlite3
+from contextlib import closing
 from html import escape
 
 from .locale_data import LANGUAGES, REGIONS, SCRIPTS
@@ -29,11 +30,21 @@ def _cached_metadata(fingerprint) -> dict:
 class TranslationStore:
     def __init__(self):
         self._database = sqlite3.connect("")
-        self._database.execute("PRAGMA cache_size = -512")
-        self._database.execute(
-            "CREATE TABLE pages (id TEXT PRIMARY KEY, group_id TEXT, locale TEXT, url TEXT, selected INTEGER, eligible INTEGER)"
+        try:
+            self._initialize()
+        except BaseException:
+            self._database.close()
+            raise
+
+    def _initialize(self):
+        statements = (
+            "PRAGMA cache_size = -512",
+            "CREATE TABLE pages (id TEXT PRIMARY KEY, group_id TEXT, locale TEXT, url TEXT, selected INTEGER, eligible INTEGER)",
+            "CREATE UNIQUE INDEX translation_locale ON pages(group_id, locale) WHERE eligible = 1",
         )
-        self._database.execute("CREATE UNIQUE INDEX translation_locale ON pages(group_id, locale) WHERE eligible = 1")
+        for statement in statements:
+            with closing(self._database.execute(statement)):
+                pass
 
     def add(self, article, selected: bool) -> None:
         if not article.translation:

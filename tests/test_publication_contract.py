@@ -1,5 +1,6 @@
 """REVIEW-013: independent publication inputs and borrowed validation lifetime."""
 from contextlib import contextmanager
+from dataclasses import asdict
 import json
 import operator
 from pathlib import Path
@@ -52,9 +53,12 @@ class IndependentBackend:
         publication.verify()
         cache = json.loads(publication.cache_text)['__output_roots__'][str(publication.destination)]
         assert {value: key for key, value in cache['__outputs__'].items()} == publication.output_owners
+        assert {key: asdict(route) for key, route in publication.output_routes.items()} == cache['__routes__']
         assert all((publication.root / path).is_file() for path in publication.output_owners)
         with pytest.raises(TypeError):
             operator.setitem(publication.output_owners, 'unowned', 'injected')
+        with pytest.raises(TypeError):
+            operator.setitem(publication.output_routes, 'unowned', 'injected')
         self.received.append(publication)
 
 

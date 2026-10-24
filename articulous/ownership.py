@@ -1,16 +1,18 @@
 """Persistent output ownership, independent of disposable fingerprints."""
 import json
 import stat
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .filesystem import open_regular_file, write_text_atomic, validate_output_path, validate_regular_file
+from .composition_contracts import Route
 
 
 @dataclass(frozen=True)
 class Ownership:
     paths: dict[str, str]
     pending: bool = False
+    routes: dict[str, Route] = field(default_factory=dict)
 
 
 def ownership_path(output_dir: Path) -> Path:
@@ -77,7 +79,31 @@ def _decode_ownership(output_dir: Path, data) -> Ownership:
     if data.get("version") != 2 or not isinstance(data.get("pending", False), bool):
         raise ValueError(f"Invalid output ownership version or recovery flag at {ownership_path(output_dir)}")
     paths = _validate_outputs(data.get("paths"), path_keys=True)
-    return Ownership(_published_paths(output_dir, paths, data.get("existing", {})), data.get("pending", False))
+    return _current_ownership(output_dir, data, paths)
+
+
+def _decode_routes(values, paths):
+    if not isinstance(values, dict):
+        raise ValueError('Invalid output route metadata')
+    routes = {}
+    for key, value in values.items():
+        try:
+            route = Route(**value)
+        except (TypeError, ValueError) as error:
+            raise ValueError('Invalid output route metadata') from error
+        if not isinstance(route.url, str):
+            raise ValueError('Invalid output route metadata URL')
+        if route.key != key or paths.get(route.output_path) != key:
+            raise ValueError('Output route metadata does not match ownership')
+        routes[key] = route
+    return routes
+
+
+def _current_ownership(output_dir, data, paths):
+    published = _published_paths(output_dir, paths, data.get('existing', {}))
+    routes = _decode_routes(data.get('routes', {}), paths)
+    retained = {key: route for key, route in routes.items() if route.output_path in published}
+    return Ownership(published, data.get('pending', False), retained)
 
 
 def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True) -> Ownership:
@@ -96,10 +122,11 @@ def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True)
     return ownership
 
 
-def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, existing=None) -> None:
+def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, existing=None, routes=None) -> None:
     path = ownership_path(output_dir)
     text = json.dumps({"version": 2, "output_dir": str(output_dir.resolve()),
-                       "paths": paths, "pending": pending, "existing": existing or {}}, indent=2, sort_keys=True)
+                       "paths": paths, "pending": pending, "existing": existing or {},
+                       "routes": {key: asdict(route) for key, route in (routes or {}).items()}}, indent=2, sort_keys=True)
     try:
         with open_regular_file(path) as source:
             if source.read() == text.encode("utf-8"):
@@ -109,9 +136,9 @@ def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, exis
     write_text_atomic(path, text)
 
 
-def journal_ownership(output_dir: Path, previous: dict, planned: dict) -> None:
+def journal_ownership(output_dir: Path, previous: dict, planned: dict, *, routes=None) -> None:
     existing = {path: _file_identity(output_dir / path) for path in planned.keys() - previous.keys()}
-    save_ownership(output_dir, {**previous, **planned}, pending=True, existing=existing)
+    save_ownership(output_dir, {**previous, **planned}, pending=True, existing=existing, routes=routes)
 
 
 def _validate_owned_entry(path, destination, allowed, parents):

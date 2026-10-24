@@ -81,3 +81,28 @@ Verification: 2,656 tests and 359 subtests passed; 100% line/branch coverage,
 860 production functions passed individual coverage acceptance, and calibrated
 complexity acceptance passed. Per-function results include every moved contract
 and new catalog boundary in `../complexity/functions.json`.
+
+## API-006: durable route semantics
+
+The cache-loss regression failed before the fix with changed custom-page,
+artifact and noindex-article routes. Ownership now persists route values and is
+authoritative; cache metadata is a disposable derived projection. Both normal
+and whole-site publishers preserve exact routes across missing/corrupt/switched
+caches. Malformed authoritative metadata rejects before publication. Legacy
+metadata is admitted from a known cache once; missing semantics require a full
+build for route discovery rather than fabricated URLs or sitemap policy.
+
+The native boundary borrows `PublicationInput.output_routes`, a read-only mapping
+of immutable contract values, without parsing cache internals. Metadata values
+are finite caller-funded projections; synchronous serialization retains no native
+handles, callbacks or DOMs. Existing atomic sidecar writes and journal rollback
+retain their owners and cleanup boundaries. The old corrupt-route regression now
+damages authoritative ownership; a separate permanent control proves damaged
+cache metadata cannot override it. The final-ownership fault sponsor accepts and
+checks the new explicit route argument while preserving its recovery oracle.
+
+Verification: 2,678 tests and 359 subtests passed; 100% line/branch coverage,
+864 production functions passed individual coverage, calibrated complexity
+acceptance passed, and installed Pyright reports zero errors/warnings. Use the
+installed `pyright/dist/index.js` entrypoint (which sets its bundled typeshed root)
+for direct offline Node invocation; no registry lookup or installation is needed.

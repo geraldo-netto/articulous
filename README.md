@@ -77,6 +77,9 @@ Ownership is also stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.
 Deleting, corrupting or switching the fingerprint cache preserves this
 ownership history, so deleted/private pages can still be pruned.
+The sidecar also preserves immutable route metadata, including canonical URLs,
+language, category and sitemap eligibility. Cached route metadata is derived;
+it cannot override the ownership record.
 
 Legacy cache manifests migrate automatically when no ownership file
 exists. Flat caches bind to the output used for the first upgraded build;

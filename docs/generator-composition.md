@@ -109,6 +109,12 @@ Discovery does not scan rendered HTML or depend on sitemap inclusion. Set
 `cli.dry_run = True` to discover routes without rendering or publishing files.
 Supply extra pages on each build that should generate them. They use the shared
 collision checks, stylesheet/model fingerprints and output ownership machinery.
+Route metadata is persisted with ownership independently of fingerprint caches,
+so partial discovery preserves exact canonical URLs, languages and sitemap
+eligibility after cache loss or replacement. Legacy ownership can recover known
+metadata from its cache once. If both sources lack a retained route's semantics,
+discovery requires a full build rather than inventing metadata. A partial build
+without discovery can retain those files while leaving their metadata unknown.
 Duplicate keys, duplicate destinations, file/parent overlaps, path escapes and
 the reserved `assets/` namespace fail during planning. Explicit extra pages are
 planned even when built-in sections are filtered; `pages` is not a CLI `--only`
@@ -305,6 +311,9 @@ protocol: `capabilities`, `locked`, `recover` and `publish`. The contract module
 imports no build, storage or native adapter implementation. `publish` accepts a
 `PublicationInput`: staged root, destination, cache path, serialized cache text,
 read-only output ownership entries and a `verify()` callback. The boundary adapter
+also supplies immutable route values through read-only `output_routes`; the
+native publisher persists those alongside ownership without interpreting cache
+serialization. The boundary adapter
 serializes shared build metadata; native backends never receive engines, task
 queues, route catalogs or concrete build handles. Native operations live in
 [`backends/posix.py`](../articulous/backends/posix.py) and the existing

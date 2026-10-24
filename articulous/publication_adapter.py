@@ -22,5 +22,6 @@ def publication_input(checked) -> PublicationInput:
         checked.staged.root, prepared.destination, prepared.cache_path,
         publication_cache(prepared),
         MappingProxyType({path: key for key, path in prepared.manifest.items()}),
+        MappingProxyType(prepared.manifest.route_values()),
         checked.assert_unchanged,
     )

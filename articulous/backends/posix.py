@@ -118,7 +118,7 @@ class PosixPublicationBackend:
 
     def _write_state(self, publication):
         write_text_atomic(publication.cache_path, publication.cache_text)
-        save_ownership(publication.destination, dict(publication.output_owners))
+        save_ownership(publication.destination, dict(publication.output_owners), routes=publication.output_routes)
 
     def _install(self, publication, transaction, data):
         destination = publication.destination

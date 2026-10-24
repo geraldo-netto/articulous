@@ -5,6 +5,8 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Protocol
 
+from .composition_contracts import Route
+
 
 @dataclass(frozen=True)
 class PublicationCapabilities:
@@ -24,6 +26,7 @@ class PublicationInput:
     cache_path: Path
     cache_text: str
     output_owners: Mapping[str, str]
+    output_routes: Mapping[str, Route]
     verify: Callable[[], None]
 
 

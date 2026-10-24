@@ -692,6 +692,9 @@ class OutputManifest(dict):
         if self.catalog is not None:
             self.catalog.record(route)
 
+    def route_values(self) -> dict[str, Route]:
+        return {key: Route(**data) for key, data in self.route_metadata.items()}
+
 
 def _read_pickled_articles(path: Path, count: int):
     with path.open("rb") as f:
@@ -1748,7 +1751,7 @@ def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cach
             return
     else:
         logging.debug("Cache unchanged — skipping save")
-    save_ownership(ctx.output_dir, next_manifest)
+    save_ownership(ctx.output_dir, next_manifest, routes=current_manifest.route_values())
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
@@ -1896,21 +1899,35 @@ def _remove_output_obstructions(ctx: BuildCtx) -> None:
             _delete_output_file(path, ctx.output_dir.resolve())
 
 
-def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_manifest: dict) -> None:
+def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_manifest: OutputManifest) -> None:
     if not ctx.dry_run:
         planned_paths = {path: key for key, path in current_manifest.items()}
-        journal_ownership(ctx.output_dir, old_manifest, planned_paths)
+        journal_ownership(ctx.output_dir, old_manifest, planned_paths, routes=current_manifest.route_values())
     _remove_output_obstructions(ctx)
     copy_assets(ctx, cache)
     if not ctx.dry_run:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
 
-def _record_retained_routes(cli, ctx, cache, old_manifest, manifest):
+def _cached_retained_route(cache, key):
     stored = cache.get('__routes__', {})
+    if not isinstance(stored, dict) or key not in stored:
+        return None
+    try:
+        return Route(**stored[key])
+    except (TypeError, ValueError) as error:
+        raise ValueError('Invalid retained route metadata') from error
+
+
+def _record_retained_routes(cli, ctx, cache, old_manifest, routes, manifest):
     for path, key in _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)).items():
-        data = stored.get(key) if isinstance(stored, dict) else None
-        route = Route(**data) if isinstance(data, dict) else route_from_output(ctx.base_url, key, path)
+        route = routes.get(key)
+        if route is None:
+            route = _cached_retained_route(cache, key)
+        if route is None:
+            if manifest.catalog is not None:
+                raise ValueError('Retained route metadata unavailable; run a full build for discovery')
+            continue
         if route.key != key or route.output_path != path:
             raise ValueError('Retained route metadata does not match ownership')
         manifest.record_route(route)
@@ -1947,7 +1964,7 @@ def run_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifact
                 )
                 projection = plan.projection
                 _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
-                _record_retained_routes(cli, ctx, cache, old_manifest, current_manifest)
+                _record_retained_routes(cli, ctx, cache, old_manifest, ownership.routes, current_manifest)
                 _prepare_outputs(ctx, cache, old_manifest, current_manifest)
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)

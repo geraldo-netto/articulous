@@ -12,6 +12,7 @@ from articulous.composition import RouteCatalog
 from articulous.composition_contracts import ExtraPage, Route
 from articulous.models import build_tag_index_model
 from articulous.pipeline import build_ctx_from_config, run_build
+from articulous.ownership import ownership_path
 
 
 def page(config, name='about', category='static'):
@@ -140,13 +141,13 @@ def test_arch003_reserved_feed_fails_before_publication(site_root, seo_config):
 def test_arch003_corrupt_retained_metadata_preserves_output(site_root, seo_config):
     cli, config = seo_config
     run_build(cli, config, site_root)
-    cache = site_root / '.build-cache.json'
-    data = json.loads(cache.read_text())
-    routes = data['__output_roots__'][str(site_root / 'output')]['__routes__']
+    state = ownership_path(site_root / 'output')
+    data = json.loads(state.read_text())
+    routes = data['routes']
     routes['article:en:first-post']['output_path'] = 'other/index.html'
-    cache.write_text(json.dumps(data))
+    state.write_text(json.dumps(data))
     cli.only_sections = ['rss']
     before = (site_root / 'output/rss.xml').read_bytes()
-    with pytest.raises(ValueError, match='Retained route metadata'):
+    with pytest.raises(ValueError, match='route metadata'):
         run_build(cli, config, site_root)
     assert (site_root / 'output/rss.xml').read_bytes() == before

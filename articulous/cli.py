@@ -12,6 +12,7 @@ from .engines import check_dependencies
 from .filesystem import regular_file_opener
 from .pipeline import run_build
 from .sections import SECTION_HELP, SECTION_NAMES
+from .configuration_contracts import BuildRequest
 
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
@@ -68,6 +69,13 @@ class CliOptions:
         self.dry_run = args.dry_run
         self.force_full_build = args.force
         self.verbose = args.verbose
+
+    def as_request(self) -> BuildRequest:
+        return BuildRequest(
+            config_path=self.config_path, only_sections=self.only_sections,
+            only_langs=self.only_langs, only_slugs=self.only_slugs, dry_run=self.dry_run,
+            force_full_build=self.force_full_build, verbose=self.verbose,
+        )
 
 
 def _parse_only_sections(raw):
@@ -149,7 +157,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
 def main(argv=None) -> None:
     """Top-level entrypoint used by sitegen.py and python -m articulous."""
     args = parse_cli_args(argv)
-    cli = CliOptions(args)
+    cli = CliOptions(args).as_request()
     project_root = Path.cwd()
 
     config = load_or_create_config(cli.config_path)

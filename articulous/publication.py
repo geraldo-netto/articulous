@@ -3,9 +3,11 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .publication_contracts import PublicationBackend
+from .config import normalize_configuration
+from .configuration_contracts import BuildOptions, ConfigurationInput
 from .publication_adapter import publication_input
 from .builds import (
-    ValidatedBuild, ValidationReport, _configuration, prepare_build, render_prepared, validate_generated,
+    ValidatedBuild, ValidationReport, prepare_build, render_prepared, validate_generated,
 )
 
 
@@ -40,7 +42,7 @@ def recover_publication(destination: Path, cache_path: Path, *, backend=None) ->
         selected.recover(destination, cache_path)
 
 
-def build_site(cli, config, project_root: Path, *, extra_pages=(), validators=(),
+def build_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), validators=(),
                backend=None, require_atomic=False, require_durable=False, composer=None,
                extra_artifacts=()) -> ValidationReport:
     selected = _backend(backend, require_atomic, require_durable)
@@ -52,9 +54,9 @@ def build_site(cli, config, project_root: Path, *, extra_pages=(), validators=()
 
 
 @contextmanager
-def lock_site(cli, config, project_root: Path, *, backend=None):
+def lock_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, backend=None):
     from .pipeline import build_ctx_from_config, _cache_path_for
     selected = _backend(backend, False, False)
-    context = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
+    context = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=False)
     with selected.locked(context.output_dir, _cache_path_for(context, project_root)):
         yield

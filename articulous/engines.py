@@ -28,6 +28,7 @@ from lxml import etree  # type: ignore[attr-defined]
 
 from .filesystem import StagedOutput, TempWorkspace, atomic_output, open_regular_file, validate_output_path
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
+from .configuration_contracts import VALID_ENGINES, valid_engine_name
 from .transform_contracts import (
     ExecutionCapabilities, TransformEngine, TransformFailure, TransformParameters,
     XmlInput, require_parameters,
@@ -45,11 +46,8 @@ __all__ = [
     "safe_xml_parser",
     "safe_xslt_access_control",
     "stylesheet_hash",
-    "validate_engines",
 ]
 
-VALID_ENGINES = {"saxonc", "lxml", "native"}
-NATIVE_SECTIONS = {"sitemap", "search"}
 _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
 _ADAPTER_ERRORS = (ValueError, TypeError, OSError, etree.Error, subprocess.CalledProcessError)
 _LOCAL_EXECUTION = ExecutionCapabilities()
@@ -524,12 +522,8 @@ def configure_saxonc(config) -> Optional[Path]:
     return transform_bin
 
 
-def _valid_engine_name(name) -> bool:
-    return isinstance(name, str) and name in VALID_ENGINES
-
-
 def make_engine(
-    name: str, saxonc_bin: Optional[Path],
+    name: object, saxonc_bin: Optional[Path],
 ) -> TransformEngine | NativeEngine:
     """
     Return the engine instance for a configured engine name.
@@ -542,7 +536,7 @@ def make_engine(
     still falls back to the lxml engine, matching the historical
     behaviour.
     """
-    if not _valid_engine_name(name):
+    if not valid_engine_name(name):
         raise ValueError(
             f"Unknown engine name {name!r}; "
             f"must be one of {sorted(VALID_ENGINES)}"
@@ -552,32 +546,6 @@ def make_engine(
     if name == "saxonc" and saxonc_bin is not None:
         return SaxonCEngine(saxonc_bin)
     return LxmlEngine()
-
-
-def validate_engines(config) -> None:
-    """
-    Raise :class:`ValueError` if any per-section engine name in the
-    config is not one we know how to run.
-    """
-    bad = {
-        section: name
-        for section, name in config["engines"].items()
-        if not _valid_engine_name(name)
-    }
-    if bad:
-        raise ValueError(
-            f"Unknown engine(s) configured: {bad}. "
-            f"Valid engines: {sorted(VALID_ENGINES)}"
-        )
-    invalid_native = sorted(
-        section for section, name in config["engines"].items()
-        if name == "native" and section not in NATIVE_SECTIONS
-    )
-    if invalid_native:
-        raise ValueError(
-            f"Native engine is only supported for "
-            f"{sorted(NATIVE_SECTIONS)}; got {invalid_native}"
-        )
 
 
 # ------------------------------------------------------------

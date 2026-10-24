@@ -1,6 +1,5 @@
 """Prepared whole-site builds with validation before publication."""
 from contextlib import ExitStack, contextmanager
-from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
 import shutil
@@ -10,7 +9,8 @@ from .composition import RouteCatalog
 from .composition_contracts import ExtraPage, artifact_values
 from .engines import StylesheetCapture
 from .extensions import BuildComposition, TemplateInput
-from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config
+from .config import normalize_configuration
+from .configuration_contracts import BuildOptions, ConfigurationInput
 from .filesystem import (
     TempWorkspace, cache_lock_path, lock_file, open_regular_file, private_directory,
     tree_fingerprint, validate_output_path,
@@ -108,19 +108,9 @@ class ValidatedBuild:
         self.staged.assert_unchanged()
 
 
-def _configuration(cli, config, root):
-    if not isinstance(config, dict):
-        raise ValueError('Configuration must be an object')
-    result = deep_merge(deepcopy(DEFAULT_CONFIG), deepcopy(config))
-    validate_config(result)
-    validate_output_path(root / result['paths']['output_dir'])
-    apply_cli_overrides(result, cli, root)
-    return result
-
-
 @contextmanager
-def capture_site(cli, config, project_root: Path):
-    context = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=True)
+def capture_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path):
+    context = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=True)
     with TempWorkspace() as workspace:
         snapshot = Snapshot(context, workspace)
         try:
@@ -232,10 +222,10 @@ def _preparation_lock(original, root, backend):
 
 
 @contextmanager
-def prepare_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), backend=None, composer=None):
+def prepare_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), backend=None, composer=None):
     pages = _full_build(cli, extra_pages)
     artifacts = artifact_values(extra_artifacts)
-    original = build_ctx_from_config(_configuration(cli, config, project_root), dry_run=False)
+    original = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=False)
     validate_output_path(original.output_dir)
     with ExitStack() as stack:
         stack.enter_context(_preparation_lock(original, project_root, backend))
@@ -292,7 +282,7 @@ def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
     return ValidatedBuild(staged, tuple(diagnostics), staged.prepared.validation_revision)
 
 
-def check_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), validators=(), composer=None) -> ValidationReport:
+def check_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), validators=(), composer=None) -> ValidationReport:
     with prepare_build(cli, config, project_root, extra_pages=extra_pages, extra_artifacts=extra_artifacts, composer=composer) as prepared:
         checked = validate_generated(render_prepared(prepared), validators=validators)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

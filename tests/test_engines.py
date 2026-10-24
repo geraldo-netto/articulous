@@ -28,9 +28,9 @@ from articulous.engines import (
     safe_xslt_access_control,
     safe_xml_parser,
     stylesheet_hash,
-    validate_engines,
 )
 from articulous.filesystem import TempWorkspace
+from articulous.configuration_contracts import validate_engines
 from articulous.transform_contracts import TransformEngine, TransformFailure
 
 
@@ -647,21 +647,17 @@ def test_configure_saxonc_finds_binary(tmp_path, caplog):
 # --- validate_engines ---
 
 def test_validate_engines_accepts_valid():
-    validate_engines({
-        "engines": {
-            "articles": "lxml", "rss": "saxonc", "search": "native",
-        },
-    })
+    validate_engines({"articles": "lxml", "rss": "saxonc", "search": "native"})
 
 
 def test_validate_engines_rejects_unknown():
     with pytest.raises(ValueError, match="frobnicate"):
-        validate_engines({"engines": {"rss": "frobnicate"}})
+        validate_engines({"rss": "frobnicate"})
 
 
 def test_validate_engines_rejects_native_article_renderer():
     with pytest.raises(ValueError, match="only supported"):
-        validate_engines({"engines": {"articles": "native"}})
+        validate_engines({"articles": "native"})
 
 
 # --- check_dependencies ---

@@ -1529,12 +1529,12 @@ def test_asset_page_conflict_fails_before_writes(site_root):
     assert not (site_root / ".build-cache.json").exists()
 
 
-@pytest.mark.parametrize("rss_path", [
-    "/en/articles/first-post/index.html",
-    "/en/articles/first-post",
-    "/en/articles/first-post/index.html/feed.xml",
+@pytest.mark.parametrize("rss_path,error", [
+    ("/en/articles/first-post/index.html", "Duplicate generated output path|unowned or retained path"),
+    ("/en/articles/first-post", "file-style pattern"),
+    ("/en/articles/first-post/index.html/feed.xml", "Duplicate generated output path|unowned or retained path"),
 ])
-def test_partial_build_rejects_retained_owner_collisions(site_root, rss_path):
+def test_partial_build_rejects_retained_owner_collisions(site_root, rss_path, error):
     config = _site_config(site_root)
     run_build(_CLI(), config, site_root)
     output = site_root / "output"
@@ -1543,7 +1543,7 @@ def test_partial_build_rejects_retained_owner_collisions(site_root, rss_path):
     cache_before = cache_path.read_bytes()
     (site_root / "assets/new.txt").write_text("must not publish")
     config["urls"]["rss"] = rss_path
-    with pytest.raises(ValueError, match="Duplicate generated output path|unowned or retained path"):
+    with pytest.raises(ValueError, match=error):
         run_build(_CLI(only_sections=["rss"]), config, site_root)
     assert {path: path.read_bytes() for path in output.rglob("*") if path.is_file()} == before
     assert cache_path.read_bytes() == cache_before
@@ -1701,6 +1701,7 @@ def test_stream_projections_replaces_older_top(tmp_path):
 
 class _CLI:
     def __init__(self, **kw):
+        self.config_path = kw.get('config_path', Path('config.json'))
         self.dry_run = kw.get("dry_run", False)
         self.force_full_build = kw.get("force_full_build", False)
         self.verbose = kw.get("verbose", False)

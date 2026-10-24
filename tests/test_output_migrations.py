@@ -91,14 +91,14 @@ def _check_obstruction(plan, target, kind, owner):
 @pytest.mark.parametrize("dry_run", [False, True])
 def test_directory_migration_preserves_unowned_entries(site_root, kind, dry_run):
     cli, config = _configuration(site_root, "rss")
-    config["urls"]["rss"] = "/feed/old.xml"
+    config["urls"]["rss"] = "/feed.xml/old.xml"
     run_build(cli, config, site_root)
-    directory = site_root / "output/feed"
+    directory = site_root / "output/feed.xml"
     extra = directory / "manual"
     _obstruction(extra, kind)
     owned = directory / "old.xml"
     before = owned.read_bytes()
-    config["urls"]["rss"] = "/feed"
+    config["urls"]["rss"] = "/feed.xml"
     cli.dry_run = dry_run
     with pytest.raises(ValueError, match="unowned|symlink"):
         run_build(cli, config, site_root)

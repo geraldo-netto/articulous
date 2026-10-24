@@ -130,7 +130,10 @@ def test_real_saxonc_builds_all_sections_and_reuses_cache(site_root, saxonc_home
     cli = CliOptions(parse_cli_args([]))
     config = load_or_create_config(site_root / "config.json")
     config["saxonc"]["home"] = str(saxonc_home)
-    config["engines"] = dict.fromkeys(config["engines"], "saxonc")
+    config["engines"] = {
+        'articles': 'saxonc', 'index': 'saxonc', 'tags': 'saxonc',
+        'rss': 'saxonc', 'sitemap': 'saxonc', 'search': 'saxonc',
+    }
     apply_cli_overrides(config, cli, site_root)
     run_build(cli, config, site_root)
     output = site_root / "output"

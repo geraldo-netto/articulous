@@ -31,7 +31,8 @@ from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
-from .config import validate_output_layout, validate_state_paths
+from .config import admit_configuration, normalize_configuration, validate_output_layout
+from .configuration_contracts import BuildOptions, ConfigurationInput
 from .composition import route_from_output, validate_page_url
 from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
@@ -150,13 +151,14 @@ class BuildCtx:
         return self.engines[section]
 
 
-def build_ctx_from_config(config: dict, dry_run: bool) -> BuildCtx:
+def build_ctx_from_config(config: ConfigurationInput, dry_run: bool) -> BuildCtx:
     """
     Project the raw config dict into a :class:`BuildCtx`.
 
     Configuration shape and values have already been validated by
     :func:`articulous.config.load_or_create_config`.
     """
+    config = admit_configuration(config)
     validate_output_layout(config["paths"])
     saxonc_bin = configure_saxonc(config)
     engines = {
@@ -1930,11 +1932,11 @@ def _record_retained_routes(cli, ctx, cache, old_manifest, routes, manifest):
         manifest.record_route(route)
 
 
-def run_build(cli, config, project_root: Path, *, extra_pages=(), extra_artifacts=(), route_catalog=None) -> None:
+def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), route_catalog=None) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
 
-    validate_state_paths(config, cli, project_root)
+    config = normalize_configuration(config, cli, project_root)
     ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages),
                   extra_artifacts=artifact_values(extra_artifacts))
     cache_path = _cache_path_for(ctx, project_root)

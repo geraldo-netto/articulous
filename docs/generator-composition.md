@@ -7,6 +7,28 @@ the earlier ARCH-001 assessment is preserved in Git history.
 
 ## Index options
 
+Public build entry points accept the independent `BuildOptions` interface and
+`ConfigurationInput` mapping, then normalize a private copy through one adapter.
+For callers without a CLI:
+
+```python
+from articulous.configuration_contracts import BuildRequest
+from articulous.builds import check_build
+
+report = check_build(BuildRequest(), {}, root)
+```
+
+`BuildRequest` validates boolean flags, copies/deduplicates selection sequences
+into immutable tuples, and carries a `Path` for configuration identity. Empty
+selections remain unfiltered. `SiteConfiguration` composes independent typed
+blocks; their required keys define validation regardless of implementation
+defaults. Malformed schema values raise `ConfigurationError` (a `ValueError`).
+`ConfigurationOptions` narrows the view needed by JSON/CLI path adapters. CLI
+parsing converts through `CliOptions.as_request`; it defines no core schema.
+Partial configuration mappings merge with defaults without mutating the caller.
+`admit_configuration` projects types only after complete schema validation;
+`normalize_configuration` additionally validates paths and applies request flags.
+
 The defaults remain numbered index pages and no page for an empty language.
 Opt in through configuration:
 

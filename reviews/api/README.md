@@ -169,3 +169,31 @@ unrestricted native memory safety.
 Verification: 2,749 tests and 359 subtests passed; 100% line/branch coverage,
 880 production functions passed individual coverage, calibrated complexity
 acceptance passed, Ruff passed, and installed Pyright reported zero diagnostics.
+
+## API-010: independent requests and configuration schemas
+
+`configuration_contracts` owns immutable build requests, narrow configuration
+options, composed TypedDict schemas, immutable schema-key inventories, engine
+names/admission and `ConfigurationError`. Importing it loads no CLI, concrete
+engine, storage or native locking implementation. The schema/default fault
+control failed before extraction; implementation-only default keys no longer
+redefine accepted API fields. A standalone request drives both check and normal
+build workflows, and CLI parsing converts through the same contract.
+
+All build entry points share normalization of a private configuration copy.
+Admission validates the complete independent schema before its static type
+projection; the projection performs no unchecked engine/storage conversion.
+Request constructors own tuple snapshots of selection sequences; JSON/source
+adapters use the narrower configuration-options view. The migration fixtures now
+use valid file-style routes, preserving their original unowned/special-file
+oracles while schema errors reject earlier than planning.
+
+Schema/request admission is pure and bounded by caller-funded input fields and
+sequence/string sizes. Normalization owns its deep copy; returned build contexts
+own their projected inputs, without mutable aliases to caller configuration.
+No new native resource or callback escapes; existing path/lock, output and
+publication owners retain their acquisition, settlement and cleanup boundaries.
+
+Verification: 2,774 tests and 359 subtests passed; 100% line/branch coverage,
+895 production functions passed individual coverage, calibrated complexity
+acceptance passed, Ruff passed, and offline Pyright reported zero diagnostics.

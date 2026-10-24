@@ -1,18 +1,24 @@
 """
 Configuration loading, defaults, and CLI overrides.
 
-This module is the single source of truth for the raw config dict
-shape. Every other module consumes its output via :class:`BuildCtx`
-(see :mod:`articulous.pipeline`).
+Independent request/configuration schemas live in configuration_contracts.
+This adapter owns JSON/default merging, validation and root-relative path
+normalization. Build orchestration consumes its admitted schema values.
 """
+from collections.abc import Mapping
+from copy import deepcopy
 import json
 import re
 from pathlib import Path
+from typing import Any, cast
 
-from .engines import validate_engines
+from .configuration_contracts import (
+    ConfigurationOptions, CONFIG_BLOCK_KEYS, CONFIG_KEYS, ConfigurationError,
+    ConfigurationInput, SiteConfiguration, validate_engines,
+)
 from .filesystem import (
     assert_disjoint_trees, cache_lock_path, open_regular_file,
-    validate_regular_file, write_text_atomic,
+    validate_regular_file, validate_output_path, write_text_atomic,
 )
 from .sections import (
     PER_LANG_SECTIONS,
@@ -66,9 +72,8 @@ DEFAULT_CONFIG = {
 }
 
 _BARE_SECTIONS = frozenset(PER_LANG_SECTIONS) | {"rss"}
-_CONFIG_KEYS = frozenset(DEFAULT_CONFIG)
+_CONFIG_KEYS = CONFIG_KEYS
 _LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
-_URL_KEYS = frozenset(DEFAULT_CONFIG['urls'])
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -133,25 +138,25 @@ def _require_non_negative_int(value, name: str) -> int:
     return value
 
 
-def _require_block(config: dict, key: str, expected) -> dict:
+def _require_block(config: dict, key: str) -> dict:
     block = _require_object(config[key], key)
-    _require_exact_keys(block, expected, key)
+    _require_exact_keys(block, CONFIG_BLOCK_KEYS[key], key)
     return block
 
 
 def _validate_paths(config: dict) -> None:
-    paths = _require_block(config, "paths", DEFAULT_CONFIG["paths"])
+    paths = _require_block(config, "paths")
     for key, value in paths.items():
         _require_string(value, f"paths.{key}", nonempty=True)
 
 
 def _validate_engines(config: dict) -> None:
-    _require_block(config, "engines", SECTION_NAMES)
-    validate_engines(config)
+    block = _require_block(config, "engines")
+    validate_engines(block)
 
 
 def _validate_saxonc(config: dict) -> None:
-    saxonc = _require_block(config, "saxonc", DEFAULT_CONFIG["saxonc"])
+    saxonc = _require_block(config, "saxonc")
     home = saxonc["home"]
     if home is not None:
         _require_string(home, "saxonc.home")
@@ -175,14 +180,14 @@ def _require_languages(languages, default_language) -> None:
 
 
 def _validate_site(config: dict) -> None:
-    site = _require_block(config, "site", DEFAULT_CONFIG["site"])
+    site = _require_block(config, "site")
     _require_string(site["site_name"], "site.site_name")
     _require_string(site["base_url"], "site.base_url")
     _validate_site_base_url(site["base_url"])
     _require_languages(site["languages"], site["default_language"])
     pagination = _require_object(site["pagination"], "site.pagination")
     _require_exact_keys(
-        pagination, DEFAULT_CONFIG["site"]["pagination"], "site.pagination"
+        pagination, CONFIG_BLOCK_KEYS["site.pagination"], "site.pagination"
     )
     _require_positive_int(pagination["per_page"], "site.pagination.per_page")
     _require_bool(pagination["paginate_tags"], "site.pagination.paginate_tags")
@@ -200,7 +205,7 @@ def _validate_site_base_url(value: str) -> None:
 
 
 def _validate_urls(config: dict) -> None:
-    urls = _require_block(config, "urls", _URL_KEYS)
+    urls = _require_block(config, "urls")
     if urls['index_first'] is not None:
         validate_index_first_pattern(urls['index_first'])
     for section in SECTION_NAMES:
@@ -210,7 +215,7 @@ def _validate_urls(config: dict) -> None:
 
 
 def _validate_build(config: dict) -> None:
-    build = _require_block(config, "build", DEFAULT_CONFIG["build"])
+    build = _require_block(config, "build")
     cache_file = _require_string(build["cache_file"], "build.cache_file", nonempty=True)
     if not Path(cache_file).name:
         raise ValueError("config build.cache_file must contain a filename")
@@ -221,7 +226,7 @@ def _validate_build(config: dict) -> None:
 
 
 def _validate_logging(config: dict) -> None:
-    logging_config = _require_block(config, "logging", DEFAULT_CONFIG["logging"])
+    logging_config = _require_block(config, "logging")
     level = _require_string(logging_config["level"], "logging.level", nonempty=True)
     if level.upper() not in _LOG_LEVELS:
         raise ValueError(f"config logging.level must be one of {sorted(_LOG_LEVELS)}")
@@ -231,12 +236,12 @@ def _validate_logging(config: dict) -> None:
 
 
 def _validate_sitemap(config: dict) -> None:
-    sitemap = _require_block(config, "sitemap", DEFAULT_CONFIG["sitemap"])
+    sitemap = _require_block(config, "sitemap")
     _require_bool(sitemap["include_listings"], "sitemap.include_listings")
 
 
 def _validate_robots(config: dict) -> None:
-    robots = _require_block(config, "robots", DEFAULT_CONFIG["robots"])
+    robots = _require_block(config, "robots")
     _require_bool(robots["enabled"], "robots.enabled")
 
 
@@ -264,7 +269,7 @@ def _validate_bare_default_language(config: dict) -> None:
     _require_bare_default_language(config["site"]["bare_default_language"], config["urls"])
 
 
-def validate_config(config: dict) -> None:
+def _validate_configuration(config) -> None:
     config = _require_object(config, "root")
     _require_exact_keys(config, _CONFIG_KEYS, "root")
     for validator in (
@@ -282,14 +287,30 @@ def validate_config(config: dict) -> None:
         validator(config)
 
 
-def load_or_create_config(path: Path) -> dict:
+def validate_config(config: object) -> None:
+    try:
+        _validate_configuration(config)
+    except ConfigurationError:
+        raise
+    except (ValueError, TypeError) as error:
+        raise ConfigurationError(str(error)) from error
+
+
+def admit_configuration(value: ConfigurationInput) -> SiteConfiguration:
+    if not isinstance(value, Mapping):
+        raise ConfigurationError('Configuration must be an object')
+    value = dict(value)
+    validate_config(value)
+    return cast(SiteConfiguration, value)
+
+
+def load_or_create_config(path: Path) -> SiteConfiguration:
     """
     Load config from JSON file. Missing config creates defaults;
     malformed existing config fails fast.
     """
     if not path.exists():
-        cfg = _default_config_copy()
-        validate_config(cfg)
+        cfg = admit_configuration(_default_config_copy())
         path.parent.mkdir(parents=True, exist_ok=True)
         write_text_atomic(path, json.dumps(cfg, indent=2))
         return cfg
@@ -298,21 +319,20 @@ def load_or_create_config(path: Path) -> dict:
         with open_regular_file(path.resolve()) as source:
             data = json.loads(source.read().decode("utf-8"))
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid config JSON at {path}: {e}") from e
+        raise ConfigurationError(f"Invalid config JSON at {path}: {e}") from e
 
     if not isinstance(data, dict):
-        raise ValueError(
+        raise ConfigurationError(
             f"Config at {path} is not a JSON object "
             f"(got {type(data).__name__})"
         )
 
     cfg = _default_config_copy()
     deep_merge(cfg, data)
-    validate_config(cfg)
-    return cfg
+    return admit_configuration(cfg)
 
 
-def validate_output_layout(paths: dict) -> None:
+def validate_output_layout(paths: Mapping[str, Any]) -> None:
     output = Path(paths["output_dir"])
     for key in ("content_dir", "xsl_dir", "assets_dir"):
         assert_disjoint_trees(Path(paths[key]), output)
@@ -337,7 +357,7 @@ def _validate_state_path(path: Path, root: Path, source: Path, trees) -> None:
         raise ValueError(f"Build state path overlaps a source or output tree: {path}")
 
 
-def validate_state_paths(config: dict, cli, project_root: Path) -> None:
+def validate_state_paths(config: Mapping[str, Any], cli: ConfigurationOptions, project_root: Path) -> None:
     root = project_root.resolve()
     source = root / getattr(cli, "config_path", "config.json")
     trees = [(root / path).resolve() for path in config["paths"].values()]
@@ -355,7 +375,7 @@ def validate_state_paths(config: dict, cli, project_root: Path) -> None:
             raise ValueError(f"Build state paths must not alias each other: {path}")
 
 
-def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
+def apply_cli_overrides(config: SiteConfiguration | dict, cli: ConfigurationOptions, project_root: Path) -> None:
     """
     Apply CLI overrides to the loaded config, in place.
 
@@ -370,7 +390,7 @@ def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
         config["logging"]["level"] = "DEBUG"
 
     root_resolved = project_root.resolve()
-    for key in ["content_dir", "output_dir", "xsl_dir", "assets_dir"]:
+    for key in ("content_dir", "output_dir", "xsl_dir", "assets_dir"):
         p = config["paths"][key]
         resolved = (project_root / p).resolve()
         if not resolved.is_relative_to(root_resolved):
@@ -381,3 +401,18 @@ def apply_cli_overrides(config: dict, cli, project_root: Path) -> None:
         config["paths"][key] = str(resolved)
     validate_output_layout(config["paths"])
     validate_state_paths(config, cli, project_root)
+
+
+def normalize_configuration(config: ConfigurationInput, request: ConfigurationOptions, root: Path) -> SiteConfiguration:
+    try:
+        if not isinstance(config, Mapping):
+            raise ConfigurationError('Configuration must be an object')
+        result = deep_merge(deepcopy(DEFAULT_CONFIG), deepcopy(dict(config)))
+        admitted = admit_configuration(result)
+        validate_output_path(root / admitted['paths']['output_dir'])
+        apply_cli_overrides(admitted, request, root)
+        return admitted
+    except ConfigurationError:
+        raise
+    except (ValueError, TypeError) as error:
+        raise ConfigurationError(str(error)) from error

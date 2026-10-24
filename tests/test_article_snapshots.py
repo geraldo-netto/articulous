@@ -4,21 +4,20 @@ import hashlib
 import json
 import os
 import tracemalloc
-from types import SimpleNamespace
 
 import lxml.etree as etree
 import pytest
 
 import articulous.pipeline as pipeline
 from articulous.articles import ArticleSnapshot, parse_article_xml
+from articulous.cli import CliOptions, parse_cli_args
 from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.filesystem import TempWorkspace
 from articulous.engines import LxmlEngine, SaxonCEngine
 
 
 def _site_config(root):
-    cli = SimpleNamespace(dry_run=False, force_full_build=False, verbose=False,
-                          only_sections=None, only_langs=None, only_slugs=None)
+    cli = CliOptions(parse_cli_args([]))
     config = load_or_create_config(root / "config.json")
     apply_cli_overrides(config, cli, root)
     return cli, config

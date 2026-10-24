@@ -175,10 +175,11 @@ def test_arch004_rejects_symlink_output(site_root, seo_config):
     assert list(target.iterdir()) == []
 
 
-def test_arch004_invalid_configuration_and_extra_values(site_root, seo_config):
+@pytest.mark.parametrize('invalid', [None])
+def test_arch004_invalid_configuration_and_extra_values(site_root, seo_config, invalid):
     cli, _ = seo_config
     with pytest.raises(ValueError, match='Configuration'):
-        check_build(cli, None, site_root)
+        check_build(cli, invalid, site_root)
     with pytest.raises(ValueError, match='ExtraPage'):
         check_build(cli, {}, site_root, extra_pages=['invalid'])
 

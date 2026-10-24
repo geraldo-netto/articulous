@@ -14,6 +14,7 @@ from ..filesystem import (
 from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
 from ..publication_contracts import PublicationInput
+from ..publication_paths import transaction_path, validate_publication_paths
 
 
 def _validate_journal_header(data, destination, cache):
@@ -76,6 +77,7 @@ class PosixPublicationBackend:
 
     @contextmanager
     def locked(self, destination: Path, cache_path: Path):
+        validate_publication_paths(destination, [cache_path])
         output_lock = destination.parent / f'.{destination.name}.articulous.lock'
         if cache_path.resolve() == output_lock.resolve():
             raise ValueError('Cache must not alias output lock')
@@ -83,7 +85,7 @@ class PosixPublicationBackend:
             yield
 
     def _transaction(self, destination):
-        return destination.parent / f'.{destination.name}.articulous-transaction'
+        return transaction_path(destination)
 
     def _rename(self, source, destination):
         validate_output_path(source)
@@ -134,6 +136,7 @@ class PosixPublicationBackend:
         self._set_phase(transaction, data, 'committed')
 
     def publish(self, publication: PublicationInput):
+        validate_publication_paths(publication.destination, [publication.cache_path])
         publication.verify()
         validate_owned_output(publication.destination)
         transaction, data = self._begin(publication)
@@ -208,6 +211,7 @@ class PosixPublicationBackend:
         _remove_tree(transaction)
 
     def recover(self, destination, cache_path):
+        validate_publication_paths(destination, [cache_path])
         validate_output_path(destination)
         transaction = self._transaction(destination)
         validate_output_path(transaction)

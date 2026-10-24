@@ -29,6 +29,7 @@ from .sections import (
     validate_index_first_pattern,
 )
 from .ownership import ownership_path
+from .publication_paths import validate_publication_paths
 
 
 DEFAULT_CONFIG = {
@@ -369,6 +370,7 @@ def validate_state_paths(config: Mapping[str, Any], cli: ConfigurationOptions, p
              output.parent / f".{output.name}.articulous.lock", ownership_path(output)]
     if log_file := config["logging"].get("file"):
         state.append(root / log_file)
+    validate_publication_paths(output, [source, *state, *trees])
     for index, path in enumerate(state):
         _validate_state_path(path, root, source, trees)
         if any(_paths_alias(path, previous) for previous in state[:index]):

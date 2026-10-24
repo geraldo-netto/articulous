@@ -2,8 +2,9 @@
 
 Articulous owns route planning, model projection, caching, rendering and local
 publication. Callers supply site-specific content loaders, XML schemas, themes,
-validators and hosting rules. The APIs below implement ARCH-002 through ARCH-005;
-the earlier ARCH-001 assessment is preserved in Git history.
+validators and hosting rules. This is the developer reference for composing a
+build. For everyday commands and failure recovery, start with the
+[build and recovery guide](building.md).
 
 ## Index options
 
@@ -137,6 +138,11 @@ eligibility after cache loss or replacement. Legacy ownership can recover known
 metadata from its cache once. If both sources lack a retained route's semantics,
 discovery requires a full build rather than inventing metadata. A partial build
 without discovery can retain those files while leaving their metadata unknown.
+
+Index and tag routes preserve the model's exact canonical URL, including its
+choice of a trailing slash, first-index override and paginated tag URL. Discovery
+does not reconstruct those canonical URLs from output filenames.
+
 Duplicate keys, duplicate destinations, file/parent overlaps, path escapes and
 the reserved `assets/` namespace fail during planning. Explicit extra pages are
 planned even when built-in sections are filtered; `pages` is not a CLI `--only`
@@ -147,6 +153,20 @@ the same stable key retires its old output. Omitted extras remain retained durin
 partial builds; artifacts use their output path as identity, so retiring an old
 artifact path requires a full build without that declaration. Different retained
 owners still block colliding destinations.
+
+A partial sitemap rebuild includes retained extra pages using their saved
+category and `sitemap` flag. This works after fingerprint-cache loss and applies
+equally to native and XSLT sitemap writers. If a retained page's route metadata
+is unavailable, sitemap planning requires a full build with the site's current
+page declarations, even when no route catalog was requested. Resupplied page
+declarations replace the retained key's inclusion policy; a full build omitting
+that declaration removes the old page.
+
+Ownership decoding admits exact integer versions 1 and 2. Version-2 publication
+identities are absent (`None`) or two nonnegative, non-boolean integers.
+Malformed versions or identities reject before ownership can authorize output
+replacement or pruning. Do not use a disposable cache to repair invalid
+authoritative ownership data.
 
 `build_tag_index_model(articles, lang, ctx)` returns a `TagIndex` containing
 `TagSummary(tag, slug, count, url)` entries and a `to_xml()` method. Pass the same
@@ -337,7 +357,31 @@ original exceptions remain chained for adapter diagnostics. Invalid parameter
 types and capture states reject explicitly. Inputs and parameter mappings are
 stable caller borrows until synchronous return or failure; retained stylesheet
 snapshots belong to the engine's containing build context. Existing atomic-output
-and native-process cleanup scopes settle before an adapter returns or raises.
+scopes preserve prior output on failure.
+
+The Linux Saxon adapter copies XML and stylesheet inputs into private directories
+before starting native work. For path inputs it records the original effective
+document base as `xml:base`; byte inputs retain the existing explicit-base policy.
+The source copy may therefore contain this XML metadata attribute. The engine
+cache identity includes the owned-input transport revision.
+
+`backends.saxon.run_transform_command` owns native descriptor admission and
+process supervision. Shared `browser_process.observe_session` consumes the
+independent `ProcessSession` interface without descriptor arguments. Saxon enables
+`SessionOptions.seal_on_exit`: observing the leader's exit stops remaining group
+members, establishes quiescence, drains diagnostics and releases the PID lease
+before atomic output installation. Native stdout/stderr remain visible after
+supervised execution settles. Commands that leave the admitted session/group are
+outside this containment contract.
+
+Uncertain native settlement raises the independent
+`process_contracts.NativeCleanupError`, preserving its recovery token. Private
+input directories transfer to the retained reservation instead of being deleted;
+the previous output remains unchanged. Failed handoff storage preserves those
+directories and adds manual-recovery paths to the same exception. Recover known
+reservations before releasing their copies; unacknowledged paths or missing
+identity evidence require manual inspection. See
+[native supervision and recovery](#optional-native-test-supervision).
 
 ## Native publication boundary
 
@@ -435,6 +479,12 @@ generation. This does not make readers observe all three atomically, and callers
 must keep other writers from modifying the output while a build is running.
 
 The journal lives beside output at `.<output-name>.articulous-transaction/`.
+Shared path admission reserves this tree against configuration, source, cache,
+log, lock and ownership paths. It checks both lexical and resolved aliases;
+native lock/recovery/publication entry points also reject overlapping cache
+paths before effects. Nearby filenames with a different path component remain
+valid. The reservation prevents a cache write from replacing the journal
+directory or rollback from treating that directory as a cache file.
 Before the `committed` marker, recovery restores the previous generation (or
 absence for an initial build); after it, recovery keeps the new generation and
 finishes cleanup. Rename/state failures attempt rollback immediately. Failed
@@ -590,6 +640,12 @@ configured publication prefix, decodes paths/fragments, follows redirect
 fragments, ignores inert templates and remote/outside-prefix URLs, and reads
 sitemap indexes without revisiting a shard. No language or theme paths are
 assumed. Sitemap XML disables entity resolution and networking.
+Absolute HTTP(S), root-relative and empty deployment bases all admit their local
+links for checking. For originless bases, URLs with an explicit scheme or host
+remain unowned. Each redirect carries the effective URL forward: a target
+fragment replaces the incoming fragment, an absent fragment inherits it, and an
+explicit empty fragment clears it. Anchors are checked against the final HTML
+target, including percent-decoded fragments and text-fragment handling.
 
 Supply an optional HTML error callback for a stricter parser. Morpha supplies
 its existing HTML5 parser and retains its interface/mirror audits. The standalone
@@ -722,7 +778,9 @@ a checkpointed command. The Linux backend owns each Popen child, captured pipes,
 selector, private scratch and materialized JS helpers. It borrows stdin.
 
 `process_contracts.SessionOptions` independently defines helper admission and
-checkpoint snapshot policy. Browser entry points admit the fixed helper
+checkpoint snapshot policy, plus optional group sealing on leader exit.
+Saxon selects sealing explicitly; browser entry points retain their existing
+caller-owned lifecycle and admit the fixed helper
 inventory by default. ImageMagick commands pass `tooling=False` through
 `run_owned`, avoiding helper reads/writes and removing inherited helper URLs.
 Admitted helpers still use session-owned captured bytes and the same cleanup
@@ -762,7 +820,7 @@ freezes the admission-closed cohort, collects forked members, kills through
 pidfds and waits for their native exit notifications. The containing Node group
 leader remains alive during this fence. Commands must remain inside their
 owned session/group and callers must stop new admission before teardown.
-Detached/reparented external workloads are outside this containment contract.
+Workloads that leave the admitted session/group are outside this containment contract.
 Linux/libc behavior is validated locally; Windows/macOS supervision is unsupported.
 
 Native tests cover real Chromium, stubborn descendants, unrelated-process

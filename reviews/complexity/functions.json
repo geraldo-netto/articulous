@@ -9665,14 +9665,14 @@
             "projection_sha256": "810f6ed9f14df7f9a3a3a6e64d893607ab0575b836453740522ddcd53c5823d7"
           },
           {
-            "body_sha256": "5f9cb35580bcbad9beb6832ddf997dd030218f16b7feb3a32d881b0bf0e534e5",
+            "body_sha256": "7bac27326b7b7b89c8e0f2152c3ee3f241cb8c592e13bc1561babd1ce561ec50",
             "column": 4,
             "complexity": 1,
             "end_column": 11,
             "end_line": 69,
             "line": 59,
             "name": "TransformEngine.run",
-            "projection_sha256": "e8dd21ebe0bd41260a411aec800f980fdbd1d1e8f87eb56fc82b677f3eacaeb6"
+            "projection_sha256": "239667188c774b0ba8932fb26704c13148b88962fbb50bc726e1150f19e6edbe"
           },
           {
             "body_sha256": "872e1bee58f048a09b65c7f90d5014b5fd6db7fc7f25b629d47846273350f831",
@@ -9687,7 +9687,7 @@
         ],
         "language": "python",
         "path": "articulous/transform_contracts.py",
-        "sha256": "f13c83e672ec331ec413352d049e57a3343d8c550da214c7d75d79fbac3a6ae3"
+        "sha256": "65f5949d05b2e373a3de90fd06c509f3b63fda8a8ac23d913e9c7b8fad7332af"
       },
       {
         "functions": [

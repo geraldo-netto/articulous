@@ -2,8 +2,14 @@
 
 [![Articulous](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml/badge.svg)](https://github.com/geraldo-netto/articulous/actions/workflows/main.yml)
 
-A parallel, incremental static site generator powered by **XML + XSLT**.
-Written in Python, with lxml and optional SaxonC transformation backends.
+Articulous turns XML articles, XSLT templates and assets into website files.
+It can render several pages at once and remembers earlier inputs to skip
+unchanged work. It is written in Python, with lxml and optional SaxonC backends.
+
+Start with the [build and recovery guide](docs/building.md) for day-to-day use.
+It explains full and partial builds, supporting files, validation and recovery
+without requiring Python API knowledge. Developers extending a site can use the
+[Python integration guide](docs/generator-composition.md).
 
 ---
 
@@ -96,6 +102,8 @@ fails immediately rather than waiting. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
 Cache, log, lock and ownership paths must stay separate from configuration, source
 trees, output trees and each other.
+The `.<output-name>.articulous-transaction/` directory is reserved for whole-site
+publication. State and source paths cannot be inside it or contain it.
 Configuration, cache, log, lock and ownership paths must refer to regular files
 when they exist; directories, FIFOs and devices are rejected. File opens
 are nonblocking and verify the opened file type before reading or writing.
@@ -329,6 +337,8 @@ The content directory and `xsl/pages/` must already exist.
 Requires Python 3.11 or newer and a Unix platform with `fcntl` file
 locking. CI runs on Ubuntu with Python 3.11–3.14. Native Windows execution
 is not supported by the current filesystem layer.
+The supervised SaxonC runner and optional whole-site publisher require Linux;
+their native Windows and macOS backends are unsupported.
 
 From a repository checkout, install the package in a virtual environment:
 
@@ -596,9 +606,13 @@ rejected before publishing. Defaults produce:
 - `output/search.json`
 
 The CLI and `run_build` replace generated pages and feeds individually and
-atomically; their whole build is not transactional. A live generated target or
-any parent component that is a symlink is rejected. Content writes use the original staging file
-descriptor; SaxonC inherits that descriptor through `/dev/fd`. A replaced
+atomically; their whole build is not transactional. The original configured
+output path is checked before resolution, including through the CLI. A live
+generated target or any parent component that is a symlink is rejected. Content
+writes use the original staging file descriptor; SaxonC inherits it through
+`/dev/fd`. The SaxonC process group is stopped and checked before output is installed. Private
+input copies remain owned for recovery if native shutdown cannot be confirmed.
+Native diagnostics are emitted after supervised execution settles. A replaced
 staging entry is rejected before publication. Publication and temporary-file
 cleanup stay anchored to the original destination directory. A directory replacement
 detected after rendering aborts publication; cleanup and permission changes
@@ -662,6 +676,10 @@ for extra pages, validator hooks, capability checks and recovery instructions.
 ---
 
 ## 🧪 Development
+
+The [review-fix verification record](reviews/correctness/README.md) links the
+recent correctness fixes to their permanent regressions and states the tested
+resource-ownership limits.
 
 The [composition and publication guide](docs/generator-composition.md) documents
 implemented route, page, validation and publication APIs and their regression

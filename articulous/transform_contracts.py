@@ -61,10 +61,10 @@ class TransformEngine(Protocol):
             xml_base_uri: str | None = None, parameters: TransformParameters | None = None) -> None:
         """Borrow stable inputs until synchronous settlement; return None.
 
-        Dry runs publish nothing. Operational failures raise TransformFailure
-        and preserve prior output. The admitted revision identifies captured
-        stylesheet bytes; parameters are literal strings. All native activity
-        borrowing these inputs settles before return or failure.
+        Dry runs publish nothing. TransformFailure preserves prior output.
+        Revision tokens identify captured stylesheets; parameter values are literal strings.
+        Native work settles before publication. Uncertain cleanup raises
+        process_contracts.NativeCleanupError and retains private inputs for recovery.
         """
         ...
 

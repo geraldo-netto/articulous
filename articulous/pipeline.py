@@ -142,6 +142,7 @@ class BuildCtx:
     translations: Optional[TranslationStore] = None
     extra_pages: tuple[ExtraPage, ...] = ()
     extra_artifacts: tuple[ExtraArtifact, ...] = ()
+    retained_page_routes: tuple[Route, ...] = ()
     stylesheet_capture: StylesheetCapture | None = None
 
     def xsl_for(self, section: str) -> Path:
@@ -1386,11 +1387,16 @@ def _stream_projections(
     return projection
 
 
-def _append_extra_sitemap(projection, ctx):
-    for page in getattr(ctx, 'extra_pages', ()):
+def _declared_page_routes(ctx):
+    for page in ctx.extra_pages:
         validate_page_url(page, ctx.base_url)
-        if 'sitemap' in projection.sections and page.route.included(ctx.sitemap_listings):
-            projection.sitemap_urls.append_url(page.route.url)
+        yield page.route
+
+
+def _append_extra_sitemap(projection, ctx):
+    for route in chain(_declared_page_routes(ctx), ctx.retained_page_routes):
+        if 'sitemap' in projection.sections and route.included(ctx.sitemap_listings):
+            projection.sitemap_urls.append_url(route.url)
 
 
 def _collect_extra_plan(ctx, cache, manifest):
@@ -1924,17 +1930,36 @@ def _cached_retained_route(cache, key):
         raise ValueError('Invalid retained route metadata') from error
 
 
+def _retained_route(path, key, routes, cache):
+    route = routes.get(key)
+    if route is None:
+        route = _cached_retained_route(cache, key)
+    if route is not None and (route.key != key or route.output_path != path):
+        raise ValueError('Retained route metadata does not match ownership')
+    return route
+
+
+def _retained_page_routes(cli, ctx, ownership, cache):
+    if 'sitemap' not in (cli.only_sections or SECTION_NAMES):
+        return ()
+    result = []
+    for path, key in _retained_outputs(cli, ownership.paths, _extra_output_keys(ctx)).items():
+        if not key.startswith('page:'):
+            continue
+        route = _retained_route(path, key, ownership.routes, cache)
+        if route is None:
+            raise ValueError('Retained route metadata unavailable; run a full build for sitemap planning')
+        result.append(route)
+    return tuple(result)
+
+
 def _record_retained_routes(cli, ctx, cache, old_manifest, routes, manifest):
     for path, key in _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)).items():
-        route = routes.get(key)
-        if route is None:
-            route = _cached_retained_route(cache, key)
+        route = _retained_route(path, key, routes, cache)
         if route is None:
             if manifest.catalog is not None:
                 raise ValueError('Retained route metadata unavailable; run a full build for discovery')
             continue
-        if route.key != key or route.output_path != path:
-            raise ValueError('Retained route metadata does not match ownership')
         manifest.record_route(route)
 
 
@@ -1960,7 +1985,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                     ctx = replace(ctx, force=True)
                 ctx = replace(ctx, output_migrations=OutputMigrations(
                     ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)),
-                ))
+                ), retained_page_routes=_retained_page_routes(cli, ctx, ownership, cache))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest(ctx, route_catalog)

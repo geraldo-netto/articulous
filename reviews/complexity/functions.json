@@ -3502,12 +3502,22 @@
           "projection_sha256": "118745c52409e546211699f866c68d49dd8a7d720d8413651a74e0da5b59068b"
         },
         {
+          "body_sha256": "cfdf834cd4f81cda4d86e25fc22fbff742667c9a0d9fd25aa7cc65e2d2225f8a",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 39,
+          "end_line": 384,
+          "line": 379,
+          "name": "_saxon_configuration",
+          "projection_sha256": "bf56e98be2027c63671b76c352588d282ca29dfae8206fe32d892a8e04f27df2"
+        },
+        {
           "body_sha256": "9f52d8997cd4d8e4e9d6f2bb3f8082ddba64a4e04ac44fd88a448fec85a74715",
           "column": 4,
           "complexity": 1,
           "end_column": 36,
-          "end_line": 384,
-          "line": 382,
+          "end_line": 392,
+          "line": 390,
           "name": "SaxonCEngine.__init__",
           "projection_sha256": "e489af92971c54727d905b5bab480447ea19239e65ed5ffeb4959f6f0dd54535"
         },
@@ -3516,8 +3526,8 @@
           "column": 4,
           "complexity": 2,
           "end_column": 79,
-          "end_line": 394,
-          "line": 387,
+          "end_line": 402,
+          "line": 395,
           "name": "SaxonCEngine.cache_identity",
           "projection_sha256": "a948210cb3c20da1e2004ad64d10a342fdb48d07e525061ec6cbf5053f1db159"
         },
@@ -3526,28 +3536,28 @@
           "column": 4,
           "complexity": 3,
           "end_column": 77,
-          "end_line": 416,
-          "line": 396,
+          "end_line": 424,
+          "line": 404,
           "name": "SaxonCEngine._do_transform",
           "projection_sha256": "5d5f35cc59d206996185f166934c8087d99c23aaadd8126489b8673e01df9dd6"
         },
         {
-          "body_sha256": "7f217e9d14366524fa3dd7b2939c41ff115e4765f83d6f5fe70fc9921cb2a24a",
+          "body_sha256": "7d416a9d1d9c36437d3d67cedf25c56e964655c7063d076fe0a4b0c504e1c395",
           "column": 4,
           "complexity": 6,
           "end_column": 21,
-          "end_line": 448,
-          "line": 418,
+          "end_line": 457,
+          "line": 426,
           "name": "SaxonCEngine._run_saxon",
-          "projection_sha256": "a60331c09f934aea375ceb60c8404ffa38f10a6044be778df7ae225764344343"
+          "projection_sha256": "ced0f2de67a87a848fc80551feba8ae0f169457deee617451ab6b77e4a5b4412"
         },
         {
           "body_sha256": "e7c5808a0121cd6aeaa57f0dfa93629703f571a7e426455b7449a655f44233ec",
           "column": 0,
           "complexity": 5,
           "end_column": 24,
-          "end_line": 475,
-          "line": 455,
+          "end_line": 484,
+          "line": 464,
           "name": "configure_saxonc",
           "projection_sha256": "0002334fd323b00cd04bdca72ce123acf15567e41e4db06fb789001c787153ec"
         },
@@ -3556,8 +3566,8 @@
           "column": 0,
           "complexity": 5,
           "end_column": 23,
-          "end_line": 501,
-          "line": 478,
+          "end_line": 510,
+          "line": 487,
           "name": "make_engine",
           "projection_sha256": "f3f9645f1a94f49bb5facfe9d9da872c7de045c74fdc136b4598ccaabb411205"
         },
@@ -3566,8 +3576,8 @@
           "column": 0,
           "complexity": 8,
           "end_column": 9,
-          "end_line": 527,
-          "line": 504,
+          "end_line": 536,
+          "line": 513,
           "name": "validate_engines",
           "projection_sha256": "aaddc12b523097f489358574b3e71a195b8cf6019ac1dc4cc230b958088e1b49"
         },
@@ -3576,15 +3586,15 @@
           "column": 0,
           "complexity": 9,
           "end_column": 60,
-          "end_line": 570,
-          "line": 534,
+          "end_line": 579,
+          "line": 543,
           "name": "check_dependencies",
           "projection_sha256": "ab3f0c62f595603f16533bc25763644e169d38f75d977ab1015fd12f4cce4580"
         }
       ],
       "language": "python",
       "path": "articulous/engines.py",
-      "sha256": "0d248ae2529aefe6304b983d0031788b43489f2985fa70343a3eed4a1f55a781"
+      "sha256": "dc074c4999d35b0715ef4c282ceccbc67aa4137f61e085a7129ae711c0c3c520"
     },
     {
       "functions": [
@@ -12681,14 +12691,14 @@
           "projection_sha256": "89c940a25ea54b844913d203421663a48ad6c3d3ed37e143587a0331a64defc1"
         },
         {
-          "body_sha256": "77aa66588f99d99f32639af5d88995f4d26513daedaf85db5efd24e9eaa078bc",
+          "body_sha256": "6cd1fbff6e63bf7427669857467e91c7b69b3730858ebeb2e4f7cc2e8c23bcba",
           "column": 0,
-          "complexity": 4,
+          "complexity": 5,
           "end_column": 52,
           "end_line": 449,
           "line": 432,
           "name": "test_saxon_engine_invokes_subprocess",
-          "projection_sha256": "40f9f7b3b5dd66a7d7e4cf531def0ae5f652e503d2c53a73acb97f6725739440"
+          "projection_sha256": "2fdee630cdceb775ccd15c9a6413a8a1f8c6b04543ab747e746a424267b478de"
         },
         {
           "body_sha256": "2134944b0e61da657066a027a02108c728389e79d18172f5edbad87fe6ecd0df",
@@ -13063,7 +13073,7 @@
       ],
       "language": "python",
       "path": "tests/test_engines.py",
-      "sha256": "7d510fd9ed21f4ece82a5304834876aab031f80c739513b88895131000bf34ba"
+      "sha256": "71640b3916f160a32390b37bcfa68461e722c70684faff452d492b4b0df64e55"
     },
     {
       "functions": [
@@ -19414,6 +19424,53 @@
       "language": "python",
       "path": "tests/test_runtime.py",
       "sha256": "1c74ea3e9cab37a888ab90b5a7ee2e853ff529abf0d6d15e1b021a59e559fdcb"
+    },
+    {
+      "functions": [
+        {
+          "body_sha256": "8c312e302c0952e119d084552e0bbeb2bef19523a44cae11d2d036dc4bebcff4",
+          "column": 0,
+          "complexity": 3,
+          "end_column": 52,
+          "end_line": 38,
+          "line": 14,
+          "name": "test_saxon001_configuration_settles_after_native_exit",
+          "projection_sha256": "601b67469cd2c347de57c29505b7391566ec7d1b1c3c87fb810aab27c2b33c2d"
+        },
+        {
+          "body_sha256": "167a4f33f94969f4367d2ca1691e85669b90c09ca5c26bf13a934358bba4816c",
+          "column": 4,
+          "complexity": 5,
+          "end_column": 59,
+          "end_line": 26,
+          "line": 17,
+          "name": "test_saxon001_configuration_settles_after_native_exit.native",
+          "projection_sha256": "4cdeb6ada8c1f6282e5b92bcaf883a181b192ba48f35a67b9822b9ea5de966d1"
+        },
+        {
+          "body_sha256": "e27397c8462b9afc827d1e89e88f022e59e3c106262f25239448ebe334caaa33",
+          "column": 0,
+          "complexity": 2,
+          "end_column": 43,
+          "end_line": 61,
+          "line": 42,
+          "name": "test_saxon001_configuration_failure_retains_output_and_releases_files",
+          "projection_sha256": "a041b87061a299abf9ea3d59a15d17d2c35cda3a322e831127cad1340d5dcfa8"
+        },
+        {
+          "body_sha256": "36130d2f4b50ea9673880f9faeaaba30d18da5dc26f9d36867eae504c73cdbec",
+          "column": 4,
+          "complexity": 2,
+          "end_column": 46,
+          "end_line": 53,
+          "line": 47,
+          "name": "test_saxon001_configuration_failure_retains_output_and_releases_files.failed_file",
+          "projection_sha256": "1984e7985fb561d49a08b8d789d4935d93a1312246dd0ab130137eb271c4f819"
+        }
+      ],
+      "language": "python",
+      "path": "tests/test_saxon_protocol_config.py",
+      "sha256": "dd2280487eb01ab2c783bfb8fffe5f3571299eda7b7636d6898720bddd7450b4"
     },
     {
       "functions": [

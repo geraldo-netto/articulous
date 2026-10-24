@@ -1,0 +1,9 @@
+{
+  "executable_sha256": "5f20d942cb0f8376cfa63e562794c713c11c4febbcf98b03387902ffc11023e4",
+  "functional_passed": 15,
+  "path": "/backups/disk2/software/SaxonCPE-linux-x86_64-12-9-0.zip",
+  "required_version": "SaxonC-HE 12.10",
+  "sha256": "a373cc4b7c572a1d090ec1fce96eae3d26822c8d1e80e03824c58fed396181e2",
+  "version": "SaxonC-PE 12.9",
+  "version_mismatch": 1
+}

@@ -376,6 +376,14 @@ def _saxon_parameters(root, parameters) -> dict[str, str]:
     return command_parameters
 
 
+def _saxon_configuration(workspace):
+    payload = (b'<configuration xmlns="http://saxon.sf.net/ns/configuration">'
+               b'<global allowedProtocols="#none"/></configuration>')
+    with workspace.named_file('w+b', suffix='.xml') as configuration:
+        configuration.write(payload)
+        return Path(configuration.name)
+
+
 class SaxonCEngine(TransformEngine):
     name = "saxonc"
 
@@ -428,13 +436,14 @@ class SaxonCEngine(TransformEngine):
                     f"SaxonC {label} path begins with '-', which can be "
                     f"misparsed by the Saxon CLI: {p}"
                 )
-        with atomic_output(resolved["output"], generated=True) as staged:
+        with TempWorkspace() as workspace, atomic_output(resolved["output"], generated=True) as staged:
             assert isinstance(staged, StagedOutput)
+            configuration = _saxon_configuration(workspace)
             cmd = [
                 str(self.saxonc_bin),
                 "-ext:off",
                 "-xi:off",
-                "--allowedProtocols:#none",
+                f"-config:{configuration}",
                 f"-s:{resolved['xml']}",
                 f"-xsl:{resolved['xsl']}",
                 f"-o:/dev/fd/{staged.fd}",

@@ -60,9 +60,12 @@ def url_key_for_section(section: str) -> str:
 
 def _pattern_fields(pattern: str) -> set[str]:
     fields = set()
-    for _, field, _, _ in Formatter().parse(pattern):
-        if field:
-            fields.add(field.split(".", 1)[0].split("[", 1)[0])
+    for _, field, specification, conversion in Formatter().parse(pattern):
+        if field is None:
+            continue
+        if not field.isidentifier() or specification or conversion is not None:
+            raise ValueError('URL pattern placeholders require plain names without conversion or formatting')
+        fields.add(field)
     return fields
 
 

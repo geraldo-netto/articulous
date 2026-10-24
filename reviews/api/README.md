@@ -106,3 +106,19 @@ Verification: 2,678 tests and 359 subtests passed; 100% line/branch coverage,
 acceptance passed, and installed Pyright reports zero errors/warnings. Use the
 installed `pyright/dist/index.js` entrypoint (which sets its bundled typeshed root)
 for direct offline Node invocation; no registry lookup or installation is needed.
+
+## API-008: bounded formatter grammar
+
+The large-width regression failed before the fix because admission invoked the
+deliberately forbidden `format()` method. Formatter traversal, conversions and
+nonempty format specifications now reject while parsing placeholder names,
+before expansion. Fixed-seed grammar cases cover every section; valid plain
+Unicode route literals and bare-default-language combinations remain accepted.
+
+Admission is pure, synchronous and bounded by the supplied pattern text. It
+allocates no width-dependent output, owns no native resource and retains no
+borrowed state. Actual generated paths retain their existing filesystem limits.
+
+Verification: 2,705 tests and 359 subtests passed; 100% line/branch coverage,
+individual function coverage and calibrated complexity acceptance. All new test
+and changed admission functions measure <=9 in the source-bound report.

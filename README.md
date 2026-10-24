@@ -536,6 +536,10 @@ Production builds partition oversized URL sets. Each shard and the sitemap
 index retain the 50,000-entry and 50 MiB uncompressed XML limits; an entry
 that cannot fit in one shard fails before publication.
 
+Placeholders use plain names; attribute/index traversal, conversions and nonempty
+format specifications are rejected before any expansion. Formatting widths cannot
+allocate a generated path during configuration admission.
+
 URL patterns are validated by section:
 
 | URL key   | Required placeholders | Output shape |

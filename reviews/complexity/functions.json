@@ -8741,32 +8741,42 @@
             "projection_sha256": "134253b763c3909f3e0555c85f333325ae42786d88dc3ad83b2f1ca8340c4af9"
           },
           {
-            "body_sha256": "2ac1ec94b152d472e5e33bdc9d22e1667cd3c204679554d6e4176a74c6948e13",
+            "body_sha256": "0fec3a389a1b8c7562e239c6a0fe467c94e47db975b93cf8097e226ebef9cbfb",
             "column": 0,
-            "complexity": 5,
-            "end_column": 17,
-            "end_line": 83,
+            "complexity": 2,
+            "end_column": 91,
+            "end_line": 72,
             "line": 69,
-            "name": "redirect_target",
-            "projection_sha256": "6db470a47ce881f028f7f317add66c61767e4d91e7a4866ae2862417f1729d8b"
+            "name": "_redirect_url",
+            "projection_sha256": "202e2f9c0b2c1748de42b8e87d6bd89546d7805f97e7d47626fd59e082ff6436"
           },
           {
-            "body_sha256": "5a5c146d21a60bd42707d14f38a71419fb635d149a590e016f5ee5cd2f450dd6",
+            "body_sha256": "7ece4d52e021dba6b63cf15a81fbb725d94af7caac562551c80a34f1fdea23d0",
+            "column": 0,
+            "complexity": 5,
+            "end_column": 27,
+            "end_line": 90,
+            "line": 75,
+            "name": "redirect_target",
+            "projection_sha256": "be79e89428389128eb0a00d5a78ea9a36885ccf41d9394b9048620effd4f5956"
+          },
+          {
+            "body_sha256": "c19c80940192f21e5ed381afc7c2b772c7d3b88b7a581e95c123aad6c293b119",
             "column": 0,
             "complexity": 7,
             "end_column": 65,
-            "end_line": 101,
-            "line": 86,
+            "end_line": 108,
+            "line": 93,
             "name": "check_link",
-            "projection_sha256": "18ffb5b458c0f4a6c5545c3ed6e68b39018a7a998e3480a97a525134fb698d12"
+            "projection_sha256": "9483c47d4585c46ae2657bf5873eaeb65d97ab3af0ea1ee6669ce5b8b95e82ff"
           },
           {
             "body_sha256": "0f9116786d8444ad7924e5e1b39d3ccf5a48b0c3fcfee4e127dbd1febb7e3da3",
             "column": 0,
             "complexity": 6,
             "end_column": 100,
-            "end_line": 115,
-            "line": 104,
+            "end_line": 122,
+            "line": 111,
             "name": "validate_pages",
             "projection_sha256": "da8794933bb0d71c6457be24702fbe09f0eb4fc04a9e4af021e32c09ff1f0d7b"
           },
@@ -8775,8 +8785,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 22,
-            "end_line": 129,
-            "line": 118,
+            "end_line": 136,
+            "line": 125,
             "name": "validate_search",
             "projection_sha256": "a4d5477942086e41cf1d73efdfe7eaf998dfecaa21f217153750c430d95ba1c7"
           },
@@ -8785,8 +8795,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 119,
-            "end_line": 135,
-            "line": 132,
+            "end_line": 142,
+            "line": 139,
             "name": "sitemap_document",
             "projection_sha256": "461fc9de6123972c6797e9bd3bad68b2e191a5d3e3c40679f08576610ee0e3e8"
           },
@@ -8795,8 +8805,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 24,
-            "end_line": 144,
-            "line": 138,
+            "end_line": 151,
+            "line": 145,
             "name": "sitemap_index_targets",
             "projection_sha256": "951e7fa1d269d81b29a8277528a00ce93bb09a326fab6a2fec683d94ec32406e"
           },
@@ -8805,8 +8815,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 15,
-            "end_line": 162,
-            "line": 147,
+            "end_line": 169,
+            "line": 154,
             "name": "sitemap_locations",
             "projection_sha256": "6d2a6f529757333605b8ef80e9b74cfc75f9ae54cf5f849a76c4003a3c414ee9"
           },
@@ -8815,8 +8825,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 20,
-            "end_line": 176,
-            "line": 165,
+            "end_line": 183,
+            "line": 172,
             "name": "validate_sitemap",
             "projection_sha256": "8ab3a081f8447b3cac1affe7c905474bd8a372c0f14c468deb8a3397648ff53c"
           },
@@ -8825,15 +8835,15 @@
             "column": 0,
             "complexity": 2,
             "end_column": 56,
-            "end_line": 190,
-            "line": 179,
+            "end_line": 197,
+            "line": 186,
             "name": "validate_site",
             "projection_sha256": "a29c4935e5aa5fc7478beba24f880ea3cfd3ebf344e6d60be95a55003865bb0a"
           }
         ],
         "language": "python",
         "path": "articulous/site_validation.py",
-        "sha256": "63b1428a7ad2ef2f6cffb8ade6c1f91440440d8b5afc609565691404c0acea89"
+        "sha256": "e6379c355784c7e625a84618dea229386b4ac7c710c1a4f980d26b8bcbbf2bcf"
       },
       {
         "functions": [
@@ -21690,6 +21700,43 @@
         "language": "python",
         "path": "tests/test_recovery_records.py",
         "sha256": "a737ac28b58e2e7f1f151c82ca24776887a9717506697626b6ec3186c9d4f2f4"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "90378b0cd7f9b3531a9beb1db9a029a33db3b4fa67feac17cd109ab3f3b84464",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 65,
+            "end_line": 28,
+            "line": 20,
+            "name": "test_review018_target_fragments_replace_or_inherit",
+            "projection_sha256": "7674fd82135ced7e17f58a197ee34ffdcbb91f14ed5a9b650dcbd86dba1c11a3"
+          },
+          {
+            "body_sha256": "9ff120f9a7943f786f5f5ebfd2a00feb612ec1fc93a7ee16fae84d74c6ca6be1",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 25,
+            "end_line": 40,
+            "line": 32,
+            "name": "test_review018_fragment_state_survives_redirect_chain",
+            "projection_sha256": "3b31ea67876f3dcd000e67ee5b777af8983441406dd349425b93e3da2b666a82"
+          },
+          {
+            "body_sha256": "01cd8e5d9e6b80cd09391ded58d8bca25bd37b72a914d50c95a54b143d60635b",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 47,
+            "end_line": 54,
+            "line": 43,
+            "name": "test_review018_seeded_fragment_values",
+            "projection_sha256": "8345c51926e38c24fa0d320e8234abef56ccb1a49316b1099364635105e90cff"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_redirect_fragments.py",
+        "sha256": "c7ff1ae59ed54bd06d5d027220e9ac8c53221bec2d58915cde2802496dc76d1a"
       },
       {
         "functions": [

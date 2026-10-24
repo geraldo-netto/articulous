@@ -1,5 +1,5 @@
 """Check generated artifacts before making a completed build visible."""
-from urllib.parse import quote, unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 import json
 
 import lxml.etree as etree
@@ -66,21 +66,28 @@ def read_pages(output, failures, html_errors=None):
     return pages
 
 
-def redirect_target(output, target, base, redirects, failures, label):
+def _redirect_url(previous, destination):
+    if '#' in destination:
+        return destination
+    return urlunsplit(urlsplit(destination)._replace(fragment=urlsplit(previous).fragment))
+
+
+def redirect_target(output, target, resolved, base, redirects, failures, label):
     seen = set()
     route = page_route(output, target)
     while route in redirects:
         if route in seen:
             failures.append(f'{label}: redirect loop for {route}')
-            return None
+            return None, resolved
         seen.add(route)
         value = redirects[route]
-        target = local_path(output, base.rstrip('/') + value, base)
+        resolved = _redirect_url(resolved, base.rstrip('/') + value)
+        target = local_path(output, resolved, base)
         if target is None or not target.is_file():
             failures.append(f'{label}: missing redirect target {value}')
-            return None
+            return None, resolved
         route = page_route(output, target)
-    return target
+    return target, resolved
 
 
 def check_link(output, value, page_url, base, redirects, pages, failures, label):
@@ -91,7 +98,7 @@ def check_link(output, value, page_url, base, redirects, pages, failures, label)
     if not target.is_file():
         failures.append(f'{label}: missing {value}')
         return
-    target = redirect_target(output, target, base, redirects, failures, label)
+    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label)
     fragment = unquote(urlsplit(resolved).fragment).split(':~:text=', 1)[0]
     if not fragment:
         return

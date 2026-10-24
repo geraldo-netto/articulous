@@ -245,7 +245,12 @@ read; the previous implementation retained 23 files after ten reads. Storage now
 depends on captured content and sort chunks, rather than successful read count.
 
 [`articulous.builds`](../articulous/builds.py) exposes a context-managed whole-site
-lifecycle. These APIs merge and validate a copy of the supplied configuration,
+lifecycle through the independent `build_contracts.BuildAPI` interface.
+`build_contracts` defines opaque prepared/staged/validated capabilities, read-only
+route/artifact views, diagnostics, reports, validators and errors without importing
+planners, storage, native locking or XML implementations. Implementation state has
+one private owner; handles expose no cache, task plan, workspace or build context.
+These APIs merge and validate a copy of the supplied configuration,
 resolve paths against `project_root` and require an unfiltered build. They reject
 `only_sections`, `only_langs` and `only_slugs`; incremental partial builds remain
 available through `run_build`. Whole-site preparation always captures and renders
@@ -253,8 +258,9 @@ a fresh generation, regardless of `cli.dry_run` or fingerprint-cache hits.
 
 ```python
 from articulous.builds import (
-    Diagnostic, check_build, prepare_build, render_prepared, validate_generated,
+    check_build, prepare_build, render_prepared, validate_generated,
 )
+from articulous.build_contracts import Diagnostic
 
 def validate_about(staged):
     with staged.open_artifact("about/index.html") as source:
@@ -278,8 +284,12 @@ dependencies and assets. Its private stage sits beside the output directory;
 callers do not provide a separate render target. Preparation does not publish the
 site. `render_prepared` may run once per prepared build; it renders the captured
 plan and fingerprints all staged file contents and directory paths. Source edits
-after capture apply to the next build. The prepared context owns locks, the route
-catalog and temporary resources; staged and validated handles expire when it exits.
+after capture apply to the next build. The prepared context owns locks, route
+storage and temporary resources; staged and validated handles expire when it
+exits. `PreparedBuild.state` and `closed` are read-only views of its single
+lifecycle state. Calling `close()` retires handles and settles readers;
+containing-context exit reclaims workspaces and locks. Keep the handle to retry
+if reader settlement raises. Unknown close obligations stay attached to that owner.
 
 Assets are copied safely into private inputs once during preparation. Rendering
 renames that captured directory into staged output on the same filesystem;
@@ -287,10 +297,16 @@ the private-stage owner retains cleanup responsibility throughout the handoff.
 No hardlinks or borrowed source files survive capture. Content and stylesheet
 capture still use their existing snapshot boundaries.
 
-`StagedBuild.routes` exposes the catalog and `open_artifact(relative)` opens a
-regular file for streaming reads. Paths must stay inside the stage; absolute,
-dot-segment, backslash and drive-style paths are rejected. Callers choose read
-sizes. `validate_generated` verifies manifest targets, runs each validator and
+`StagedBuild.routes` exposes a read-only `RouteReader` without storage mutation
+or close methods. Each iteration checks lifetime before touching its native
+reader. `open_artifact(relative)` admits a scoped `ArtifactReader` with
+`read(size=-1)` and a read-only `closed` cutoff flag, without exporting descriptors.
+Sizes are non-boolean integers: -1 or nonnegative. Reads are clamped to remaining
+file bytes admitted on open, so huge integer sizes cannot allocate unbounded
+buffers. Context exit and publication handoff settle retained artifact readers;
+reads after cutoff fail before native access. Paths stay inside the stage;
+absolute, dot-segment, backslash and drive-style paths are rejected.
+`validate_generated` verifies manifest targets, runs each validator and
 checks the fingerprint again. A validator returns an iterable of `Diagnostic`
 values or `None`; severity `error` rejects the build, while `warning` is retained
 in the report. Exceptions and staged mutations also prevent publication.

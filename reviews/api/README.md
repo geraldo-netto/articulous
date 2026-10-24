@@ -197,3 +197,36 @@ publication owners retain their acquisition, settlement and cleanup boundaries.
 Verification: 2,774 tests and 359 subtests passed; 100% line/branch coverage,
 895 production functions passed individual coverage, calibrated complexity
 acceptance passed, Ruff passed, and offline Pyright reported zero diagnostics.
+
+## API-001: independent lifecycle capabilities
+
+`build_contracts` defines lifecycle protocols, diagnostic/result values and the
+typed build API independently of planner, storage and native filesystem modules.
+Private implementation handles share one authoritative generation owner. Callers
+receive read-only routes and bounded artifact readers; publication crosses an
+explicit adapter into the existing independent backend contract.
+
+The retained-reader regression failed against the old implementation: closing a
+generation left a borrowed file readable. Generation retirement now cuts off all
+capabilities before settling readers and route cursors. Publication settles live
+artifact borrows before backend handoff. Admission failure closes acquired files;
+failed cleanup retains ownership and permits explicit close retry. No descriptor
+or mutable catalog escapes the public capabilities. Byte reads cannot exceed the
+file size admitted at open, including arbitrarily large requested counts.
+
+Permanent controls cover foreign handles, invalid reads/paths/diagnostics,
+superseded validation, reader admission and cleanup faults, callback failure and
+cancellation. An independent lifecycle oracle checks all 64 three-step traces
+over validate, reject, publish and close. This finite model complements native
+Linux tests; it does not prove unrestricted concurrency or other-platform safety.
+Eventual cleanup assumes the cleanup sponsor retries retained failures and the
+underlying close eventually succeeds. Pure contract admission retains only owned
+immutable values, bounded by caller-funded fields and strings.
+
+Verification: 2,868 tests and 359 subtests passed; 100% line/branch coverage,
+936 production functions passed individual coverage, 2,755 source-bound functions
+and 14 XSLT templates passed calibrated complexity acceptance, Ruff passed, and
+offline Pyright reported zero diagnostics. Per-function values and installed
+analyzer versions/conventions remain in `reviews/complexity/functions.json` and
+its README. Dependency/import and production-call-site checks retain the explicit
+publication adapter and find no newly orphaned capability exports.

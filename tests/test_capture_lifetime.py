@@ -2,6 +2,7 @@
 from articulous.builds import prepare_build
 from articulous.extensions import BuildComposition
 from articulous.builds import capture_site
+from articulous.capture_adapter import Snapshot
 import pytest
 
 
@@ -83,7 +84,7 @@ def test_life001_child_close_failure_still_settles_all_spools(site_root, seo_con
     readers[0].close()
 
 
-def retained_storage(snapshot):
+def retained_storage(snapshot: Snapshot):
     paths = snapshot._store._workspace._paths
     return len(paths), sum(path.stat().st_size for path in paths)
 
@@ -91,6 +92,7 @@ def retained_storage(snapshot):
 def test_review011_repeated_reads_reuse_sorted_spools(site_root, seo_config):
     cli, config = seo_config
     with capture_site(cli, config, site_root) as snapshot:
+        assert isinstance(snapshot, Snapshot)
         assert retained_storage(snapshot)[0] == 3
         expected = list(snapshot.articles())
         first = retained_storage(snapshot)
@@ -110,6 +112,7 @@ def test_review011_readers_borrow_independent_handles_and_keep_tie_order(site_ro
         tree.write(str(path))
     cli, config = seo_config
     with capture_site(cli, config, site_root) as snapshot:
+        assert isinstance(snapshot, Snapshot)
         first, second = snapshot.articles(), snapshot.articles()
         assert next(first).slug == next(second).slug == 'first-post'
         first.close()
@@ -140,7 +143,7 @@ def test_review011_sort_failure_settles_owned_files_on_context_exit(site_root, s
         with capture_site(cli, config, site_root) as snapshot:
             monkeypatch.setattr(pipeline, '_write_sorted_article_chunk', fail)
             next(snapshot.articles())
-    assert snapshot is not None
+    assert isinstance(snapshot, Snapshot)
     assert snapshot._active == set()
     assert paths
     assert all(not path.exists() for path in paths)

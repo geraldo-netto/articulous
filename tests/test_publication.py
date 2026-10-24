@@ -270,11 +270,12 @@ def test_arch005_journal_field_fuzz_preserves_stage(site_root, seo_config, chang
     backend = PosixPublicationBackend()
     with prepare_build(cli, config, site_root) as prepared:
         checked = validate_generated(render_prepared(prepared))
-        transaction, data = backend._begin(publication_input(checked))
+        publication = publication_input(checked)
+        transaction, data = backend._begin(publication)
         data.update(changes)
         (transaction / 'journal.json').write_text(json.dumps(data))
         with pytest.raises(ValueError, match='journal'):
-            backend.recover(prepared.destination, prepared.cache_path)
+            backend.recover(publication.destination, publication.cache_path)
         assert checked.staged.root.is_dir()
         assert transaction.is_dir()
 
@@ -320,7 +321,7 @@ def test_arch005_state_hardlink_is_rejected_after_preparation(site_root, seo_con
         checked = validate_generated(render_prepared(prepared))
         source = site_root / 'keep.json'
         source.write_text('{}')
-        os.link(source, prepared.cache_path)
+        os.link(source, site_root / '.build-cache.json')
         with pytest.raises(ValueError, match='hardlink'):
             publish_validated(checked)
         assert source.read_text() == '{}'

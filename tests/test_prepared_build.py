@@ -6,9 +6,10 @@ from unittest.mock import Mock
 import pytest
 
 from articulous.builds import (
-    Diagnostic, check_build, prepare_build, render_prepared, validate_generated,
+    check_build, prepare_build, render_prepared, validate_generated,
 )
 from articulous.pipeline import run_build
+from articulous.build_contracts import Diagnostic
 from articulous.publication import publish_validated
 from articulous.transform_contracts import TransformFailure
 from test_composition import page
@@ -176,12 +177,13 @@ def test_arch004_rejects_symlink_output(site_root, seo_config):
 
 
 @pytest.mark.parametrize('invalid', [None])
-def test_arch004_invalid_configuration_and_extra_values(site_root, seo_config, invalid):
+@pytest.mark.parametrize('invalid_page', ['invalid'])
+def test_arch004_invalid_configuration_and_extra_values(site_root, seo_config, invalid, invalid_page):
     cli, _ = seo_config
     with pytest.raises(ValueError, match='Configuration'):
         check_build(cli, invalid, site_root)
     with pytest.raises(ValueError, match='ExtraPage'):
-        check_build(cli, {}, site_root, extra_pages=['invalid'])
+        check_build(cli, {}, site_root, extra_pages=[invalid_page])
 
 
 def test_arch005_workspace_swap_never_deletes_replacement(site_root, seo_config):

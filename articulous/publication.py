@@ -5,9 +5,10 @@ from pathlib import Path
 from .publication_contracts import PublicationBackend
 from .config import normalize_configuration
 from .configuration_contracts import BuildOptions, ConfigurationInput
-from .publication_adapter import publication_input
+from .publication_adapter import publish_generation
+from .build_contracts import ValidatedBuild, ValidationReport
 from .builds import (
-    ValidatedBuild, ValidationReport, prepare_build, render_prepared, validate_generated,
+    prepare_build, render_prepared, validate_generated,
 )
 
 
@@ -29,11 +30,7 @@ def _backend(backend, require_atomic, require_durable) -> PublicationBackend:
 def publish_validated(checked: ValidatedBuild, *, backend=None,
                       require_atomic=False, require_durable=False) -> None:
     selected = _backend(backend, require_atomic, require_durable)
-    checked.assert_unchanged()
-    prepared = checked.staged.prepared
-    selected.recover(prepared.destination, prepared.cache_path)
-    selected.publish(publication_input(checked))
-    prepared.state = 'published'
+    publish_generation(checked, selected)
 
 
 def recover_publication(destination: Path, cache_path: Path, *, backend=None) -> None:

@@ -27,6 +27,17 @@ class CapturedArticle:
     translation: str
 
 
+class CapturedReader(Protocol):
+    def __iter__(self) -> Iterator[CapturedArticle]:
+        ...
+
+    def __next__(self) -> CapturedArticle:
+        ...
+
+    def close(self) -> None:
+        ...
+
+
 class CapturedSite(Protocol):
     @property
     def languages(self) -> tuple[str, ...]:
@@ -40,7 +51,7 @@ class CapturedSite(Protocol):
     def invalid_articles(self) -> int:
         ...
 
-    def articles(self, language: str | None = None) -> Iterator[CapturedArticle]:
+    def articles(self, language: str | None = None) -> CapturedReader:
         ...
 
 

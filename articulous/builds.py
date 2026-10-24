@@ -1,12 +1,23 @@
 """Prepared whole-site builds with validation before publication."""
-from contextlib import ExitStack, contextmanager
-from dataclasses import dataclass, replace
+from __future__ import annotations
+
+from collections.abc import Iterable, Iterator
+from contextlib import ExitStack, closing, contextmanager
+from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import BinaryIO
+import os
 import shutil
 
 from .articles import ArticleStats
 from .composition import RouteCatalog
-from .composition_contracts import ExtraPage, artifact_values
+from .composition_contracts import ExtraArtifact, ExtraPage, RouteReader, artifact_values
+from .build_contracts import (
+    ArtifactReader, BuildError, Composer, Diagnostic, PreparedBuild, StagedBuild,
+    ValidatedBuild, ValidationReport, Validator,
+)
+from .publication_contracts import PublicationBackend
+from .extensions import CapturedSite
 from .engines import StylesheetCapture
 from .extensions import BuildComposition, TemplateInput
 from .config import normalize_configuration
@@ -23,25 +34,8 @@ from .pipeline import (
 from .capture_adapter import Snapshot
 
 
-@dataclass(frozen=True)
-class Diagnostic:
-    message: str
-    severity: str = 'error'
-    path: str = ''
-
-    def __post_init__(self):
-        if self.severity not in ('error', 'warning'):
-            raise ValueError('Diagnostic severity must be error or warning')
-
-
-@dataclass(frozen=True)
-class ValidationReport:
-    routes: int
-    diagnostics: tuple[Diagnostic, ...]
-
-
 @dataclass
-class PreparedBuild:
+class _BuildState:
     context: BuildCtx
     destination: Path
     cache_path: Path
@@ -51,65 +45,190 @@ class PreparedBuild:
     cache: dict
     workspace: TempWorkspace
     state: str = 'prepared'
-    closed: bool = False
     validation_revision: int = 0
+    readers: set[_ArtifactReader] = field(default_factory=set)
+
+    def require_live(self):
+        if self.state == 'closed':
+            raise BuildError('Prepared build is closed')
 
     def require_state(self, *states):
-        if self.closed:
-            raise ValueError('Prepared build is closed')
+        self.require_live()
         if self.state not in states:
-            raise ValueError(f'Invalid prepared build state: {self.state}')
+            raise BuildError(f'Invalid prepared build state: {self.state}')
+
+    def open_reader(self, path):
+        self.require_state('rendered', 'validated')
+        cleanup = ExitStack()
+        try:
+            source = cleanup.enter_context(open_regular_file(path))
+            reader = _ArtifactReader(self, source, cleanup, os.fstat(source.fileno()).st_size)
+            self.readers.add(reader)
+        except BaseException:
+            cleanup.close()
+            raise
+        return reader
+
+    def release_reader(self, reader):
+        if reader in self.readers:
+            reader._cleanup.close()
+            if not reader._source.closed:
+                reader._source.close()
+            self.readers.remove(reader)
+
+    def settle_readers(self):
+        for reader in tuple(self.readers):
+            self.release_reader(reader)
 
     def close(self):
-        self.closed = True
+        self.state = 'closed'
+        self.settle_readers()
+        self.routes.close()
+
+    def published(self, revision):
+        self.require_state('validated')
+        if revision != self.validation_revision:
+            raise BuildError('Validation handle has been superseded')
+        self.state = 'published'
+
+
+@dataclass(frozen=True, eq=False)
+class _ArtifactReader:
+    _owner: _BuildState
+    _source: BinaryIO
+    _cleanup: ExitStack
+    _limit: int
+
+    @property
+    def closed(self) -> bool:
+        return self._owner.state == 'closed' or self not in self._owner.readers
+
+    def read(self, size: int = -1) -> bytes:
+        if self.closed:
+            raise BuildError('Artifact reader is closed')
+        self._owner.require_state('rendered', 'validated')
+        if type(size) is not int or size < -1:
+            raise BuildError('Artifact read size must be -1 or a nonnegative integer')
+        remaining = max(0, self._limit - self._source.tell())
+        amount = remaining if size == -1 else min(size, remaining)
+        return self._source.read(amount)
 
 
 @dataclass(frozen=True)
-class StagedBuild:
-    prepared: PreparedBuild
-    fingerprint: str
+class _RouteView:
+    _owner: _BuildState
+
+    def __iter__(self):
+        self._owner.require_live()
+        with closing(iter(self._owner.routes)) as source:
+            while True:
+                self._owner.require_live()
+                try:
+                    route = next(source)
+                except StopIteration:
+                    return
+                yield route
+
+    def __len__(self):
+        self._owner.require_live()
+        return len(self._owner.routes)
+
+
+@dataclass(frozen=True)
+class _PreparedBuild:
+    _owner: _BuildState
+
+    @property
+    def state(self) -> str:
+        return self._owner.state
+
+    @property
+    def closed(self) -> bool:
+        return self._owner.state == 'closed'
+
+    @property
+    def routes(self) -> RouteReader:
+        return _RouteView(self._owner)
+
+    def close(self) -> None:
+        self._owner.close()
+
+
+@dataclass(frozen=True)
+class _StagedBuild:
+    _owner: _BuildState
+    _fingerprint: str
 
     @property
     def root(self) -> Path:
-        return self.prepared.context.output_dir
+        return self._owner.context.output_dir
 
     @property
-    def routes(self) -> RouteCatalog:
-        return self.prepared.routes
+    def routes(self) -> RouteReader:
+        return _RouteView(self._owner)
 
     def assert_unchanged(self):
-        self.prepared.require_state('rendered', 'validated')
-        if tree_fingerprint(self.root) != self.fingerprint:
-            raise ValueError('Staged artifacts changed after rendering or validation')
+        self._owner.require_state('rendered', 'validated')
+        if tree_fingerprint(self.root) != self._fingerprint:
+            raise BuildError('Staged artifacts changed after rendering or validation')
 
     @contextmanager
-    def open_artifact(self, relative: str):
-        self.prepared.require_state('rendered', 'validated')
+    def open_artifact(self, relative: str) -> Iterator[ArtifactReader]:
+        self._owner.require_state('rendered', 'validated')
         if not isinstance(relative, str) or not relative:
-            raise ValueError('Invalid artifact path')
+            raise BuildError('Invalid artifact path')
         if any(char in relative for char in '\\:') or any(part in ('', '.', '..') for part in relative.split('/')):
-            raise ValueError('Invalid artifact path')
+            raise BuildError('Invalid artifact path')
         path = self.root / relative
         validate_output_path(path)
-        with open_regular_file(path) as source:
-            yield source
+        reader = self._owner.open_reader(path)
+        try:
+            yield reader
+        finally:
+            self._owner.release_reader(reader)
 
 
 @dataclass(frozen=True)
-class ValidatedBuild:
-    staged: StagedBuild
-    diagnostics: tuple[Diagnostic, ...]
-    revision: int
+class _ValidatedBuild:
+    _staged: _StagedBuild
+    _diagnostics: tuple[Diagnostic, ...]
+    _revision: int
+
+    @property
+    def staged(self) -> StagedBuild:
+        return self._staged
+
+    @property
+    def diagnostics(self) -> tuple[Diagnostic, ...]:
+        return self._diagnostics
 
     def assert_unchanged(self):
-        self.staged.prepared.require_state('validated')
-        if self.revision != self.staged.prepared.validation_revision:
-            raise ValueError('Validation handle has been superseded')
-        self.staged.assert_unchanged()
+        self._staged._owner.require_state('validated')
+        if self._revision != self._staged._owner.validation_revision:
+            raise BuildError('Validation handle has been superseded')
+        self._staged.assert_unchanged()
+
+
+def _owned_prepared(value: PreparedBuild) -> _BuildState:
+    if not isinstance(value, _PreparedBuild):
+        raise BuildError('Unrecognized prepared build handle')
+    return value._owner
+
+
+def _owned_staged(value: StagedBuild) -> _StagedBuild:
+    if not isinstance(value, _StagedBuild):
+        raise BuildError('Unrecognized staged build handle')
+    return value
+
+
+def _owned_validated(value: ValidatedBuild) -> _ValidatedBuild:
+    if not isinstance(value, _ValidatedBuild):
+        raise BuildError('Unrecognized validated build handle')
+    return value
 
 
 @contextmanager
-def capture_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path):
+def capture_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path) -> Iterator[CapturedSite]:
     context = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=True)
     with TempWorkspace() as workspace:
         snapshot = Snapshot(context, workspace)
@@ -201,12 +320,13 @@ def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=
                           cache, workspace, manifest)
     stack.callback(_cleanup_stream_projection, plan.projection)
     stack.callback(_close_task_queues, plan)
-    _finish_artifacts(context, snapshot, composition, routes, manifest, plan, cache)
-    _finish_composition(context, snapshot, composition, routes)
-    prepared = PreparedBuild(context, original.output_dir, _cache_path_for(original, root),
-                             routes, manifest, plan, cache, workspace)
-    stack.callback(prepared.close)
-    return prepared
+    owner = _BuildState(context, original.output_dir, _cache_path_for(original, root),
+                        routes, manifest, plan, cache, workspace)
+    stack.callback(owner.close)
+    view = _RouteView(owner)
+    _finish_artifacts(context, snapshot, composition, view, manifest, plan, cache)
+    _finish_composition(context, snapshot, composition, view)
+    return _PreparedBuild(owner)
 
 
 @contextmanager
@@ -222,7 +342,9 @@ def _preparation_lock(original, root, backend):
 
 
 @contextmanager
-def prepare_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), backend=None, composer=None):
+def prepare_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *,
+                  extra_pages: Iterable[ExtraPage] = (), extra_artifacts: Iterable[ExtraArtifact] = (),
+                  backend: PublicationBackend | None = None, composer: Composer | None = None) -> Iterator[PreparedBuild]:
     pages = _full_build(cli, extra_pages)
     artifacts = artifact_values(extra_artifacts)
     original = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=False)
@@ -233,18 +355,18 @@ def prepare_build(cli: BuildOptions, config: ConfigurationInput, project_root: P
 
 
 def render_prepared(prepared: PreparedBuild) -> StagedBuild:
-    prepared.require_state('prepared')
-    prepared.state = 'failed'
-    prepared.context.output_dir.mkdir(parents=True)
-    validate_output_path(prepared.context.assets_dir)
-    if prepared.context.assets_dir.exists():
-        prepared.context.assets_dir.rename(prepared.context.output_dir / 'assets')
-    _run_plan(prepared.plan, prepared.context)
-    _cleanup_stream_projection(prepared.plan.projection)
-    prepared.workspace.cleanup()
-    prepared.state = 'rendered'
-    return StagedBuild(prepared, tree_fingerprint(prepared.context.output_dir))
-
+    owner = _owned_prepared(prepared)
+    owner.require_state('prepared')
+    owner.state = 'failed'
+    owner.context.output_dir.mkdir(parents=True)
+    validate_output_path(owner.context.assets_dir)
+    if owner.context.assets_dir.exists():
+        owner.context.assets_dir.rename(owner.context.output_dir / 'assets')
+    _run_plan(owner.plan, owner.context)
+    _cleanup_stream_projection(owner.plan.projection)
+    owner.workspace.cleanup()
+    owner.state = 'rendered'
+    return _StagedBuild(owner, tree_fingerprint(owner.context.output_dir))
 
 def _validate_manifest(staged):
     for route in staged.routes:
@@ -259,30 +381,33 @@ def _validator_diagnostics(validator, staged):
     try:
         diagnostics = tuple(values)
     except TypeError as error:
-        raise ValueError('Validators must return Diagnostic values or None') from error
+        raise BuildError('Validators must return Diagnostic values or None') from error
     if not all(isinstance(item, Diagnostic) for item in diagnostics):
-        raise ValueError('Validators must return Diagnostic values or None')
+        raise BuildError('Validators must return Diagnostic values or None')
     return diagnostics
 
 
-def validate_generated(staged: StagedBuild, *, validators=()) -> ValidatedBuild:
-    staged.prepared.require_state('rendered', 'validated')
-    staged.prepared.state = 'rendered'
-    staged.prepared.validation_revision += 1
-    staged.assert_unchanged()
-    _validate_manifest(staged)
+def validate_generated(staged: StagedBuild, *, validators: Iterable[Validator] = ()) -> ValidatedBuild:
+    handle = _owned_staged(staged)
+    owner = handle._owner
+    owner.require_state('rendered', 'validated')
+    owner.state = 'rendered'
+    owner.validation_revision += 1
+    handle.assert_unchanged()
+    _validate_manifest(handle)
     diagnostics = []
     for validator in validators:
-        diagnostics.extend(_validator_diagnostics(validator, staged))
+        diagnostics.extend(_validator_diagnostics(validator, handle))
     errors = [item.message for item in diagnostics if item.severity == 'error']
     if errors:
-        raise ValueError('\n'.join(errors))
-    staged.assert_unchanged()
-    staged.prepared.state = 'validated'
-    return ValidatedBuild(staged, tuple(diagnostics), staged.prepared.validation_revision)
+        raise BuildError('\n'.join(errors))
+    handle.assert_unchanged()
+    owner.state = 'validated'
+    return _ValidatedBuild(handle, tuple(diagnostics), owner.validation_revision)
 
-
-def check_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), validators=(), composer=None) -> ValidationReport:
+def check_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *,
+                extra_pages: Iterable[ExtraPage] = (), extra_artifacts: Iterable[ExtraArtifact] = (),
+                validators: Iterable[Validator] = (), composer: Composer | None = None) -> ValidationReport:
     with prepare_build(cli, config, project_root, extra_pages=extra_pages, extra_artifacts=extra_artifacts, composer=composer) as prepared:
         checked = validate_generated(render_prepared(prepared), validators=validators)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

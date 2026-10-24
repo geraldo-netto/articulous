@@ -3,6 +3,16 @@ from dataclasses import dataclass
 import re
 
 MAX_EVIDENCE_BYTES = 32 * 1024 * 1024
+AGGREGATE_SCHEMA = 2
+
+
+def require_aggregate(value):
+    if not isinstance(value, dict) or set(value) != {'schema', 'python_javascript', 'xslt'}:
+        raise ValueError('Missing or unknown aggregate complexity components')
+    if type(value['schema']) is not int or value['schema'] != AGGREGATE_SCHEMA:
+        raise ValueError('Invalid aggregate complexity evidence schema')
+    if not all(isinstance(value[key], dict) for key in ('python_javascript', 'xslt')):
+        raise ValueError('Invalid aggregate complexity component')
 
 
 def require_digest(value):

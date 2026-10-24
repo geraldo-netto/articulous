@@ -39,6 +39,7 @@ jobs:
         run: |
           .venv/bin/pytest -vv
           .venv/bin/python -m articulous.coverage_gate coverage.json --directory articulous
+          .venv/bin/python -m articulous.complexity_gate check
 
   saxonc:
     name: SaxonC-HE 12.10 integration

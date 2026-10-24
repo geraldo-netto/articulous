@@ -13,11 +13,17 @@ From the repository root:
 .venv/bin/python -m articulous.complexity_gate check
 ```
 
-`functions.json` records every maintained Python/JavaScript callable, source
-boundary, SHA-256 identity, analyzer version and calibration results. Measurement
-fails before publishing evidence if any scoped function exceeds 9. The check
-command validates a trusted measurement snapshot against current sources; it does
-not rerun analyzers or authenticate an edited report. Remeasure after source edits.
+`functions.json` is the schema-2 aggregate: `python_javascript` contains the
+schema-1 callable inventory, and `xslt` contains its independent schema-1
+per-template report. Both components record source identities, analyzer versions
+and calibration. Both must validate before the aggregate is atomically published.
+Missing, invalid or stale components fail the whole check; the Python/JavaScript
+component alone cannot satisfy aggregate acceptance. There is no legacy fallback.
+The check validates a trusted snapshot without rerunning analyzers or
+authenticating an edited report. Remeasure after source edits. `xslt.json` remains
+the standalone XSLT workflow's snapshot; the aggregate embeds its own measured
+XSLT component. CI runs the aggregate check using installed test dependencies;
+it does not install Lizard or ESLint to check committed evidence.
 
 The inventory includes root Python entry points, all Python files under
 `articulous` and `tests`, and maintained JS/MJS in those trees. Stock Prism JS is
@@ -83,3 +89,11 @@ bounded at 32 MiB. Files are closed before parsing, source identities are checke
 after measurement, and report publication uses the existing atomic writer.
 Failure leaves prior published evidence intact; no retained native resource is
 released based solely on a JSON result. Native backend validation remains Linux.
+
+CC-002's aggregate contract composes the two independent metric workflows.
+Permanent controls reject missing/unknown components, wrong schemas, a stale
+XSLT source while Python/JavaScript stay current, and a failed XSLT measurement
+before publication. The normal quality workflow invokes aggregate acceptance
+after pytest and individual-function coverage. Unsupported runtime evidence is
+separate: the exact SaxonC-HE 12.10 integration run remains TEST-003 while the
+owner keeps transfers disabled; cached PE 12.9 functional results are supplemental.

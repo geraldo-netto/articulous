@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 
 from . import complexity_native as native
-from .complexity_contracts import MAX_EVIDENCE_BYTES, decode_function, require_digest, require_relative
+from . import complexity_xslt as xslt
+from .complexity_contracts import AGGREGATE_SCHEMA, MAX_EVIDENCE_BYTES, decode_function, require_aggregate, require_digest, require_relative
 from .complexity_python import BASELINE, CALIBRATIONS, ast_identity, definitions, digest, function_identity, projection, python_text
 from .filesystem import write_text_atomic
 
@@ -163,6 +164,23 @@ def measured_report(root, python, eslint):
     return report
 
 
+def measured_all(root, python, eslint):
+    from .complexity_xpath import compile_xpath
+
+    report = {'schema': AGGREGATE_SCHEMA,
+              'python_javascript': measured_report(root, python, eslint),
+              'xslt': xslt.measured_report(root, compile_xpath)}
+    check_all(root, report)
+    return report
+
+
+def check_all(root, report):
+    require_aggregate(report)
+    functions = check_report(root, report['python_javascript'])
+    templates = xslt.check_report(root, report['xslt'])
+    return functions, templates
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('check', 'measure'))
@@ -174,10 +192,10 @@ def main(argv=None):
     if args.mode == 'measure':
         if args.eslint is None:
             parser.error('--eslint must name an installed ESLint package directory')
-        report = measured_report(args.root, args.python_analyzer, args.eslint)
+        report = measured_all(args.root, args.python_analyzer, args.eslint)
         write_text_atomic(args.report, json.dumps(report, indent=2, sort_keys=True) + '\n')
-    count = check_report(args.root, load_json(args.report))
-    print(f'{count} source-bound functions accepted; unchanged pre-policy identities remain explicit')
+    count, templates = check_all(args.root, load_json(args.report))
+    print(f'{count} source-bound functions and {templates} XSLT templates accepted; unchanged pre-policy identities remain explicit')
     return 0
 
 

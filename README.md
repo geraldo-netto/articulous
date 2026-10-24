@@ -692,10 +692,12 @@ in `.venv/bin/`. The CI job runs Ruff, Pyright and pytest; the separate
 changed function requires cyclomatic complexity <=9 without exemptions, measured
 by SonarQube or an equivalent installed local analyzer. Record analyzer/version,
 counting conventions, supported syntax and per-function results; validate analyzer
-gaps rather than treating missing results as passes. Remaining inventory and
-unsupported-language measurement work is tracked in `TODO.md` under CC-002.
+gaps rather than treating missing results as passes. Unsupported syntax fails
+acceptance rather than receiving an estimated or missing score.
 The [offline complexity workflow](reviews/complexity/README.md) records calibrated
-Lizard/ESLint measurements and verifies their source identities without downloads.
+Lizard/ESLint and native XPath/XSLT measurements in one source-bound report.
+`python -m articulous.complexity_gate check` validates every language component
+without downloads; CI enforces this aggregate check.
 
 A separate Linux integration job downloads the
 [SaxonC-HE 12.10 executable](https://downloads.saxonica.com/SaxonC/HE/12/index.html),

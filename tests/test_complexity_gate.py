@@ -11,6 +11,7 @@ from articulous import complexity_native as native
 from articulous import complexity_python as worker
 from articulous import complexity_gate as gate
 from articulous import complexity_contracts as contracts
+from articulous.complexity_xpath import compile_xpath
 
 
 def test_cc003_javascript_results_are_matched_by_file_identity(tmp_path, monkeypatch):
@@ -452,3 +453,54 @@ def test_cc003_measurement_and_cli(evidence, monkeypatch, capsys):
     assert gate.main(['check', '--root', str(root), '--report', str(path)]) == 0
     with pytest.raises(SystemExit):
         gate.main(['measure'])
+
+
+@pytest.mark.parametrize('value', [
+    None, [], {}, {'schema': 1},
+    {'schema': 1, 'python_javascript': {}, 'xslt': {}},
+    {'schema': True, 'python_javascript': {}, 'xslt': {}},
+    {'schema': 2.0, 'python_javascript': {}, 'xslt': {}},
+    {'schema': 2, 'python_javascript': [], 'xslt': {}},
+    {'schema': 2, 'python_javascript': {}, 'xslt': None},
+    {'schema': 2, 'python_javascript': {}, 'xslt': {}, 'unknown': 1},
+])
+def test_cc002_aggregate_input_boundaries(value):
+    with pytest.raises(ValueError):
+        contracts.require_aggregate(value)
+
+
+def test_cc002_complete_aggregate_acceptance(evidence):
+    root, report = evidence
+    aggregate = {'schema': 2, 'python_javascript': report,
+                 'xslt': gate.xslt.measured_report(root, compile_xpath)}
+    assert gate.check_all(root, aggregate) == (14, 0)
+    with pytest.raises(ValueError):
+        gate.check_all(root, report)
+    aggregate.pop('xslt')
+    with pytest.raises(ValueError, match='components'):
+        gate.check_all(root, aggregate)
+
+
+def test_cc002_xslt_failure_preserves_published_aggregate(evidence, monkeypatch):
+    root, report = evidence
+    monkeypatch.setattr(gate, 'measured_report', lambda *_: report)
+    monkeypatch.setattr(gate.xslt, 'measured_report', lambda *_: {'schema': 99})
+    path = root / 'aggregate.json'
+    path.write_text('previous')
+    with pytest.raises(ValueError, match='XSLT complexity metric'):
+        gate.main(['measure', '--root', str(root), '--report', str(path), '--eslint', 'installed'])
+    assert path.read_text() == 'previous'
+
+
+def test_cc002_stale_xslt_fails_with_unchanged_python_and_javascript(evidence):
+    root, report = evidence
+    path = root / gate.xslt.DIRECTORY / 'test.xsl'
+    path.parent.mkdir(parents=True)
+    path.write_text('<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">'
+                    '<xsl:template match="/"><out/></xsl:template></xsl:stylesheet>')
+    aggregate = {'schema': 2, 'python_javascript': report,
+                 'xslt': gate.xslt.measured_report(root, compile_xpath)}
+    assert gate.check_all(root, aggregate) == (14, 1)
+    path.write_text(path.read_text() + ' ')
+    with pytest.raises(ValueError, match='Stale XSLT'):
+        gate.check_all(root, aggregate)

@@ -4432,22 +4432,22 @@
             "projection_sha256": "a64d9fbf8d1641c59eddce827baeff654e3262164ee1f4a7e85aa5f27a632259"
           },
           {
-            "body_sha256": "4f2be3bce397a730cf10e6d175c34cd959c94a9cdf56e95f649f0a38202ea41d",
+            "body_sha256": "0afc89af292f465a500d25c93dd1363bc1e79dc26609f61173d4cc861403bb68",
             "column": 0,
-            "complexity": 2,
-            "end_column": 20,
-            "end_line": 350,
+            "complexity": 3,
+            "end_column": 24,
+            "end_line": 352,
             "line": 342,
             "name": "lock_file",
-            "projection_sha256": "5818d6cb5d5af2ab41167b8716d8d3461b40e05b61745010eda5ab48a5d2243c"
+            "projection_sha256": "59d05cb767a73611f953674a7eaf5509da23f52a87c447520f9ac43c3bd4e493"
           },
           {
             "body_sha256": "f29eabf6fa77131798f5021cea2d30182ad274fb0f6bea9aea7b21dda97b5220",
             "column": 4,
             "complexity": 1,
             "end_column": 36,
-            "end_line": 355,
-            "line": 354,
+            "end_line": 357,
+            "line": 356,
             "name": "TempWorkspace.__init__",
             "projection_sha256": "353d6d38c23225e783f0859d45cc3ac61e9ed8b81d85252fbff035e5f3b87f21"
           },
@@ -4456,8 +4456,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 16,
-            "end_line": 363,
-            "line": 357,
+            "end_line": 365,
+            "line": 359,
             "name": "TempWorkspace.named_file",
             "projection_sha256": "6f5f9d6ef23c5de543676c4c217a9d9707cea78763da257660f388ae686711d8"
           },
@@ -4466,8 +4466,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 367,
-            "line": 365,
+            "end_line": 369,
+            "line": 367,
             "name": "TempWorkspace.add",
             "projection_sha256": "bb438e667fc0236c7396dc944f33ef41ab2d3e7582566e0deab2404c5250f977"
           },
@@ -4476,8 +4476,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 27,
-            "end_line": 372,
-            "line": 369,
+            "end_line": 374,
+            "line": 371,
             "name": "TempWorkspace.cleanup",
             "projection_sha256": "2aad399f89984d5cbf247d3f6e41071f13048880db7edd05df582b5a23de859b"
           },
@@ -4486,8 +4486,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 375,
-            "line": 374,
+            "end_line": 377,
+            "line": 376,
             "name": "TempWorkspace.__enter__",
             "projection_sha256": "55dd338420b48fdcea10cd65be0331bbbff351597f94a7d1f80a1aa9d2bfd03b"
           },
@@ -4496,15 +4496,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 22,
-            "end_line": 378,
-            "line": 377,
+            "end_line": 380,
+            "line": 379,
             "name": "TempWorkspace.__exit__",
             "projection_sha256": "c5fb70d6713e9ea85ee3283f03b44d50a3d7fbc0947beebb2f1ef52519527657"
           }
         ],
         "language": "python",
         "path": "articulous/filesystem.py",
-        "sha256": "eda3dac627e7d24c88e068794904dcd543d9a3638bf4d4c5feace47079234d12"
+        "sha256": "90ecb6fda462a86acab71eaadb3529a9b84017abf3fbe7c07e61431262e6d9fa"
       },
       {
         "functions": [
@@ -15453,11 +15453,21 @@
             "line": 49,
             "name": "_fail_sync",
             "projection_sha256": "bd03de202a53a192b42766d2bc33384f768cd702fdabc930efdcf881c414d8a1"
+          },
+          {
+            "body_sha256": "224bf8fa296fb6048c0a91cbd4460af0ca135fce090fc8b6842f11da274d6919",
+            "column": 0,
+            "complexity": 5,
+            "end_column": 12,
+            "end_line": 75,
+            "line": 54,
+            "name": "test_review001_unlock_failure_closes_descriptor",
+            "projection_sha256": "6c212ba6908e0598e13fcd9ddde111db0935740c7751d4d24a6e7d28ec26cfc3"
           }
         ],
         "language": "python",
         "path": "tests/test_lock_release.py",
-        "sha256": "29ba7bfa0a09268fce02746ae6e1c857ad402828bbbf328784bf6da77a7ab85d"
+        "sha256": "f3a351685d9317e1587c808c7d2f8268adc7bc647ba1357cc694fd07b82dea30"
       },
       {
         "functions": [

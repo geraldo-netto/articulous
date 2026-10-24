@@ -346,8 +346,10 @@ def lock_file(path: Path, stale_after: float = 3600):
         os.ftruncate(fd, 0)
         os.fsync(fd)
     finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        os.close(fd)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
 
 
 class TempWorkspace:

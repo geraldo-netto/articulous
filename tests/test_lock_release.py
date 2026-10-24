@@ -48,3 +48,28 @@ def test_metadata_cleanup_failure_releases_os_lock(tmp_path, monkeypatch):
 
 def _fail_sync(_fd):
     raise OSError("cleanup failed")
+
+
+@pytest.mark.parametrize('body_failure', [False, True])
+def test_review001_unlock_failure_closes_descriptor(tmp_path, body_failure):
+    from unittest.mock import patch
+    from articulous import filesystem as fs
+
+    path = tmp_path / 'unlock.lock'
+    descriptor = fs._acquire_lock(path, 3600)
+    with patch.object(fs.os, 'close', wraps=os.close) as close:
+        try:
+            with pytest.raises(InterruptedError) as failure:
+                with patch.object(fs, '_acquire_lock', return_value=descriptor):
+                    with patch.object(fs.fcntl, 'flock', side_effect=InterruptedError('unlock')):
+                        with lock_file(path):
+                            if body_failure:
+                                raise LookupError('body')
+            close.assert_called_once_with(descriptor)
+            if body_failure:
+                assert isinstance(failure.value.__context__, LookupError)
+        finally:
+            if not close.called:
+                os.close(descriptor)
+    with lock_file(path):
+        pass

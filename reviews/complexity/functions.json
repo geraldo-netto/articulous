@@ -23517,25 +23517,65 @@
             "column": 0,
             "complexity": 4,
             "end_column": 99,
-            "end_line": 20,
-            "line": 9,
+            "end_line": 24,
+            "line": 13,
             "name": "test_theme001_one_owner_and_pinned_dependency_bytes",
             "projection_sha256": "0dca3c528048fc274cfe92917f3b18e1bedda5bcaaae404add3dc98415285054"
           },
           {
-            "body_sha256": "793820c3307980768519be492633ee58aabca2122cb40f7878acb24b50db2496",
+            "body_sha256": "7f41fedb129c3638dc19376dd8d360ce06b384e3c0e2655fa83a42451c6bdbe9",
             "column": 0,
             "complexity": 2,
+            "end_column": 21,
+            "end_line": 39,
+            "line": 27,
+            "name": "neutral_stylesheet",
+            "projection_sha256": "3ffb2fe098d289155189ca93638dea940f13a07faa8606658602356434b45dce"
+          },
+          {
+            "body_sha256": "4a62c6ecb04a60ce57b72198825ee9e6551742b61a944bacf0313e13c7fe7d9b",
+            "column": 0,
+            "complexity": 1,
             "end_column": 59,
-            "end_line": 41,
-            "line": 23,
+            "end_line": 50,
+            "line": 42,
             "name": "test_theme001_neutral_sanitized_rendering",
-            "projection_sha256": "01ae157524f508b1e5ce0d4409413fa37401eddc513b6165054dae3e057e6a1d"
+            "projection_sha256": "a61c5eca0bd92cc5a616d1740c86c266606a2f8b9331936b4ff62fc95d8f97a1"
+          },
+          {
+            "body_sha256": "dce2597bedd2522e5c51e564bbddee27094caad9f6643e4e31fa0a36da741b6f",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 83,
+            "end_line": 63,
+            "line": 57,
+            "name": "test_review006_leading_lines_have_bounded_recursion",
+            "projection_sha256": "112bdd773f6d80bd648df8ef4baef8732f26703129a54bb0ec9a185abcd4fe50"
+          },
+          {
+            "body_sha256": "c89cd332092cb129dd3c8103c170776dee1d20ff511a282259e09fb7822f8d13",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 65,
+            "end_line": 77,
+            "line": 66,
+            "name": "test_review006_wide_markup_preserves_nodes_without_linear_recursion",
+            "projection_sha256": "437bc244b0867d813281cdb6be73d3caec5d1e5117f6cd49a5ff40442064d493"
+          },
+          {
+            "body_sha256": "44766d2d460dc02d2de40962189bed984c27489f190f07e70b814104af2ea603",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 88,
+            "end_line": 96,
+            "line": 80,
+            "name": "test_review006_seeded_text_and_markup_boundaries",
+            "projection_sha256": "13af62be5ab56edfe7dadcb4fe40f851d38c921f202dbaeceb85f6d5e14f1d64"
           }
         ],
         "language": "python",
         "path": "tests/test_theme_resources.py",
-        "sha256": "edaff1d615b56d63e2406def8457f85fb12f4609337d4f0cd75f642413ec8f3d"
+        "sha256": "ce78ebfd6eaf2139d464fbf9e9117cf72518bf98d66fc188f1fc90130b4f3d58"
       },
       {
         "functions": [
@@ -26436,7 +26476,7 @@
     "files": [
       {
         "path": "articulous/theme_assets/xsl/content.xsl",
-        "sha256": "650b9c39a33eb9d0845954e0531c9c22200940fbab1bb544cb3b409e2a79a9b4",
+        "sha256": "faf4a7c7d712abfac81a77b80889b47738ac2edc8137274eb7cee8cc01e74e63",
         "templates": [
           {
             "complexity": 1,
@@ -26926,31 +26966,40 @@
             "sha256": "c3b906dcf034deea49b2bb54b199876df43d1678f747edc6004b133bc16e3bb9"
           },
           {
-            "complexity": 3,
+            "complexity": 2,
             "controls": [
               {
                 "instruction": "when",
-                "line": 61
+                "line": 60
               }
             ],
             "expressions": [
               {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 60,
+                "predicates": 0,
+                "source": "normalize-space($text)=''",
+                "trace_sha256": "afffdd720d5c0542dffe8baa53198efd5bfae1e21a699bb4d177da5c2f39fc07"
+              },
+              {
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 59,
+                "line": 60,
                 "predicates": 0,
-                "source": "0",
-                "trace_sha256": "93c39fd2eae17cb283dcbf7e0dfd088e61de5c1bb74e556d6dcdd285cf6eeef1"
+                "source": "$text",
+                "trace_sha256": "cab27aa8d86ab981a2da72f8056b4d5fa59e2abd938dd480bd166bf4c28c526e"
               },
               {
-                "attribute": "test",
-                "booleans": 1,
+                "attribute": "select",
+                "booleans": 0,
                 "compiler_version": "20914",
                 "line": 61,
                 "predicates": 0,
-                "source": "contains($text,'\n') and normalize-space(substring-before($text,'\n'))=''",
-                "trace_sha256": "9a22c4c697c59dde0e86ef43e232f5175c97f8febf8b9139d8ee145f358d7b06"
+                "source": "substring-before($text,substring(normalize-space($text),1,1))",
+                "trace_sha256": "3ee4c683adc47a79739ae7755d64cb64209f903b7d31f18d11f8b99fdb0d0b33"
               },
               {
                 "attribute": "select",
@@ -26958,46 +27007,144 @@
                 "compiler_version": "20914",
                 "line": 63,
                 "predicates": 0,
-                "source": "substring-after($text,'\n')",
-                "trace_sha256": "3a72c806f65a7fdad63d7b4e703a3a4b3c46363bcd210db4655d660d7f6685a3"
+                "source": "string($leading)",
+                "trace_sha256": "1a6aab66a14c3a20024daa9b6e92c8e9d745be7709665d738926011274843720"
+              }
+            ],
+            "line": 57,
+            "name": "code-leading-offset",
+            "sha256": "ad6001cb87dfd4b546c9ca481bf1e2ff1decf1cade8f8b36490f22d51a3f64e9"
+          },
+          {
+            "complexity": 4,
+            "controls": [
+              {
+                "instruction": "when",
+                "line": 70
               },
               {
-                "attribute": "select",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 64,
-                "predicates": 0,
-                "source": "$offset + string-length(substring-before($text,'\n')) + 1",
-                "trace_sha256": "72485230d48ba4e343cb8e0d529d7955ebdec62828a638edf876683affc97cc5"
+                "instruction": "when",
+                "line": 71
               },
+              {
+                "instruction": "when",
+                "line": 72
+              }
+            ],
+            "expressions": [
               {
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
                 "line": 67,
                 "predicates": 0,
+                "source": "0",
+                "trace_sha256": "93c39fd2eae17cb283dcbf7e0dfd088e61de5c1bb74e556d6dcdd285cf6eeef1"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 68,
+                "predicates": 0,
+                "source": "floor(string-length($text) div 2)",
+                "trace_sha256": "04007970bc9d1179fab12a85f5f42380633821de9e2c28c9649cb624d16e2443"
+              },
+              {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 70,
+                "predicates": 0,
+                "source": "not(contains($text,'\n'))",
+                "trace_sha256": "cbc05f164710a903f431fc6ec5516c4579fa8f11e37b89afc45e68897eec9a03"
+              },
+              {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 71,
+                "predicates": 0,
+                "source": "string-length($text)=1",
+                "trace_sha256": "6dcb903794b90a9f338ea95a198445d724cf530ae3c8007fbada99ecbfaf66ba"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 71,
+                "predicates": 0,
+                "source": "$offset + 1",
+                "trace_sha256": "c0adbd0d4446fb8dac776d74f4f114e46ae01c2996bf8653f5a18562ee37d554"
+              },
+              {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 72,
+                "predicates": 0,
+                "source": "contains(substring($text,$half + 1),'\n')",
+                "trace_sha256": "79eb12a975a07b82b1be30bbb15a67e0cddc3ae957777f75db4eb13a8460c938"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 74,
+                "predicates": 0,
+                "source": "substring($text,$half + 1)",
+                "trace_sha256": "8905e24448fa69d75f1c960e2f13c12a0a4f69651a382e095d2b01831829b0a9"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 75,
+                "predicates": 0,
+                "source": "$offset + $half",
+                "trace_sha256": "f61297c1a64e6abe0effb2f79b91f4b6ef3d5b9311eb31ace827e48bb2edf234"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 79,
+                "predicates": 0,
+                "source": "substring($text,1,$half)",
+                "trace_sha256": "6c3305d3099856049d0f1ec232414ae84aec971c9c7fd2e93bf19e985071c2cb"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 80,
+                "predicates": 0,
                 "source": "$offset",
                 "trace_sha256": "1aa54ac8500aa64c80ac45f9f88839f282fb872646411591d02f12cfc6e0b5d5"
               }
             ],
-            "line": 57,
-            "name": "code-leading-offset",
-            "sha256": "a1ecef6252c2e7d80591ccff78f5d282ccb49100f14c7807f57ff523c4c67c93"
+            "line": 65,
+            "name": "code-last-newline",
+            "sha256": "48d4122d9f10ee903ec6e216b29dfadb95b100341f8e45e8d199c14ae7776912"
           },
           {
-            "complexity": 6,
+            "complexity": 5,
             "controls": [
               {
                 "instruction": "when",
-                "line": 74
-              },
-              {
-                "instruction": "for-each",
-                "line": 75
+                "line": 88
               },
               {
                 "instruction": "when",
-                "line": 77
+                "line": 89
+              },
+              {
+                "instruction": "for-each",
+                "line": 92
+              },
+              {
+                "instruction": "when",
+                "line": 94
               }
             ],
             "expressions": [
@@ -27005,7 +27152,7 @@
                 "attribute": "test",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 74,
+                "line": 88,
                 "predicates": 0,
                 "source": "$skip <= 0",
                 "trace_sha256": "7325ea702c84622e08741c858c28a6b8c4ab61951e79b9215ef2a110910409a6"
@@ -27014,7 +27161,25 @@
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 74,
+                "line": 88,
+                "predicates": 0,
+                "source": "$nodes",
+                "trace_sha256": "511a8efdf1c2883e1447df0a4bed49dac18806264d110bcdfb8890f724cd8920"
+              },
+              {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 89,
+                "predicates": 0,
+                "source": "count($nodes) > 1",
+                "trace_sha256": "7fecb3481d3fd20ab49545aa855377809ff36ec48de8b86689197966328bc3d1"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 90,
                 "predicates": 0,
                 "source": "$nodes",
                 "trace_sha256": "511a8efdf1c2883e1447df0a4bed49dac18806264d110bcdfb8890f724cd8920"
@@ -27023,52 +27188,7 @@
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 75,
-                "predicates": 1,
-                "source": "$nodes[1]",
-                "trace_sha256": "605aba221072b601148296d3c37ff59fa8ce79fadb2fe8579bd9ff89ffb44d8d"
-              },
-              {
-                "attribute": "test",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 77,
-                "predicates": 0,
-                "source": "self::text()",
-                "trace_sha256": "e1cc34e031b8144f45176552f624b1d2e0497aaef3fbb1b750ab6095e80afebb"
-              },
-              {
-                "attribute": "select",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 77,
-                "predicates": 0,
-                "source": "substring(.,$skip + 1)",
-                "trace_sha256": "c47d0ee08fe98cfafbf1fedb072170f7fbcf44dfaa332a58952ec61d29eb5477"
-              },
-              {
-                "attribute": "select",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 78,
-                "predicates": 0,
-                "source": "@*",
-                "trace_sha256": "f6b35097a3b191a9f4591c985905b471b94d96596abb3936c7dc7426835e35b7"
-              },
-              {
-                "attribute": "select",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 78,
-                "predicates": 0,
-                "source": "node()",
-                "trace_sha256": "eedfe02161674fff8cba688822fc32805527d69cc58824cd64f5a8010855f18c"
-              },
-              {
-                "attribute": "select",
-                "booleans": 0,
-                "compiler_version": "20914",
-                "line": 78,
+                "line": 90,
                 "predicates": 0,
                 "source": "$skip",
                 "trace_sha256": "02f6d0c60c6018a0145c58ed0be8aa486fba0e0074c175ec0c28ba2cb9de789d"
@@ -27077,24 +27197,123 @@
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 80,
-                "predicates": 1,
-                "source": "$nodes[position() > 1]",
-                "trace_sha256": "d09514d1d8e57c8111e2d53ea6fd3f88dbc63219139fcad6d807c3483d41926e"
+                "line": 92,
+                "predicates": 0,
+                "source": "$nodes",
+                "trace_sha256": "511a8efdf1c2883e1447df0a4bed49dac18806264d110bcdfb8890f724cd8920"
+              },
+              {
+                "attribute": "test",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 94,
+                "predicates": 0,
+                "source": "self::text()",
+                "trace_sha256": "e1cc34e031b8144f45176552f624b1d2e0497aaef3fbb1b750ab6095e80afebb"
               },
               {
                 "attribute": "select",
                 "booleans": 0,
                 "compiler_version": "20914",
-                "line": 80,
+                "line": 94,
                 "predicates": 0,
-                "source": "$skip - string-length(.)",
-                "trace_sha256": "4d39d364cce40747df5b0e658cc0c96914934c3abae520ca751cc6ffe0d62d09"
+                "source": "substring(.,$skip + 1)",
+                "trace_sha256": "c47d0ee08fe98cfafbf1fedb072170f7fbcf44dfaa332a58952ec61d29eb5477"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 95,
+                "predicates": 0,
+                "source": "@*",
+                "trace_sha256": "f6b35097a3b191a9f4591c985905b471b94d96596abb3936c7dc7426835e35b7"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 95,
+                "predicates": 0,
+                "source": "node()",
+                "trace_sha256": "eedfe02161674fff8cba688822fc32805527d69cc58824cd64f5a8010855f18c"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 95,
+                "predicates": 0,
+                "source": "$skip",
+                "trace_sha256": "02f6d0c60c6018a0145c58ed0be8aa486fba0e0074c175ec0c28ba2cb9de789d"
               }
             ],
-            "line": 70,
+            "line": 84,
             "name": "code-trim-start",
-            "sha256": "6579bebe7dd1fc18923f729e569dbbb8a50c591b8128ae4c2477a9a837404fa8"
+            "sha256": "6fc226728308af9546b8be49aafb74bb4aab3173e3d63538bc1e090495f27365"
+          },
+          {
+            "complexity": 3,
+            "controls": [],
+            "expressions": [
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 102,
+                "predicates": 0,
+                "source": "floor(count($nodes) div 2)",
+                "trace_sha256": "28639e9f8a85b9e992d73e208ebbd125d21d796e6cdd3e98e3fe666a25dae67c"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 103,
+                "predicates": 1,
+                "source": "$nodes[position() <= $half]",
+                "trace_sha256": "b607d55bc4c2de15c613c456e3a7a84acb7bfce9651b48e76c29381df1ea183c"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 105,
+                "predicates": 0,
+                "source": "exsl:node-set($left)/node()",
+                "trace_sha256": "c2c55c0dff5b5ac109520f47eaf4d0c0b63885e1a61aceb62e79a548ee9e538e"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 105,
+                "predicates": 0,
+                "source": "$skip",
+                "trace_sha256": "02f6d0c60c6018a0145c58ed0be8aa486fba0e0074c175ec0c28ba2cb9de789d"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 108,
+                "predicates": 1,
+                "source": "$nodes[position() > $half]",
+                "trace_sha256": "32084da38a3c0dbff7198d64e54f1838acdae3abe754eefe4672a04d8fb9e63d"
+              },
+              {
+                "attribute": "select",
+                "booleans": 0,
+                "compiler_version": "20914",
+                "line": 108,
+                "predicates": 0,
+                "source": "$skip - string-length($left)",
+                "trace_sha256": "2a1d04eeeda418fc9d28eb8a38e1c0c5a96ac8b566f760017cb1b89dfa513abd"
+              }
+            ],
+            "line": 100,
+            "name": "code-trim-parts",
+            "sha256": "b18301a511bb49df0c04638f4831adcc52e3789de7274a80f38883d635dfe9bd"
           }
         ]
       }

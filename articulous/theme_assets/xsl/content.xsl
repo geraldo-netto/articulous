@@ -56,15 +56,29 @@
 </xsl:text></xsl:template>
   <xsl:template name="code-leading-offset">
     <xsl:param name="text"/>
+    <xsl:variable name="leading"><xsl:choose>
+      <xsl:when test="normalize-space($text)=''"><xsl:value-of select="$text"/></xsl:when>
+      <xsl:otherwise><xsl:value-of select="substring-before($text,substring(normalize-space($text),1,1))"/></xsl:otherwise>
+    </xsl:choose></xsl:variable>
+    <xsl:call-template name="code-last-newline"><xsl:with-param name="text" select="string($leading)"/></xsl:call-template>
+  </xsl:template>
+  <xsl:template name="code-last-newline">
+    <xsl:param name="text"/>
     <xsl:param name="offset" select="0"/>
+    <xsl:variable name="half" select="floor(string-length($text) div 2)"/>
     <xsl:choose>
-      <xsl:when test="contains($text,'&#10;') and normalize-space(substring-before($text,'&#10;'))=''">
-        <xsl:call-template name="code-leading-offset">
-          <xsl:with-param name="text" select="substring-after($text,'&#10;')"/>
-          <xsl:with-param name="offset" select="$offset + string-length(substring-before($text,'&#10;')) + 1"/>
+      <xsl:when test="not(contains($text,'&#10;'))">0</xsl:when>
+      <xsl:when test="string-length($text)=1"><xsl:value-of select="$offset + 1"/></xsl:when>
+      <xsl:when test="contains(substring($text,$half + 1),'&#10;')">
+        <xsl:call-template name="code-last-newline">
+          <xsl:with-param name="text" select="substring($text,$half + 1)"/>
+          <xsl:with-param name="offset" select="$offset + $half"/>
         </xsl:call-template>
       </xsl:when>
-      <xsl:otherwise><xsl:value-of select="$offset"/></xsl:otherwise>
+      <xsl:otherwise><xsl:call-template name="code-last-newline">
+        <xsl:with-param name="text" select="substring($text,1,$half)"/>
+        <xsl:with-param name="offset" select="$offset"/>
+      </xsl:call-template></xsl:otherwise>
     </xsl:choose>
   </xsl:template>
   <xsl:template name="code-trim-start">
@@ -72,13 +86,26 @@
     <xsl:param name="skip"/>
     <xsl:choose>
       <xsl:when test="$skip &lt;= 0"><xsl:copy-of select="$nodes"/></xsl:when>
-      <xsl:otherwise><xsl:for-each select="$nodes[1]">
+      <xsl:when test="count($nodes) &gt; 1"><xsl:call-template name="code-trim-parts">
+        <xsl:with-param name="nodes" select="$nodes"/><xsl:with-param name="skip" select="$skip"/>
+      </xsl:call-template></xsl:when>
+      <xsl:otherwise><xsl:for-each select="$nodes">
         <xsl:choose>
           <xsl:when test="self::text()"><xsl:value-of select="substring(.,$skip + 1)"/></xsl:when>
           <xsl:otherwise><xsl:copy><xsl:copy-of select="@*"/><xsl:call-template name="code-trim-start"><xsl:with-param name="nodes" select="node()"/><xsl:with-param name="skip" select="$skip"/></xsl:call-template></xsl:copy></xsl:otherwise>
         </xsl:choose>
-        <xsl:call-template name="code-trim-start"><xsl:with-param name="nodes" select="$nodes[position() &gt; 1]"/><xsl:with-param name="skip" select="$skip - string-length(.)"/></xsl:call-template>
       </xsl:for-each></xsl:otherwise>
     </xsl:choose>
+  </xsl:template>
+  <xsl:template name="code-trim-parts">
+    <xsl:param name="nodes"/><xsl:param name="skip"/>
+    <xsl:variable name="half" select="floor(count($nodes) div 2)"/>
+    <xsl:variable name="left"><xsl:copy-of select="$nodes[position() &lt;= $half]"/></xsl:variable>
+    <xsl:call-template name="code-trim-start">
+      <xsl:with-param name="nodes" select="exsl:node-set($left)/node()"/><xsl:with-param name="skip" select="$skip"/>
+    </xsl:call-template>
+    <xsl:call-template name="code-trim-start">
+      <xsl:with-param name="nodes" select="$nodes[position() &gt; $half]"/><xsl:with-param name="skip" select="$skip - string-length($left)"/>
+    </xsl:call-template>
   </xsl:template>
   </xsl:stylesheet>

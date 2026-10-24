@@ -22,8 +22,9 @@ not rerun analyzers or authenticate an edited report. Remeasure after source edi
 The inventory includes root Python entry points, all Python files under
 `articulous` and `tests`, and maintained JS/MJS in those trees. Stock Prism JS is
 excluded only while its exact bytes match the existing `upstream_unmodified`
-manifest. The maintained copy plugin is measured. XSLT is outside these analyzers'
-supported languages and remains CC-004, a prerequisite for parent CC-002.
+manifest. The maintained copy plugin is measured. The separate
+[XSLT workflow](xslt.md) uses the installed native XPath compiler and an independent
+control-flow contract. Python/JavaScript analyzers do not measure XSLT.
 
 Python counts start at 1 and use Lizard's native decisions: `if`, `elif`, `for`,
 `while`, `except`, `finally`, `and`, `or`, conditional expressions and comprehension

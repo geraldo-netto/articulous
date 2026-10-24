@@ -1,0 +1,789 @@
+{
+  "calibration": {
+    "templates": [
+      {
+        "actual": 1,
+        "body": "<out/>",
+        "expected": 1,
+        "name": "straight"
+      },
+      {
+        "actual": 4,
+        "body": "<xsl:if test=\"a and b or c\"><out/></xsl:if>",
+        "expected": 4,
+        "name": "boolean"
+      },
+      {
+        "actual": 3,
+        "body": "<xsl:choose><xsl:when test=\"a\"/><xsl:when test=\"b\"/><xsl:otherwise/></xsl:choose>",
+        "expected": 3,
+        "name": "choose"
+      },
+      {
+        "actual": 3,
+        "body": "<xsl:for-each select=\"a[b]\"><xsl:value-of select=\"c\"/></xsl:for-each>",
+        "expected": 3,
+        "name": "loop"
+      },
+      {
+        "actual": 3,
+        "body": "<out value=\"{{literal}} {a[b] and c}\"/>",
+        "expected": 3,
+        "name": "avt"
+      },
+      {
+        "actual": 1,
+        "body": "<out value=\"{contains('}', '{')}\"/>",
+        "expected": 1,
+        "name": "quoted-braces"
+      },
+      {
+        "actual": 1,
+        "body": "<xsl:element name=\"{'out'}\"/>",
+        "expected": 1,
+        "name": "computed-name"
+      },
+      {
+        "actual": 9,
+        "body": "<xsl:if test=\"a and b and c and d and e and f and g and h\"/>",
+        "expected": 9,
+        "name": "threshold"
+      }
+    ],
+    "xpath": [
+      {
+        "actual": [
+          0,
+          0
+        ],
+        "expected": [
+          0,
+          0
+        ],
+        "name": "simple",
+        "source": "a/b",
+        "trace_sha256": "e8aca25ab582d77b75ad6959ff997b71e7b0e4e5d3b1bfda198b82020ac2667a",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          2,
+          0
+        ],
+        "expected": [
+          2,
+          0
+        ],
+        "name": "boolean",
+        "source": "a and b or c",
+        "trace_sha256": "007e02b91e61e065c45ccfe1e5d3e0d459712fede87feadebb88f8f4a3f358c1",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          1,
+          0
+        ],
+        "expected": [
+          1,
+          0
+        ],
+        "name": "keyword-names",
+        "source": "@and or $and",
+        "trace_sha256": "cd1046c08c87c3e86f07a2ac9ffc0590e4d271e8d3732cb6fde4867307a9140a",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          0
+        ],
+        "expected": [
+          0,
+          0
+        ],
+        "name": "literal-tokens",
+        "source": "contains(\"and or [\", \"and\")",
+        "trace_sha256": "5708619a32d9ff1a25011738ff3aa7aaa20ecc970bc2207b49c737d5f97e7322",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          0
+        ],
+        "expected": [
+          0,
+          0
+        ],
+        "name": "literal-lines",
+        "source": "contains(\"line\n  AND\n  PREDICATE\", \"text\")",
+        "trace_sha256": "5708619a32d9ff1a25011738ff3aa7aaa20ecc970bc2207b49c737d5f97e7322",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          2
+        ],
+        "expected": [
+          0,
+          2
+        ],
+        "name": "nested-predicates",
+        "source": "a[b[c]]",
+        "trace_sha256": "e509ee574da012a3a6407f9f1465e19867902fc1c10b1ab8e23cb46156f07286",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          2
+        ],
+        "expected": [
+          0,
+          2
+        ],
+        "name": "successive-predicates",
+        "source": "a[b][c]",
+        "trace_sha256": "9da9c6074b95ac44aa02c6c585c6b631028a3c216fcc8b975f16f165cbe5bb9a",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          2
+        ],
+        "expected": [
+          0,
+          2
+        ],
+        "name": "filter",
+        "source": "(a|b)[true()][false()]",
+        "trace_sha256": "ed267d6043b13651cec9ae95a89817a451f7006d186cf80b85c8ada515ad85d1",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          0
+        ],
+        "expected": [
+          0,
+          0
+        ],
+        "name": "union",
+        "source": "a|b",
+        "trace_sha256": "e8aca25ab582d77b75ad6959ff997b71e7b0e4e5d3b1bfda198b82020ac2667a",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          1,
+          0
+        ],
+        "expected": [
+          1,
+          0
+        ],
+        "name": "qualified-names",
+        "source": "ns:and and ns:or",
+        "trace_sha256": "4685967ee94d21eb797471b3424c82fa49c6b8385431cbb7065dfb4c6fa88ca5",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          1,
+          0
+        ],
+        "expected": [
+          1,
+          0
+        ],
+        "name": "comparison",
+        "source": "a != b and c > 1",
+        "trace_sha256": "478e64f7f2aeb9b2ddd29420ea0c89cb2e742a09c780085608441cbe13d8bb38",
+        "version": "20914"
+      },
+      {
+        "actual": [
+          0,
+          0
+        ],
+        "expected": [
+          0,
+          0
+        ],
+        "name": "arithmetic",
+        "source": "1 + 2 * 3 div 4 mod 2",
+        "trace_sha256": "6cb90f129ec4800428ac91f6fd51b3097e572d2293b936dc1f788fb1112a41b1",
+        "version": "20914"
+      }
+    ]
+  },
+  "files": [
+    {
+      "path": "articulous/theme_assets/xsl/content.xsl",
+      "sha256": "e76038677d4feed58d48dfbacca0032e7a60f10c7846abc984e88ccc90ed7014",
+      "templates": [
+        {
+          "complexity": 1,
+          "controls": [],
+          "expressions": [
+            {
+              "attribute": "match",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 1,
+              "predicates": 0,
+              "source": "@*|node()",
+              "trace_sha256": "4317f09eac5bc73ca5cc828a93bb9a7b1ee3d0096a30cd4eae0bbeb9794c9b88"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 1,
+              "predicates": 0,
+              "source": "@*|node()",
+              "trace_sha256": "4317f09eac5bc73ca5cc828a93bb9a7b1ee3d0096a30cd4eae0bbeb9794c9b88"
+            }
+          ],
+          "line": 1,
+          "name": "match=@*|node();mode=content",
+          "sha256": "cbffcf187f611757711a6feabdec0a2f7e362b870014cc970cc85204dd50aeed"
+        },
+        {
+          "complexity": 4,
+          "controls": [
+            {
+              "instruction": "when",
+              "line": 4
+            }
+          ],
+          "expressions": [
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 3,
+              "predicates": 0,
+              "source": "''",
+              "trace_sha256": "456bfa6b2119c0e178e645eb6112011b9902393cb92bfb0194b106e56d9eaf55"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 3,
+              "predicates": 1,
+              "source": "descendant::*[contains('|address|article|aside|blockquote|details|dialog|div|dl|fieldset|figcaption|figure|footer|form|h1|h2|h3|h4|h5|h6|header|hgroup|hr|iframe|main|menu|nav|ol|p|pre|section|table|ul|',concat('|',translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|'))]",
+              "trace_sha256": "b5ca908163a797056423d48e8e91f59287575c48ac45481679b553b1eeb2f2b7"
+            },
+            {
+              "attribute": "test",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 4,
+              "predicates": 0,
+              "source": "$blocks",
+              "trace_sha256": "53b04b1ccbad26be091d2f379e5b315e00c4eb516535418ff70c8f897a66f324"
+            },
+            {
+              "attribute": "class",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 5,
+              "predicates": 0,
+              "source": "$paragraph-class",
+              "trace_sha256": "5027f246a269e0213c0d4a85d2f49431600b320de7b0ec0742eeccf68d47f633"
+            },
+            {
+              "attribute": "class",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 5,
+              "predicates": 0,
+              "source": "@class",
+              "trace_sha256": "7f42e2c702833ef283f3d1e8ebace0b4946fd003281b612063238dc76245b377"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 5,
+              "predicates": 1,
+              "source": "@*[name()!='class']|node()",
+              "trace_sha256": "99d93929415ceca657bfcf4ca092ec74cc574fb7412fde6ded8c9bdadcc4d629"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 6,
+              "predicates": 0,
+              "source": "@*|node()",
+              "trace_sha256": "4317f09eac5bc73ca5cc828a93bb9a7b1ee3d0096a30cd4eae0bbeb9794c9b88"
+            }
+          ],
+          "line": 2,
+          "name": "render-paragraph",
+          "sha256": "cc5986b6839811220da6e52bf6e7b76e53bd2241bd716c29db0978bd6c2bd3b6"
+        },
+        {
+          "complexity": 1,
+          "controls": [],
+          "expressions": [
+            {
+              "attribute": "match",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 8,
+              "predicates": 0,
+              "source": "comment()",
+              "trace_sha256": "97cd3d89cb745391abc7123cc49a73564b7de6cef2246b9b1a01a304a6e2c32f"
+            }
+          ],
+          "line": 8,
+          "name": "match=comment();mode=content",
+          "sha256": "497acea7b097a0c1057024dbbb3b15fd643f7adcc5232211c52990572196482f"
+        },
+        {
+          "complexity": 2,
+          "controls": [],
+          "expressions": [
+            {
+              "attribute": "match",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 9,
+              "predicates": 1,
+              "source": "*[contains('|script|style|base|meta|link|object|embed|animate|set|animatemotion|animatetransform|discard|',concat('|',translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|'))]",
+              "trace_sha256": "45f8b0c570017f2dcdc96c9ec115d9a22cd0722ca284f4973b53dac2766c6a80"
+            }
+          ],
+          "line": 9,
+          "name": "match=*[contains('|script|style|base|meta|link|object|embed|animate|set|animatemotion|animatetransform|discard|',concat('|',translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|'))];mode=content",
+          "sha256": "ed6844a9529d70dd690fdf3d9852d6669b947dda38016ab3712553eccb057dfd"
+        },
+        {
+          "complexity": 18,
+          "controls": [
+            {
+              "instruction": "if",
+              "line": 18
+            }
+          ],
+          "expressions": [
+            {
+              "attribute": "match",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 10,
+              "predicates": 0,
+              "source": "@*",
+              "trace_sha256": "f6b35097a3b191a9f4591c985905b471b94d96596abb3936c7dc7426835e35b7"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 11,
+              "predicates": 0,
+              "source": "name()",
+              "trace_sha256": "67ee8aabe5033187cb8d961b82f923025e4149315f611a8978a238c6a42218e4"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 12,
+              "predicates": 0,
+              "source": "translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')",
+              "trace_sha256": "95e0c890dc8dfbb0391ddb8defc3894f1822333025c45b9c80ce331175d46184"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 13,
+              "predicates": 0,
+              "source": "translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r','abcdefghijklmnopqrstuvwxyz')",
+              "trace_sha256": "66227a92d48c93e03c8e7e2d4476d348b9c89cefa45acc6dfe27ba08042c417e"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 14,
+              "predicates": 0,
+              "source": "contains('|href|src|action|formaction|poster|',concat('|',$name,'|'))",
+              "trace_sha256": "d6b8ad253fabe014654417b09cc310db19bc78461a189a3658adb87e479dff82"
+            },
+            {
+              "attribute": "select",
+              "booleans": 2,
+              "compiler_version": "20914",
+              "line": 15,
+              "predicates": 0,
+              "source": "$name='src' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and starts-with($value,'data:image/')",
+              "trace_sha256": "c1743d0195075c91e7a430d2daa82cf9bd65977ca8e922dcae29b7decc0c23c0"
+            },
+            {
+              "attribute": "select",
+              "booleans": 1,
+              "compiler_version": "20914",
+              "line": 16,
+              "predicates": 0,
+              "source": "$name='width' or $name='height'",
+              "trace_sha256": "c4d7e6a89bc7faaddee02707c04b27d5b3bb1dfc5136ff0d2c7f974464c17e4d"
+            },
+            {
+              "attribute": "select",
+              "booleans": 5,
+              "compiler_version": "20914",
+              "line": 17,
+              "predicates": 0,
+              "source": "$dimension and namespace-uri()='' and namespace-uri(..)='' and translate(local-name(..),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='img' and string(.)!='' and translate(.,'0123456789','')=''",
+              "trace_sha256": "ec0f0fab1c631b9077b06c5aaa7e365de3d58b1ebae3f69ed499e2acd2d0d8df"
+            },
+            {
+              "attribute": "test",
+              "booleans": 8,
+              "compiler_version": "20914",
+              "line": 18,
+              "predicates": 0,
+              "source": "not(starts-with($name,'on') or contains('|style|srcdoc|',concat('|',$name,'|')) or ($dimension and not($image-dimension)) or ($url and (starts-with($value,'javascript:') or starts-with($value,'vbscript:') or (starts-with($value,'data:') and not($image)))))",
+              "trace_sha256": "4b556ec0449a74788849c9db5f2e67f4e2786aab7cc4bc05fd3f886486342f10"
+            },
+            {
+              "attribute": "name",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 19,
+              "predicates": 0,
+              "source": "$attribute",
+              "trace_sha256": "5fc5c6a11a919969f82c7cea765556203db2abd7434aa34c825044602e209763"
+            },
+            {
+              "attribute": "namespace",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 19,
+              "predicates": 0,
+              "source": "namespace-uri()",
+              "trace_sha256": "91cd7599e43943a5a13201cabc76c20096cab01ed9a82e2c90ca1d0c59f9486b"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 19,
+              "predicates": 0,
+              "source": ".",
+              "trace_sha256": "e8aca25ab582d77b75ad6959ff997b71e7b0e4e5d3b1bfda198b82020ac2667a"
+            }
+          ],
+          "line": 10,
+          "name": "match=@*;mode=content",
+          "sha256": "d5296b31bf6d59ebf5b4a2cb93bf7f99dd542dd70e378e9eae22ec0d043eb3e9"
+        },
+        {
+          "complexity": 6,
+          "controls": [
+            {
+              "instruction": "when",
+              "line": 29
+            }
+          ],
+          "expressions": [
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 24,
+              "predicates": 0,
+              "source": "$copy-label",
+              "trace_sha256": "d6214e025155405522867e64aae82c092a33548bf100f2b869a530cb762ea2e2"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 25,
+              "predicates": 0,
+              "source": "$success-label",
+              "trace_sha256": "a5f19d22e37d49d1eeaa6ce7c124d95f88f3e4af4c4a002a11ff55138cd93ef3"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 26,
+              "predicates": 0,
+              "source": "$error-label",
+              "trace_sha256": "7aeaceac9e6da97e24f16f9825d0625e1cb6be5ea2ce57eb7ef5e595c9d39b80"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 27,
+              "predicates": 1,
+              "source": "@*[translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')!='tabindex']",
+              "trace_sha256": "aaa4f19ebe1a48acefc8e06aeda602833e89583c5479f76475d3a42cd4fde0b1"
+            },
+            {
+              "attribute": "test",
+              "booleans": 2,
+              "compiler_version": "20914",
+              "line": 29,
+              "predicates": 1,
+              "source": "count(*)=1 and code and not(text()[normalize-space()])",
+              "trace_sha256": "d5b52a66932007234a60363d27c75b781d3759b4e65454059b7a072b7c71634b"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 29,
+              "predicates": 0,
+              "source": "code",
+              "trace_sha256": "e8aca25ab582d77b75ad6959ff997b71e7b0e4e5d3b1bfda198b82020ac2667a"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 30,
+              "predicates": 0,
+              "source": "node()",
+              "trace_sha256": "eedfe02161674fff8cba688822fc32805527d69cc58824cd64f5a8010855f18c"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 32,
+              "predicates": 0,
+              "source": "string($code-content)",
+              "trace_sha256": "9ce6a04c86495fd67c65b734c4b763e33a6fd6359d86746b19142848a7796ffb"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 33,
+              "predicates": 0,
+              "source": "exsl:node-set($code-content)/node()",
+              "trace_sha256": "3fd0e80373400c938f36132d6206a9d2b7e975ee77e0acead91f4847253e593e"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 33,
+              "predicates": 0,
+              "source": "number($skip)",
+              "trace_sha256": "04f085643eb73fa581f0c0b2e2ac6ccb9e44cb1a3ad574aba65f568d98e8313c"
+            }
+          ],
+          "line": 22,
+          "name": "render-code-block",
+          "sha256": "887a378700f2c3b9736d79016f73eea39981674e94ab0724b00608fb038559d2"
+        },
+        {
+          "complexity": 1,
+          "controls": [],
+          "expressions": [
+            {
+              "attribute": "match",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 36,
+              "predicates": 0,
+              "source": "pre//br",
+              "trace_sha256": "e8aca25ab582d77b75ad6959ff997b71e7b0e4e5d3b1bfda198b82020ac2667a"
+            }
+          ],
+          "line": 36,
+          "name": "match=pre//br;mode=content",
+          "sha256": "c3b906dcf034deea49b2bb54b199876df43d1678f747edc6004b133bc16e3bb9"
+        },
+        {
+          "complexity": 3,
+          "controls": [
+            {
+              "instruction": "when",
+              "line": 42
+            }
+          ],
+          "expressions": [
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 40,
+              "predicates": 0,
+              "source": "0",
+              "trace_sha256": "93c39fd2eae17cb283dcbf7e0dfd088e61de5c1bb74e556d6dcdd285cf6eeef1"
+            },
+            {
+              "attribute": "test",
+              "booleans": 1,
+              "compiler_version": "20914",
+              "line": 42,
+              "predicates": 0,
+              "source": "contains($text,'\n') and normalize-space(substring-before($text,'\n'))=''",
+              "trace_sha256": "9a22c4c697c59dde0e86ef43e232f5175c97f8febf8b9139d8ee145f358d7b06"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 44,
+              "predicates": 0,
+              "source": "substring-after($text,'\n')",
+              "trace_sha256": "3a72c806f65a7fdad63d7b4e703a3a4b3c46363bcd210db4655d660d7f6685a3"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 45,
+              "predicates": 0,
+              "source": "$offset + string-length(substring-before($text,'\n')) + 1",
+              "trace_sha256": "72485230d48ba4e343cb8e0d529d7955ebdec62828a638edf876683affc97cc5"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 48,
+              "predicates": 0,
+              "source": "$offset",
+              "trace_sha256": "1aa54ac8500aa64c80ac45f9f88839f282fb872646411591d02f12cfc6e0b5d5"
+            }
+          ],
+          "line": 38,
+          "name": "code-leading-offset",
+          "sha256": "a1ecef6252c2e7d80591ccff78f5d282ccb49100f14c7807f57ff523c4c67c93"
+        },
+        {
+          "complexity": 6,
+          "controls": [
+            {
+              "instruction": "when",
+              "line": 55
+            },
+            {
+              "instruction": "for-each",
+              "line": 56
+            },
+            {
+              "instruction": "when",
+              "line": 58
+            }
+          ],
+          "expressions": [
+            {
+              "attribute": "test",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 55,
+              "predicates": 0,
+              "source": "$skip <= 0",
+              "trace_sha256": "7325ea702c84622e08741c858c28a6b8c4ab61951e79b9215ef2a110910409a6"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 55,
+              "predicates": 0,
+              "source": "$nodes",
+              "trace_sha256": "511a8efdf1c2883e1447df0a4bed49dac18806264d110bcdfb8890f724cd8920"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 56,
+              "predicates": 1,
+              "source": "$nodes[1]",
+              "trace_sha256": "605aba221072b601148296d3c37ff59fa8ce79fadb2fe8579bd9ff89ffb44d8d"
+            },
+            {
+              "attribute": "test",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 58,
+              "predicates": 0,
+              "source": "self::text()",
+              "trace_sha256": "e1cc34e031b8144f45176552f624b1d2e0497aaef3fbb1b750ab6095e80afebb"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 58,
+              "predicates": 0,
+              "source": "substring(.,$skip + 1)",
+              "trace_sha256": "c47d0ee08fe98cfafbf1fedb072170f7fbcf44dfaa332a58952ec61d29eb5477"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 59,
+              "predicates": 0,
+              "source": "@*",
+              "trace_sha256": "f6b35097a3b191a9f4591c985905b471b94d96596abb3936c7dc7426835e35b7"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 59,
+              "predicates": 0,
+              "source": "node()",
+              "trace_sha256": "eedfe02161674fff8cba688822fc32805527d69cc58824cd64f5a8010855f18c"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 59,
+              "predicates": 0,
+              "source": "$skip",
+              "trace_sha256": "02f6d0c60c6018a0145c58ed0be8aa486fba0e0074c175ec0c28ba2cb9de789d"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 61,
+              "predicates": 1,
+              "source": "$nodes[position() > 1]",
+              "trace_sha256": "d09514d1d8e57c8111e2d53ea6fd3f88dbc63219139fcad6d807c3483d41926e"
+            },
+            {
+              "attribute": "select",
+              "booleans": 0,
+              "compiler_version": "20914",
+              "line": 61,
+              "predicates": 0,
+              "source": "$skip - string-length(.)",
+              "trace_sha256": "4d39d364cce40747df5b0e658cc0c96914934c3abae520ca751cc6ffe0d62d09"
+            }
+          ],
+          "line": 51,
+          "name": "code-trim-start",
+          "sha256": "6579bebe7dd1fc18923f729e569dbbb8a50c591b8128ae4c2477a9a837404fa8"
+        }
+      ]
+    }
+  ],
+  "metric": "xslt1-control-xpath-v1",
+  "schema": 1
+}

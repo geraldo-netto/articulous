@@ -100,14 +100,29 @@ def test_review004_encoded_redirect_routes_preserve_fragment_checks(publication)
     assert failures == ['encoded: missing fragment old%23name.html#missing']
 
 
+@pytest.mark.parametrize('fragment', ['', '#top', '#café'])
 @pytest.mark.parametrize('target', ['/old.html', '/missing.html'])
-def test_valid001_redirect_loops_and_missing_targets(publication, target):
+def test_review005_redirect_loops_and_missing_targets(publication, target, fragment):
     root, base, plan = publication
     plan.redirects['/old.html'] = target
     failures = []
     pages = read_pages(root, failures)
-    check_link(root, 'old.html#top', base + '/', base, plan.redirects, pages, failures, 'neutral')
+    check_link(root, 'old.html' + fragment, base + '/', base, plan.redirects, pages, failures, 'neutral')
     assert failures
+
+
+@pytest.mark.parametrize('fragment', ['', '#top', '#café'])
+def test_review005_valid_redirect_chain_and_cycle(publication, fragment):
+    root, base, plan = publication
+    (root / 'older.html').write_text(html_page(base + '/'))
+    plan.redirects['/older.html'] = '/old.html'
+    failures = []
+    pages = read_pages(root, failures)
+    check_link(root, 'older.html' + fragment, base + '/', base, plan.redirects, pages, failures, 'chain')
+    assert failures == []
+    plan.redirects['/old.html'] = '/older.html'
+    check_link(root, 'older.html' + fragment, base + '/', base, plan.redirects, pages, failures, 'chain')
+    assert failures == ['chain: redirect loop for /older.html']
 
 
 @pytest.mark.parametrize('defect', ['canonical', 'missing-page', 'duplicate-search', 'missing-search', 'duplicate-sitemap', 'foreign-sitemap', 'missing-sitemap', 'invalid-html', 'empty-html'])

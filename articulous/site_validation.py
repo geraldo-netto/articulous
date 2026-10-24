@@ -85,10 +85,10 @@ def check_link(output, value, page_url, base, redirects, pages, failures, label)
     if not target.is_file():
         failures.append(f'{label}: missing {value}')
         return
+    target = redirect_target(output, target, base, redirects, failures, label)
     fragment = unquote(urlsplit(resolved).fragment).split(':~:text=', 1)[0]
     if not fragment:
         return
-    target = redirect_target(output, target, base, redirects, failures, label)
     document = pages.get(target)
     if document is not None and fragment.lower() != 'top':
         if fragment not in document.anchors:

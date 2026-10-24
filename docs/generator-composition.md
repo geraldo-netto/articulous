@@ -195,6 +195,15 @@ inputs; callbacks fund any records they retain and must not retain live handles
 past context exit. These APIs do not promise an atomic snapshot of unrelated
 source-tree files being edited by another writer.
 
+Each snapshot lazily sorts a language once and reuses that immutable batch.
+Every iterator opens its own read handles; closing one reader leaves other
+readers and shared sort files valid. Snapshot close settles active readers and
+clears batch references before its workspace removes the files, including after
+sorting failures. The three-article/two-language regression retains five files
+after both one and ten complete reads, with unchanged bytes after the first
+read; the previous implementation retained 23 files after ten reads. Storage now
+depends on captured content and sort chunks, rather than successful read count.
+
 [`articulous.builds`](../articulous/builds.py) exposes a context-managed whole-site
 lifecycle. These APIs merge and validate a copy of the supplied configuration,
 resolve paths against `project_root` and require an unfiltered build. They reject

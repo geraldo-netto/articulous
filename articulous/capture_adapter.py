@@ -15,6 +15,7 @@ class Snapshot:
         self._captured_at = datetime.now(timezone.utc)
         self._invalid_articles = 0
         self._store = ArticleStore(workspace)
+        self._batches = {}
         self._active = set()
         self._closed = False
         self._capture(context)
@@ -45,6 +46,11 @@ class Snapshot:
         if self._closed:
             raise ValueError('Captured site is closed')
 
+    def _sorted_batch(self, language):
+        if language not in self._batches:
+            self._batches[language] = self._store.sorted(language)
+        return self._batches[language]
+
     def _read_original(self, language):
         self._require_open()
         if language is not None and language not in self.languages:
@@ -53,7 +59,7 @@ class Snapshot:
         with ExitStack() as cleanup:
             batches = []
             for lang in languages:
-                reader = iter(self._store.sorted(lang))
+                reader = iter(self._sorted_batch(lang))
                 cleanup.callback(reader.close)
                 batches.append(reader)
             yield from merge(*batches, key=attrgetter('datetime'), reverse=True)
@@ -86,6 +92,7 @@ class Snapshot:
         self._closed = True
         with ExitStack() as cleanup:
             cleanup.callback(self._store.close)
+            cleanup.callback(self._batches.clear)
             cleanup.callback(self._active.clear)
             for source in tuple(self._active):
                 cleanup.callback(source.close)

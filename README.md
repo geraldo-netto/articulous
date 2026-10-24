@@ -471,6 +471,8 @@ With `parallelism="auto"`, the worker count is `max(4, os.cpu_count() or 4)`
 unless a configured engine resolves to SaxonC, in which case it is
 `os.cpu_count() or 4`. An explicit positive integer overrides that choice.
 
+Engine identifiers must be strings; malformed JSON values use the same
+`ValueError` validation channel as unknown names.
 An unknown engine name aborts the build immediately. Requesting
 `"saxonc"` without a usable `Transform` executable falls back to lxml;
 an invalid explicit `saxonc.home` also emits a warning. A configured

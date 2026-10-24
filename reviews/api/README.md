@@ -122,3 +122,20 @@ borrowed state. Actual generated paths retain their existing filesystem limits.
 Verification: 2,705 tests and 359 subtests passed; 100% line/branch coverage,
 individual function coverage and calibrated complexity acceptance. All new test
 and changed admission functions measure <=9 in the source-bound report.
+
+## API-009: malformed engine identifiers
+
+The permanent JSON-type regression failed before the fix with
+`TypeError: unhashable type: 'list'`. Configuration validation and direct engine
+factory admission now share a string guard before set membership. Seeded file
+mutations verify invalid JSON kinds cannot rewrite configuration, published
+outputs, fingerprint cache or ownership state; valid names and native-section
+restrictions remain independently checked.
+
+The guard is pure and synchronous, borrowing one value without retaining it or
+admitting resources. Its result is bounded to one boolean; native engine creation
+and ownership remain downstream of successful validation.
+
+Verification: 2,720 tests and 359 subtests passed; 100% line/branch coverage,
+865 production functions passed individual coverage, and calibrated complexity
+acceptance passed with every changed/new function <=9.

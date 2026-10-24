@@ -4155,39 +4155,49 @@
             "projection_sha256": "0002334fd323b00cd04bdca72ce123acf15567e41e4db06fb789001c787153ec"
           },
           {
-            "body_sha256": "1e99e00d9ed0e5e99704ec7c54e5f20c029844404b3a881eed43ca30b8828238",
+            "body_sha256": "27632f3cb6cf0f6dc55546d571fc3845711b7fc212bb830705928bf7ca1b8b32",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 58,
+            "end_line": 488,
+            "line": 487,
+            "name": "_valid_engine_name",
+            "projection_sha256": "c799f48dda99d5cf030db7f68a18a25799a95464db796eef697a30137cd2c667"
+          },
+          {
+            "body_sha256": "f01e8a442282e3401b10029cb0e10a3c369eaba755f27afc43359edc1c167397",
             "column": 0,
             "complexity": 5,
             "end_column": 23,
-            "end_line": 510,
-            "line": 487,
+            "end_line": 514,
+            "line": 491,
             "name": "make_engine",
-            "projection_sha256": "f3f9645f1a94f49bb5facfe9d9da872c7de045c74fdc136b4598ccaabb411205"
+            "projection_sha256": "780bb818de4e9c905dafadf326e8a43aa6025ccc0c9f53d1263cd6cdd522661f"
           },
           {
-            "body_sha256": "cdc59bce21d570f06e736690dbb7c2a8138e319910688fe0a0971086a68cea3d",
+            "body_sha256": "2ada36bbc043edc3129eabfdbc71bb5c13f2f0d18716f0f60fb390e1613cb9ea",
             "column": 0,
             "complexity": 8,
             "end_column": 9,
-            "end_line": 536,
-            "line": 513,
+            "end_line": 540,
+            "line": 517,
             "name": "validate_engines",
-            "projection_sha256": "aaddc12b523097f489358574b3e71a195b8cf6019ac1dc4cc230b958088e1b49"
+            "projection_sha256": "48c21738fbf106a60ffe3456e10cfd5b84abe94ea889f0b11962062982c3e34a"
           },
           {
             "body_sha256": "d299b6988806d6de171ef65e14d8b286f348ebc989f09572d8b0e17872ee4b56",
             "column": 0,
             "complexity": 9,
             "end_column": 60,
-            "end_line": 579,
-            "line": 543,
+            "end_line": 583,
+            "line": 547,
             "name": "check_dependencies",
             "projection_sha256": "ab3f0c62f595603f16533bc25763644e169d38f75d977ab1015fd12f4cce4580"
           }
         ],
         "language": "python",
         "path": "articulous/engines.py",
-        "sha256": "dc074c4999d35b0715ef4c282ceccbc67aa4137f61e085a7129ae711c0c3c520"
+        "sha256": "4bb7e0811b0b105e500ff7151aa8039d8358df445a80952a88942b96ca689554"
       },
       {
         "functions": [
@@ -14116,6 +14126,43 @@
         "language": "python",
         "path": "tests/test_durable_routes.py",
         "sha256": "318be7a43b23e9ec70038d1443ab4f8db5f261ebaba4199192f2f4b0216681b9"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "bbb2c8c0701aa739dc27c0c99275b8c481a129c0d7ddeaed964ce0f0c412142a",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 32,
+            "end_line": 25,
+            "line": 16,
+            "name": "test_api009_engine_json_types_use_validation_error",
+            "projection_sha256": "cc56d11838b322fa75612ceaa887765d9e5c9c14f87c53fca7d434c39aacc785"
+          },
+          {
+            "body_sha256": "e5023d6c4ea0851d03c74b02e6dbda591aa635fa6cd5a40b499f80275d8ecb42",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 61,
+            "end_line": 38,
+            "line": 29,
+            "name": "test_api009_valid_engine_and_section_controls",
+            "projection_sha256": "73387679873e8c50daba8c926d32931aaa89edb04e2216b89ba14e91d0d75d50"
+          },
+          {
+            "body_sha256": "6dd0e7ef6a95f11c5e85207c92272ff801ce062c9a8e5ba6a4a49b5ca6f6367b",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 86,
+            "end_line": 60,
+            "line": 42,
+            "name": "test_api009_seeded_invalid_files_preserve_published_state",
+            "projection_sha256": "d5c25d7aee7c70ce03b2784d6181d437e7d862f6964f7a974d9a88b9fa8b3e9e"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_engine_value_contract.py",
+        "sha256": "f3bf72193d65ed2d7927a46d5d6ae661b7c6ad76dff56c88767b4a858f29dfd1"
       },
       {
         "functions": [

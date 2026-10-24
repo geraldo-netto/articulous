@@ -484,6 +484,10 @@ def configure_saxonc(config) -> Optional[Path]:
     return transform_bin
 
 
+def _valid_engine_name(name) -> bool:
+    return isinstance(name, str) and name in VALID_ENGINES
+
+
 def make_engine(
     name: str, saxonc_bin: Optional[Path],
 ) -> TransformEngine | NativeEngine:
@@ -498,7 +502,7 @@ def make_engine(
     still falls back to the lxml engine, matching the historical
     behaviour.
     """
-    if name not in VALID_ENGINES:
+    if not _valid_engine_name(name):
         raise ValueError(
             f"Unknown engine name {name!r}; "
             f"must be one of {sorted(VALID_ENGINES)}"
@@ -518,7 +522,7 @@ def validate_engines(config) -> None:
     bad = {
         section: name
         for section, name in config["engines"].items()
-        if name not in VALID_ENGINES
+        if not _valid_engine_name(name)
     }
     if bad:
         raise ValueError(

@@ -3,7 +3,7 @@
 import pytest
 
 from articulous.builds import check_build, prepare_build, render_prepared, validate_generated
-from articulous.composition import ExtraArtifact
+from articulous.composition_contracts import ExtraArtifact
 from articulous.extensions import BuildComposition
 from articulous.pipeline import run_build
 from articulous.publication import build_site

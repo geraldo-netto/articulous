@@ -32,7 +32,8 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import validate_output_layout, validate_state_paths
-from .composition import ExtraArtifact, ExtraPage, Route, RouteCatalog, artifact_values, route_from_output, validate_page_url
+from .composition import route_from_output, validate_page_url
+from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
     NativeEngine,
     SaxonCEngine,
@@ -664,7 +665,7 @@ class ArticleStore:
 
 
 class OutputManifest(dict):
-    def __init__(self, ctx=None, catalog: RouteCatalog | None = None):
+    def __init__(self, ctx=None, catalog: RouteWriter | None = None):
         super().__init__()
         self._owners: dict = {}
         self.ctx = ctx

@@ -8,7 +8,8 @@ from types import SimpleNamespace
 import lxml.etree as etree
 import pytest
 
-from articulous.composition import ExtraPage, Route, RouteCatalog
+from articulous.composition import RouteCatalog
+from articulous.composition_contracts import ExtraPage, Route
 from articulous.models import build_tag_index_model
 from articulous.pipeline import build_ctx_from_config, run_build
 

@@ -60,3 +60,24 @@ boundary changes. Omitted artifact paths remain retained in partial builds.
 Verification: 2,652 tests and 359 subtests passed; 100% line/branch coverage,
 individual >=80% function coverage and calibrated complexity acceptance. Exact
 per-function measurements are retained in `../complexity/functions.json`.
+
+## API-003: composition contracts and route storage
+
+`composition_contracts` owns route/page/artifact schemas, path admission and
+`RouteReader`/`RouteWriter` interfaces. Composition callbacks import these
+contracts without loading SQLite, filesystem locking or the pipeline. Current
+callers and documented imports use this independent boundary; `composition`
+contains the SQLite catalog and output projection adapter.
+
+The import regression failed before extraction because SQLite was loaded.
+Catalog construction and reader-admission failures now close new resources;
+catalog close finalizes active cursors before the connection. Borrowed iterators
+check cutoff before another native read. Cursor identity stays retained until
+close settles, preventing premature reuse; a close error leaves the catalog as
+cleanup sponsor for an explicit retry. Conditional cleanup assumes native close
+eventually succeeds. No thread sharing is admitted by this adapter.
+
+Verification: 2,656 tests and 359 subtests passed; 100% line/branch coverage,
+860 production functions passed individual coverage acceptance, and calibrated
+complexity acceptance passed. Per-function results include every moved contract
+and new catalog boundary in `../complexity/functions.json`.

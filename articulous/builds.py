@@ -6,7 +6,8 @@ from pathlib import Path
 import shutil
 
 from .articles import ArticleStats
-from .composition import ExtraPage, RouteCatalog, artifact_values
+from .composition import RouteCatalog
+from .composition_contracts import ExtraPage, artifact_values
 from .engines import StylesheetCapture
 from .extensions import BuildComposition, TemplateInput
 from .config import DEFAULT_CONFIG, apply_cli_overrides, deep_merge, validate_config

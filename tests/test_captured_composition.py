@@ -5,7 +5,7 @@ import pytest
 
 from articulous.builds import check_build, prepare_build, render_prepared
 from articulous.extensions import BuildComposition, TemplateInput
-from articulous.composition import ExtraPage, Route
+from articulous.composition_contracts import ExtraPage, Route
 from articulous.engines import LxmlEngine, StylesheetCapture
 
 

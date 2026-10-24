@@ -39,7 +39,7 @@ no articles and empty previous/next URLs when `include_empty` is enabled.
 
 ## Composed routes and extra pages
 
-[`articulous.composition`](../articulous/composition.py) exposes immutable
+[`articulous.composition_contracts`](../articulous/composition_contracts.py) defines immutable
 `Route` and `ExtraPage` values. A route has a stable `key`, `section`, canonical
 `url`, relative POSIX `output_path`, optional `language`, `category` and boolean
 `sitemap` eligibility. Extra pages require section `pages` and a `page:` key.
@@ -78,7 +78,8 @@ apply_cli_overrides(config, cli, root)
 For a site with an `xsl/pages/about.xsl` template accepting `<about>`:
 
 ```python
-from articulous.composition import ExtraPage, Route, RouteCatalog
+from articulous.composition_contracts import ExtraPage, Route
+from articulous.composition import RouteCatalog
 from articulous.pipeline import run_build
 
 about = ExtraPage(
@@ -96,8 +97,13 @@ with RouteCatalog() as routes:
         print(route.key, route.url, route.output_path)
 ```
 
-Use a fresh catalog for each build. It stores routes on disk and is re-iterable
-until its context closes. It includes planned generated files, cached outputs
+Use a fresh catalog for each build. The SQLite adapter implements independent
+`RouteReader`/`RouteWriter` interfaces. It stores routes on disk and is re-iterable
+until its context closes. Each admitted cursor belongs to the catalog; iterator
+exit releases it and catalog close settles all remaining readers before closing
+the connection. Resuming a reader after cutoff raises before a native read.
+Initialization and cursor-admission failures close their new resources. Callers
+retain the catalog for retry if a native close raises. It includes planned generated files, cached outputs
 and retained ownership from partial builds; mirrored assets are not routes.
 Discovery does not scan rendered HTML or depend on sitemap inclusion. Set
 `cli.dry_run = True` to discover routes without rendering or publishing files.
@@ -141,7 +147,7 @@ sidebar ordering/limits and XML conversion. Use the actual `RouteCatalog`
 for known routes, independently of sitemap inclusion, rather than rerunning
 tag pagination to discover links.
 
-`composition.ExtraArtifact(output_path, bytes)` declares a non-page generated
+`composition_contracts.ExtraArtifact(output_path, bytes)` declares a non-page generated
 file. Pass `extra_artifacts` to `run_build`, `prepare_build`, `check_build` or
 `build_site`. Artifacts share regular output-path, ownership, collision,
 fingerprint-cache and publication/recovery checks; they are excluded from

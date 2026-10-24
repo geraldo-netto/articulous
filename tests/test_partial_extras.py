@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from articulous.composition import ExtraArtifact
+from articulous.composition_contracts import ExtraArtifact
 from articulous.pipeline import run_build
 from test_composition import page
 from test_prepared_build import snapshot

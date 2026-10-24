@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Protocol
 
 from .article_contracts import PublicationPolicy
-from .composition import ExtraArtifact, ExtraPage, Route, _validate_relative_output
+from .composition_contracts import ExtraArtifact, ExtraPage, Route, validate_relative_output
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ class TemplateInput:
     content: bytes
 
     def __post_init__(self):
-        _validate_relative_output(self.path, reserved=())
+        validate_relative_output(self.path, reserved=())
         if not isinstance(self.content, bytes):
             raise ValueError('Template input must contain bytes')
 

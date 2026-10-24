@@ -1,5 +1,7 @@
 # Generator composition and publication
 
+[Documentation](../README.md#documentation)
+
 Articulous owns route planning, model projection, caching, rendering and local
 publication. Callers supply site-specific content loaders, XML schemas, themes,
 validators and hosting rules. This is the developer reference for composing a

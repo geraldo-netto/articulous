@@ -1,5 +1,7 @@
 # Build and recover a site
 
+[Documentation](../README.md#documentation)
+
 Articulous turns your article files, templates and assets into website files.
 The result goes into `output/` unless your configuration selects another folder.
 Building locally does not upload or deploy the site.
@@ -8,7 +10,7 @@ Building locally does not upload or deploy the site.
 
 You need an installed copy of Articulous and a site folder containing its
 configuration, articles and XSL templates. See the
-[README](../README.md) for installation and the required folder layout.
+[getting-started guide](getting-started.md) for installation and the required folder layout.
 The repository's `tests/fixtures/site/` folder is a small example, not a complete
 website theme.
 
@@ -81,6 +83,46 @@ remain during partial builds. A sitemap rebuild retains their saved inclusion
 rules, including exclusions. A full build without those declarations removes
 the old custom pages. If the saved rules are unavailable, sitemap planning stops
 and requires a full build with the site's declarations.
+
+## Command options
+
+```
+--config FILE        Use a custom config file (default: config.json)
+--only SECTIONS      Build only specific sections, comma-separated
+                     (articles,index,tags,rss,sitemap,search).
+                     Unknown names raise immediately.
+--lang LANG          Limit article/listing languages; global feeds stay complete
+                     (repeat to pass many)
+--slug SLUG          Limit article slugs; shared listings/feeds stay complete
+                     (repeat to pass many)
+--dry-run            Plan without publishing outputs or saving the build cache
+--force              Rebuild selected outputs and assets, ignoring fingerprints
+-v, --verbose        Enable DEBUG-level logging
+```
+
+The installed command, `python -m articulous` and the checkout shim accept the
+same options. For example:
+
+```sh
+articulous --only articles
+articulous --only index,tags --verbose
+articulous --lang en --lang fr --slug hello-world
+articulous --config settings/site.json --dry-run
+```
+
+## Logging and planning checks
+
+Per-task timings stay at DEBUG; use `--verbose` to inspect individual
+transform durations. INFO logging avoids a timing line for every page.
+Long article scans report cumulative scanned, parsed, and skipped counts
+at INFO at most once every five seconds, after a file is parsed. Short
+scans emit no progress lines. These are parsing counts: accepted private
+articles count as parsed; publication exclusions appear in the final build
+summary. Enable INFO logging to see progress when using a quieter log level.
+Asset destination and cached-path checks run in both modes; a dry run
+rejects the same existing symlinks, hardlinks, and invalid cached paths
+without copying or pruning assets. Filesystem changes after validation
+can still cause a later live build to fail.
 
 ## Understand the supporting files
 

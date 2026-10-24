@@ -617,6 +617,17 @@ dispose controllers before reusing those identities. The existing plugin fences
 late clipboard results, timers and listeners by controller identity. Prism remains
 optional theme tooling; generator core adds no default JS dependency.
 
+Repository acceptance runs `tests/test_code_browser.py` with
+`tests/tooling/code-browser.mjs` and `code-block-page.js`. Sixteen native Chromium
+scenarios cover invalid/detached admission, exact text and markup, language
+normalization, labels, success/rejection, disposal, remounts and stale callbacks.
+V8 counters independently checked against parsed source inventory require >=80%
+executable lines for every maintained function. The recorded Linux Chromium
+149.0.7827.55 run measured all 25 functions and both module bodies at 100%; see
+`reviews/browser/README.md` for source hashes, reproduction and limits. Clipboard
+promises are controlled by the fixture; this is no claim of OS clipboard or
+browser permission acceptance. No upstream hash exemption is expanded.
+
 Resource reads close each package input before return; records own immutable
 bytes bounded by the fixed package inventory. Exported stage files live under
 the caller's private-stage owner and are released with it.
@@ -721,7 +732,8 @@ failed workspace handoff, still requires manual recovery. No unknown workspace
 may be reused or deleted without exact identity and quiescence evidence.
 
 Native V8 counters gate every measured tooling function at >=80%, alongside the
-existing browser asset gates. Sources are retained by native script identity
+repository code/clipboard browser gate and the search client's Node gate.
+Sources are retained by native script identity
 before context destruction; missing or changed sources/counters fail. Unit faulty
 controls remain separate from production native measurements.
 
@@ -762,6 +774,9 @@ call `dispose` before releasing/reusing their render owner.
 
 Morpha keeps language inference under its guarded article-route contract,
 exact-tag-first/fallback matching, three-chip card presentation, selectors and
-wording. Neutral Node consumers and native Chromium consumers exercise complete
-results, malformed/retryable input, batching, callback failures and reset/disposal
-interleavings, with native >=80% function counters for the shared client.
+wording. Repository tests in `tests/test_search_resources.py` run neutral Node
+consumers for complete results, malformed/retryable input, batching, callback
+failures and reset/disposal interleavings, with native >=80% function counters
+for the shared client. Native Chromium acceptance for Morpha's search UI is
+outside this repository's suite; its browser gate covers the code adapter and
+clipboard plugin.

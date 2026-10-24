@@ -4,9 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REVIEW-009 | open | M | Wire maintained code-block and clipboard JS into repository-native behavioral and coverage tests. | Wiring gaps; reliability/correctness; contradictions. Depends on REVIEW-007 for trustworthy per-function acceptance. `tests/test_theme_resources.py` checks resource hashes and XSLT output, but no repository test executes `code-blocks.js` or `prism-copy-to-clipboard.js`; the Node gates cover search and tooling only. `docs/generator-composition.md:576,645,692` refers to native browser coverage without a local gate for these maintained modules. Resolve with permanent DOM/clipboard lifecycle, failure, stale-callback and remount tests plus >=80% native counters for every maintained function; preserve exact-hash upstream exemptions and label external/historical evidence accurately. |
-
-
 
 ## Other items
 

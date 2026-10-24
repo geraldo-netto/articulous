@@ -673,8 +673,11 @@ the target filesystem's byte limits. Valid boundary cases prevent excessive
 rejection; failing builds must preserve published outputs and cache state.
 Seeds are fixed for reproducibility.
 
-The tests use lxml for XML validation; `xmllint` is not required. In an
-activated virtual environment, install the test extra and run:
+The tests use lxml for XML validation; `xmllint` is not required. Native JavaScript
+tests require Node 24 and an installed Chromium executable. The browser test uses
+`ARTICULOUS_CHROMIUM`, or finds `chromium`/`google-chrome` on PATH; missing native
+tools fail acceptance. In an activated virtual environment, install the test
+extra and run:
 
 ```sh
 python -m pip install -e ".[test]"
@@ -698,7 +701,15 @@ Node lookup path, for example the existing local cache:
 
 ```sh
 export ARTICULOUS_ACORN=/home/netto/.npm/_npx/515228b7c8d004a2/node_modules/acorn
+export ARTICULOUS_CHROMIUM=/home/netto/.cache/ms-playwright/chromium_headless_shell-1228/chrome-headless-shell-linux64/chrome-headless-shell
 ```
+
+`tests/test_code_browser.py` runs the maintained code adapter and copy plugin in
+native Chromium against a loopback fixture. It checks DOM/controller lifetimes,
+clipboard failures and stale callbacks, and requires >=80% native executable-line
+coverage for every function. Clipboard calls use controlled promises; the test
+does not write to the system clipboard. See the [recorded browser evidence](reviews/browser/README.md).
+The test never downloads a browser; manual CI uses its runner's installed Chrome.
 
 `package-lock.json` pins that verification dependency for manual CI runs.
 The parser and test commands never install it automatically; CI's explicit

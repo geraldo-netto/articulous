@@ -11456,6 +11456,23 @@
       {
         "functions": [
           {
+            "body_sha256": "84e2f8385db50fcaaff6fb19a7ef041a497bc8532d983a3cfd64447871282914",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 62,
+            "end_line": 31,
+            "line": 11,
+            "name": "test_review009_native_code_and_clipboard_lifetimes",
+            "projection_sha256": "f14c47616105c453ea76701eaf8110167db9b525f8a4b992d458301869e1ef7d"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_code_browser.py",
+        "sha256": "5969122ce9b34d867138a56a1063bb050b03bc79613243f75fae7b83931b7c9f"
+      },
+      {
+        "functions": [
+          {
             "body_sha256": "9b210da54036254dd3f545bd8b85ed0da107a3e79c217e9c7946e55fc5d58587",
             "column": 0,
             "complexity": 3,
@@ -25965,6 +25982,450 @@
         "language": "javascript",
         "path": "tests/tooling/browser-session-regressions.mjs",
         "sha256": "8712f7642f7e45c1a776fcb60a51b9b75487fab05c50511c5b6ebae65e2a5f6e"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "994ece47a8acf62a7e4b425bd77d0e99aae8ad02916c08c21135fd6615d40feb",
+            "column": 18,
+            "complexity": 3,
+            "end_column": 1,
+            "end_line": 234,
+            "line": 1,
+            "name": "Arrow function",
+            "projection_sha256": "994ece47a8acf62a7e4b425bd77d0e99aae8ad02916c08c21135fd6615d40feb"
+          },
+          {
+            "body_sha256": "fa97a9c87d91a41538f0010b530fdda8266b291900c878a5ea568e907611f4ed",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 16,
+            "line": 10,
+            "name": "Function 'writeText'",
+            "projection_sha256": "fa97a9c87d91a41538f0010b530fdda8266b291900c878a5ea568e907611f4ed"
+          },
+          {
+            "body_sha256": "54ed2b79fc8477bb3d198df3cdbe170d703ba6c9537466d0faad57d768e9d2d1",
+            "column": 32,
+            "complexity": 1,
+            "end_column": 68,
+            "end_line": 13,
+            "line": 13,
+            "name": "Arrow function",
+            "projection_sha256": "54ed2b79fc8477bb3d198df3cdbe170d703ba6c9537466d0faad57d768e9d2d1"
+          },
+          {
+            "body_sha256": "0704fee0e74f859eb94696e47f3819dd19a8518c4bdd035d9752a2b42af78cf7",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 20,
+            "line": 18,
+            "name": "Function 'check'",
+            "projection_sha256": "0704fee0e74f859eb94696e47f3819dd19a8518c4bdd035d9752a2b42af78cf7"
+          },
+          {
+            "body_sha256": "3730737f4a917e502efcff5fd36d0cb4005fe7b6a836e1c4ea6a474231c1385a",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 24,
+            "line": 22,
+            "name": "Function 'tick'",
+            "projection_sha256": "3730737f4a917e502efcff5fd36d0cb4005fe7b6a836e1c4ea6a474231c1385a"
+          },
+          {
+            "body_sha256": "80efd2e019d966171deb3e978c9967b0d398ec787f209ff3ebf986c4b4c2ad2a",
+            "column": 23,
+            "complexity": 1,
+            "end_column": 56,
+            "end_line": 23,
+            "line": 23,
+            "name": "Arrow function",
+            "projection_sha256": "80efd2e019d966171deb3e978c9967b0d398ec787f209ff3ebf986c4b4c2ad2a"
+          },
+          {
+            "body_sha256": "6b1151785e04e580e57dc27282ee24fe0c60d7c8edc0efdecf97b726c1b547ed",
+            "column": 2,
+            "complexity": 4,
+            "end_column": 3,
+            "end_line": 39,
+            "line": 26,
+            "name": "Function 'fixture'",
+            "projection_sha256": "6b1151785e04e580e57dc27282ee24fe0c60d7c8edc0efdecf97b726c1b547ed"
+          },
+          {
+            "body_sha256": "50bb2e30894d11d122245e13800274905a51bfcd344b6a1a6c45f5078f2ba9d8",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 48,
+            "line": 41,
+            "name": "Async function 'release'",
+            "projection_sha256": "50bb2e30894d11d122245e13800274905a51bfcd344b6a1a6c45f5078f2ba9d8"
+          },
+          {
+            "body_sha256": "77e786c1c96f2674bae3ba166c9a24428ffc06707a38d1990e3f34280a9e7264",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 52,
+            "line": 50,
+            "name": "Async function 'waitState'",
+            "projection_sha256": "77e786c1c96f2674bae3ba166c9a24428ffc06707a38d1990e3f34280a9e7264"
+          },
+          {
+            "body_sha256": "fe01b7cbe3ca4895226be7381111dc0f2406c9f9358afb307abacb6c9ace19ba",
+            "column": 2,
+            "complexity": 3,
+            "end_column": 3,
+            "end_line": 63,
+            "line": 54,
+            "name": "Function 'admission'",
+            "projection_sha256": "fe01b7cbe3ca4895226be7381111dc0f2406c9f9358afb307abacb6c9ace19ba"
+          },
+          {
+            "body_sha256": "1fd7f0a2fadea6ffa2cded2d708fae3317c61339a0d7dd171d76fa01f54370ec",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 76,
+            "line": 65,
+            "name": "Async function 'normalization'",
+            "projection_sha256": "1fd7f0a2fadea6ffa2cded2d708fae3317c61339a0d7dd171d76fa01f54370ec"
+          },
+          {
+            "body_sha256": "9f026471f0dc8e81dfd8823e8f10303dff776fee4b0fb6081d0593501a987986",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 95,
+            "line": 78,
+            "name": "Async function 'success'",
+            "projection_sha256": "9f026471f0dc8e81dfd8823e8f10303dff776fee4b0fb6081d0593501a987986"
+          },
+          {
+            "body_sha256": "c663e56d51fd1c583a4eb6d0b83c78e7282970edded86f1144d40c9eac173f22",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 110,
+            "line": 97,
+            "name": "Async function 'rejection'",
+            "projection_sha256": "c663e56d51fd1c583a4eb6d0b83c78e7282970edded86f1144d40c9eac173f22"
+          },
+          {
+            "body_sha256": "037e7d943fbbec5e18b102abefc2c4a594dd4d748b5225059164bc47b930a0d1",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 119,
+            "line": 112,
+            "name": "Async function 'defaultLabels'",
+            "projection_sha256": "037e7d943fbbec5e18b102abefc2c4a594dd4d748b5225059164bc47b930a0d1"
+          },
+          {
+            "body_sha256": "50112c4f016a3e66717e2bd79bfe71c750bbf8ba28604e1a04b9d94514bda7b8",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 129,
+            "line": 121,
+            "name": "Async function 'cutoffBeforeWrite'",
+            "projection_sha256": "50112c4f016a3e66717e2bd79bfe71c750bbf8ba28604e1a04b9d94514bda7b8"
+          },
+          {
+            "body_sha256": "a72f1cce88e302ad6c469922e8195297d627bcc4a2efd8a1f761b1db4b03cc10",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 149,
+            "line": 131,
+            "name": "Async function 'staleSettlement'",
+            "projection_sha256": "a72f1cce88e302ad6c469922e8195297d627bcc4a2efd8a1f761b1db4b03cc10"
+          },
+          {
+            "body_sha256": "6a0ba6cc5ef769cc2603354e5ae54f4111289da941f7eb0e42624edf4b8d1c16",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 158,
+            "line": 151,
+            "name": "Async function 'detachedAdmission'",
+            "projection_sha256": "6a0ba6cc5ef769cc2603354e5ae54f4111289da941f7eb0e42624edf4b8d1c16"
+          },
+          {
+            "body_sha256": "32c37e19299113d07c9055e3089ed08c61303d3668289ea5c50e2d001bd15f1a",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 168,
+            "line": 160,
+            "name": "Async function 'movedWrapper'",
+            "projection_sha256": "32c37e19299113d07c9055e3089ed08c61303d3668289ea5c50e2d001bd15f1a"
+          },
+          {
+            "body_sha256": "3268a84ccb857201134ab639329963e50e10284dfda37df633582dabc1364345",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 177,
+            "line": 170,
+            "name": "Async function 'changedWrapperClass'",
+            "projection_sha256": "3268a84ccb857201134ab639329963e50e10284dfda37df633582dabc1364345"
+          },
+          {
+            "body_sha256": "d75aa5bf73ac14ff625214e7cd7482564adc072b0a883c2e985518fb4684115e",
+            "column": 2,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 188,
+            "line": 179,
+            "name": "Async function 'staleTimer'",
+            "projection_sha256": "d75aa5bf73ac14ff625214e7cd7482564adc072b0a883c2e985518fb4684115e"
+          },
+          {
+            "body_sha256": "52d313307011b1c967621226157cb348abe5bd7815bf76e1dc2dc2a06725d413",
+            "column": 24,
+            "complexity": 1,
+            "end_column": 58,
+            "end_line": 185,
+            "line": 185,
+            "name": "Arrow function",
+            "projection_sha256": "52d313307011b1c967621226157cb348abe5bd7815bf76e1dc2dc2a06725d413"
+          },
+          {
+            "body_sha256": "c2a79d3934f8314733ce5c6c95ca62334ecab69560a5945fdedf24364acb4b02",
+            "column": 2,
+            "complexity": 3,
+            "end_column": 3,
+            "end_line": 205,
+            "line": 190,
+            "name": "Async function 'initialization'",
+            "projection_sha256": "c2a79d3934f8314733ce5c6c95ca62334ecab69560a5945fdedf24364acb4b02"
+          },
+          {
+            "body_sha256": "502c7f5c9e003c74f7650984cdddcfd1ad4e5776a925e945b589e831eac48f68",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 216,
+            "line": 207,
+            "name": "Async function 'normal'",
+            "projection_sha256": "502c7f5c9e003c74f7650984cdddcfd1ad4e5776a925e945b589e831eac48f68"
+          },
+          {
+            "body_sha256": "0520f2e4dd44ab64293a3906c85da7297ce07dcefcc741d47113b4d0a3ffe177",
+            "column": 25,
+            "complexity": 1,
+            "end_column": 38,
+            "end_line": 215,
+            "line": 215,
+            "name": "Arrow function",
+            "projection_sha256": "0520f2e4dd44ab64293a3906c85da7297ce07dcefcc741d47113b4d0a3ffe177"
+          },
+          {
+            "body_sha256": "7d90d4dfc7c84c4fafca49b20aa51b196f61319b70f9117f05ab5ba0983130ff",
+            "column": 2,
+            "complexity": 4,
+            "end_column": 3,
+            "end_line": 232,
+            "line": 218,
+            "name": "Async function 'run'",
+            "projection_sha256": "7d90d4dfc7c84c4fafca49b20aa51b196f61319b70f9117f05ab5ba0983130ff"
+          }
+        ],
+        "language": "javascript",
+        "path": "tests/tooling/code-block-page.js",
+        "sha256": "88275d780d084a8e00ad50b01de64550d4da03fc7d1567f877031b445a1847fa"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "column": 47,
+            "complexity": 1,
+            "end_column": 87,
+            "end_line": 13,
+            "line": 13,
+            "name": "Arrow function",
+            "projection_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6"
+          },
+          {
+            "body_sha256": "13ee0741d70d6c8b28b7698c3f83133ece50c7229abbbb133d87f2f1378408c3",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 1,
+            "end_line": 25,
+            "line": 18,
+            "name": "Function 'page'",
+            "projection_sha256": "13ee0741d70d6c8b28b7698c3f83133ece50c7229abbbb133d87f2f1378408c3"
+          },
+          {
+            "body_sha256": "74498d05e71dda847fc6bab3d2e0b8cfd8db1c0dd07973acbcff80b366fc1076",
+            "column": 59,
+            "complexity": 2,
+            "end_column": 113,
+            "end_line": 20,
+            "line": 20,
+            "name": "Arrow function",
+            "projection_sha256": "74498d05e71dda847fc6bab3d2e0b8cfd8db1c0dd07973acbcff80b366fc1076"
+          },
+          {
+            "body_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "column": 119,
+            "complexity": 1,
+            "end_column": 159,
+            "end_line": 20,
+            "line": 20,
+            "name": "Arrow function",
+            "projection_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6"
+          },
+          {
+            "body_sha256": "4403a26b1a3613306bc8692fe7bfdf16c6e52c705b67c2c2ed429065154bda69",
+            "column": 16,
+            "complexity": 1,
+            "end_column": 56,
+            "end_line": 24,
+            "line": 24,
+            "name": "Arrow function",
+            "projection_sha256": "4403a26b1a3613306bc8692fe7bfdf16c6e52c705b67c2c2ed429065154bda69"
+          },
+          {
+            "body_sha256": "11efc875cbef265a52b44674ba6fc0fdbe5c154637cd92995e9e1f95bebc04b3",
+            "column": 26,
+            "complexity": 4,
+            "end_column": 1,
+            "end_line": 35,
+            "line": 27,
+            "name": "Arrow function",
+            "projection_sha256": "11efc875cbef265a52b44674ba6fc0fdbe5c154637cd92995e9e1f95bebc04b3"
+          },
+          {
+            "body_sha256": "e135f98cea4e1b0f99b74d2565169d3b0a2f58fdf575d2b06457400c530caab0",
+            "column": 18,
+            "complexity": 1,
+            "end_column": 63,
+            "end_line": 36,
+            "line": 36,
+            "name": "Arrow function",
+            "projection_sha256": "e135f98cea4e1b0f99b74d2565169d3b0a2f58fdf575d2b06457400c530caab0"
+          },
+          {
+            "body_sha256": "e5a3fd3c0ebf29cff23625aed0057b02e8288aa0aa7177250810690156e06033",
+            "column": 24,
+            "complexity": 1,
+            "end_column": 75,
+            "end_line": 46,
+            "line": 46,
+            "name": "Arrow function",
+            "projection_sha256": "e5a3fd3c0ebf29cff23625aed0057b02e8288aa0aa7177250810690156e06033"
+          },
+          {
+            "body_sha256": "5c2eba30255ef6fa3f0d1c57ce70f0359ec3476aefb809c499454dc45d7843b8",
+            "column": 18,
+            "complexity": 1,
+            "end_column": 52,
+            "end_line": 47,
+            "line": 47,
+            "name": "Arrow function",
+            "projection_sha256": "5c2eba30255ef6fa3f0d1c57ce70f0359ec3476aefb809c499454dc45d7843b8"
+          },
+          {
+            "body_sha256": "c90ae33c6a0c8c985f299d01a09b96b2d63294174ba990d7ce86f684c259fddd",
+            "column": 0,
+            "complexity": 5,
+            "end_column": 1,
+            "end_line": 58,
+            "line": 49,
+            "name": "Async function 'debuggingPort'",
+            "projection_sha256": "c90ae33c6a0c8c985f299d01a09b96b2d63294174ba990d7ce86f684c259fddd"
+          },
+          {
+            "body_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "column": 22,
+            "complexity": 1,
+            "end_column": 53,
+            "end_line": 55,
+            "line": 55,
+            "name": "Arrow function",
+            "projection_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a"
+          },
+          {
+            "body_sha256": "1a4bac786c5a5c049ed4bcf8991e3c23b2529b6001e5f15bf846e48ae05259bc",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 1,
+            "end_line": 64,
+            "line": 60,
+            "name": "Async function 'evaluate'",
+            "projection_sha256": "1a4bac786c5a5c049ed4bcf8991e3c23b2529b6001e5f15bf846e48ae05259bc"
+          },
+          {
+            "body_sha256": "56973292c0e2a648361114d15230b8c192b34065ba2e7a3d64f96027e26c12c6",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 1,
+            "end_line": 74,
+            "line": 66,
+            "name": "Async function 'navigate'",
+            "projection_sha256": "56973292c0e2a648361114d15230b8c192b34065ba2e7a3d64f96027e26c12c6"
+          },
+          {
+            "body_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "column": 22,
+            "complexity": 1,
+            "end_column": 53,
+            "end_line": 72,
+            "line": 72,
+            "name": "Arrow function",
+            "projection_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a"
+          },
+          {
+            "body_sha256": "dd0e1c90a724d3d0dae804d8ca364827dcc14dfe10e28062848cbd89c608cece",
+            "column": 0,
+            "complexity": 5,
+            "end_column": 1,
+            "end_line": 83,
+            "line": 76,
+            "name": "Function 'pageEvents'",
+            "projection_sha256": "dd0e1c90a724d3d0dae804d8ca364827dcc14dfe10e28062848cbd89c608cece"
+          },
+          {
+            "body_sha256": "87ed7e31d804b7e6c15814d9818455e6363999646d143fb764a6848781e135d5",
+            "column": 41,
+            "complexity": 2,
+            "end_column": 89,
+            "end_line": 80,
+            "line": 80,
+            "name": "Arrow function",
+            "projection_sha256": "87ed7e31d804b7e6c15814d9818455e6363999646d143fb764a6848781e135d5"
+          },
+          {
+            "body_sha256": "46b5f6d861a733f5fba191851eb212c305d5dd5298df4d8ab57ee347c7f1d588",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 1,
+            "end_line": 99,
+            "line": 85,
+            "name": "Async function 'measure'",
+            "projection_sha256": "46b5f6d861a733f5fba191851eb212c305d5dd5298df4d8ab57ee347c7f1d588"
+          },
+          {
+            "body_sha256": "94b12fb5d2e6d39189c17e4d5db818a155647e6fb7ca9210882014ec3d28174e",
+            "column": 50,
+            "complexity": 1,
+            "end_column": 122,
+            "end_line": 97,
+            "line": 97,
+            "name": "Arrow function",
+            "projection_sha256": "94b12fb5d2e6d39189c17e4d5db818a155647e6fb7ca9210882014ec3d28174e"
+          }
+        ],
+        "language": "javascript",
+        "path": "tests/tooling/code-browser.mjs",
+        "sha256": "bac1bfe255b053ceb9d02b651f7cb9d5e7897acf90f4b12af256a063c829b11a"
       },
       {
         "functions": [],

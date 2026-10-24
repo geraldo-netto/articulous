@@ -13,7 +13,7 @@ from ..filesystem import (
 )
 from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
-from ..runtime import load_cache
+from ..publication_contracts import PublicationInput
 
 
 def _identity(path):
@@ -82,13 +82,12 @@ class PosixPublicationBackend:
         data['phase'] = phase
         write_text_atomic(transaction / 'journal.json', json.dumps(data))
 
-    def _begin(self, checked):
-        prepared = checked.staged.prepared
-        destination, cache = prepared.destination, prepared.cache_path
-        stage = checked.staged.root.parent
+    def _begin(self, publication):
+        destination, cache = publication.destination, publication.cache_path
+        stage = publication.root.parent
         data = {
             'version': 1, 'destination': str(destination), 'cache': str(cache),
-            'previous': _identity(destination), 'new': _identity(checked.staged.root),
+            'previous': _identity(destination), 'new': _identity(publication.root),
             'stage': str(stage), 'stage_identity': _identity(stage),
             'cache_before': _saved_file(cache), 'ownership_before': _saved_file(ownership_path(destination)),
         }
@@ -101,40 +100,32 @@ class PosixPublicationBackend:
             raise
         return transaction, data
 
-    def _write_state(self, checked):
-        prepared = checked.staged.prepared
-        roots = load_cache(prepared.cache_path).get('__output_roots__', {})
-        roots = roots if isinstance(roots, dict) else {}
-        cache = dict(prepared.cache)
-        cache['__outputs__'] = dict(sorted(prepared.manifest.items()))
-        cache['__routes__'] = prepared.manifest.route_metadata
-        roots[str(prepared.destination)] = cache
-        write_text_atomic(prepared.cache_path, json.dumps({'__output_roots__': roots}, indent=2))
-        save_ownership(prepared.destination, {path: key for key, path in prepared.manifest.items()})
+    def _write_state(self, publication):
+        write_text_atomic(publication.cache_path, publication.cache_text)
+        save_ownership(publication.destination, dict(publication.output_owners))
 
-    def _install(self, checked, transaction, data):
-        destination = checked.staged.prepared.destination
-        self._expect(checked.staged.root, data['new'])
-        self._rename(checked.staged.root, transaction / 'new')
+    def _install(self, publication, transaction, data):
+        destination = publication.destination
+        self._expect(publication.root, data['new'])
+        self._rename(publication.root, transaction / 'new')
         self._expect(destination, data['previous'])
         if data['previous'] is not None:
             self._rename(destination, transaction / 'previous')
         self._set_phase(transaction, data, 'old_moved')
         self._rename(transaction / 'new', destination)
         self._set_phase(transaction, data, 'installed')
-        self._write_state(checked)
+        self._write_state(publication)
         self._set_phase(transaction, data, 'committed')
 
-    def publish(self, checked):
-        checked.assert_unchanged()
-        prepared = checked.staged.prepared
-        validate_owned_output(prepared.destination)
-        transaction, data = self._begin(checked)
+    def publish(self, publication: PublicationInput):
+        publication.verify()
+        validate_owned_output(publication.destination)
+        transaction, data = self._begin(publication)
         try:
-            self._install(checked, transaction, data)
+            self._install(publication, transaction, data)
         except BaseException:
             try:
-                self.recover(prepared.destination, prepared.cache_path)
+                self.recover(publication.destination, publication.cache_path)
             except BaseException as error:
                 raise RuntimeError(f'Publication needs recovery at {transaction}') from error
             raise

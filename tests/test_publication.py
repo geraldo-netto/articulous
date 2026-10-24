@@ -12,6 +12,7 @@ import pytest
 from articulous.backends.posix import PosixPublicationBackend
 from articulous.builds import prepare_build, render_prepared, validate_generated
 from articulous.publication import build_site, publish_validated, recover_publication
+from articulous.publication_adapter import publication_input
 from articulous.pipeline import run_build
 from test_composition import page
 from test_prepared_build import snapshot
@@ -269,7 +270,7 @@ def test_arch005_journal_field_fuzz_preserves_stage(site_root, seo_config, chang
     backend = PosixPublicationBackend()
     with prepare_build(cli, config, site_root) as prepared:
         checked = validate_generated(render_prepared(prepared))
-        transaction, data = backend._begin(checked)
+        transaction, data = backend._begin(publication_input(checked))
         data.update(changes)
         (transaction / 'journal.json').write_text(json.dumps(data))
         with pytest.raises(ValueError, match='journal'):

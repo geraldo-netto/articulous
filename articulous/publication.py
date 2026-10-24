@@ -1,27 +1,12 @@
 """Whole-site publication contracts and shared orchestration."""
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Protocol
 
-from .publication_contracts import PublicationCapabilities
+from .publication_contracts import PublicationBackend
+from .publication_adapter import publication_input
 from .builds import (
     ValidatedBuild, ValidationReport, _configuration, prepare_build, render_prepared, validate_generated,
 )
-
-
-class PublicationBackend(Protocol):
-    @property
-    def capabilities(self) -> PublicationCapabilities:
-        ...
-
-    def locked(self, destination: Path, cache_path: Path) -> AbstractContextManager:
-        ...
-
-    def recover(self, destination: Path, cache_path: Path) -> None:
-        ...
-
-    def publish(self, checked: ValidatedBuild) -> None:
-        ...
 
 
 def _backend(backend, require_atomic, require_durable) -> PublicationBackend:
@@ -45,7 +30,7 @@ def publish_validated(checked: ValidatedBuild, *, backend=None,
     checked.assert_unchanged()
     prepared = checked.staged.prepared
     selected.recover(prepared.destination, prepared.cache_path)
-    selected.publish(checked)
+    selected.publish(publication_input(checked))
     prepared.state = 'published'
 
 

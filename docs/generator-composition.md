@@ -284,11 +284,26 @@ replace those lock paths. POSIX lock availability and Linux validation remain
 separate from the Linux-only publication capability.
 
 [`articulous.publication`](../articulous/publication.py) provides shared
-orchestration through the `PublicationBackend` protocol: `capabilities`, `locked`,
-`recover` and `publish`. Native operations live in
+orchestration through the independent `publication_contracts.PublicationBackend`
+protocol: `capabilities`, `locked`, `recover` and `publish`. The contract module
+imports no build, storage or native adapter implementation. `publish` accepts a
+`PublicationInput`: staged root, destination, cache path, serialized cache text,
+read-only output ownership entries and a `verify()` callback. The boundary adapter
+serializes shared build metadata; native backends never receive engines, task
+queues, route catalogs or concrete build handles. Native operations live in
 [`backends/posix.py`](../articulous/backends/posix.py) and the existing
 [`filesystem.py`](../articulous/filesystem.py) adapter primitives. Configuration,
 route serialization, models and validation hooks remain shared.
+
+The preparation context owns the staged tree and validation capability. The
+backend borrows them only for the synchronous publication call under the retained
+site locks, verifies immediately before native handoff, and must settle native
+work before returning or raising. It must not retain the input or callback.
+Serialized metadata is an immutable call-scoped snapshot bounded by the admitted
+cache and output inventory. Success advances the authoritative build lifecycle to
+published; failure preserves its existing rollback/recovery ownership. A saved
+validation callback rejects use after lifecycle cutoff. These portable contracts
+do not establish Windows or macOS native publication support.
 
 Use `build_site` for the complete lifecycle, including recovery under locks
 before preparation:

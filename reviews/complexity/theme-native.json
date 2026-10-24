@@ -5,6 +5,24 @@
   ],
   "case_count": 90,
   "equal_elements_attributes_text": true,
+  "native_stderr_empty": true,
+  "probe": {
+    "analyzer": "Lizard",
+    "functions": [
+      {
+        "body_sha256": "533998452215bdfd2f334cbe51247f39c13cc86fc71df6c10ab4ebea07274162",
+        "column": 0,
+        "complexity": 1,
+        "end_column": 14,
+        "end_line": 4,
+        "line": 1,
+        "name": "inspect_run",
+        "projection_sha256": "539f9e72ab9386832f499eadb03b49674eac245687dec4537fd4f40f71a79140"
+      }
+    ],
+    "source": "def inspect_run(*args,**kwargs):\n result=real_run(*args,**kwargs,capture_output=True)\n captured.append(result.stderr)\n return result\n",
+    "version": "1.23.0"
+  },
   "source_sha256": "f9165ef8dcbac571657a7bb0678c9321a1a1608e3027ca2f0f9a37f51b6bb6e1",
-  "stylesheet_sha256": "578d34a08d14adc960435ce44375b798184e0376397625052db5b23f95d2f31f"
+  "stylesheet_sha256": "21a7f8968ea94d0963ecf6ce5d9f0a25387ac9321856d9ae56c05fbdadc10878"
 }

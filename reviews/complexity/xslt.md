@@ -99,4 +99,7 @@ unrelated literal attributes, bounded malformed-value properties and element
 identity/order. Its pre-refactor cases pass unchanged afterward. A separate
 90-element packet produces identical elements, attributes and text on libxslt
 and cached SaxonC-PE 12.9; source identities are in `theme-native.json`.
-That native run also exposed ambiguous fallback priorities, tracked as THEME-002.
+That native run also exposed ambiguous fallback priorities (THEME-002).
+The identity rule now has explicit priority -1. A permanent declaration-order
+permutation regression fails before that fix and passes afterward; the same
+90-element native packet remains identical and produces no stderr warnings.

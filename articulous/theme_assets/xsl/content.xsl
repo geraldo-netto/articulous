@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:exsl="http://exslt.org/common" version="1.0"><xsl:template match="@*|node()" mode="content"><xsl:copy><xsl:apply-templates select="@*|node()" mode="content"/></xsl:copy></xsl:template>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:exsl="http://exslt.org/common" version="1.0"><xsl:template match="@*|node()" mode="content" priority="-1"><xsl:copy><xsl:apply-templates select="@*|node()" mode="content"/></xsl:copy></xsl:template>
   <xsl:template name="render-paragraph">
     <xsl:param name="paragraph-class" select="''"/><xsl:variable name="blocks" select="descendant::*[contains('|address|article|aside|blockquote|details|dialog|div|dl|fieldset|figcaption|figure|footer|form|h1|h2|h3|h4|h5|h6|header|hgroup|hr|iframe|main|menu|nav|ol|p|pre|section|table|ul|',concat('|',translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|'))]"/>
     <xsl:choose><xsl:when test="$blocks">

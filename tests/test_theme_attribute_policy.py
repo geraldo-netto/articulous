@@ -101,3 +101,15 @@ def test_cc004_batch_preserves_element_order_and_identity(render):
     source = etree.fromstring(native_packet(), parser=safe_xml_parser())
     output = render(source).getroot()
     assert [node.get('data-case') for node in output] == [node.get('data-case') for node in source]
+
+
+def test_theme002_specific_handlers_win_independently_of_declaration_order():
+    stylesheet = etree.fromstring(stylesheet_source(), parser=safe_xml_parser())
+    stylesheet[:] = reversed(stylesheet)
+    render = etree.XSLT(stylesheet, access_control=safe_xslt_access_control())
+    source = etree.fromstring(b'<root><div onclick="bad" title="safe"><!-- discard -->Text</div></root>',
+                              parser=safe_xml_parser())
+    output = render(source)
+    assert not output.xpath('//@onclick | //comment()')
+    assert output.xpath('string(/out/div/@title)') == 'safe'
+    assert output.xpath('string(/out/div)') == 'Text'

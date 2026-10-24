@@ -224,7 +224,7 @@
   "files": [
     {
       "path": "articulous/theme_assets/xsl/content.xsl",
-      "sha256": "9df78d87c33a06e86e306df69067a93f1fe06e216e3cd8ecd333f6145159a4a8",
+      "sha256": "650b9c39a33eb9d0845954e0531c9c22200940fbab1bb544cb3b409e2a79a9b4",
       "templates": [
         {
           "complexity": 1,
@@ -251,7 +251,7 @@
           ],
           "line": 1,
           "name": "match=@*|node();mode=content",
-          "sha256": "cbffcf187f611757711a6feabdec0a2f7e362b870014cc970cc85204dd50aeed"
+          "sha256": "c64a2b2ab10fef5ba169c0b0eeb4982a5df6bf9cab215a72c926771366f9901e"
         },
         {
           "complexity": 4,

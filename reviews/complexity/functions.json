@@ -23033,11 +23033,21 @@
           "line": 100,
           "name": "test_cc004_batch_preserves_element_order_and_identity",
           "projection_sha256": "53cafdeefe1f18b7ef4d7547c807bceec73d2c1bf2f8f78e3c3e95e655ae06d7"
+        },
+        {
+          "body_sha256": "de613a3db1e0a849452c56ad943ad8f2523d6c375788d10b0147e94e3ed04352",
+          "column": 0,
+          "complexity": 1,
+          "end_column": 53,
+          "end_line": 115,
+          "line": 106,
+          "name": "test_theme002_specific_handlers_win_independently_of_declaration_order",
+          "projection_sha256": "8a72f06bb5a900672d6bf2686c109f7a766b8c65bab9a7051cca78e6ffb18a02"
         }
       ],
       "language": "python",
       "path": "tests/test_theme_attribute_policy.py",
-      "sha256": "f89c569ed308693487cb424492e1bb4ee1ba13aa9883a76a57c5c4333c1876fe"
+      "sha256": "0644b225dcc7c2b67bf3e670b3c618afe48ef1404dad57b55f28668cfd679bd0"
     },
     {
       "functions": [

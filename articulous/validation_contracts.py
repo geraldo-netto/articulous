@@ -7,6 +7,7 @@ class PageReferences(NamedTuple):
     canonicals: tuple[str, ...]
     links: tuple[str, ...]
     anchors: frozenset[str]
+    base_href: str | None = None
 
 
 @dataclass(frozen=True)

@@ -59,9 +59,10 @@ def read_pages(output, failures, html_errors=None):
         # Template placeholders are inert and are not followed during link validation.
         pages[path.resolve()] = PageReferences(
             tuple(map(str, document.xpath('//link[@rel="canonical"]/@href'))),
-            tuple(map(str, document.xpath('//@href[not(ancestor::template)] | //@src[not(ancestor::template)] | '
+            tuple(map(str, document.xpath('//@href[not(ancestor::template) and not(parent::base)] | //@src[not(ancestor::template)] | '
                                           '//head/meta[@property="og:image" or @name="twitter:image"]/@content'))),
             frozenset(map(str, document.xpath('//@id[not(ancestor::template)] | //a/@name[not(ancestor::template)]'))),
+            next(map(str, document.xpath('//base[not(ancestor::template)]/@href')), None),
         )
     return pages
 
@@ -110,6 +111,18 @@ def check_link(output, value, page_url, base, redirects, pages, failures, label)
             failures.append(f'{label}: missing fragment {value}')
 
 
+def document_base(page_url, href):
+    if href is None:
+        return page_url
+    try:
+        resolved = urljoin(page_url, href)
+        if urlsplit(resolved).scheme in ('data', 'javascript'):
+            return page_url
+        return resolved
+    except ValueError:
+        return page_url
+
+
 def validate_pages(output, base, plan, pages, failures):
     for filename in plan.page_urls:
         if (output / filename).resolve() not in pages:
@@ -120,8 +133,9 @@ def validate_pages(output, base, plan, pages, failures):
         if references.canonicals != (expected,):
             failures.append(f'{filename}: canonical must be {expected}')
         route = page_route(output, path)
+        reference_base = document_base(base + route, references.base_href)
         for value in references.links:
-            check_link(output, value, base + route, base, plan.redirects, pages, failures, filename)
+            check_link(output, value, reference_base, base, plan.redirects, pages, failures, filename)
 
 
 def validate_search(output, plan, failures):

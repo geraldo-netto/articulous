@@ -68,6 +68,9 @@ no articles and empty previous/next URLs when `include_empty` is enabled.
 `Route` and `ExtraPage` values. A route has a stable `key`, `section`, canonical
 `url`, relative POSIX `output_path`, optional `language`, `category` and boolean
 `sitemap` eligibility. Extra pages require section `pages` and a `page:` key.
+URL admission requires a string; `None`, booleans, numbers and collections are
+rejected immediately. Existing empty and root-relative string forms remain admitted
+at this boundary; composition still checks canonical agreement below.
 Their canonical URL must agree with the output path and configured base URL,
 including its deployment prefix and URI encoding.
 

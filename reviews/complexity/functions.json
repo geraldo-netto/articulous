@@ -6235,22 +6235,22 @@
             "projection_sha256": "49925d4ed52b477dae531eae4fa29487bce91fed4312288f78852096dcc5349c"
           },
           {
-            "body_sha256": "11d8d1c3e80bb7b66a993f7343648407007fa04c1f863508e6b4c7d38a741598",
+            "body_sha256": "c068fdae0a7e757da1934a5f0439d030f8b07a15ce2896ea40a7194bec8123a4",
             "column": 0,
-            "complexity": 7,
+            "complexity": 6,
             "end_column": 17,
-            "end_line": 102,
+            "end_line": 100,
             "line": 88,
             "name": "_decode_routes",
-            "projection_sha256": "0c5829b60175ea0c3711acdc9aaf221386d70afe5545a87a2e4fa0cdd29cc302"
+            "projection_sha256": "fb1878569e1b156e4478d7f88f5e72142bce82dd0f9fb3161bfd563a13e90e61"
           },
           {
             "body_sha256": "239c136512905497911104a0d5c322a59ac138324b6448183b17393e8268509f",
             "column": 0,
             "complexity": 3,
             "end_column": 69,
-            "end_line": 109,
-            "line": 105,
+            "end_line": 107,
+            "line": 103,
             "name": "_current_ownership",
             "projection_sha256": "6b6b4e33c16f4d334de6d2d5eba5544e4927ddf1ca57a5c2505761ebc60c29bf"
           },
@@ -6259,8 +6259,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 20,
-            "end_line": 125,
-            "line": 112,
+            "end_line": 123,
+            "line": 110,
             "name": "load_ownership",
             "projection_sha256": "5414d17cc2fc523644606d9fe4f0e63343b4d57d9734dc74cecea9f24ffd5799"
           },
@@ -6269,8 +6269,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 33,
-            "end_line": 139,
-            "line": 128,
+            "end_line": 137,
+            "line": 126,
             "name": "save_ownership",
             "projection_sha256": "37ef736b3d6206ebc8c652f5eac6e1a99c27d2a464a4ffd3e5b370f0dd22f991"
           },
@@ -6279,8 +6279,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 103,
-            "end_line": 144,
-            "line": 142,
+            "end_line": 142,
+            "line": 140,
             "name": "journal_ownership",
             "projection_sha256": "1a6c81344831bcba05ec1ece5fb8cdc10b0fbfcebf3bd43d468252dcb78eb132"
           },
@@ -6289,8 +6289,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 71,
-            "end_line": 157,
-            "line": 147,
+            "end_line": 155,
+            "line": 145,
             "name": "_validate_owned_entry",
             "projection_sha256": "b92dbf3f5d552966a8a6b08c7f3bca10e284c78e70b57f1ee892a37e9116a893"
           },
@@ -6299,15 +6299,15 @@
             "column": 0,
             "complexity": 7,
             "end_column": 20,
-            "end_line": 170,
-            "line": 160,
+            "end_line": 168,
+            "line": 158,
             "name": "validate_owned_output",
             "projection_sha256": "cffcced5d52668d67217264c22ca8ab34a87d0e3739af2a837c30a2f392f516f"
           }
         ],
         "language": "python",
         "path": "articulous/ownership.py",
-        "sha256": "ef4a4aca1c7998b51ad4c846aa60b5357cd8b1ed2cc4ad31c35a8a26fb5e337b"
+        "sha256": "f1f5d1838b6cf25e50ca3f30efa2e1420427b3a1bea30e95e63f474012ab4b96"
       },
       {
         "functions": [
@@ -8808,29 +8808,29 @@
             "projection_sha256": "b1e3feff3cb95959243bbcefbe911530ccdefa4f48821e31e5edd204b8d38bc8"
           },
           {
-            "body_sha256": "76eabebaf3fce4f6db2d39f3411edffc2c4f418424705e8fd26a1c686abe343e",
+            "body_sha256": "4a3c840cb7e191e2fa87aa9847cc8c7459c9cbadc5359da573fb7ed48e039551",
             "column": 0,
-            "complexity": 4,
+            "complexity": 5,
             "end_column": 39,
-            "end_line": 194,
+            "end_line": 196,
             "line": 188,
             "name": "validate_base_url",
-            "projection_sha256": "82041867fb17ad5f8ad99c4e206ee63f2c2575ba20e2814f0f893e39204cb108"
+            "projection_sha256": "93d0513871f796a78974602006c2b86740c7a3fee2558b7b5d77b3208bbd3f6c"
           },
           {
             "body_sha256": "41f2392ada60a81b5377a26e741fe3674c10d77d4360c1aafb7506c8877cfc33",
             "column": 0,
             "complexity": 2,
             "end_column": 84,
-            "end_line": 200,
-            "line": 197,
+            "end_line": 202,
+            "line": 199,
             "name": "validate_sitemap_location",
             "projection_sha256": "4d463676439e4c6ed782b8801247158489352f88f02bb6bc07cc7e9f1af3ee63"
           }
         ],
         "language": "python",
         "path": "articulous/sections.py",
-        "sha256": "0f4eff1206f4c98526ee2ab6e8d56a396d1de1dc894c232b3bff8f7e594ef487"
+        "sha256": "a7a15d91e1fd4e828644573d71cf94c12845f6a010ebcd40d840bb85f27361d3"
       },
       {
         "functions": [
@@ -22614,6 +22614,53 @@
         "language": "python",
         "path": "tests/test_route_contracts.py",
         "sha256": "4c57d1cf0d4dcecbf64afe0009785f6ca97b293378bf66cb45bf337568976142"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "7cafa85b8de7213aaa9b184f6070e4950fb013988e5f2ba88050e1a8fa6241cc",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 32,
+            "end_line": 16,
+            "line": 12,
+            "name": "assert_invalid_url",
+            "projection_sha256": "ccde5df738c82e1a8dfaeb4968a98008f6dc773324ef0db889b5a6926c384440"
+          },
+          {
+            "body_sha256": "ce8d72f9b5232ad3f9ad5dd873db88fe6cd450dde9b5838e580c3b8e50923688",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 29,
+            "end_line": 22,
+            "line": 21,
+            "name": "test_review028_route_rejects_nontext_urls",
+            "projection_sha256": "eef7d3b41fff8db3ed6e5a3867cd2e17e1c25e987f0677a3d9eb0c741cdb4228"
+          },
+          {
+            "body_sha256": "3486a0c3ee560a34eb17618e0459df6b81a9c8a3b4a9ba30db0c510cff199b95",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 27,
+            "end_line": 30,
+            "line": 27,
+            "name": "test_review028_supported_textual_boundaries_remain_valid",
+            "projection_sha256": "60274c52e886a7bd6557e1cf855beb34d817a2c4aa98ba6dc751316f96afea47"
+          },
+          {
+            "body_sha256": "f23ad09f42c9b65f75355966517a4c922b9b1d956947479eaa9154c6bfde9840",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 88,
+            "end_line": 41,
+            "line": 33,
+            "name": "test_review028_seeded_invalid_values_reject_in_both_adapters",
+            "projection_sha256": "f0292a8e38632a611b54a83016b900276291ba6382bd7b767d12d61c120ad61c"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_route_url_types.py",
+        "sha256": "1f8526002dc4ca78b8312a74340853fbbb5feef0a9b41b5c10b3886d0be57e75"
       },
       {
         "functions": [

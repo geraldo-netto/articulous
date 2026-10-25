@@ -186,6 +186,8 @@ def _validate_web_url_path(path: str) -> None:
 
 
 def validate_base_url(url: str) -> None:
+    if not isinstance(url, str):
+        raise ValueError('URL must be a string')
     if not url:
         return
     if url.startswith("/") and not url.startswith("//"):

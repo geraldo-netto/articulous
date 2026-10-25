@@ -94,8 +94,6 @@ def _decode_routes(values, paths):
             route = Route(**value)
         except (TypeError, ValueError) as error:
             raise ValueError('Invalid output route metadata') from error
-        if not isinstance(route.url, str):
-            raise ValueError('Invalid output route metadata URL')
         if route.key != key or paths.get(route.output_path) != key:
             raise ValueError('Output route metadata does not match ownership')
         routes[key] = route

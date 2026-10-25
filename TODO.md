@@ -4,7 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REVIEW-028 | open | S | Reject non-string Route URLs at the independent contract boundary. | P3 reliability/correctness and contracts review; `composition_contracts.py:Route.__post_init__` delegates to `sections.validate_base_url`, whose false-value early return accepts `None`, `False` and `0`. All three were constructed successfully despite `Route.url: str`; consumers later assume string methods, while ownership decoding separately rejects these same values. Dependencies: none. Resolve with consistent URL type admission and permanent invalid-value/boundary tests, preserving intentionally supported string URL forms. |
 
 ## Other items
 

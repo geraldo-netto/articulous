@@ -83,6 +83,31 @@ The parser and test commands never install it automatically; CI's explicit
 its dependency is already cached. No local installation is needed to reuse the
 cache above.
 
+## Installed distribution acceptance
+
+`tests/test_distributions.py` builds a wheel and an sdist, rebuilds the wheel from
+the sdist, and installs each wheel outside the checkout. It verifies the complete
+package byte inventory, tooling/theme resources, declarations and provenance,
+both console commands, and a multilingual fixture build through the console and
+module entry points. A deliberately missing-resource control checks the oracle.
+
+The test extra includes setuptools, wheel and pip. Builds use their installed
+PEP 517 backend directly; installation uses `--no-index --no-deps` in disposable
+virtual environments. The already installed lxml package and its metadata are
+copied into those environments, without downloading dependencies. Set
+`ARTICULOUS_BUILD_PYTHON` to another installed interpreter with setuptools >=68,
+wheel and pip >=24 when the test interpreter lacks those tools. For example:
+
+```sh
+ARTICULOUS_BUILD_PYTHON=/usr/bin/python3 python -m pytest --no-cov tests/test_distributions.py
+```
+
+Native commands use the owned-session runner without a total runtime cap.
+Commands settle before their borrowed source, artifact or environment paths may
+be released. Pytest owns the finite temporary source copies, distributions and
+virtual environments through test/fixture retirement and its temporary-directory
+retention policy. These Linux checks do not establish native Windows/macOS support.
+
 ## Locked dependencies and complexity
 
 CI installs the versions in `uv.lock` with

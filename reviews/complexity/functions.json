@@ -15242,6 +15242,123 @@
       {
         "functions": [
           {
+            "body_sha256": "599b0c29b7116d169115aa9c9c844f682c54445ba78037eca85d7916ab7cd175",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 87,
+            "end_line": 24,
+            "line": 23,
+            "name": "command",
+            "projection_sha256": "0d05c12b0386419830e3525b5c086947e44bce9c1e531aab08b9488409e49e63"
+          },
+          {
+            "body_sha256": "926a97a8666786663cf0a5b34453c111994c3786c5df8d44b30bc9e6805af9c9",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 97,
+            "end_line": 30,
+            "line": 27,
+            "name": "package_inventory",
+            "projection_sha256": "272cfd6d76f33ff694c8e9be3501e96636abeb9eb707b412196f2da383c159c8"
+          },
+          {
+            "body_sha256": "446cb175fd9c9fbb39b51de523752ed333b4ea2f55ad61d717715652d145bfcc",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 38,
+            "end_line": 38,
+            "line": 33,
+            "name": "build_distribution",
+            "projection_sha256": "96007df73862a235903944dfa5db5d7f482e46d58e97b7f2aa63258c8eb43744"
+          },
+          {
+            "body_sha256": "2ef0c51453e139aefc13a49e697d45477ac3121034bd4770f71452587c1843b0",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 38,
+            "end_line": 48,
+            "line": 41,
+            "name": "unpack_source",
+            "projection_sha256": "5568da426af6f64ef1bc629094a0dabe0f1e95cfe89a742b7f63a4f54f284810"
+          },
+          {
+            "body_sha256": "12869cb73539d01570e4799e9b1e95e4d03c40bfe1f98c91e599839a0f9279ee",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 25,
+            "end_line": 65,
+            "line": 52,
+            "name": "distributions",
+            "projection_sha256": "36859b069401c8824b674d5ad04f1560bba4db0931db7cd3085a2adf63195538"
+          },
+          {
+            "body_sha256": "870e25015798b071297e8de1b826ef00ce82618745b4804e33fdcdd292d17055",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 100,
+            "end_line": 72,
+            "line": 68,
+            "name": "require_wheel_inventory",
+            "projection_sha256": "966dc9b18fefb633d752d3aa1286c003433d22c4c0bb6101a95fbcafbf15b00b"
+          },
+          {
+            "body_sha256": "3ac6b05503c500a1975bd39c15dc8b94f66098308421bf1dca01dad03b5802cd",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 17,
+            "end_line": 87,
+            "line": 75,
+            "name": "install_wheel",
+            "projection_sha256": "10ea4dd0e5c8898a094e64d4682ba13d21de0689055173c38728ff95357f707b"
+          },
+          {
+            "body_sha256": "6e53f683b47b79bd3493988a009a90ee830a14bc8af138f67601fa31222d8fe4",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 32,
+            "end_line": 99,
+            "line": 90,
+            "name": "require_installed_resources",
+            "projection_sha256": "d768059ff3c3169c4f5814a422f3fad3b6489f853646c9ca73e51a7efa858a48"
+          },
+          {
+            "body_sha256": "e2c400fbb8188fbdcc28db86d3f2d53b1095c3272e0d51224e0b6260f1cb91c3",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 62,
+            "end_line": 115,
+            "line": 102,
+            "name": "require_installed_build",
+            "projection_sha256": "c3e74c4763702bf6fa3bf44803998e5f9d089c2078b3cf7a34848cef5100c1c5"
+          },
+          {
+            "body_sha256": "412d5a769690c35603c415c0dce16965fc2b3ac89262f4e547191a03109bd203",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 45,
+            "end_line": 127,
+            "line": 119,
+            "name": "test_review023_installed_distribution",
+            "projection_sha256": "fc3fec22c2f74b69e1c8b5f85a55e332238e939a329c001d0c728f14336c1641"
+          },
+          {
+            "body_sha256": "3c5bc5dbda9d0885c20f05737b80a28f972026814307d0872faa57c061350e97",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 59,
+            "end_line": 134,
+            "line": 130,
+            "name": "test_review023_missing_resource_control",
+            "projection_sha256": "6e5286ba2825317d686ea29a2966548d242677275a9e0353f1ba736b00254391"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_distributions.py",
+        "sha256": "798a624b3fa66d66a9bd3cf42be71540875f7d58f8f23a849a6bb23391816eb8"
+      },
+      {
+        "functions": [
+          {
             "body_sha256": "cab35106e0077cb9acf6e062c3c8882f306e10251798da7ae61ff0abafdb9c66",
             "column": 0,
             "complexity": 2,
@@ -26671,6 +26788,43 @@
         "language": "python",
         "path": "tests/test_xslt_acceptance.py",
         "sha256": "df76badc3db25d53187159e6eff2adaae4c995041b9150da52871db15e398e17"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "3605d6e99230f2d66c703085f2b46ec25be757c90375cebaf0fb978443e28cdf",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 29,
+            "end_line": 16,
+            "line": 13,
+            "name": "require_installed_inventory",
+            "projection_sha256": "b458a24023ab86defcafc1f2e2199b63535fa56bda06e9d65c283398c1428b70"
+          },
+          {
+            "body_sha256": "0cb07cd3dfa0f36a0f547c5c2aa725a6d67ab2e7457e6cf5e694951a89adef9f",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 72,
+            "end_line": 25,
+            "line": 19,
+            "name": "require_provenance",
+            "projection_sha256": "4f467f30924edb04a304625196fc34bc9845a7fec22cc261918b66c68096ade4"
+          },
+          {
+            "body_sha256": "3d98fc786d2c63dae299a885796ea6833869e504ea738f0381438a2e4f6d2b1f",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 77,
+            "end_line": 36,
+            "line": 28,
+            "name": "main",
+            "projection_sha256": "aa087aa2640bb55c304743cfd547e19ae476ea582e49ab5dee35e071d36f0f96"
+          }
+        ],
+        "language": "python",
+        "path": "tests/tooling/installed-package.py",
+        "sha256": "0d7a044efb7a848b18c0e7d0445fe0d207ef9786694795d6a92b463522634e74"
       },
       {
         "functions": [],

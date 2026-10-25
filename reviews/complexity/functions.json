@@ -7979,52 +7979,92 @@
             "projection_sha256": "c44c37478997256ade4cb10b8bca610b4a8d5e337824c7d8d2ac889e46472947"
           },
           {
-            "body_sha256": "53fac13dc504336683736b7d79baa6f4849f9de9ce8865d1bba4f25b046f4234",
+            "body_sha256": "9e18b3d6753d429501571024d80ca72ee4e7a38fa4ffb553cd84ed2c2ddac96e",
             "column": 0,
-            "complexity": 9,
-            "end_column": 19,
-            "end_line": 59,
+            "complexity": 3,
+            "end_column": 74,
+            "end_line": 50,
             "line": 49,
+            "name": "_protected_parts",
+            "projection_sha256": "cad68cdc535e823a5c45dd01299808550adb39cf2a13c7ced4e060f2f6c69ff2"
+          },
+          {
+            "body_sha256": "c40e27f374042fb7bb83a3667c772e45f162eadfb019e0bf40d14052354eab9d",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 19,
+            "end_line": 62,
+            "line": 53,
+            "name": "_visible_target",
+            "projection_sha256": "70401931d7f707e9ccb1110e7608ae5f07b4787c437f650070d05e638f1dfcad"
+          },
+          {
+            "body_sha256": "87a4fadbe700743fd37e4ddba2a6dd5906dcb967bd6206c8d23b8f9f4845fc74",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 28,
+            "end_line": 70,
+            "line": 65,
+            "name": "_decoded_route",
+            "projection_sha256": "3ceaf2a7922f5fa8493adfcf45bbc57f1b749674e34a00fc31b8725018c62de3"
+          },
+          {
+            "body_sha256": "6b968ef16335e7fe3e49cf6c5b7332872591f80aa31100144a7474b566e94524",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 19,
+            "end_line": 79,
+            "line": 73,
             "name": "preview_path",
-            "projection_sha256": "63932a995936f5967fd084cc2d50a13d3b27bb763080637e5f10f44694cb92b8"
+            "projection_sha256": "2a6180e0fb56c300c82a567d63eceab264e3e36c6ee0e47947a9415c22b59b22"
           },
           {
             "body_sha256": "31f6709d3386f5010937b99bc19d8342b3c68e929fe57a474d7f31906162d212",
             "column": 4,
             "complexity": 1,
             "end_column": 67,
-            "end_line": 69,
-            "line": 65,
+            "end_line": 89,
+            "line": 85,
             "name": "Handler.__init__",
             "projection_sha256": "06b5f33cda185c1642f9af1737412da030ca31dfa2dd3b3972f67d1c2d8e6461"
           },
           {
-            "body_sha256": "0273bff7f3f9b8d10eac171aedcb2d442ee9be267973360f40372246bda5517e",
+            "body_sha256": "d128661b60892fda76357651b0722f9da7908485c0ed648b533774661929d0d9",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 26,
+            "end_line": 95,
+            "line": 91,
+            "name": "Handler.translate_path",
+            "projection_sha256": "4330f3e1d43413265af6768e56b415ed256cedf367141b082018fc9e03870cdf"
+          },
+          {
+            "body_sha256": "47559071718e2442b6269b9574449e4b77d8650e77ee9b1f9e88656c0bdd04ad",
             "column": 4,
             "complexity": 5,
             "end_column": 34,
-            "end_line": 79,
-            "line": 71,
+            "end_line": 105,
+            "line": 97,
             "name": "Handler.send_head",
-            "projection_sha256": "dee95d09f2478cba9caa8253309ae2ac1fdddb048d303f546d48d1f52889ae19"
+            "projection_sha256": "7af3ed8b03d27aebec8ae819f2e37c5fc49c376f4347a33d702abc2ed0ef312a"
           },
           {
-            "body_sha256": "1b47f8bc2c46d67948f7306bee221ef4419982d9fb386944b8013146866f7f44",
+            "body_sha256": "4f83c7ea5a73cc63fd71687af1bb1df8281eb167041832bdceee37f7b139502e",
             "column": 4,
             "complexity": 6,
             "end_column": 67,
-            "end_line": 88,
-            "line": 81,
+            "end_line": 114,
+            "line": 107,
             "name": "Handler.not_found",
-            "projection_sha256": "e29cf28b9152636eff41f4dc703e19f048f86caf877f0d0b07ae908153017897"
+            "projection_sha256": "1f8a29afab862d89756885f1802de2d74da0565b02e1f0eca59c9e255a5d7c32"
           },
           {
             "body_sha256": "e6ad4d207f4f4f82bef7f96778925ae6617e73bda2d73442a5ac8a5839e71d5b",
             "column": 4,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 92,
-            "line": 90,
+            "end_line": 118,
+            "line": 116,
             "name": "Handler.end_headers",
             "projection_sha256": "7e23f245875b702fcc0709c129c486a4e813ddbf38a0db327fa6a06f49858ce0"
           },
@@ -8033,8 +8073,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 46,
-            "end_line": 96,
-            "line": 94,
+            "end_line": 122,
+            "line": 120,
             "name": "Handler.log_message",
             "projection_sha256": "28f2f6781cdaf911f0907ab29425a8fb8c4cd40f75b322405c66323824dfbb87"
           },
@@ -8043,8 +8083,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 12,
-            "end_line": 115,
-            "line": 99,
+            "end_line": 141,
+            "line": 125,
             "name": "serve",
             "projection_sha256": "70a20da2fdc9b97696f6a66a5dd573afc8ed3a48cf1354e03e71877ea7894032"
           },
@@ -8053,15 +8093,15 @@
             "column": 0,
             "complexity": 2,
             "end_column": 112,
-            "end_line": 128,
-            "line": 118,
+            "end_line": 154,
+            "line": 144,
             "name": "main",
             "projection_sha256": "6a44d68dc7b992239ae844f33e54f483b66572f9e2fbb9841ada0dfd5d89dfad"
           }
         ],
         "language": "python",
         "path": "articulous/preview.py",
-        "sha256": "e0cac9bd54fced3b6bb6952f1081fe53344a5fef71e2b19a73db4d82d9fb64e5"
+        "sha256": "e6415f6302d9bd530b0e4afa4c292c3c9f54e8950643ec5520d85094abeff0c6"
       },
       {
         "functions": [
@@ -21036,6 +21076,93 @@
         "language": "python",
         "path": "tests/test_preview.py",
         "sha256": "8c8c60236497162d31e079dd3b60060d5b69b5ae4b4993b8bf0b0ce321a984bc"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "37e4579eb0b66d43c854035d16e9c926cfdb38816da3368b087dbdc75c5986e5",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 26,
+            "end_line": 19,
+            "line": 12,
+            "name": "request",
+            "projection_sha256": "c03f259c654526dd6a37bb9c004c8f953d00417171e7cd2b8aaae119b32f5f28"
+          },
+          {
+            "body_sha256": "930e106caff56a685adeae3785c5c9e5206907e84c8cb9457dbdbdb471c6faf2",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 71,
+            "end_line": 42,
+            "line": 24,
+            "name": "test_review029_get_and_head_deny_protected_aliases",
+            "projection_sha256": "9c82579ce3a3c7b1601706ab1ae0773538984b2e55aef50871b172179007b5ae"
+          },
+          {
+            "body_sha256": "bcb160876e8b66912efeacbd25925492657b2ce6be1a97550de804bc03c8be0f",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 75,
+            "end_line": 56,
+            "line": 47,
+            "name": "test_review029_fallback_cannot_disclose_protected_file",
+            "projection_sha256": "ad8fb265391d59b8465722d04124ab4d4b0167f087bb0b6e945d3eb57f196fde"
+          },
+          {
+            "body_sha256": "34db386aa1cb215fc6ba8c021837d5a3e871ec50b4a2096dcb4575c773e0eacb",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 81,
+            "end_line": 67,
+            "line": 59,
+            "name": "test_review029_public_aliases_and_ordinary_fallback_remain_supported",
+            "projection_sha256": "0de8833379419699d3e06957b96b39ceffaeaa01df9015b3f2f1ea4ef4665288"
+          },
+          {
+            "body_sha256": "91acc6f71bac17b9976fe08af094a501af7aa5dd15c7c77921288fa2ccd505d7",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 64,
+            "end_line": 79,
+            "line": 70,
+            "name": "test_review029_seeded_encoded_aliases_and_outside_control",
+            "projection_sha256": "c0a42e8767e9e1757f8be6d0ed4359e3338958b7c8b51649dd3d5a1e08b84563"
+          },
+          {
+            "body_sha256": "ebe54e30c9678ac8cd45c190d51c707288e5341dcd6dfa3353cf0c34c5f839ab",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 99,
+            "end_line": 89,
+            "line": 82,
+            "name": "test_review029_absolute_form_opens_the_validated_public_target",
+            "projection_sha256": "f49837ea7c9591e360d0a3858a609dfc49d50baac3dd627211e3d0a3d0665d9f"
+          },
+          {
+            "body_sha256": "f7db139da7d5652f4524b6d0a4477b3028624c710c7020526ab17e9e0709a7b1",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 93,
+            "end_line": 97,
+            "line": 92,
+            "name": "test_review029_surrogate_escape_cannot_select_a_different_file",
+            "projection_sha256": "99a8120892c6ca712931eb9accc11daa3d3cb752356138159a04b5e027da232b"
+          },
+          {
+            "body_sha256": "faaf5418a574a89f159545ed99910225b07269223f65a7e2c888ad31c1a304f5",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 43,
+            "end_line": 107,
+            "line": 100,
+            "name": "test_review029_decode_boundaries_and_direct_translation_rejection",
+            "projection_sha256": "6760805c43cb4cddf13f22158c98767b890e5c0b81b7b9ddbd1e334919a919dc"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_preview_aliases.py",
+        "sha256": "59d5e5fa18ecd3fb4f0e35a0b60c27cc7a38f719cb4499036736f8e2d502e6c8"
       },
       {
         "functions": [

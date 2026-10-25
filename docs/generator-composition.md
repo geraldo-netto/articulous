@@ -626,6 +626,9 @@ Those checks preserve existing portal behavior until its migration decision.
 loopback only. Supply repeatable `--internal` names for site hosting artifacts.
 Dotfiles, traversal, escaped symlinks and directory listings are refused; GET
 and HEAD use the configured rendered 404, with a plain response when absent.
+Hidden/internal exclusions apply to both requested and resolved paths, including
+directory indexes and the configured 404. Protected fallbacks use the plain 404;
+symlinks to ordinary public files within the root remain supported.
 Preview sends `no-store`; it defines no production hosting cache policy.
 
 The server owns each admitted socket by object identity, cuts admission on

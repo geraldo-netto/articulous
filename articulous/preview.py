@@ -46,15 +46,35 @@ class PreviewServer(http.server.ThreadingHTTPServer):
         super().server_close()
 
 
-def preview_path(root, value, internal):
+def _protected_parts(parts, internal):
+    return any(part.startswith('.') or part in internal for part in parts)
+
+
+def _visible_target(root, target, internal):
     try:
-        parts = Path(unquote(urlsplit(value).path)).parts
-        if any(part == '..' or part.startswith('.') or part in internal for part in parts):
+        if _protected_parts(target.relative_to(root).parts, internal):
             return None
-        target = root.joinpath(*parts[1:]) if parts and parts[0] == '/' else root.joinpath(*parts)
-        if not target.resolve().is_relative_to(root.resolve()):
+        resolved = target.resolve().relative_to(root.resolve())
+        if _protected_parts(resolved.parts, internal):
             return None
         return target
+    except (ValueError, RuntimeError):
+        return None
+
+
+def _decoded_route(value):
+    path = urlsplit(value).path
+    try:
+        return unquote(path, errors='surrogatepass')
+    except UnicodeDecodeError:
+        return unquote(path)
+
+
+def preview_path(root, value, internal):
+    try:
+        path = Path(_decoded_route(value))
+        relative = Path(*path.parts[1:]) if path.is_absolute() else path
+        return _visible_target(root, root / relative, internal)
     except ValueError:
         return None
 
@@ -68,18 +88,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.not_found_route = not_found
         super().__init__(*args, directory=str(self.root), **kwargs)
 
+    def translate_path(self, path):
+        target = preview_path(self.root, path, self.internal)
+        if target is None:
+            raise ValueError('Preview path is not public')
+        return str(target)
+
     def send_head(self):
         target = preview_path(self.root, self.path, self.internal)
         if target is None:
             return self.not_found()
         if target.is_dir():
-            target /= 'index.html'
-        if not target.is_file() or not target.resolve().is_relative_to(self.root):
+            target = _visible_target(self.root, target / 'index.html', self.internal)
+        if target is None or not target.is_file():
             return self.not_found()
         return super().send_head()
 
     def not_found(self):
-        target = preview_path(self.root, self.not_found_route, ()) if self.not_found_route else None
+        target = preview_path(self.root, self.not_found_route, self.internal) if self.not_found_route else None
         body = target.read_bytes() if target is not None and target.is_file() else b'Not found\n'
         self.send_response(404)
         self.send_header('Content-Type', 'text/html; charset=utf-8' if target else 'text/plain; charset=utf-8')

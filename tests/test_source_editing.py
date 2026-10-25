@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from articulous.source_files import replace_file
-from articulous.source_transactions import SourceTransaction, fingerprint, source_transaction
+from articulous.source_transactions import SourceChange, SourceTransaction, fingerprint, source_transaction
 
 
 def test_edit001_atomic_replace_and_writer_failure(tmp_path):
@@ -95,7 +95,7 @@ def test_edit001_manual_recovery_retains_workspace(tmp_path):
     transaction = SourceTransaction(root, workspace)
     with patch.object(Path, 'replace', side_effect=OSError('restore')):
         with pytest.raises(RuntimeError, match='retained workspace'):
-            transaction.rollback([(root / 'old', backup, True)], [])
+            transaction.rollback([SourceChange(root / 'old', backup, workspace / 'staged', True, None)], [])
     assert transaction.recovery_required
     assert backup.read_bytes() == b'old'
 
@@ -125,7 +125,7 @@ def test_edit001_rollback_directories_and_unmoved_original(tmp_path):
     transaction = SourceTransaction(tmp_path, workspace)
     empty = tmp_path / 'empty'
     empty.mkdir()
-    transaction.rollback([(tmp_path / 'original', workspace / 'missing', True)], [empty])
+    transaction.rollback([SourceChange(tmp_path / 'original', workspace / 'missing', workspace / 'staged', True, None)], [empty])
     assert not empty.exists()
     with pytest.raises(RuntimeError, match='retained workspace'):
         transaction.rollback([], [tmp_path])

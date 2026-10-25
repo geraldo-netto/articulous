@@ -1,10 +1,53 @@
 """Stage import files and roll back failed publication without replacing the repository."""
 from contextlib import contextmanager
+from dataclasses import dataclass
 import hashlib
+import os
 from pathlib import Path
 import tempfile
 
+from .filesystem import open_regular_file
 from .source_files import cleanup_workspace, require_workspace, workspace_identity
+
+
+@dataclass(frozen=True)
+class SourceVersion:
+    device: int
+    inode: int
+    mode: int
+    digest: bytes
+
+
+@dataclass(frozen=True)
+class SourceChange:
+    target: Path
+    backup: Path
+    staged: Path
+    existed: bool
+    version: SourceVersion | None
+
+
+def source_version(path):
+    try:
+        with open_regular_file(path) as source:
+            metadata = os.fstat(source.fileno())
+            digest = hashlib.file_digest(source, 'sha256').digest()
+            return SourceVersion(metadata.st_dev, metadata.st_ino, metadata.st_mode, digest)
+    except FileNotFoundError:
+        return None
+
+
+def restore_source(change):
+    if change.existed and not change.backup.exists():
+        return
+    expected = None if change.staged.exists() else change.version
+    if source_version(change.target) != expected:
+        raise ValueError(f'Import rollback target changed: {change.target}')
+    if change.backup.exists():
+        change.backup.replace(change.target)
+    else:
+        change.target.unlink(missing_ok=True)
+
 
 def fingerprint(path):
     try:
@@ -86,12 +129,13 @@ class SourceTransaction:
                 make_parents(target.parent, directories)
                 backup = self.workspace / 'previous' / relative
                 backup.parent.mkdir(parents=True, exist_ok=True)
-                journal.append((target, backup, self.expected[relative] is not None))
+                staged = self.stage / relative
+                if self.expected[relative] is not None:
+                    staged.chmod(target.stat().st_mode)
+                journal.append(SourceChange(target, backup, staged, self.expected[relative] is not None,
+                                            source_version(staged)))
                 if self.expected[relative] is not None:
                     target.replace(backup)
-                staged = self.stage / relative
-                if backup.exists():
-                    staged.chmod(backup.stat().st_mode)
                 staged.replace(target)
         except BaseException:
             self.rollback(journal, directories)
@@ -100,13 +144,10 @@ class SourceTransaction:
     def rollback(self, journal, directories):
         self.recovery_required = True
         errors = []
-        for target, backup, existed in reversed(journal):
+        for change in reversed(journal):
             try:
-                if backup.exists():
-                    backup.replace(target)
-                elif not existed:
-                    target.unlink(missing_ok=True)
-            except OSError as error:
+                restore_source(change)
+            except (OSError, ValueError) as error:
                 errors.append(error)
         for directory in reversed(directories):
             try:

@@ -587,8 +587,12 @@ are not a native filesystem isolation mechanism. No process-crash or power-loss
 atomicity is claimed for source edits.
 
 Workspace identity is checked before publication and recursive cleanup.
-Failed rollback retains its backups and names the workspace for caller-owned
-recovery. A cleanup failure reports the retained path without reversing a
+Rollback checks the installed file's device/inode, permissions and content before
+restoring or removing it. Conflicting edits, replacements and deletions remain
+untouched; failed rollback retains its backups and names the workspace for caller-owned
+recovery. Checks and replacements still require the caller to exclude concurrent
+mutation during the individual filesystem operation; they provide no atomic compare-and-swap.
+A cleanup failure reports the retained path without reversing a
 successful commit or masking the original error. Unknown replacement
 workspaces are preserved. Storage is proportional to the selected source
 batch and its previous contents; callers admit/fund that batch before editing.

@@ -646,6 +646,8 @@ configured publication prefix, decodes paths/fragments, follows redirect
 fragments, ignores inert templates and remote/outside-prefix URLs, and reads
 sitemap indexes without revisiting a shard. No language or theme paths are
 assumed. Sitemap XML disables entity resolution and networking.
+Redirect sources and intermediate hops need no generated stub files; only the
+terminal local target must exist. Cycles remain validation failures.
 Absolute HTTP(S), root-relative and empty deployment bases all admit their local
 links for checking. For originless bases, URLs with an explicit scheme or host
 remain unowned. Each redirect carries the effective URL forward: a target

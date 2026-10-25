@@ -83,7 +83,7 @@ def redirect_target(output, target, resolved, base, redirects, failures, label):
         value = redirects[route]
         resolved = _redirect_url(resolved, base.rstrip('/') + value)
         target = local_path(output, resolved, base)
-        if target is None or not target.is_file():
+        if target is None:
             failures.append(f'{label}: missing redirect target {value}')
             return None, resolved
         route = page_route(output, target)
@@ -95,10 +95,12 @@ def check_link(output, value, page_url, base, redirects, pages, failures, label)
     target = local_path(output, resolved, base)
     if target is None:
         return
+    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label)
+    if target is None:
+        return
     if not target.is_file():
         failures.append(f'{label}: missing {value}')
         return
-    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label)
     fragment = unquote(urlsplit(resolved).fragment).split(':~:text=', 1)[0]
     if not fragment:
         return

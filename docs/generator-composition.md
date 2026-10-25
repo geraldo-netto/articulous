@@ -713,7 +713,20 @@ the provider request. Identity includes provider/model/generation settings,
 languages, input and markup mode; timeout/retry budgets do not change meaning.
 Invalid cache values are evicted and invalid provider output remains retryable.
 `backends.translation_http.HttpProvider` is explicitly invoked; it starts no
-model server and closes every HTTP response on success or schema failure.
+model server and closes HTTP responses on success, schema failure, interrupted
+reads and rejected HTTP status. Status failures preserve the original
+`urllib.error.HTTPError` diagnostics with the response closed. If response close
+itself fails, the exception chain retains the response-owning error for explicit
+cleanup retry. `TranslationProvider.model` is a read-only contract property;
+providers may expose immutable model identity.
+
+`tests/test_translation_http.py` uses a controlled loopback provider to verify
+real request encoding, Unicode responses, malformed bodies, status failures,
+disconnects, deadlines, retries, cancellation and socket settlement. Failed units
+retain source text and add no successful cache entry; incomplete drafts carry no
+clean provenance.
+The [HTTP acceptance record](../reviews/http/README.md) states the regression,
+fault-control and lifetime scope; no remote provider is needed.
 
 `translation_cache.open_cache` owns the SQLite connection through all exits.
 `translation_jobs` shares bounded file-budget selection, provenance-chain

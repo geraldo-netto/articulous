@@ -5,6 +5,14 @@ import urllib.error
 import urllib.request
 
 
+def _open_response(request, timeout):
+    try:
+        return urllib.request.urlopen(request, timeout=timeout)
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise
+
+
 @dataclass(frozen=True)
 class HttpProvider:
     endpoint: str
@@ -23,7 +31,7 @@ class HttpProvider:
         request = urllib.request.Request(self.endpoint.rstrip('/') + '/v1/chat/completions',
                                         data=payload, headers={'Content-Type': 'application/json'})
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with _open_response(request, self.timeout) as response:
                 body = json.load(response)
             content = body['choices'][0]['message']['content']
             if not isinstance(content, str):

@@ -4,8 +4,6 @@
 
 | id | status | effort | description | notes |
 |----|--------|--------|-------------|-------|
-| REVIEW-024 | open | M | Verify translation HTTP transport against a controlled loopback provider. | Reliability/correctness review; `articulous/backends/translation_http.py:HttpProvider.post` uses urllib, but `tests/test_translation_authoring.py:test_i18n002_native_provider_schema_and_response_close` replaces `urlopen` with BytesIO. Complete with permanent local transport tests for request method/path/headers/Unicode JSON, successful response decoding, HTTP failures, malformed/truncated responses, timeout/disconnect behavior and response/socket settlement; verify failed requests cannot install translated files or successful cache entries. Own and settle server threads/connections on all exits; no external provider or article-code execution needed. No transport defect established; any discovered behavioral fix requires a failing-before/passing-after regression. |
-| REVIEW-025 | open | S | Reconcile REVIEW-024's failed-file criterion with documented incomplete translation drafts. | Contradictions review; REVIEW-024 says failed requests cannot install translated files, while `translation_xml.mirror_xml`, `tests/test_translation_authoring.py:test_i18n002_mirror_schema_and_failed_provenance` and `docs/generator-composition.md#optional-translation-jobs` intentionally retain source units and write a draft without a clean digest when translation fails. Resolve by correcting the review criterion and verifying real HTTP failures preserve source text, increment failure counts, omit clean provenance and populate no successful cache entries. Do not change accepted draft behavior to match this mistaken planning statement. |
 
 ## Other items
 

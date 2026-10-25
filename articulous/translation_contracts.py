@@ -6,7 +6,9 @@ from typing import Protocol
 
 
 class TranslationProvider(Protocol):
-    model: str
+    @property
+    def model(self) -> str:
+        ...
 
     @property
     def identity(self) -> tuple:

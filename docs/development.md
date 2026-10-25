@@ -27,6 +27,10 @@ The subsequent native per-function gate independently inventories source, reject
 stale or inconsistent counters, and requires at least 80% executable lines for
 each function. Empty protocol declarations must have genuinely empty native
 regions; executable functions cannot substitute empty counters.
+Native Python reports key functions by qualified name. The gate rejects repeated
+names, including same-name property getters/setters and conditional redefinitions,
+instead of attributing one callable's counters to another. Distinctly named
+accessors composed with `property(getter, setter)` remain measurable.
 
 Seeded fuzz tests mutate configuration types and URL syntax, duplicate XML
 metadata, and out-of-range dates. Boundary probes cover numeric minima,

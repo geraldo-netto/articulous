@@ -4339,22 +4339,22 @@
             "projection_sha256": "e0aa3baf2805187e6fe7fe63826b52c9bacbe4f8256903058b41368eeaf15ac4"
           },
           {
-            "body_sha256": "eb4566c6644549969e995b6757485c1ca9f1648da0a6247b0d5bce898260d360",
+            "body_sha256": "584a987bfc785246303b7b70f62f981093af0ed3d6f584c5ab690f6da8c9969f",
             "column": 0,
-            "complexity": 7,
+            "complexity": 8,
             "end_column": 31,
-            "end_line": 81,
+            "end_line": 83,
             "line": 62,
             "name": "check_file",
-            "projection_sha256": "6d2710fce405d58407b79f1f0e2c0db08baf2fc3447e38a384b9cfbeb370cc92"
+            "projection_sha256": "5ab0bfd5b0af5799324480a621a9d24fc586c7abc0ddb0e399e17fdf5b45eb04"
           },
           {
             "body_sha256": "a67109e6529c919e279b0b949cd9b95470cb1d4ca87e30ea77337449c0eb8ba6",
             "column": 0,
             "complexity": 4,
             "end_column": 26,
-            "end_line": 97,
-            "line": 84,
+            "end_line": 99,
+            "line": 86,
             "name": "check_report",
             "projection_sha256": "d0d880cb732ddbb665f95011d1fff09b7223b14fa0ba61213cb429e0d3f996cc"
           },
@@ -4363,15 +4363,15 @@
             "column": 0,
             "complexity": 2,
             "end_column": 12,
-            "end_line": 110,
-            "line": 100,
+            "end_line": 112,
+            "line": 102,
             "name": "main",
             "projection_sha256": "bbc282a9c80bb436fceaf56b1f3732862bf3f1ffc175cc4f1bb801c81239b223"
           }
         ],
         "language": "python",
         "path": "articulous/coverage_gate.py",
-        "sha256": "c8a9d86bf067d0ae684108db48ab421b597e8c10d699580500247d8408bf4a48"
+        "sha256": "10fb45ea25cae3376118f4c1195f6939b7add499706c017860b0fcbc636e0ca1"
       },
       {
         "functions": [
@@ -15328,6 +15328,53 @@
         "language": "python",
         "path": "tests/test_coverage_gate.py",
         "sha256": "2578e6b5d214affb92d76c7fd3b332f8e1251703a0c678dde17dee53b928334b"
+      },
+      {
+        "functions": [
+          {
+            "body_sha256": "59ea515d9acab6a45e8feed4f08acce2250f40bc7e3901be4d371bf072596612",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 55,
+            "end_line": 44,
+            "line": 34,
+            "name": "native_report",
+            "projection_sha256": "855ad7ae5537d6ea5f409c7672a9bbbdc2bee740aaf9981c4620a8c6eaa73068"
+          },
+          {
+            "body_sha256": "ff3536a94172fd9d252fa176fd39fbc97d1cd6421292241d2cf5b8a95edf30ea",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 75,
+            "end_line": 53,
+            "line": 48,
+            "name": "test_review031_ambiguous_native_names_are_rejected",
+            "projection_sha256": "db28a5f0572f04236525fe6935d1a0e384798a66658831bc6005c3e65010665f"
+          },
+          {
+            "body_sha256": "c5933f52a48c9bf9324b013731d3979f6a1cfa9e28a2a938f3a8d595528ea7f1",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 62,
+            "end_line": 63,
+            "line": 56,
+            "name": "test_review031_distinct_property_accessors_keep_native_coverage",
+            "projection_sha256": "c54e707df22fcd223a9bb10b83d75593aa59f1ad0d096aa75ad67875af77d3fd"
+          },
+          {
+            "body_sha256": "7b1fa0777af35f4c53202270c767353c77cd2e8c0c5f045fbb9792a02c759fab",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 79,
+            "end_line": 76,
+            "line": 66,
+            "name": "test_review031_seeded_duplicate_names_fail_before_counter_admission",
+            "projection_sha256": "b8eb16537a76d68089a85ed0653c9a5654f6403e7e1eda651236456433504201"
+          }
+        ],
+        "language": "python",
+        "path": "tests/test_coverage_name_collisions.py",
+        "sha256": "877efb19850bba87b69c159f70856031e1588fbf312c2cd4262829672a039b37"
       },
       {
         "functions": [

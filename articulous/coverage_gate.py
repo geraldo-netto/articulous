@@ -62,6 +62,8 @@ def check_percent(percent, executed, expected):
 def check_file(path, root, report):
     filename = path.relative_to(root).as_posix()
     names = inventory(ast.parse(path.read_text()))
+    if len(names) != len(set(names)):
+        raise ValueError('Ambiguous callable names; native counters cannot distinguish definitions')
     reporter = PythonFileReporter(str(path), Coverage())
     statements = reporter.lines()
     regions = {region.name: region for region in reporter.code_regions() if region.kind == 'function'}

@@ -1,0 +1,561 @@
+{
+  "analyzer": "Lizard",
+  "version": "1.23.0",
+  "calibration": [
+    {
+      "name": "straight",
+      "source": "def f():\n return 1\n",
+      "expected": [
+        1
+      ],
+      "actual": [
+        1
+      ]
+    },
+    {
+      "name": "choices",
+      "source": "def f(a,b,c):\n if a and b or c:\n  return 1\n return 0\n",
+      "expected": [
+        4
+      ],
+      "actual": [
+        4
+      ]
+    },
+    {
+      "name": "nested",
+      "source": "def outer():\n def inner(x):\n  return 1 if x else 2\n return inner\n",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "lambda",
+      "source": "def outer():\n return lambda x: 1 if x else 2\n",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "definition-input",
+      "source": "def outer(x):\n def inner(y=1 if x else 2):\n  return y\n return inner\n",
+      "expected": [
+        2,
+        2
+      ],
+      "actual": [
+        2,
+        2
+      ]
+    },
+    {
+      "name": "header",
+      "source": "@(first if flag else second)\ndef f(value=1 if flag else 2):\n return value\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "format-string",
+      "source": "def f(x):\n return f\"{1 if x else 2:{3 if x else 4}}\"\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "annotations",
+      "source": "def f(x: 1 if flag else 2) -> (3 if flag else 4):\n return x\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "comprehension",
+      "source": "def f(xs):\n return [x for x in xs if x]\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "exceptions",
+      "source": "def f():\n try:\n  return 1\n except ValueError:\n  return 2\n finally:\n  pass\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "async",
+      "source": "async def f(x):\n if x:\n  await x\n",
+      "expected": [
+        2
+      ],
+      "actual": [
+        2
+      ]
+    },
+    {
+      "name": "syntax-boundary",
+      "source": "def f():\n class C:\n  def m(self): return \"if or while\"\n return C\n",
+      "expected": [
+        1,
+        1
+      ],
+      "actual": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "threshold-boundary",
+      "source": "def f(xs):\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n",
+      "expected": [
+        9
+      ],
+      "actual": [
+        9
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "articulous/articles.py",
+      "sha256": "cd6f042eb8416375bd5203adcc7516658e69054310ba78b1bdb9b8a6b5e3e555",
+      "functions": [
+        {
+          "name": "ArticleSnapshot.read_bytes",
+          "line": 45,
+          "column": 4,
+          "end_line": 51,
+          "end_column": 22,
+          "body_sha256": "fbad1fa259f9adcc183da2bd30b15a73888a7c97e265f9b92d9a5a06670c655f",
+          "complexity": 2,
+          "projection_sha256": "d17d92117c3bcff65f06147af18ccb98e42866165e311f1164639cdb90d7c6d5"
+        },
+        {
+          "name": "Article.policy",
+          "line": 81,
+          "column": 4,
+          "end_line": 85,
+          "end_column": 21,
+          "body_sha256": "3383bb4ba7aeaefa161ab3092dcaf1d4f0d3bed43fc08ec1780441863bf08d90",
+          "complexity": 2,
+          "projection_sha256": "99b5f7caee453af264410f912d332d5f8567a0b8f8341706a7892f0ab3adb7a2"
+        },
+        {
+          "name": "Article.indexable",
+          "line": 88,
+          "column": 4,
+          "end_line": 89,
+          "end_column": 60,
+          "body_sha256": "766c70a6a3ceef1823f61a7b5d35bb1123a93d92cae027589188841239e39a41",
+          "complexity": 2,
+          "projection_sha256": "4b95247905427f60dc2c58ec32386a4bf029e3174fec2277f7e133f0427489c1"
+        },
+        {
+          "name": "Article.publication_state",
+          "line": 92,
+          "column": 4,
+          "end_line": 95,
+          "end_column": 49,
+          "body_sha256": "578f9c8385749214cd973ba564df431f9bc7587deff475ca654094e22a2dfe05",
+          "complexity": 2,
+          "projection_sha256": "7b1f89e0772a8a7899701c301ff2ff08600b459db18517264d29eaa7d8fa5bd9"
+        },
+        {
+          "name": "_ScanProgress.__init__",
+          "line": 106,
+          "column": 4,
+          "end_line": 108,
+          "end_column": 39,
+          "body_sha256": "a21dbc3a97bc31ef22fe66236dd0d9951a55dd684fc6d856f4e8f6f0fc8db931",
+          "complexity": 1,
+          "projection_sha256": "0af1bb809a086992f903dac6a228eb02df97eeabbc7f8babd27bebdf5d522114"
+        },
+        {
+          "name": "_ScanProgress.report",
+          "line": 110,
+          "column": 4,
+          "end_line": 118,
+          "end_column": 31,
+          "body_sha256": "49ac1c5a13e4053c35d9573eb1298b756c5a9add54e61952d2ac7df54a587890",
+          "complexity": 2,
+          "projection_sha256": "d3b3fac418bee0632bb58d4c1355ec0a1f80585b94ae3718e04ae5f84602ff09"
+        },
+        {
+          "name": "_as_utc",
+          "line": 121,
+          "column": 0,
+          "end_line": 124,
+          "end_column": 41,
+          "body_sha256": "77fdc99191d83f8012fa95a3768403846d72d9de6ab5c4dea2685279e456588e",
+          "complexity": 2,
+          "projection_sha256": "cd5cc566885b8721dba1c9bd5a1bc7a6d7e2273e1a4722b5ed722210ada87bf3"
+        },
+        {
+          "name": "_track_singleton_field",
+          "line": 127,
+          "column": 0,
+          "end_line": 132,
+          "end_column": 17,
+          "body_sha256": "72a1842e0700caa68b2103930fe4319c41ec9c50e11c85f03957ad28875a935c",
+          "complexity": 3,
+          "projection_sha256": "e0ce843c26bf9d47cce875fdf7affd2b522dd162da5980f59390c5c511330e32"
+        },
+        {
+          "name": "_field_text",
+          "line": 135,
+          "column": 0,
+          "end_line": 138,
+          "end_column": 37,
+          "body_sha256": "4cd2edf7fb510afbe63529c6d7501602a6482f024689dd94a25515bf2db8fe1c",
+          "complexity": 4,
+          "projection_sha256": "0209b344c9a37a86d9efc82221cf721be2971209a6cba6f8ebe34d75fe5a4d33"
+        },
+        {
+          "name": "_validated_indexing",
+          "line": 141,
+          "column": 0,
+          "end_line": 144,
+          "end_column": 14,
+          "body_sha256": "b1015bf08cfd32ba363808b589b60369338c9b4f5db6ef6ac64c8e22dfe91326",
+          "complexity": 2,
+          "projection_sha256": "8ff455abc6a3612f457b955f88c3fc27737047fb503514130be5c872b4571b76"
+        },
+        {
+          "name": "_validated_slug",
+          "line": 147,
+          "column": 0,
+          "end_line": 152,
+          "end_column": 14,
+          "body_sha256": "5029fc0311e27348ccdd50fb639c5f98052a9dec0829e8b98d05ec7b22028acb",
+          "complexity": 4,
+          "projection_sha256": "1d2f89f016754a9fed21b604a90237cbecf1e2cb88b8fd2c26b0397358b92375"
+        },
+        {
+          "name": "_validated_modified",
+          "line": 155,
+          "column": 0,
+          "end_line": 162,
+          "end_column": 14,
+          "body_sha256": "ed473c82c1425df66efde018fdf4ad38dd4084d67e047a933fc549137a8825af",
+          "complexity": 3,
+          "projection_sha256": "57411ebc7fe63cf1e545ae4da9b9d3756134a3a4ca7feebc5466aa930420de58"
+        },
+        {
+          "name": "_validated_translation",
+          "line": 165,
+          "column": 0,
+          "end_line": 170,
+          "end_column": 14,
+          "body_sha256": "d1d748db7e42297fd5796b1c79a7fab82466d2896cdde8c55cd4b62856e23cde",
+          "complexity": 4,
+          "projection_sha256": "9d2001545b747a72858b720b839b57aac9b4cc95dddc62120946d0727762afd4"
+        },
+        {
+          "name": "_validated_author",
+          "line": 173,
+          "column": 0,
+          "end_line": 178,
+          "end_column": 14,
+          "body_sha256": "4b6b77cf6d108e890cc81ef9348d7c9a3e2e96376b984666ecd8c45c0c3d616f",
+          "complexity": 4,
+          "projection_sha256": "e415455f9ab1c4df3b7519cd3c31923e0d1ff865026bf411ab3ba0fa2912b58f"
+        },
+        {
+          "name": "_validated_image",
+          "line": 181,
+          "column": 0,
+          "end_line": 185,
+          "end_column": 14,
+          "body_sha256": "a6d28266ced4d2ac14a752fb6a269df4ecef892dd8f88761dbad2fbe7e05e2a8",
+          "complexity": 2,
+          "projection_sha256": "afa01abdaa194b9c798ddc0fbab80bc6c442dbea7e792701bd856a42c2bf99a0"
+        },
+        {
+          "name": "_validated_structured_data",
+          "line": 188,
+          "column": 0,
+          "end_line": 193,
+          "end_column": 14,
+          "body_sha256": "a4683c6bfabdc6d06fc45f7c0cfde852196a6854c89ad6c785026910dbd9fbe2",
+          "complexity": 3,
+          "projection_sha256": "749ee53388fdee5630be8fb30025736efc7208fab9b54ea276f8f7db69843d67"
+        },
+        {
+          "name": "_read_article_fields",
+          "line": 196,
+          "column": 0,
+          "end_line": 232,
+          "end_column": 5,
+          "body_sha256": "186a96c03c41cf56d4848fe20fa4a474162a1f0bbf5c01121a77ed794f28ca24",
+          "complexity": 9,
+          "projection_sha256": "3ff5e49a483e690ba614ce00e1a653f494156327ddb51a3b864aa618e3822fe3"
+        },
+        {
+          "name": "_parse_publish_at",
+          "line": 235,
+          "column": 0,
+          "end_line": 244,
+          "end_column": 56,
+          "body_sha256": "783995ac14f45109f4d7d016a5dc62acae48ee6164189544354c014f003d0ae7",
+          "complexity": 3,
+          "projection_sha256": "ea3de5a6758979d0878bb5a94f94832605ad8d1b63acad1bade11c6f90eafb60"
+        },
+        {
+          "name": "_validated_publication",
+          "line": 247,
+          "column": 0,
+          "end_line": 260,
+          "end_column": 15,
+          "body_sha256": "c2f8d74a78542703fbed6602c5dce9779cf25b5cc2953208c7b3386f2db2c3e2",
+          "complexity": 5,
+          "projection_sha256": "7fe625a620b4b4142429c8c1f7626e8248f43e3a3365f911019434d7bb4a7c33"
+        },
+        {
+          "name": "_validated_lang",
+          "line": 263,
+          "column": 0,
+          "end_line": 284,
+          "end_column": 15,
+          "body_sha256": "a863d2562b8b096f3929c22ea3c0df27ebf8896fe8039f1daa859a941d526846",
+          "complexity": 4,
+          "projection_sha256": "31920d490389e4d7ad6eb3c718a925adfbd8458e178c1238890dbbc775bfaa9a"
+        },
+        {
+          "name": "_article_slug",
+          "line": 287,
+          "column": 0,
+          "end_line": 294,
+          "end_column": 15,
+          "body_sha256": "c31d9242c9d7f525b7dc0886fc358aacd7adfbce944e31a4bdc60027a58ee45a",
+          "complexity": 4,
+          "projection_sha256": "56ce9bb3fb55a73289c08d6ed3c4a0f743e4ffe3d9143816845dd472d27e7f05"
+        },
+        {
+          "name": "parse_article_xml",
+          "line": 297,
+          "column": 0,
+          "end_line": 330,
+          "end_column": 85,
+          "body_sha256": "fa9ad0e1beba14e2b066a7e664afc302a5a68b767a0e4eb07577bcc4ccd4046a",
+          "complexity": 2,
+          "projection_sha256": "1d259b16fb3b62acf1f476d3381cc9ec1d3d996116519f6afd6c393f242d5174"
+        },
+        {
+          "name": "parse_article_source",
+          "line": 333,
+          "column": 0,
+          "end_line": 393,
+          "end_column": 5,
+          "body_sha256": "621fff0397175851baf984d9c7103ac65eecef6efce7d40c4e8a0c8119b139c3",
+          "complexity": 9,
+          "projection_sha256": "ca09919fbe813306f5760206006f6d3e254c7fb5633971ca9c244cf39235c784"
+        },
+        {
+          "name": "_directory_entries",
+          "line": 396,
+          "column": 0,
+          "end_line": 401,
+          "end_column": 67,
+          "body_sha256": "fa05e7b114202ebcaa86dd8b15dec16e1d8d6c08aecd401bbb72b9fdc81ce922",
+          "complexity": 4,
+          "projection_sha256": "192bb7801e2deda1c4f92f8481bfbff3ec65d4f60c43df3e90e00b2c0f410eeb"
+        },
+        {
+          "name": "_spool_article_paths",
+          "line": 404,
+          "column": 0,
+          "end_line": 410,
+          "end_column": 91,
+          "body_sha256": "d8560fb3ff15890ac10fdf1ef42993c5291202857f6d1534b3dbabbf1f68da41",
+          "complexity": 2,
+          "projection_sha256": "12c96f8f7cdef0b1130cabde4522a29b094f48e1059dea852482a9230907a14b"
+        },
+        {
+          "name": "_discover_article_files",
+          "line": 413,
+          "column": 0,
+          "end_line": 420,
+          "end_column": 41,
+          "body_sha256": "4c0b346c2a79c9b6ecfb60b6893406fbbad59061cfac2b2c31d61fc2968b9e67",
+          "complexity": 2,
+          "projection_sha256": "7934600f64baccda9e8514910b9534fef2e2ea656338a36f13ebd53a2cc7e26a"
+        },
+        {
+          "name": "iter_articles",
+          "line": 423,
+          "column": 0,
+          "end_line": 458,
+          "end_column": 21,
+          "body_sha256": "1450590e2255df2cadeba8b7882ce2f34fe580e52083b4dd3a0846b090fc09a3",
+          "complexity": 6,
+          "projection_sha256": "eccac3232f1823d8c717c4ddaa67f909b033b64859f4962ed2e024f9e6b8a33f"
+        }
+      ]
+    },
+    {
+      "path": "articulous/xml_contracts.py",
+      "sha256": "6c24e580bbe24373534ac6c1fec1ec0f15f201ca80d5bc4a5e1b46647f1ab658",
+      "functions": [
+        {
+          "name": "XmlElement.__iter__",
+          "line": 14,
+          "column": 4,
+          "end_line": 15,
+          "end_column": 11,
+          "body_sha256": "582e88c0fcf5f6404514e751f34b639f2cc7c0328ac46207d8319bf49dd34301",
+          "complexity": 1,
+          "projection_sha256": "b91d6a39aa51faddf9f58d99bf7a69eb480e7e8f4ddce1d385ca5d9b86433974"
+        },
+        {
+          "name": "XmlElement.__len__",
+          "line": 17,
+          "column": 4,
+          "end_line": 18,
+          "end_column": 11,
+          "body_sha256": "5c000705363b8ee1c16028bb608ebe5fb59bc64f53fab8aa2486022a9ca514b2",
+          "complexity": 1,
+          "projection_sha256": "5c28725857a6e67c0a61b40a4ffb3a11f1e71c3fb4115791d1d895f6e5329748"
+        },
+        {
+          "name": "XmlElement.iter",
+          "line": 20,
+          "column": 4,
+          "end_line": 21,
+          "end_column": 11,
+          "body_sha256": "1aaa0773160ece7fc766c5e5b800ca89691ab31f24072e21dd99b0e353260275",
+          "complexity": 1,
+          "projection_sha256": "b91d6a39aa51faddf9f58d99bf7a69eb480e7e8f4ddce1d385ca5d9b86433974"
+        },
+        {
+          "name": "XmlElement.get",
+          "line": 23,
+          "column": 4,
+          "end_line": 24,
+          "end_column": 11,
+          "body_sha256": "adeef5197045c6735dfb93d691faefe076fc8b5491f20de1a24646df38860fc6",
+          "complexity": 1,
+          "projection_sha256": "11a2343537e02bd2a0ab76f99a0d0a8c9b05d85bbc51a692ebea8d5837ace20d"
+        },
+        {
+          "name": "XmlElement.set",
+          "line": 26,
+          "column": 4,
+          "end_line": 27,
+          "end_column": 11,
+          "body_sha256": "c35b7f4f4c420990af4146fa89933e690a4f892cb0ed2eca4ebcc63257a935b1",
+          "complexity": 1,
+          "projection_sha256": "d62ccebcdc4ddbd82f79fd79cac29274cd0893d98bdca35c06e3518a7ea10c51"
+        },
+        {
+          "name": "XmlElement.find",
+          "line": 29,
+          "column": 4,
+          "end_line": 30,
+          "end_column": 11,
+          "body_sha256": "419c973f7b46e94a9e35b79b79ca8eee4a1b2074fd7114b45d413b1a7790aeb1",
+          "complexity": 1,
+          "projection_sha256": "2c33bba07d66c4bbfadd96719ad05c5c384664c535d5e6e230ffe45980c794e8"
+        },
+        {
+          "name": "XmlElement.findtext",
+          "line": 32,
+          "column": 4,
+          "end_line": 33,
+          "end_column": 11,
+          "body_sha256": "1c1c861f781d090eff00ad56fe7b7d6010c8b4a44597184314bbd5ebcfc38cd6",
+          "complexity": 1,
+          "projection_sha256": "6c8502e6ffbe87675e9dd22566b50b44f4377e5fa8fe4ac28e14ace490e97fff"
+        },
+        {
+          "name": "XmlSource.__post_init__",
+          "line": 49,
+          "column": 4,
+          "end_line": 55,
+          "end_column": 84,
+          "body_sha256": "48534dc5c7d2c9ac2cdd3189f51d82fc619270f55677fcf93cd5af556354eb75",
+          "complexity": 7,
+          "projection_sha256": "f572524b769a1a2e9e3a7539aa2a226ddbb6316c2982750b12bc1bd43c8e7b6b"
+        }
+      ]
+    },
+    {
+      "path": "articulous/xml_sources.py",
+      "sha256": "84ce2d4873e58940fddc686b9b1540948ab89a691dbc933b036decd595e87014",
+      "functions": [
+        {
+          "name": "read_source",
+          "line": 9,
+          "column": 0,
+          "end_line": 15,
+          "end_column": 56,
+          "body_sha256": "0f984b2e7a7f0fa3b5640e04f4acd8408dd7ae3969c4d57cf30238f531708c37",
+          "complexity": 1,
+          "projection_sha256": "29d8831b80ebb253aa85b31842e3f6e73a9ebe3ed58e2356e008c43bed438166"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_article_source_view.py",
+      "sha256": "7861431c09d2902d053f154646bd70e492df6fe260e78e372301c8880b989fb9",
+      "functions": [
+        {
+          "name": "test_build038_parse_once_and_keep_original_bytes",
+          "line": 8,
+          "column": 0,
+          "end_line": 21,
+          "end_column": 40,
+          "body_sha256": "339cca5251ef1de94ce0ff4dd7a2374a0e5f5b1a0c78ebd0a1d3fa1b74b238e8",
+          "complexity": 1,
+          "projection_sha256": "e9ed66b20d9ee277f517fc4043304cc726c8c3fa8f50a1fefe81685c72ab3594"
+        },
+        {
+          "name": "test_build038_invalid_source_contracts_reject_before_metadata",
+          "line": 24,
+          "column": 0,
+          "end_line": 38,
+          "end_column": 59,
+          "body_sha256": "14c46c97e65e87b501311f9d3e59e11788e0482d1f68008a54f6b7d3899911fa",
+          "complexity": 3,
+          "projection_sha256": "63e8e3f484b9425f2d9a1eb1feb8e2a372deef0c78e7bd7bb6d9cb2b9ea9c907"
+        },
+        {
+          "name": "test_build038_reader_preserves_safe_xml_and_regular_file_admission",
+          "line": 41,
+          "column": 0,
+          "end_line": 52,
+          "end_column": 25,
+          "body_sha256": "5c7d7ec26fc1930c800e367908c212a4c4fac2e79fc791858252b9839db95a4e",
+          "complexity": 1,
+          "projection_sha256": "4a8cd9084e08bfe1f70f89804b5430efad3acc07f91723331d5515fd17c7f515"
+        }
+      ]
+    }
+  ],
+  "adapter_sha256": "993026278588bdbc60d7ba2be71f640121ef5067de585dc2ad501fc46eb71d21"
+}

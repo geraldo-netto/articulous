@@ -23,7 +23,8 @@ from lxml import etree  # type: ignore[attr-defined]
 
 from .article_contracts import PublicationPolicy, PublicationState, _PUBLICATION_POLICIES
 from .slugs import normalize_slug
-from .engines import safe_xml_parser
+from .xml_sources import read_source
+from .xml_contracts import XmlSource
 from .filesystem import open_regular_file
 from .sections import validate_image_url
 
@@ -320,14 +321,22 @@ def parse_article_xml(
         </article>
     """
     try:
-        with open_regular_file(path) as source:
-            content = source.read()
-        base_uri = path.resolve().as_uri()
-        root = etree.fromstring(content, parser=safe_xml_parser(), base_url=base_uri)
+        source = read_source(path)
     except (etree.XMLSyntaxError, OSError, ValueError):
         logging.exception(f"Failed to parse XML: {path}")
         return None
 
+    return parse_article_source(path, source, default_lang=default_lang,
+                                url_builder=url_builder, allowed_langs=allowed_langs)
+
+
+def parse_article_source(path: Path, source: XmlSource, *, default_lang: str = "en",
+                         url_builder: Optional[Callable[[str, str], str]] = None,
+                         allowed_langs: Optional[frozenset] = None) -> Optional[Article]:
+    """Admit metadata from a matching, unedited caller-owned captured XML view."""
+    if not isinstance(path, Path) or not isinstance(source, XmlSource):
+        raise TypeError('Article admission requires a Path and XmlSource')
+    root = source.root
     if root.tag != "article":
         logging.warning(
             f"Article {path} has root tag {root.tag!r}, expected 'article' — skipping"
@@ -372,8 +381,8 @@ def parse_article_xml(
         source_path=path,
         url=url,
         publication=publication,
-        source_xml=content,
-        source_base_uri=base_uri,
+        source_xml=source.content,
+        source_base_uri=source.base_uri,
         indexing=fields["indexing"],
         modified=fields["modified"],
         translation=fields["translation"],

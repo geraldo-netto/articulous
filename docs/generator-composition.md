@@ -543,8 +543,11 @@ size/quality thresholds. `backends.imagemagick.ImageMagick` adapts installed
 owns one private scratch workspace until exhaustion/close. Consumers that can
 stop early must close it, including on cancellation. Each conversion settles
 before its result is yielded; apply mode atomically replaces a source only if
-the result is smaller and its captured file identity, metadata and content still
-match. Changed, deleted, replaced and symlink sources are rejected. The final
+the result is smaller and its captured file identity, mutation metadata and content
+still match. `ImageGeneration` retains device/inode, mode, link count, ownership,
+size and nanosecond modification/change times. Read-access time is excluded:
+ordinary fingerprint reads may update it without changing the source. Changed,
+deleted, replaced and symlink sources are rejected. The final
 check and replacement hold the persistent sibling `.<filename>.articulous.lock`
 via `resource_locks.resource_lock`; cooperating writers must acquire that same
 lock and leave its inode in place. Callers must exclude uncooperative writers

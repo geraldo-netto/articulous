@@ -17,6 +17,19 @@ def validate_options(largest, quality, threshold=0):
 
 
 @dataclass(frozen=True)
+class ImageGeneration:
+    device: int
+    inode: int
+    mode: int
+    links: int
+    uid: int
+    gid: int
+    size: int
+    modified_ns: int
+    changed_ns: int
+
+
+@dataclass(frozen=True)
 class ImageResult:
     path: Path
     width: int

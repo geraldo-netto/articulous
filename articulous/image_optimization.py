@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import stat
 
-from .image_contracts import ImageBackend, ImageResult, KINDS, validate_options
+from .image_contracts import ImageBackend, ImageGeneration, ImageResult, KINDS, validate_options
 from .source_files import replace_file
 from .source_transactions import fingerprint
 from .resource_locks import resource_lock
@@ -19,7 +19,9 @@ def image_generation(path):
     metadata = path.lstat()
     if not stat.S_ISREG(metadata.st_mode):
         raise ValueError(f'Image source must be a regular file: {path}')
-    return metadata, metadata.st_mtime_ns, metadata.st_ctime_ns
+    return ImageGeneration(metadata.st_dev, metadata.st_ino, metadata.st_mode,
+                           metadata.st_nlink, metadata.st_uid, metadata.st_gid,
+                           metadata.st_size, metadata.st_mtime_ns, metadata.st_ctime_ns)
 
 
 def require_image(path, generation, digest):
@@ -52,7 +54,7 @@ def optimize(root: Path, backend: ImageBackend, *, largest: int, quality: int,
             target = temporary / path.name
             backend.shrink(path, target, largest, quality)
             require_image(path, generation, digest)
-            old, new = generation[0].st_size, target.stat().st_size
+            old, new = generation.size, target.stat().st_size
             if new < old and apply:
                 apply_image(path, target, generation, digest)
             yield ImageResult(path, width, height, old, min(old, new))

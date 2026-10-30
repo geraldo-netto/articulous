@@ -1,0 +1,285 @@
+{
+  "analyzer": "Lizard",
+  "version": "1.23.0",
+  "calibration": [
+    {
+      "name": "straight",
+      "source": "def f():\n return 1\n",
+      "expected": [
+        1
+      ],
+      "actual": [
+        1
+      ]
+    },
+    {
+      "name": "choices",
+      "source": "def f(a,b,c):\n if a and b or c:\n  return 1\n return 0\n",
+      "expected": [
+        4
+      ],
+      "actual": [
+        4
+      ]
+    },
+    {
+      "name": "nested",
+      "source": "def outer():\n def inner(x):\n  return 1 if x else 2\n return inner\n",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "lambda",
+      "source": "def outer():\n return lambda x: 1 if x else 2\n",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "definition-input",
+      "source": "def outer(x):\n def inner(y=1 if x else 2):\n  return y\n return inner\n",
+      "expected": [
+        2,
+        2
+      ],
+      "actual": [
+        2,
+        2
+      ]
+    },
+    {
+      "name": "header",
+      "source": "@(first if flag else second)\ndef f(value=1 if flag else 2):\n return value\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "format-string",
+      "source": "def f(x):\n return f\"{1 if x else 2:{3 if x else 4}}\"\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "annotations",
+      "source": "def f(x: 1 if flag else 2) -> (3 if flag else 4):\n return x\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "comprehension",
+      "source": "def f(xs):\n return [x for x in xs if x]\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "exceptions",
+      "source": "def f():\n try:\n  return 1\n except ValueError:\n  return 2\n finally:\n  pass\n",
+      "expected": [
+        3
+      ],
+      "actual": [
+        3
+      ]
+    },
+    {
+      "name": "async",
+      "source": "async def f(x):\n if x:\n  await x\n",
+      "expected": [
+        2
+      ],
+      "actual": [
+        2
+      ]
+    },
+    {
+      "name": "syntax-boundary",
+      "source": "def f():\n class C:\n  def m(self): return \"if or while\"\n return C\n",
+      "expected": [
+        1,
+        1
+      ],
+      "actual": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "threshold-boundary",
+      "source": "def f(xs):\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n",
+      "expected": [
+        9
+      ],
+      "actual": [
+        9
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "articulous/image_contracts.py",
+      "sha256": "acf2dba6f32e22133337b61f479811673b61a809bda47c8c1bf51daa084db616",
+      "functions": [
+        {
+          "name": "validate_options",
+          "line": 10,
+          "column": 0,
+          "end_line": 16,
+          "end_column": 69,
+          "body_sha256": "0dfbc851a712c12ff903a928335b3a8cf93f2f9b476dea2f51da7f7e3834dc1c",
+          "complexity": 7,
+          "projection_sha256": "69c9be08cb146eef60e8da05ad826548a23d8ca7ec888b18eca0d7c83958209f"
+        },
+        {
+          "name": "ImageBackend.dimensions",
+          "line": 42,
+          "column": 4,
+          "end_line": 43,
+          "end_column": 11,
+          "body_sha256": "aef5c0d950e4aa13bea436e309fba4c85e8136ac95a1205954b8521924f2eeba",
+          "complexity": 1,
+          "projection_sha256": "ff7daba7cc01c9db6f0912b77a4439cef66c88aef37f3de8ab16763a68e24f91"
+        },
+        {
+          "name": "ImageBackend.shrink",
+          "line": 45,
+          "column": 4,
+          "end_line": 46,
+          "end_column": 11,
+          "body_sha256": "4caa659716cb8a20e9594ef1b6711cb0f9d2057b579ffb949c7e9ce94dfb41ba",
+          "complexity": 1,
+          "projection_sha256": "e50a29ee2c3039b0765cfe8d081098e2217ffbf7ab32288a132de89835fe02d0"
+        },
+        {
+          "name": "ImageBackend.workspace",
+          "line": 48,
+          "column": 4,
+          "end_line": 49,
+          "end_column": 11,
+          "body_sha256": "fb8f686aa74f691fd66904a0f711ac3372e8cce62ca03b777a184cf7fc317f9d",
+          "complexity": 1,
+          "projection_sha256": "11b52b165d1a4d044b9914666c739c796283032d1ccaa499cb4f466294f56299"
+        }
+      ]
+    },
+    {
+      "path": "articulous/image_optimization.py",
+      "sha256": "e712e6dc11cec2f0da416d705b34a57de2a2f7867da7d8aba7e4e556c3895093",
+      "functions": [
+        {
+          "name": "candidates",
+          "line": 12,
+          "column": 0,
+          "end_line": 15,
+          "end_column": 22,
+          "body_sha256": "48823cc2f8a1489f5dcba9935c1332b2b0034a1ffa5f49983eafe790d589a5f6",
+          "complexity": 5,
+          "projection_sha256": "78344e0a14a9ec80a8856a1121a6a186de924eb5c75e13b831d34f5c2fe72b90"
+        },
+        {
+          "name": "image_generation",
+          "line": 18,
+          "column": 0,
+          "end_line": 24,
+          "end_column": 88,
+          "body_sha256": "8d16bd61979f71b9cabf0fdf48668e48ac8e7f1bf927885e2d0ae976d214abef",
+          "complexity": 2,
+          "projection_sha256": "142c5ce12ec2c896c8741f51bae03c72e5731320b60873661fe6eb322406c45e"
+        },
+        {
+          "name": "require_image",
+          "line": 27,
+          "column": 0,
+          "end_line": 34,
+          "end_column": 77,
+          "body_sha256": "3df8838330144c7282d8ade8b0ebd0418108bc1ad4c51914fc9d0ace28b232d1",
+          "complexity": 5,
+          "projection_sha256": "58624ab8da2e13d61c977f63c5d31d54e08f1a6116d3a7cb5a0a4dfa3dcb5057"
+        },
+        {
+          "name": "apply_image",
+          "line": 37,
+          "column": 0,
+          "end_line": 42,
+          "end_column": 43,
+          "body_sha256": "542645deb853d19fe5bfd96511f58a57699b31a39d275380b7521ad9e7839402",
+          "complexity": 1,
+          "projection_sha256": "2bee46b2cafd440c2c57a1983e2ee04e5051269b621da25b2327385851f08aef"
+        },
+        {
+          "name": "apply_image.write_optimized",
+          "line": 39,
+          "column": 8,
+          "end_line": 41,
+          "end_column": 51,
+          "body_sha256": "77208a9cf01ed294dc45d52027cd669c19f184cdf89d62d616090877d350f0f9",
+          "complexity": 1,
+          "projection_sha256": "0062833cf79a65f911acc0ead4180cfec8dc2512d18ef02eff2184179988f60d"
+        },
+        {
+          "name": "optimize",
+          "line": 45,
+          "column": 0,
+          "end_line": 60,
+          "end_column": 70,
+          "body_sha256": "9a17e3b16dd1f50faba05264a59a06a0f9da52ce0ab7825150a881ace8435aaa",
+          "complexity": 4,
+          "projection_sha256": "1e35471f2aa0ccfb9ad22c7fe74623e51a2d4538842a7a81c46c92c0048fa3fd"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_image_read_identity.py",
+      "sha256": "33deb915192d956aa705b03c683b53482745c3f45ebcbc15b72841c6fe90eaa5",
+      "functions": [
+        {
+          "name": "test_build040_native_read_access_time_is_not_mutation",
+          "line": 8,
+          "column": 0,
+          "end_line": 19,
+          "end_column": 43,
+          "body_sha256": "6ae5257f4ddba1fae80cdefcf51bc0f9f6ec5d0c186daf1402a6420a8400b52d",
+          "complexity": 1,
+          "projection_sha256": "d5b5c08f3eb4c785112eb354840a7fe1bbfdea1ccab4e9c6fedd69bfce926d9e"
+        },
+        {
+          "name": "test_build040_same_bytes_replacement_still_rejects",
+          "line": 22,
+          "column": 0,
+          "end_line": 31,
+          "end_column": 47,
+          "body_sha256": "cd80a4a2f6ba5068b0761419e37808795d4537fc83f9bbe4e0d5141fcc506afb",
+          "complexity": 1,
+          "projection_sha256": "143f8ead7e42e63b9f226deac3a040cc849ff15dfa1dfbd7dd1f92366a947fdd"
+        }
+      ]
+    }
+  ],
+  "adapter_sha256": "993026278588bdbc60d7ba2be71f640121ef5067de585dc2ad501fc46eb71d21"
+}

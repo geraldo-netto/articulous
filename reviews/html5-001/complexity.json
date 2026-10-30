@@ -1,0 +1,240 @@
+{
+  "tool": "Lizard",
+  "version": "1.23.0",
+  "metric": "Python cyclomatic complexity; branch/boolean decisions; complete native inventory independently matched against AST",
+  "functions": [
+    {
+      "repository": "articulous",
+      "file": "articulous/backends/lxml_output.py",
+      "function": "automatic_html",
+      "line": 13,
+      "complexity": 3,
+      "sha256": "5fe707dc8e1805d04ef836219a9b0530da1138e77a235c7160a40ff761505573"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/backends/lxml_output.py",
+      "function": "serialized_result",
+      "line": 20,
+      "complexity": 6,
+      "sha256": "5fe707dc8e1805d04ef836219a9b0530da1138e77a235c7160a40ff761505573"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/engines.py",
+      "function": "_explicit_output_method",
+      "line": 332,
+      "complexity": 3,
+      "sha256": "311db5d38f6f397af932ff32ec0cf81dddb972ccc4de97f621b611c66bb89b0a"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/engines.py",
+      "function": "cache_identity",
+      "line": 349,
+      "complexity": 1,
+      "sha256": "311db5d38f6f397af932ff32ec0cf81dddb972ccc4de97f621b611c66bb89b0a"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/engines.py",
+      "function": "_compiled_stylesheet",
+      "line": 359,
+      "complexity": 2,
+      "sha256": "311db5d38f6f397af932ff32ec0cf81dddb972ccc4de97f621b611c66bb89b0a"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/engines.py",
+      "function": "_do_transform",
+      "line": 373,
+      "complexity": 5,
+      "sha256": "311db5d38f6f397af932ff32ec0cf81dddb972ccc4de97f621b611c66bb89b0a"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "child_context",
+      "line": 15,
+      "complexity": 9,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "html5_void_ends",
+      "line": 78,
+      "complexity": 3,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "__init__",
+      "line": 28,
+      "complexity": 2,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "namespace",
+      "line": 36,
+      "complexity": 6,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "handle_starttag",
+      "line": 44,
+      "complexity": 4,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "admit_text_mode",
+      "line": 53,
+      "complexity": 4,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "handle_startendtag",
+      "line": 61,
+      "complexity": 2,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "articulous/html_serialization.py",
+      "function": "handle_endtag",
+      "line": 67,
+      "complexity": 6,
+      "sha256": "bc0a5b3fdf68058875db253cd5f154904a4f98926d634401a3d7d7aaa61e91c0"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "render",
+      "line": 7,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_native_void_elements_have_no_end_tag",
+      "line": 18,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_encoding_and_non_ascii_content_survive",
+      "line": 26,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_other_output_methods_stay_exact",
+      "line": 37,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_literal_text_comments_and_foreign_elements_survive",
+      "line": 45,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_implicit_html_method_and_cache_identity",
+      "line": 63,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_non_html_implicit_output_stays_native",
+      "line": 71,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_explicit_dependency_method_prevents_html_inference",
+      "line": 78,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_serialization_failure_keeps_prior_output",
+      "line": 91,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html5_serialization.py",
+      "function": "test_html5_001_serialization_failure_keeps_prior_output.rejected",
+      "line": 98,
+      "complexity": 1,
+      "sha256": "814764eafaba8eaa816614fc33f208189ca18a4683edea0d836cab75816ea404"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html_serialization.py",
+      "function": "test_html5_001_projection_rejects_non_text",
+      "line": 8,
+      "complexity": 1,
+      "sha256": "a494e2779a652c2906610c5f244ad154eb0068eb30e25318942f46adc3fe1db5"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html_serialization.py",
+      "function": "test_html5_001_context_and_boundary_controls",
+      "line": 30,
+      "complexity": 1,
+      "sha256": "a494e2779a652c2906610c5f244ad154eb0068eb30e25318942f46adc3fe1db5"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html_serialization.py",
+      "function": "test_html5_001_raw_context_does_not_lose_literal_end_tags",
+      "line": 35,
+      "complexity": 1,
+      "sha256": "a494e2779a652c2906610c5f244ad154eb0068eb30e25318942f46adc3fe1db5"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html_serialization.py",
+      "function": "test_html5_001_bounded_unicode_whitespace_and_literal_interleavings",
+      "line": 40,
+      "complexity": 3,
+      "sha256": "a494e2779a652c2906610c5f244ad154eb0068eb30e25318942f46adc3fe1db5"
+    },
+    {
+      "repository": "articulous",
+      "file": "tests/test_html_serialization.py",
+      "function": "test_html5_001_late_callbacks_after_plaintext_cannot_change_output",
+      "line": 54,
+      "complexity": 1,
+      "sha256": "a494e2779a652c2906610c5f244ad154eb0068eb30e25318942f46adc3fe1db5"
+    }
+  ],
+  "violations": []
+}

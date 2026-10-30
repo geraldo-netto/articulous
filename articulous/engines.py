@@ -29,6 +29,7 @@ from lxml import etree  # type: ignore[attr-defined]
 
 from .filesystem import StagedOutput, atomic_output, open_regular_file, validate_output_path
 from .backends.saxon import run_transform_command
+from .backends.lxml_output import serialized_result
 from .native_workspace import native_workspace
 from .sections import REQUIRED_XSL_FILES, SECTION_XSL
 from .configuration_contracts import VALID_ENGINES, valid_engine_name
@@ -328,6 +329,15 @@ class _DeferredEngine(XsltEngine):
                          xml_base_uri=xml_base_uri, parameters=parameters)
 
 
+def _explicit_output_method(snapshot):
+    for _, content in snapshot.documents:
+        root = etree.fromstring(content, parser=safe_xml_parser())
+        if root.xpath('/xsl:stylesheet/xsl:output[@method] | /xsl:transform/xsl:output[@method]',
+                      namespaces=_XSL_NAMESPACE):
+            return True
+    return False
+
+
 class LxmlEngine(XsltEngine):
     name = "lxml"
 
@@ -337,7 +347,7 @@ class LxmlEngine(XsltEngine):
 
     @property
     def cache_identity(self) -> str:
-        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v2"
+        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v3"
 
     def _stylesheet_cache(self) -> dict:
         cache = getattr(self._thread_local, "stylesheets", None)
@@ -353,10 +363,11 @@ class LxmlEngine(XsltEngine):
         if key not in cache:
             parser = safe_xml_parser()
             parser.resolvers.add(_SnapshotResolver(snapshot))
-            cache[key] = etree.XSLT(
+            transform = etree.XSLT(
                 etree.fromstring(snapshot.documents[0][1], parser=parser, base_url=snapshot.root_uri),
                 access_control=safe_xslt_access_control(),
             )
+            cache[key] = transform, _explicit_output_method(snapshot)
         return cache[key]
 
     def _do_transform(
@@ -370,7 +381,7 @@ class LxmlEngine(XsltEngine):
                 dom = etree.fromstring(xml_input, parser=parser, base_url=xml_base_uri)
             else:
                 dom = etree.parse(str(xml_input), parser=parser)
-            xslt = self._compiled_stylesheet(
+            xslt, explicit_method = self._compiled_stylesheet(
                 xsl_path, stylesheet_fingerprint,
             )
             result = xslt(dom, **{key: etree.XSLT.strparam(value) for key, value in (parameters or {}).items()})
@@ -378,7 +389,7 @@ class LxmlEngine(XsltEngine):
             logging.exception("lxml transform failed")
             raise
         with atomic_output(output_path, generated=True) as staged:
-            staged.write_bytes(bytes(result))
+            staged.write_bytes(serialized_result(result, infer_html=not explicit_method))
 
 
 def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:

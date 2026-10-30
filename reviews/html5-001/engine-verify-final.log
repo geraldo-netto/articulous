@@ -1,0 +1,137 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+............................................. [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+.................................................................... [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+....................................................................... [ 70%]
+........................................................................ [ 73%]
+.........................................ssssssssssssssss............... [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+......................................................................................................... [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+.....................................                                    [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.15-final-0 _______________
+
+Name                                        Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------------------
+articulous/__init__.py                          0      0      0      0   100%
+articulous/article_contracts.py                26      0      4      0   100%
+articulous/articles.py                        244      0     78      0   100%
+articulous/backends/__init__.py                10      0      2      0   100%
+articulous/backends/browser_fence.py          101      0     40      0   100%
+articulous/backends/imagemagick.py             36      0      4      0   100%
+articulous/backends/locking.py                 15      0      4      0   100%
+articulous/backends/lxml_output.py             15      0      6      0   100%
+articulous/backends/pidfds.py                  31      0      6      0   100%
+articulous/backends/posix.py                  184      0     52      0   100%
+articulous/backends/processes.py              268      0     72      0   100%
+articulous/backends/recovery.py               123      0     38      0   100%
+articulous/backends/saxon.py                    9      0      0      0   100%
+articulous/backends/translation_http.py        31      0      2      0   100%
+articulous/backends/xpath.py                   81      0     16      0   100%
+articulous/browser_process.py                  67      0     14      0   100%
+articulous/build_contracts.py                  65      0     10      0   100%
+articulous/builds.py                          320      0     64      0   100%
+articulous/capture_adapter.py                  79      0     14      0   100%
+articulous/catalogue.py                        65      0     22      0   100%
+articulous/cli.py                              85      0     14      0   100%
+articulous/complexity_contracts.py             50      0     22      0   100%
+articulous/complexity_gate.py                 176      0     68      0   100%
+articulous/complexity_native.py               113      0     46      0   100%
+articulous/complexity_python.py               139      0     42      0   100%
+articulous/complexity_xpath.py                 37      0     12      0   100%
+articulous/complexity_xslt.py                 161      0     80      0   100%
+articulous/complexity_xslt_calibration.py      39      0     20      0   100%
+articulous/complexity_xslt_contracts.py        30      0      4      0   100%
+articulous/composition.py                      76      0     12      0   100%
+articulous/composition_contracts.py            71      0     26      0   100%
+articulous/config.py                          233      0     86      0   100%
+articulous/configuration_contracts.py         132      0     24      0   100%
+articulous/coverage_gate.py                    91      0     36      0   100%
+articulous/engines.py                         356      0     90      0   100%
+articulous/extensions.py                       57      0      8      0   100%
+articulous/filesystem.py                      299      0     62      0   100%
+articulous/html_serialization.py               72      0     34      0   100%
+articulous/image_contracts.py                  23      0      6      0   100%
+articulous/image_optimization.py               44      0     12      0   100%
+articulous/locale_data.py                       3      0      0      0   100%
+articulous/lock_contracts.py                   11      0      0      0   100%
+articulous/markup.py                          162      0     76      0   100%
+articulous/markup_contracts.py                 23      0      0      0   100%
+articulous/migrations.py                       45      0     16      0   100%
+articulous/models.py                          174      0     44      0   100%
+articulous/native_workspace.py                 29      0      2      0   100%
+articulous/output_metrics.py                   84      0     32      0   100%
+articulous/ownership.py                       120      0     38      0   100%
+articulous/pipeline.py                       1145      0    410      0   100%
+articulous/preview.py                         127      0     26      0   100%
+articulous/process_contracts.py                34      0      6      0   100%
+articulous/publication.py                      41      0      8      0   100%
+articulous/publication_adapter.py              27      0      0      0   100%
+articulous/publication_contracts.py            30      0      0      0   100%
+articulous/publication_paths.py                11      0      4      0   100%
+articulous/recovery_contracts.py               67      0     32      0   100%
+articulous/resource_contracts.py                5      0      0      0   100%
+articulous/resource_locks.py                   16      0      4      0   100%
+articulous/runtime.py                         142      0     48      0   100%
+articulous/sections.py                        123      0     52      0   100%
+articulous/site_validation.py                 168      0     80      0   100%
+articulous/sitemaps.py                         79      0     22      0   100%
+articulous/slugs.py                             6      0      0      0   100%
+articulous/source_files.py                     29      0      4      0   100%
+articulous/source_transactions.py             156      0     48      0   100%
+articulous/structured_data.py                  10      0      4      0   100%
+articulous/taxonomy_completeness.py            59      0     30      0   100%
+articulous/taxonomy_contracts.py               18      0      0      0   100%
+articulous/taxonomy_editing.py                 89      0     38      0   100%
+articulous/taxonomy_policy.py                  49      0     26      0   100%
+articulous/taxonomy_reports.py                 50      0     28      0   100%
+articulous/theme_resources.py                  15      0      0      0   100%
+articulous/tooling_resources.py                 5      0      0      0   100%
+articulous/transform_contracts.py              41      0     12      0   100%
+articulous/translation_cache.py                19      0      0      0   100%
+articulous/translation_client.py               75      0     20      0   100%
+articulous/translation_contracts.py            33      0      0      0   100%
+articulous/translation_jobs.py                 64      0     38      0   100%
+articulous/translation_xml.py                 111      0     54      0   100%
+articulous/translations.py                     69      0     18      0   100%
+articulous/validation_contracts.py             20      0      0      0   100%
+---------------------------------------------------------------------------------------
+TOTAL                                        7638      0   2372      0   100%
+Coverage JSON written to file coverage.json
+Required test coverage of 100% reached. Total coverage: 100.00%
+3190 passed, 16 skipped, 359 subtests passed in 101.11s (0:01:41)

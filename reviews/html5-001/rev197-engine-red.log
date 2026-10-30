@@ -1,0 +1,221 @@
+FFFFFFFFFF..FF                                                           [100%]
+=================================== FAILURES ===================================
+_________ test_html5_001_native_void_elements_have_no_end_tag[source] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_native_void_ele0')
+tag = 'source'
+
+    @pytest.mark.parametrize('tag', ['source', 'track', 'wbr', 'embed', 'SOURCE'])
+    def test_html5_001_native_void_elements_have_no_end_tag(tmp_path, tag):
+        output = render(tmp_path, f'<html><body><{tag} title="é"/><p>after</p></body></html>')
+>       assert f'</{tag}>'.encode() not in output
+E       assert b'</source>' not in b'<html><body>\n<source title="\xc3\xa9"></source><p>after</p>\n</body></html>\n'
+E        +  where b'</source>' = <built-in method encode of str object at 0x770b4cfac430>()
+E        +    where <built-in method encode of str object at 0x770b4cfac430> = '</source>'.encode
+
+tests/test_html5_serialization.py:20: AssertionError
+__________ test_html5_001_native_void_elements_have_no_end_tag[track] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_native_void_ele1')
+tag = 'track'
+
+    @pytest.mark.parametrize('tag', ['source', 'track', 'wbr', 'embed', 'SOURCE'])
+    def test_html5_001_native_void_elements_have_no_end_tag(tmp_path, tag):
+        output = render(tmp_path, f'<html><body><{tag} title="é"/><p>after</p></body></html>')
+>       assert f'</{tag}>'.encode() not in output
+E       assert b'</track>' not in b'<html><body>\n<track title="\xc3\xa9"></track><p>after</p>\n</body></html>\n'
+E        +  where b'</track>' = <built-in method encode of str object at 0x770b4cfb6f30>()
+E        +    where <built-in method encode of str object at 0x770b4cfb6f30> = '</track>'.encode
+
+tests/test_html5_serialization.py:20: AssertionError
+___________ test_html5_001_native_void_elements_have_no_end_tag[wbr] ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_native_void_ele2')
+tag = 'wbr'
+
+    @pytest.mark.parametrize('tag', ['source', 'track', 'wbr', 'embed', 'SOURCE'])
+    def test_html5_001_native_void_elements_have_no_end_tag(tmp_path, tag):
+        output = render(tmp_path, f'<html><body><{tag} title="é"/><p>after</p></body></html>')
+>       assert f'</{tag}>'.encode() not in output
+E       assert b'</wbr>' not in b'<html><body>\n<wbr title="\xc3\xa9"></wbr><p>after</p>\n</body></html>\n'
+E        +  where b'</wbr>' = <built-in method encode of str object at 0x770b4cfad970>()
+E        +    where <built-in method encode of str object at 0x770b4cfad970> = '</wbr>'.encode
+
+tests/test_html5_serialization.py:20: AssertionError
+__________ test_html5_001_native_void_elements_have_no_end_tag[embed] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_native_void_ele3')
+tag = 'embed'
+
+    @pytest.mark.parametrize('tag', ['source', 'track', 'wbr', 'embed', 'SOURCE'])
+    def test_html5_001_native_void_elements_have_no_end_tag(tmp_path, tag):
+        output = render(tmp_path, f'<html><body><{tag} title="é"/><p>after</p></body></html>')
+>       assert f'</{tag}>'.encode() not in output
+E       assert b'</embed>' not in b'<html><body>\n<embed title="\xc3\xa9"></embed><p>after</p>\n</body></html>\n'
+E        +  where b'</embed>' = <built-in method encode of str object at 0x770b4cf6cdf0>()
+E        +    where <built-in method encode of str object at 0x770b4cf6cdf0> = '</embed>'.encode
+
+tests/test_html5_serialization.py:20: AssertionError
+_________ test_html5_001_native_void_elements_have_no_end_tag[SOURCE] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_native_void_ele4')
+tag = 'SOURCE'
+
+    @pytest.mark.parametrize('tag', ['source', 'track', 'wbr', 'embed', 'SOURCE'])
+    def test_html5_001_native_void_elements_have_no_end_tag(tmp_path, tag):
+        output = render(tmp_path, f'<html><body><{tag} title="é"/><p>after</p></body></html>')
+>       assert f'</{tag}>'.encode() not in output
+E       assert b'</SOURCE>' not in b'<html><body>\n<SOURCE title="\xc3\xa9"></SOURCE><p>after</p>\n</body></html>\n'
+E        +  where b'</SOURCE>' = <built-in method encode of str object at 0x770b4cf9cc70>()
+E        +    where <built-in method encode of str object at 0x770b4cf9cc70> = '</SOURCE>'.encode
+
+tests/test_html5_serialization.py:20: AssertionError
+_________ test_html5_001_encoding_and_non_ascii_content_survive[UTF-8] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_encoding_and_no0')
+encoding = 'UTF-8'
+
+    @pytest.mark.parametrize('encoding', ['UTF-8', 'ISO-8859-1', 'UTF-16', 'UTF-16BE', 'UTF-32'])
+    def test_html5_001_encoding_and_non_ascii_content_survive(tmp_path, encoding):
+        output = render(tmp_path, '<html><body><source/><p>ação — è</p></body></html>',
+                        f'method="html" encoding="{encoding}"')
+        decoded = output.decode(encoding)
+>       assert '</source>' not in decoded
+E       AssertionError: assert '</source>' not in '<html><body...dy></html>\n'
+E         
+E         '</source>' is contained here:
+E           <html><body>
+E           <source></source><p>ação — è</p>
+E         ?  +++++++++
+E           </body></html>
+
+tests/test_html5_serialization.py:30: AssertionError
+______ test_html5_001_encoding_and_non_ascii_content_survive[ISO-8859-1] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_encoding_and_no1')
+encoding = 'ISO-8859-1'
+
+    @pytest.mark.parametrize('encoding', ['UTF-8', 'ISO-8859-1', 'UTF-16', 'UTF-16BE', 'UTF-32'])
+    def test_html5_001_encoding_and_non_ascii_content_survive(tmp_path, encoding):
+        output = render(tmp_path, '<html><body><source/><p>ação — è</p></body></html>',
+                        f'method="html" encoding="{encoding}"')
+        decoded = output.decode(encoding)
+>       assert '</source>' not in decoded
+E       AssertionError: assert '</source>' not in '<html><body...dy></html>\n'
+E         
+E         '</source>' is contained here:
+E           <html><body>
+E           <source></source><p>ação &#8212; è</p>
+E         ?  +++++++++
+E           </body></html>
+
+tests/test_html5_serialization.py:30: AssertionError
+________ test_html5_001_encoding_and_non_ascii_content_survive[UTF-16] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_encoding_and_no2')
+encoding = 'UTF-16'
+
+    @pytest.mark.parametrize('encoding', ['UTF-8', 'ISO-8859-1', 'UTF-16', 'UTF-16BE', 'UTF-32'])
+    def test_html5_001_encoding_and_non_ascii_content_survive(tmp_path, encoding):
+        output = render(tmp_path, '<html><body><source/><p>ação — è</p></body></html>',
+                        f'method="html" encoding="{encoding}"')
+        decoded = output.decode(encoding)
+>       assert '</source>' not in decoded
+E       AssertionError: assert '</source>' not in '<html><body...dy></html>\n'
+E         
+E         '</source>' is contained here:
+E           <html><body>
+E           <source></source><p>ação — è</p>
+E         ?  +++++++++
+E           </body></html>
+
+tests/test_html5_serialization.py:30: AssertionError
+_______ test_html5_001_encoding_and_non_ascii_content_survive[UTF-16BE] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_encoding_and_no3')
+encoding = 'UTF-16BE'
+
+    @pytest.mark.parametrize('encoding', ['UTF-8', 'ISO-8859-1', 'UTF-16', 'UTF-16BE', 'UTF-32'])
+    def test_html5_001_encoding_and_non_ascii_content_survive(tmp_path, encoding):
+        output = render(tmp_path, '<html><body><source/><p>ação — è</p></body></html>',
+                        f'method="html" encoding="{encoding}"')
+        decoded = output.decode(encoding)
+>       assert '</source>' not in decoded
+E       AssertionError: assert '</source>' not in '<html><body...dy></html>\n'
+E         
+E         '</source>' is contained here:
+E           <html><body>
+E           <source></source><p>ação — è</p>
+E         ?  +++++++++
+E           </body></html>
+
+tests/test_html5_serialization.py:30: AssertionError
+________ test_html5_001_encoding_and_non_ascii_content_survive[UTF-32] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_encoding_and_no4')
+encoding = 'UTF-32'
+
+    @pytest.mark.parametrize('encoding', ['UTF-8', 'ISO-8859-1', 'UTF-16', 'UTF-16BE', 'UTF-32'])
+    def test_html5_001_encoding_and_non_ascii_content_survive(tmp_path, encoding):
+        output = render(tmp_path, '<html><body><source/><p>ação — è</p></body></html>',
+                        f'method="html" encoding="{encoding}"')
+        decoded = output.decode(encoding)
+>       assert '</source>' not in decoded
+E       AssertionError: assert '</source>' not in '<html><body...dy></html>\n'
+E         
+E         '</source>' is contained here:
+E           <html><body>
+E           <source></source><p>ação — è</p>
+E         ?  +++++++++
+E           </body></html>
+
+tests/test_html5_serialization.py:30: AssertionError
+______ test_html5_001_literal_text_comments_and_foreign_elements_survive _______
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_literal_text_co0')
+
+    def test_html5_001_literal_text_comments_and_foreign_elements_survive(tmp_path):
+        body = ('<html><body><source/>'
+                '<script>const text = "&lt;/source&gt;";</script>'
+                '<style>p::before {content:"&lt;/source&gt;"}</style>'
+                '<textarea>&lt;/source&gt;</textarea>'
+                '<xsl:comment>&lt;/source&gt;</xsl:comment>'
+                '<svg xmlns="http://www.w3.org/2000/svg"><source>foreign</source>'
+                '<foreignObject><source xmlns=""/></foreignObject></svg>'
+                '</body></html>')
+        output = render(tmp_path, body).decode()
+>       assert '<source></source>' not in output
+E       assert '<source></source>' not in '<html><body...dy></html>\n'
+E         
+E         '<source></source>' is contained here:
+E           <html><body>
+E           <source></source><script>const text = "</source>";</script><style>p::before {content:"</source>"}</style>
+E         ? +++++++++++++++++
+E           <textarea>&lt;/source&gt;</textarea><!--</source>--><svg xmlns="http://www.w3.org/2000/svg"><source>foreign</source><foreignObject><source xmlns=""></source></foreignObject></svg>
+E           </body></html>
+
+tests/test_html5_serialization.py:55: AssertionError
+____________ test_html5_001_implicit_html_method_and_cache_identity ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_implicit_html_m0')
+
+    def test_html5_001_implicit_html_method_and_cache_identity(tmp_path):
+>       assert b'</source>' not in render(tmp_path, '<html><source/></html>', 'encoding="UTF-8"')
+E       assert b'</source>' not in b'<html><source></source></html>\n'
+E        +  where b'<html><source></source></html>\n' = render(PosixPath('/tmp/pytest-of-netto/pytest-54/test_html5_001_implicit_html_m0'), '<html><source/></html>', 'encoding="UTF-8"')
+
+tests/test_html5_serialization.py:64: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_html5_serialization.py::test_html5_001_native_void_elements_have_no_end_tag[source]
+FAILED tests/test_html5_serialization.py::test_html5_001_native_void_elements_have_no_end_tag[track]
+FAILED tests/test_html5_serialization.py::test_html5_001_native_void_elements_have_no_end_tag[wbr]
+FAILED tests/test_html5_serialization.py::test_html5_001_native_void_elements_have_no_end_tag[embed]
+FAILED tests/test_html5_serialization.py::test_html5_001_native_void_elements_have_no_end_tag[SOURCE]
+FAILED tests/test_html5_serialization.py::test_html5_001_encoding_and_non_ascii_content_survive[UTF-8]
+FAILED tests/test_html5_serialization.py::test_html5_001_encoding_and_non_ascii_content_survive[ISO-8859-1]
+FAILED tests/test_html5_serialization.py::test_html5_001_encoding_and_non_ascii_content_survive[UTF-16]
+FAILED tests/test_html5_serialization.py::test_html5_001_encoding_and_non_ascii_content_survive[UTF-16BE]
+FAILED tests/test_html5_serialization.py::test_html5_001_encoding_and_non_ascii_content_survive[UTF-32]
+FAILED tests/test_html5_serialization.py::test_html5_001_literal_text_comments_and_foreign_elements_survive
+FAILED tests/test_html5_serialization.py::test_html5_001_implicit_html_method_and_cache_identity
+12 failed, 2 passed in 0.11s

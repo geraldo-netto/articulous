@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.3, pluggy-1.6.0
+rootdir: /backups/disk2/projects/articulous
+configfile: pyproject.toml
+plugins: cov-7.1.0
+collected 113 items
+
+tests/test_html5_serialization.py ....................                   [ 17%]
+tests/test_html_serialization.py ...........................             [ 41%]
+tests/test_engines.py .................................................. [ 85%]
+................                                                         [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.15-final-0 _______________
+
+Name                                 Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------
+articulous/backends/lxml_output.py      15      0      6      0   100%
+articulous/html_serialization.py        72      0     34      0   100%
+--------------------------------------------------------------------------------
+TOTAL                                   87      0     40      0   100%
+Coverage JSON written to file /home/netto/Desktop/projects/morpha-portal/reviews/fixes-2026-10-30/engine-coverage.json
+Required test coverage of 100% reached. Total coverage: 100.00%
+============================= 113 passed in 0.40s ==============================

@@ -86,6 +86,7 @@ class Snapshot:
                 article.title, article.slug, article.lang, article.date, article.datetime,
                 article.description, article.tags, article.url, article.policy, _article_input(article),
                 article.modified, article.author, article.image, article.indexing, article.translation,
+                article.display_date,
             )
 
     def close(self):

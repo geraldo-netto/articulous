@@ -74,6 +74,7 @@ class Article:
     author: str = ""
     image: str = ""
     structured_data: str = ""
+    display_date: str = ""
 
     @property
     def policy(self) -> PublicationPolicy:
@@ -282,6 +283,16 @@ def _validated_lang(
     return lang
 
 
+def _article_slug(title, explicit, path):
+    slug = explicit or normalize_slug(title or path.stem)
+    if not slug:
+        logging.warning(
+            f"Article {path} produced an empty slug from title={title!r} — skipping"
+        )
+        return None
+    return slug
+
+
 def parse_article_xml(
     path: Path,
     *,
@@ -339,11 +350,8 @@ def parse_article_xml(
         return None
 
     title = fields["title"]
-    slug = fields["slug"] or normalize_slug(title or path.stem)
-    if not slug:
-        logging.warning(
-            f"Article {path} produced an empty slug from title={title!r} — skipping"
-        )
+    slug = _article_slug(title, fields["slug"], path)
+    if slug is None:
         return None
 
     url = url_builder(lang, slug) if url_builder is not None else ""
@@ -372,6 +380,7 @@ def parse_article_xml(
         author=fields["author"],
         image=fields["image"],
         structured_data=fields["structured-data"],
+        display_date=root.findtext('display-date', default=''),
     )
 
 

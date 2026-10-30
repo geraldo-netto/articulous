@@ -44,6 +44,10 @@ special files are skipped with an error. Each article has this shape:
   with a missing or invalid date are skipped with a warning. Dates and
   publication timestamps without a timezone are treated as UTC; timezone
   offsets are converted to UTC for sorting and scheduling.
+- Optional `<display-date>` text is captured as `Article.display_date` and
+  `CapturedArticle.display_date`. The first element is used, with whitespace
+  preserved; absent/empty text is an empty string. It does not affect sorting or
+  publication dates. Themes may choose the validated `date` when it is empty.
 - `<lang>` is validated against `site.languages`; values outside the
   configured set fall back to `site.default_language`.
 - `<status>` may be `published`, `unlisted`, `draft`, `private`, or

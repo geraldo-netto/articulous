@@ -25,6 +25,7 @@ class CapturedArticle:
     image: str
     indexing: str
     translation: str
+    display_date: str
 
 
 class CapturedReader(Protocol):

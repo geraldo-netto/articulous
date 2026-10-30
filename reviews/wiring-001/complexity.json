@@ -1,0 +1,377 @@
+{
+  "python": {
+    "analyzer": "Lizard",
+    "version": "1.23.0",
+    "calibration": [
+      {
+        "name": "straight",
+        "source": "def f():\n return 1\n",
+        "expected": [
+          1
+        ],
+        "actual": [
+          1
+        ]
+      },
+      {
+        "name": "choices",
+        "source": "def f(a,b,c):\n if a and b or c:\n  return 1\n return 0\n",
+        "expected": [
+          4
+        ],
+        "actual": [
+          4
+        ]
+      },
+      {
+        "name": "nested",
+        "source": "def outer():\n def inner(x):\n  return 1 if x else 2\n return inner\n",
+        "expected": [
+          1,
+          2
+        ],
+        "actual": [
+          1,
+          2
+        ]
+      },
+      {
+        "name": "lambda",
+        "source": "def outer():\n return lambda x: 1 if x else 2\n",
+        "expected": [
+          1,
+          2
+        ],
+        "actual": [
+          1,
+          2
+        ]
+      },
+      {
+        "name": "definition-input",
+        "source": "def outer(x):\n def inner(y=1 if x else 2):\n  return y\n return inner\n",
+        "expected": [
+          2,
+          2
+        ],
+        "actual": [
+          2,
+          2
+        ]
+      },
+      {
+        "name": "header",
+        "source": "@(first if flag else second)\ndef f(value=1 if flag else 2):\n return value\n",
+        "expected": [
+          3
+        ],
+        "actual": [
+          3
+        ]
+      },
+      {
+        "name": "format-string",
+        "source": "def f(x):\n return f\"{1 if x else 2:{3 if x else 4}}\"\n",
+        "expected": [
+          3
+        ],
+        "actual": [
+          3
+        ]
+      },
+      {
+        "name": "annotations",
+        "source": "def f(x: 1 if flag else 2) -> (3 if flag else 4):\n return x\n",
+        "expected": [
+          3
+        ],
+        "actual": [
+          3
+        ]
+      },
+      {
+        "name": "comprehension",
+        "source": "def f(xs):\n return [x for x in xs if x]\n",
+        "expected": [
+          3
+        ],
+        "actual": [
+          3
+        ]
+      },
+      {
+        "name": "exceptions",
+        "source": "def f():\n try:\n  return 1\n except ValueError:\n  return 2\n finally:\n  pass\n",
+        "expected": [
+          3
+        ],
+        "actual": [
+          3
+        ]
+      },
+      {
+        "name": "async",
+        "source": "async def f(x):\n if x:\n  await x\n",
+        "expected": [
+          2
+        ],
+        "actual": [
+          2
+        ]
+      },
+      {
+        "name": "syntax-boundary",
+        "source": "def f():\n class C:\n  def m(self): return \"if or while\"\n return C\n",
+        "expected": [
+          1,
+          1
+        ],
+        "actual": [
+          1,
+          1
+        ]
+      },
+      {
+        "name": "threshold-boundary",
+        "source": "def f(xs):\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n if xs:\n  pass\n",
+        "expected": [
+          9
+        ],
+        "actual": [
+          9
+        ]
+      }
+    ],
+    "files": [
+      {
+        "path": "tests/test_vbnet_resources.py",
+        "sha256": "f255552190e146bf9e89cf1ac7d5efc1289fdb3273bc431a176760bcf50af67c",
+        "functions": [
+          {
+            "name": "test_wiring001_vbnet_dependency_tokens_and_fault_control",
+            "line": 8,
+            "column": 0,
+            "end_line": 16,
+            "end_column": 64,
+            "body_sha256": "5cbc195480b55d71ae297b10416155140b53145abfe632339bb8359fce469020",
+            "complexity": 3,
+            "projection_sha256": "4fc24025e804c5ae0ed59b4bb1379d19728e551d230d6300db69cba5428f66c1"
+          }
+        ]
+      }
+    ],
+    "adapter_sha256": "993026278588bdbc60d7ba2be71f640121ef5067de585dc2ad501fc46eb71d21"
+  },
+  "javascript": {
+    "analyzer": "ESLint",
+    "version": "10.8.1",
+    "rule_sha256": "2d0a10b93268e29cfaefd6293153136a3864c423a20f36b89d9c6920aec3d617",
+    "parser": "Acorn",
+    "parser_version": "8.17.0",
+    "parser_sha256": "b373ccd10e9deb63654289f73216eeefcaf0405d9ee24289aabf596b91b4c318",
+    "files": [
+      {
+        "path": "tests/tooling/vbnet-regression.mjs",
+        "sha256": "b6b68ab1c54eba86fae671c506fe1c47d1491e786edb59fc84f190bc17d64709",
+        "functions": [
+          {
+            "name": "Arrow function",
+            "line": 7,
+            "column": 14,
+            "end_line": 7,
+            "end_column": 49,
+            "body_sha256": "eb839a413817e1b2f2a372321d49713edacd9e14a1f9f39c3b0a2e7bcb93130a",
+            "projection_sha256": "eb839a413817e1b2f2a372321d49713edacd9e14a1f9f39c3b0a2e7bcb93130a",
+            "complexity": 1
+          }
+        ]
+      },
+      {
+        "path": "tests/tooling/code-browser.mjs",
+        "sha256": "7e43d73ffee0f07c714370467b3bfab76c6e860cd4decc4fe328a5fc4f90fdf5",
+        "functions": [
+          {
+            "name": "Arrow function",
+            "line": 13,
+            "column": 47,
+            "end_line": 13,
+            "end_column": 87,
+            "body_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "projection_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "complexity": 1
+          },
+          {
+            "name": "Function 'page'",
+            "line": 18,
+            "column": 0,
+            "end_line": 25,
+            "end_column": 1,
+            "body_sha256": "13ee0741d70d6c8b28b7698c3f83133ece50c7229abbbb133d87f2f1378408c3",
+            "projection_sha256": "13ee0741d70d6c8b28b7698c3f83133ece50c7229abbbb133d87f2f1378408c3",
+            "complexity": 3
+          },
+          {
+            "name": "Arrow function",
+            "line": 20,
+            "column": 59,
+            "end_line": 20,
+            "end_column": 113,
+            "body_sha256": "74498d05e71dda847fc6bab3d2e0b8cfd8db1c0dd07973acbcff80b366fc1076",
+            "projection_sha256": "74498d05e71dda847fc6bab3d2e0b8cfd8db1c0dd07973acbcff80b366fc1076",
+            "complexity": 2
+          },
+          {
+            "name": "Arrow function",
+            "line": 20,
+            "column": 119,
+            "end_line": 20,
+            "end_column": 159,
+            "body_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "projection_sha256": "0882f27bc0b74f3504a9cbc27db29e50ed3f2312e3b2f8775603543542fa32a6",
+            "complexity": 1
+          },
+          {
+            "name": "Arrow function",
+            "line": 24,
+            "column": 16,
+            "end_line": 24,
+            "end_column": 56,
+            "body_sha256": "4403a26b1a3613306bc8692fe7bfdf16c6e52c705b67c2c2ed429065154bda69",
+            "projection_sha256": "4403a26b1a3613306bc8692fe7bfdf16c6e52c705b67c2c2ed429065154bda69",
+            "complexity": 1
+          },
+          {
+            "name": "Arrow function",
+            "line": 27,
+            "column": 26,
+            "end_line": 35,
+            "end_column": 1,
+            "body_sha256": "11efc875cbef265a52b44674ba6fc0fdbe5c154637cd92995e9e1f95bebc04b3",
+            "projection_sha256": "11efc875cbef265a52b44674ba6fc0fdbe5c154637cd92995e9e1f95bebc04b3",
+            "complexity": 4
+          },
+          {
+            "name": "Arrow function",
+            "line": 36,
+            "column": 18,
+            "end_line": 36,
+            "end_column": 63,
+            "body_sha256": "e135f98cea4e1b0f99b74d2565169d3b0a2f58fdf575d2b06457400c530caab0",
+            "projection_sha256": "e135f98cea4e1b0f99b74d2565169d3b0a2f58fdf575d2b06457400c530caab0",
+            "complexity": 1
+          },
+          {
+            "name": "Arrow function",
+            "line": 46,
+            "column": 24,
+            "end_line": 46,
+            "end_column": 75,
+            "body_sha256": "e5a3fd3c0ebf29cff23625aed0057b02e8288aa0aa7177250810690156e06033",
+            "projection_sha256": "e5a3fd3c0ebf29cff23625aed0057b02e8288aa0aa7177250810690156e06033",
+            "complexity": 1
+          },
+          {
+            "name": "Arrow function",
+            "line": 47,
+            "column": 18,
+            "end_line": 47,
+            "end_column": 52,
+            "body_sha256": "5c2eba30255ef6fa3f0d1c57ce70f0359ec3476aefb809c499454dc45d7843b8",
+            "projection_sha256": "5c2eba30255ef6fa3f0d1c57ce70f0359ec3476aefb809c499454dc45d7843b8",
+            "complexity": 1
+          },
+          {
+            "name": "Async function 'debuggingPort'",
+            "line": 49,
+            "column": 0,
+            "end_line": 58,
+            "end_column": 1,
+            "body_sha256": "c90ae33c6a0c8c985f299d01a09b96b2d63294174ba990d7ce86f684c259fddd",
+            "projection_sha256": "c90ae33c6a0c8c985f299d01a09b96b2d63294174ba990d7ce86f684c259fddd",
+            "complexity": 5
+          },
+          {
+            "name": "Arrow function",
+            "line": 55,
+            "column": 22,
+            "end_line": 55,
+            "end_column": 53,
+            "body_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "projection_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "complexity": 1
+          },
+          {
+            "name": "Async function 'evaluate'",
+            "line": 60,
+            "column": 0,
+            "end_line": 64,
+            "end_column": 1,
+            "body_sha256": "1a4bac786c5a5c049ed4bcf8991e3c23b2529b6001e5f15bf846e48ae05259bc",
+            "projection_sha256": "1a4bac786c5a5c049ed4bcf8991e3c23b2529b6001e5f15bf846e48ae05259bc",
+            "complexity": 1
+          },
+          {
+            "name": "Async function 'navigate'",
+            "line": 66,
+            "column": 0,
+            "end_line": 74,
+            "end_column": 1,
+            "body_sha256": "56973292c0e2a648361114d15230b8c192b34065ba2e7a3d64f96027e26c12c6",
+            "projection_sha256": "56973292c0e2a648361114d15230b8c192b34065ba2e7a3d64f96027e26c12c6",
+            "complexity": 2
+          },
+          {
+            "name": "Arrow function",
+            "line": 72,
+            "column": 22,
+            "end_line": 72,
+            "end_column": 53,
+            "body_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "projection_sha256": "8c53461cf4f9df78b4a719ad774b999f5350efe0268f085e5097c2efa3bee32a",
+            "complexity": 1
+          },
+          {
+            "name": "Function 'pageEvents'",
+            "line": 76,
+            "column": 0,
+            "end_line": 83,
+            "end_column": 1,
+            "body_sha256": "dd0e1c90a724d3d0dae804d8ca364827dcc14dfe10e28062848cbd89c608cece",
+            "projection_sha256": "dd0e1c90a724d3d0dae804d8ca364827dcc14dfe10e28062848cbd89c608cece",
+            "complexity": 5
+          },
+          {
+            "name": "Arrow function",
+            "line": 80,
+            "column": 41,
+            "end_line": 80,
+            "end_column": 89,
+            "body_sha256": "87ed7e31d804b7e6c15814d9818455e6363999646d143fb764a6848781e135d5",
+            "projection_sha256": "87ed7e31d804b7e6c15814d9818455e6363999646d143fb764a6848781e135d5",
+            "complexity": 2
+          },
+          {
+            "name": "Async function 'measure'",
+            "line": 85,
+            "column": 0,
+            "end_line": 99,
+            "end_column": 1,
+            "body_sha256": "46b5f6d861a733f5fba191851eb212c305d5dd5298df4d8ab57ee347c7f1d588",
+            "projection_sha256": "46b5f6d861a733f5fba191851eb212c305d5dd5298df4d8ab57ee347c7f1d588",
+            "complexity": 2
+          },
+          {
+            "name": "Arrow function",
+            "line": 97,
+            "column": 50,
+            "end_line": 97,
+            "end_column": 122,
+            "body_sha256": "94b12fb5d2e6d39189c17e4d5db818a155647e6fb7ca9210882014ec3d28174e",
+            "projection_sha256": "94b12fb5d2e6d39189c17e4d5db818a155647e6fb7ca9210882014ec3d28174e",
+            "complexity": 1
+          }
+        ]
+      }
+    ]
+  }
+}

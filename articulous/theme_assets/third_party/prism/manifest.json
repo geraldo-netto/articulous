@@ -20,6 +20,7 @@
     "assets/vendor/prism/prism-python.js": "ed4385685bcf2d4935c8dbbab4bde16603da1329e092d2bf36c3dadd67e9a85c",
     "assets/vendor/prism/prism-sql.js": "3fc5f8ce69950ec73adc972f061df42aaea78faa4864709134ea2adc083f3a33",
     "assets/vendor/prism/prism-toolbar.js": "352c1beced07ac325c0bed92012806b823fcfad769221aa7ccb4d99064494429",
+    "assets/vendor/prism/prism-basic.js": "a89e8136769148ad394702c20c6dae422a3307a88f3472deef7a22283d4b350d",
     "assets/vendor/prism/prism-vbnet.js": "0136c5639d3690c98c6394398fa5ab71288d06724af704c4a6fc8d9ac98bdfbc",
     "assets/vendor/prism/prism-visual-basic.js": "108f30ed73e6f9add290b035b0802af42ceb0811764281b68d9c75f8a7911dfc",
     "assets/js/prism-copy-to-clipboard.js": "04effa04bcb55714ac98e3710b5bc97cbec688544ab49580ffccbf6210e1879a",
@@ -48,6 +49,7 @@
     "assets/vendor/prism/prism-python.js": "ed4385685bcf2d4935c8dbbab4bde16603da1329e092d2bf36c3dadd67e9a85c",
     "assets/vendor/prism/prism-sql.js": "3fc5f8ce69950ec73adc972f061df42aaea78faa4864709134ea2adc083f3a33",
     "assets/vendor/prism/prism-toolbar.js": "352c1beced07ac325c0bed92012806b823fcfad769221aa7ccb4d99064494429",
+    "assets/vendor/prism/prism-basic.js": "a89e8136769148ad394702c20c6dae422a3307a88f3472deef7a22283d4b350d",
     "assets/vendor/prism/prism-vbnet.js": "0136c5639d3690c98c6394398fa5ab71288d06724af704c4a6fc8d9ac98bdfbc",
     "assets/vendor/prism/prism-visual-basic.js": "108f30ed73e6f9add290b035b0802af42ceb0811764281b68d9c75f8a7911dfc",
     "assets/vendor/prism/prism-ini.js": "cf1b61f4a67f0101005c5133e22113e2f3a74f1c7917034e084df688f1735381",
@@ -80,12 +82,14 @@
     "assets/vendor/prism/prism-cmake.js": "components/prism-cmake.min.js",
     "assets/vendor/prism/prism-shell-session.js": "components/prism-shell-session.min.js",
     "assets/vendor/prism/prism-markup-templating.js": "components/prism-markup-templating.min.js",
-    "assets/vendor/prism/prism-php.js": "components/prism-php.min.js"
+    "assets/vendor/prism/prism-php.js": "components/prism-php.min.js",
+    "assets/vendor/prism/prism-basic.js": "components/prism-basic.min.js"
   },
   "payload_optimization": {
     "before_uncompressed_js_bytes": 115974,
     "after_uncompressed_js_bytes": 62324,
     "saved_bytes": 53650,
-    "method": "Exact cached official minified distribution. Maintained adapter and patched copy plugin remain readable and fully covered."
+    "method": "Exact cached official minified distribution. Maintained adapter and patched copy plugin remain readable and fully covered.",
+    "scope": "Historical optimization measurement before WIRING-001; not the current dependency payload."
   }
 }

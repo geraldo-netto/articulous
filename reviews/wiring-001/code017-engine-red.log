@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_wiring001_vbnet_dependency_tokens_and_fault_control ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-netto/pytest-61/test_wiring001_vbnet_dependenc0')
+
+    def test_wiring001_vbnet_dependency_tokens_and_fault_control(tmp_path):
+        resources = {item.path: item.content.decode() for item in code_resources()}
+        names = ['core', 'basic', 'vbnet']
+>       payload = [resources['assets/vendor/prism/prism-' + name + '.js'] for name in names]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_vbnet_resources.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x71bb0fbaf6a0>
+
+>   payload = [resources['assets/vendor/prism/prism-' + name + '.js'] for name in names]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'assets/vendor/prism/prism-basic.js'
+
+tests/test_vbnet_resources.py:11: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_vbnet_resources.py::test_wiring001_vbnet_dependency_tokens_and_fault_control
+1 failed in 0.04s

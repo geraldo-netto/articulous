@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const [core, basic, vbnet] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const fault = vm.createContext({});
+vm.runInContext(core, fault);
+assert.throws(() => vm.runInContext(vbnet, fault), {name:'TypeError'});
+const context = vm.createContext({});
+for (const source of [core, basic, vbnet]) vm.runInContext(source, context);
+const sample = 'Dim value As Integer = 42';
+context.sample = sample;
+const markup = vm.runInContext('Prism.highlight(sample, Prism.languages.vbnet, "vbnet")', context);
+assert.equal((markup.match(/class="token keyword"/g) || []).length, 3);
+assert.match(markup, /class="token number">42<\/span>/);
+assert.equal(markup.replace(/<[^>]*>/g, ''), sample);
+console.log('WIRING-001: dependency, token, exact-text and faulty-control checks passed');

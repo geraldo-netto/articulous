@@ -8,7 +8,7 @@ import {join} from 'node:path';
 const {connectCDP,createProfile,stopBrowser}=await import(process.env.ARTICULOUS_BROWSER_SESSION);
 const {collector}=await import(process.env.ARTICULOUS_NATIVE_COVERAGE);
 const maintained=['/assets/js/code-blocks.js','/assets/js/prism-copy-to-clipboard.js'];
-const vendor=['prism-core','prism-markup','prism-clike','prism-javascript','prism-batch','prism-vbnet','prism-visual-basic','prism-toolbar','prism-keep-markup'];
+const vendor=['prism-core','prism-markup','prism-clike','prism-javascript','prism-batch','prism-basic','prism-vbnet','prism-visual-basic','prism-toolbar','prism-keep-markup'];
 const assets=new Map();
 for(const name of [...maintained,...vendor.map(name=>'/assets/vendor/prism/'+name+'.js')]) {
   assets.set(name,await readFile(new URL('../../articulous/theme_assets'+name,import.meta.url)));

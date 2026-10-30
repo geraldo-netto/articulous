@@ -42,6 +42,7 @@ from .engines import (
     make_engine,
 )
 from .transform_contracts import TransformEngine, require_transform
+from .extensions import ModelInput, ModelProjection
 from .filesystem import (
     StagedOutput, TempWorkspace, assert_disjoint_trees, atomic_output, cache_lock_path, copy_asset_file,
     lock_file, open_regular_file,
@@ -144,6 +145,7 @@ class BuildCtx:
     extra_artifacts: tuple[ExtraArtifact, ...] = ()
     retained_page_routes: tuple[Route, ...] = ()
     stylesheet_capture: StylesheetCapture | None = None
+    model_projection: ModelProjection | None = None
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -822,9 +824,10 @@ class _XsltTask:
 
     def _run(self) -> None:
         revision = self.engine.resolve_stylesheet_fingerprint(self.spec.xsl_path, self.spec.fingerprint[1])
-        fingerprint = (self.spec.fingerprint[0], revision, *self.spec.fingerprint[2:])
+        source, source_hash = self._model()
+        fingerprint = (source_hash, revision, *self.spec.fingerprint[2:])
         self.engine.run(
-            self.spec.xml_input,
+            source,
             self.spec.xsl_path,
             self.spec.output_path,
             dry_run=self.ctx.dry_run,
@@ -833,6 +836,16 @@ class _XsltTask:
             parameters=self.spec.parameters,
         )
         update_cache(self.cache, self.spec.cache_key, fingerprint)
+
+    def _model(self):
+        if self.ctx.model_projection is None or not isinstance(self.spec.xml_input, bytes):
+            return self.spec.xml_input, self.spec.fingerprint[0]
+        model = ModelInput(self.spec.xml_input, _output_relpath(self.ctx, self.spec.output_path),
+                           self.spec.parameters)
+        source = self.ctx.model_projection(model)
+        if not isinstance(source, bytes):
+            raise ValueError('Model projection must return XML bytes')
+        return source, hashlib.sha256(source).hexdigest()
 
 
 class _TaskQueue:
@@ -928,7 +941,8 @@ def _make_xslt_task(
         fingerprint += (json.dumps(parameters, sort_keys=True),)
     if xml_base_uri is not None:
         fingerprint += (xml_base_uri,)
-    if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
+    projected = ctx.model_projection is not None and isinstance(xml_input, bytes)
+    if not projected and not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
     spec = _TransformSpec(xml_input, xsl_path, output_path, cache_key, fingerprint, xml_base_uri, parameters or {})

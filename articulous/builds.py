@@ -274,7 +274,7 @@ def _composition_context(stack, context, composer, original):
         raise ValueError('Build composer must return BuildComposition')
     pages = context.extra_pages + composition.pages
     mapped = tuple(_overlay_page(page, original.xsl_dir, overlay) for page in pages)
-    return replace(context, extra_pages=mapped), snapshot, composition
+    return replace(context, extra_pages=mapped, model_projection=composition.project_model), snapshot, composition
 
 
 def _overlay_page(page, source, overlay):

@@ -43,6 +43,15 @@ def local_path(output, value, base):
     return target
 
 
+def resolved_path(output, value, base, resolved_paths):
+    if resolved_paths is None:
+        return local_path(output, value, base)
+    key = output, value, base
+    if key not in resolved_paths:
+        resolved_paths[key] = local_path(output, value, base)
+    return resolved_paths[key]
+
+
 def read_pages(output, failures, html_errors=None):
     pages = {}
     for path in sorted(output.rglob('*.html')):
@@ -73,7 +82,7 @@ def _redirect_url(previous, destination):
     return urlunsplit(urlsplit(destination)._replace(fragment=urlsplit(previous).fragment))
 
 
-def redirect_target(output, target, resolved, base, redirects, failures, label):
+def redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths=None):
     seen = set()
     route = page_route(output, target)
     while route in redirects:
@@ -83,7 +92,7 @@ def redirect_target(output, target, resolved, base, redirects, failures, label):
         seen.add(route)
         value = redirects[route]
         resolved = _redirect_url(resolved, base.rstrip('/') + value)
-        target = local_path(output, resolved, base)
+        target = resolved_path(output, resolved, base, resolved_paths)
         if target is None:
             failures.append(f'{label}: missing redirect target {value}')
             return None, resolved
@@ -91,12 +100,12 @@ def redirect_target(output, target, resolved, base, redirects, failures, label):
     return target, resolved
 
 
-def check_link(output, value, page_url, base, redirects, pages, failures, label):
+def check_link(output, value, page_url, base, redirects, pages, failures, label, resolved_paths=None):
     resolved = urljoin(page_url, value)
-    target = local_path(output, resolved, base)
+    target = resolved_path(output, resolved, base, resolved_paths)
     if target is None:
         return
-    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label)
+    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths)
     if target is None:
         return
     if not target.is_file():
@@ -123,7 +132,7 @@ def document_base(page_url, href):
         return page_url
 
 
-def validate_pages(output, base, plan, pages, failures):
+def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
     for filename in plan.page_urls:
         if (output / filename).resolve() not in pages:
             failures.append(f'{filename}: expected HTML page missing')
@@ -135,7 +144,7 @@ def validate_pages(output, base, plan, pages, failures):
         route = page_route(output, path)
         reference_base = document_base(base + route, references.base_href)
         for value in references.links:
-            check_link(output, value, reference_base, base, plan.redirects, pages, failures, filename)
+            check_link(output, value, reference_base, base, plan.redirects, pages, failures, filename, resolved_paths)
 
 
 def validate_search(output, plan, failures):
@@ -158,16 +167,16 @@ def sitemap_document(path):
     return etree.QName(document.getroot()).localname, tuple(map(str, document.xpath('//*[local-name()="loc"]/text()')))
 
 
-def sitemap_index_targets(output, base, values, failures):
+def sitemap_index_targets(output, base, values, failures, resolved_paths=None):
     for value in values:
-        target = local_path(output, value, base)
+        target = resolved_path(output, value, base, resolved_paths)
         if target is None or not target.is_file():
             failures.append(f'Sitemap index target missing: {value}')
         else:
             yield target
 
 
-def sitemap_locations(output, base, path, failures):
+def sitemap_locations(output, base, path, failures, resolved_paths=None):
     pending, seen, urls = [path.resolve()], set(), []
     while pending:
         current = pending.pop()
@@ -177,7 +186,7 @@ def sitemap_locations(output, base, path, failures):
         seen.add(current)
         kind, values = sitemap_document(current)
         if kind == 'sitemapindex':
-            pending.extend(sitemap_index_targets(output, base, values, failures))
+            pending.extend(sitemap_index_targets(output, base, values, failures, resolved_paths))
         elif kind == 'urlset':
             urls.extend(values)
         else:
@@ -185,15 +194,15 @@ def sitemap_locations(output, base, path, failures):
     return urls
 
 
-def validate_sitemap(output, base, plan, failures):
-    urls = sitemap_locations(output, base, output / plan.sitemap_path, failures)
+def validate_sitemap(output, base, plan, failures, resolved_paths=None):
+    urls = sitemap_locations(output, base, output / plan.sitemap_path, failures, resolved_paths)
     if len(urls) != len(set(urls)):
         failures.append('Duplicate sitemap URLs')
     if set(urls) != plan.sitemap_urls:
         failures.append('Sitemap URL set does not match publication plan')
     canonicals = {(output / name).resolve(): url for name, url in plan.page_urls.items()}
     for url in urls:
-        target = local_path(output, url, base)
+        target = resolved_path(output, url, base, resolved_paths)
         if target not in canonicals or canonicals[target] != url:
             failures.append(f'Sitemap target missing or noncanonical: {url}')
     return len(urls)
@@ -205,9 +214,13 @@ def validate_site(output, base: str, plan: ValidationPlan, *, html_errors=None):
     base = base.rstrip('/')
     failures = []
     pages = read_pages(output, failures, html_errors)
-    validate_pages(output, base, plan, pages, failures)
-    search = validate_search(output, plan, failures)
-    sitemap = validate_sitemap(output, base, plan, failures)
-    if failures:
-        raise ValueError('\n'.join(failures))
-    return ValidationResult(len(pages), search, sitemap)
+    resolved_paths = {}
+    try:
+        validate_pages(output, base, plan, pages, failures, resolved_paths)
+        search = validate_search(output, plan, failures)
+        sitemap = validate_sitemap(output, base, plan, failures, resolved_paths)
+        if failures:
+            raise ValueError('\n'.join(failures))
+        return ValidationResult(len(pages), search, sitemap)
+    finally:
+        resolved_paths.clear()

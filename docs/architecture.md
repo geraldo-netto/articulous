@@ -150,7 +150,7 @@ does not automatically invoke every exported helper.
 
 | Component | Boundary and use |
 |-----------|------------------|
-| Publication validation | [`site_validation.py`](../articulous/site_validation.py) checks local pages, links, redirects, search and sitemap data against `ValidationPlan`; callers wire it into their validation workflow. |
+| Publication validation | [`site_validation.py`](../articulous/site_validation.py) checks local pages, links, redirects, search and sitemap data against `ValidationPlan`; callers wire it into their validation workflow. Its public `page_references` projection accepts the independent `ReferenceSource` XPath-attribute protocol, detaches plain values from a borrowed parsed document, and lets audits share one parser owner. |
 | Metadata catalogue | [`catalogue.py`](../articulous/catalogue.py) builds reusable publication metadata and tag-count projections, independently of theme XML and route-catalog storage. |
 | Authoring and translation | Taxonomy/markup/translation contracts support explicit editing and provider workflows. [`translation_jobs.py`](../articulous/translation_jobs.py) coordinates jobs; [`translation_client.py`](../articulous/translation_client.py) handles retries/cache through provider/cache interfaces. [`translations.py`](../articulous/translations.py) separately serves build-time reciprocal links. |
 | Source edits and images | [`source_transactions.py`](../articulous/source_transactions.py) stages file edits and attempts rollback after publication failure. [`image_optimization.py`](../articulous/image_optimization.py) uses an explicit image backend; normal asset mirroring does not optimize source images. |

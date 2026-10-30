@@ -1,6 +1,13 @@
 """Generated-publication expectations independent of parser and theme implementations."""
 from dataclasses import dataclass
-from typing import NamedTuple
+from typing import NamedTuple, Protocol, Iterable
+
+
+class ReferenceSource(Protocol):
+    """Synchronous borrowed XPath attribute results; no concrete DOM requirement."""
+
+    def xpath(self, expression: str) -> Iterable[str]:
+        ...
 
 
 class PageReferences(NamedTuple):

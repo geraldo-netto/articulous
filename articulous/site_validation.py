@@ -4,7 +4,7 @@ import json
 
 import lxml.etree as etree
 import lxml.html as html
-from .validation_contracts import PageReferences, ValidationPlan, ValidationResult
+from .validation_contracts import PageReferences, ReferenceSource, ValidationPlan, ValidationResult
 
 
 def page_route(output, path):
@@ -64,16 +64,19 @@ def read_pages(output, failures, html_errors=None):
         except etree.ParserError as error:
             failures.append(f'{path.relative_to(output)}: HTML parse errors: {error}')
             continue
-        # Plain strings release lxml's document owner; smart strings would keep it alive.
-        # Template placeholders are inert and are not followed during link validation.
-        pages[path.resolve()] = PageReferences(
-            tuple(map(str, document.xpath('//link[@rel="canonical"]/@href'))),
-            tuple(map(str, document.xpath('//@href[not(ancestor::template) and not(parent::base)] | //@src[not(ancestor::template)] | '
-                                          '//head/meta[@property="og:image" or @name="twitter:image"]/@content'))),
-            frozenset(map(str, document.xpath('//@id[not(ancestor::template)] | //a/@name[not(ancestor::template)]'))),
-            next(map(str, document.xpath('//base[not(ancestor::template)]/@href')), None),
-        )
+        pages[path.resolve()] = page_references(document)
     return pages
+
+
+def page_references(document: ReferenceSource) -> PageReferences:
+    """Detach plain values; never retain the borrowed document or smart strings."""
+    return PageReferences(
+        tuple(map(str, document.xpath('//link[@rel="canonical"]/@href'))),
+        tuple(map(str, document.xpath('//@href[not(ancestor::template) and not(parent::base)] | //@src[not(ancestor::template)] | '
+                                      '//head/meta[@property="og:image" or @name="twitter:image"]/@content'))),
+        frozenset(map(str, document.xpath('//@id[not(ancestor::template)] | //a/@name[not(ancestor::template)]'))),
+        next(map(str, document.xpath('//base[not(ancestor::template)]/@href')), None),
+    )
 
 
 def _redirect_url(previous, destination):

@@ -1,0 +1,43 @@
+{
+  "issue": "SOCIAL-018",
+  "engineTests": {
+    "passed": 3228,
+    "skipped": 16,
+    "subtestsPassed": 359,
+    "linePercent": 100,
+    "branchPercent": 100,
+    "maintainedFunctionsMeasured": 989,
+    "functionsAtLeast80Percent": 989
+  },
+  "changedFilesPyrightErrors": 0,
+  "fullPyrightErrors": 13,
+  "unchangedHeadPyrightErrors": 13,
+  "pyrightVersion": "1.1.411",
+  "ruffVersion": "0.15.22",
+  "lizardVersion": "1.23.0",
+  "newTestComplexity": [
+    1,
+    3,
+    1
+  ],
+  "changedProductionComplexity": {
+    "articles._validated_image": 2
+  },
+  "installationPerformed": false,
+  "deploymentPerformed": false,
+  "remainingFinding": "TYPE-001",
+  "resolved": true,
+  "newPytestCases": 6,
+  "newTestFunctions": 3,
+  "seededBlankCases": 64,
+  "seededInvalidFragmentCases": 32,
+  "baselineExactDiagnosticMatches": 13,
+  "typeFollowupChildren": [
+    "TYPE-002",
+    "TYPE-003",
+    "TYPE-004"
+  ],
+  "portalFullVerifyExitCode": 0,
+  "portalTestMethodsPassed": 959,
+  "portalTestMethodsTotal": 959
+}

@@ -179,7 +179,7 @@ def _validated_author(raw: str | None) -> str:
 
 
 def _validated_image(raw: str | None) -> str:
-    if raw is None:
+    if not raw:
         return ""
     validate_image_url(raw)
     return raw

@@ -116,8 +116,12 @@ The optional reference structured-data example is enabled per article:
 `author`, `image`, and `modified` are optional and omitted from JSON-LD when
 unavailable. An author is one plain-text name of 1–512 characters after trimming
 surrounding whitespace. Image URLs must be absolute, URI-encoded HTTP(S),
-without credentials or fragments; query parameters are supported. Empty,
-malformed, duplicate, and nested metadata fields reject the article.
+without credentials or fragments; query parameters are supported. An absent,
+empty or whitespace-only `image` has no image value and is omitted from JSON-LD.
+Themes can select their configured sharing artwork when that value is empty;
+Articulous does not hardcode a site's default image. Empty `author` or
+`structured-data`, malformed nonempty values, duplicate fields and nested
+metadata reject the article. The original source XML remains unchanged.
 
 After adapting and deploying your template, run its public article URL through
 Google's [Rich Results Test](https://search.google.com/test/rich-results), or paste

@@ -1,0 +1,26 @@
+/backups/disk2/projects/articulous/articulous/xml_sources.py
+  /backups/disk2/projects/articulous/articulous/xml_sources.py:3:18 - error: "etree" is unknown import symbol (reportAttributeAccessIssue)
+/backups/disk2/projects/articulous/tests/test_article_source_view.py
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:16:20 - error: "source_xml" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:17:20 - error: "slug" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:18:31 - error: "text" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:21:20 - error: "title" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:36:59 - error: Argument of type "object" cannot be assigned to parameter "source" of type "XmlSource" in function "parse_article_source"
+    "object" is not assignable to "XmlSource" (reportArgumentType)
+  /backups/disk2/projects/articulous/tests/test_article_source_view.py:38:39 - error: Argument of type "Literal['source.xml']" cannot be assigned to parameter "path" of type "Path" in function "parse_article_source"
+    "Literal['source.xml']" is not assignable to "Path" (reportArgumentType)
+/backups/disk2/projects/articulous/tests/test_captured_display_date.py
+  /backups/disk2/projects/articulous/tests/test_captured_display_date.py:18:20 - error: "display_date" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /backups/disk2/projects/articulous/tests/test_captured_display_date.py:19:20 - error: "source_xml" is not a known attribute of "None" (reportOptionalMemberAccess)
+/backups/disk2/projects/articulous/tests/test_empty_image.py
+  /backups/disk2/projects/articulous/tests/test_empty_image.py:5:18 - error: "etree" is unknown import symbol (reportAttributeAccessIssue)
+/backups/disk2/projects/articulous/tests/test_html5_serialization.py
+  /backups/disk2/projects/articulous/tests/test_html5_serialization.py:2:18 - error: "etree" is unknown import symbol (reportAttributeAccessIssue)
+/backups/disk2/projects/articulous/tests/test_model_projection.py
+  /backups/disk2/projects/articulous/tests/test_model_projection.py:79:9 - error: "__setitem__" method not defined on type "Mapping[str, str]" (reportIndexIssue)
+  /backups/disk2/projects/articulous/tests/test_model_projection.py:81:40 - error: Argument of type "Literal[42]" cannot be assigned to parameter "project_model" of type "ModelProjection | None" in function "__init__"
+    Type "Literal[42]" is not assignable to type "ModelProjection | None"
+      Type "Literal[42]" is not assignable to type "ModelProjection"
+      "Literal[42]" is not assignable to "None" (reportArgumentType)
+  /backups/disk2/projects/articulous/tests/test_model_projection.py:149:5 - error: Object of type "None" cannot be called (reportOptionalCall)
+14 errors, 0 warnings, 0 informations

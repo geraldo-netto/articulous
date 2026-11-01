@@ -1,0 +1,58 @@
+================================================
+  NLOC    CCN   token  PARAM  length  location  
+------------------------------------------------
+       7      2     59      1       7 read_bytes@45-51@articulous/articles.py
+       5      2     32      1       5 policy@81-85@articulous/articles.py
+       2      2     19      1       2 indexable@88-89@articulous/articles.py
+       4      2     28      1       4 publication_state@92-95@articulous/articles.py
+       3      1     21      2       3 __init__@106-108@articulous/articles.py
+       9      2     52      1       9 report@110-118@articulous/articles.py
+       4      2     36      1       4 _as_utc@121-124@articulous/articles.py
+       6      3     35      2       6 _track_singleton_field@127-132@articulous/articles.py
+       4      4     37      1       4 _field_text@135-138@articulous/articles.py
+       4      2     26      1       4 _validated_indexing@141-144@articulous/articles.py
+       6      4     47      1       6 _validated_slug@147-152@articulous/articles.py
+       8      3     47      1       8 _validated_modified@155-162@articulous/articles.py
+       6      4     45      1       6 _validated_translation@165-170@articulous/articles.py
+       6      4     36      1       6 _validated_author@173-178@articulous/articles.py
+       5      2     23      1       5 _validated_image@181-185@articulous/articles.py
+       6      3     35      1       6 _validated_structured_data@188-193@articulous/articles.py
+      33      9    228      1      37 _read_article_fields@196-232@articulous/articles.py
+      10      3     61      2      10 _parse_publish_at@235-244@articulous/articles.py
+      14      5     77      3      14 _validated_publication@247-260@articulous/articles.py
+      14      4     56      4      22 _validated_lang@263-284@articulous/articles.py
+       8      4     36      3       8 _article_slug@287-294@articulous/articles.py
+      14      2     96      5      34 parse_article_xml@297-330@articulous/articles.py
+      55      9    354      6      61 parse_article_source@333-393@articulous/articles.py
+       6      4     63      1       6 _directory_entries@396-401@articulous/articles.py
+       7      2     75      2       7 _spool_article_paths@404-410@articulous/articles.py
+       7      2     62      1       8 _discover_article_files@413-420@articulous/articles.py
+      26      6    144      6      36 iter_articles@423-458@articulous/articles.py
+      10      1     90      2      10 test_social018_blank_image_preserves_article_and_source@13-22@tests/test_empty_image.py
+      16      3    156      1      16 test_social018_seeded_blank_and_nonempty_boundaries@25-40@tests/test_empty_image.py
+      12      1    116      2      12 test_social018_blank_image_is_omitted_from_jsonld@43-54@tests/test_empty_image.py
+       4      2     40      1       4 _jsonld@16-19@tests/test_seo_structured_data.py
+      19      1    186      3      19 test_seo10_structured_data_matches_visible_metadata@23-41@tests/test_seo_structured_data.py
+      10      1     92      2      10 test_seo10_optional_values_and_opt_in@44-53@tests/test_seo_structured_data.py
+      15      3    148      2      15 test_seo10_reproducible_script_termination_fuzz@56-70@tests/test_seo_structured_data.py
+       4      1     28      3       4 test_seo10_invalid_metadata_rejected@80-83@tests/test_seo_structured_data.py
+       6      1     41      3       6 test_seo10_valid_metadata_boundaries@87-92@tests/test_seo_structured_data.py
+       5      2     41      3       5 test_seo10_duplicate_and_nested_fields_rejected@96-100@tests/test_seo_structured_data.py
+       8      1     71      2       8 test_seo10_relative_url_omits_structured_data@103-110@tests/test_seo_structured_data.py
+       7      2     66      1       7 test_seo10_reproducible_malformed_metadata_fuzz@113-119@tests/test_seo_structured_data.py
+       9      4    112      2       9 test_seo10_large_saxon_parameters_use_literal_stylesheet_values.transform@133-141@tests/test_seo_structured_data.py
+      13      1     84      3      23 test_seo10_large_saxon_parameters_use_literal_stylesheet_values@123-145@tests/test_seo_structured_data.py
+3 file analyzed.
+==============================================================
+NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
+--------------------------------------------------------------
+    336      10.3     3.4       67.8        27     articulous/articles.py
+     45      12.7     1.7      120.7         3     tests/test_empty_image.py
+    120       9.1     1.7       82.6        11     tests/test_seo_structured_data.py
+
+===============================================================================================================
+No thresholds exceeded (cyclomatic_complexity > 15 or length > 1000 or nloc > 1000000 or parameter_count > 100)
+==========================================================================================
+Total nloc   Avg.NLOC  AvgCCN  Avg.token   Fun Cnt  Warning cnt   Fun Rt   nloc Rt
+------------------------------------------------------------------------------------------
+       501      10.2     2.8       75.6       41            0      0.00    0.00

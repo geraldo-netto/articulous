@@ -1,0 +1,146 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+__________ test_social018_blank_image_preserves_article_and_source[] ___________
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre0/site')
+value = ''
+
+    @pytest.mark.parametrize("value", ["", " ", "\t\n\r ", "\u00a0"])
+    def test_social018_blank_image_preserves_article_and_source(site_root, value):
+        path = site_root / "content/en/first-post.xml"
+        root = etree.parse(str(path)).getroot()
+        etree.SubElement(root, "image", width="999", alt="unused").text = value
+        path.write_bytes(etree.tostring(root))
+        captured = path.read_bytes()
+        article = parse_article_xml(path)
+>       assert article is not None
+E       assert None is not None
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:20: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre0/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+__________ test_social018_blank_image_preserves_article_and_source[ ] __________
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre1/site')
+value = ' '
+
+    @pytest.mark.parametrize("value", ["", " ", "\t\n\r ", "\u00a0"])
+    def test_social018_blank_image_preserves_article_and_source(site_root, value):
+        path = site_root / "content/en/first-post.xml"
+        root = etree.parse(str(path)).getroot()
+        etree.SubElement(root, "image", width="999", alt="unused").text = value
+        path.write_bytes(etree.tostring(root))
+        captured = path.read_bytes()
+        article = parse_article_xml(path)
+>       assert article is not None
+E       assert None is not None
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:20: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre1/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+_______ test_social018_blank_image_preserves_article_and_source[\t\n\r ] _______
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre2/site')
+value = '\t\n\r '
+
+    @pytest.mark.parametrize("value", ["", " ", "\t\n\r ", "\u00a0"])
+    def test_social018_blank_image_preserves_article_and_source(site_root, value):
+        path = site_root / "content/en/first-post.xml"
+        root = etree.parse(str(path)).getroot()
+        etree.SubElement(root, "image", width="999", alt="unused").text = value
+        path.write_bytes(etree.tostring(root))
+        captured = path.read_bytes()
+        article = parse_article_xml(path)
+>       assert article is not None
+E       assert None is not None
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:20: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre2/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+________ test_social018_blank_image_preserves_article_and_source[\xa0] _________
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre3/site')
+value = '\xa0'
+
+    @pytest.mark.parametrize("value", ["", " ", "\t\n\r ", "\u00a0"])
+    def test_social018_blank_image_preserves_article_and_source(site_root, value):
+        path = site_root / "content/en/first-post.xml"
+        root = etree.parse(str(path)).getroot()
+        etree.SubElement(root, "image", width="999", alt="unused").text = value
+        path.write_bytes(etree.tostring(root))
+        captured = path.read_bytes()
+        article = parse_article_xml(path)
+>       assert article is not None
+E       assert None is not None
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:20: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_blank_image_pre3/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+_____________ test_social018_seeded_blank_and_nonempty_boundaries ______________
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_seeded_blank_an0/site')
+
+    def test_social018_seeded_blank_and_nonempty_boundaries(site_root):
+        path = site_root / "content/en/first-post.xml"
+        original = path.read_bytes()
+        rng = random.Random(18018)
+        for _ in range(64):
+            root = etree.fromstring(original)
+            etree.SubElement(root, "image").text = "".join(rng.choices(" \t\r\n", k=rng.randrange(33)))
+            path.write_bytes(etree.tostring(root))
+            article = parse_article_xml(path)
+>           assert article is not None
+E           assert None is not None
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:34: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_seeded_blank_an0/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+______________ test_social018_blank_image_is_omitted_from_jsonld _______________
+
+site_root = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_is_0/site')
+seo_config = (<articulous.cli.CliOptions object at 0x7a6cd6d4f610>, {'build': {'cache_file': '.build-cache.json', 'force_full_build...k_image_is_0/site/output', 'xsl_dir': '/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_is_0/site/xsl'}, ...})
+
+    def test_social018_blank_image_is_omitted_from_jsonld(site_root, seo_config):
+        cli, config = seo_config
+        source = site_root / "content/en/first-post.xml"
+        root = etree.parse(str(source)).getroot()
+        etree.SubElement(root, "image").text = "\n\t "
+        etree.SubElement(root, "structured-data").text = "BlogPosting"
+        source.write_bytes(etree.tostring(root))
+        run_build(cli, config, site_root)
+>       page = etree.HTML((site_root / "output/en/articles/first-post/index.html").read_bytes())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/backups/disk2/projects/articulous/tests/test_empty_image.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/netto/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py:1050: in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_is_0/site/output/en/articles/first-post/index.html')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-netto/pytest-85/test_social018_blank_image_is_0/site/output/en/articles/first-post/index.html'
+
+/home/netto/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py:1044: FileNotFoundError
+------------------------------ Captured log call -------------------------------
+WARNING  root:articles.py:349 Article /tmp/pytest-of-netto/pytest-85/test_social018_blank_image_is_0/site/content/en/first-post.xml has URL must be absolute HTTP(S) with a host — skipping
+=========================== short test summary info ============================
+FAILED tests/test_empty_image.py::test_social018_blank_image_preserves_article_and_source[]
+FAILED tests/test_empty_image.py::test_social018_blank_image_preserves_article_and_source[ ]
+FAILED tests/test_empty_image.py::test_social018_blank_image_preserves_article_and_source[\t\n\r ]
+FAILED tests/test_empty_image.py::test_social018_blank_image_preserves_article_and_source[\xa0]
+FAILED tests/test_empty_image.py::test_social018_seeded_blank_and_nonempty_boundaries
+FAILED tests/test_empty_image.py::test_social018_blank_image_is_omitted_from_jsonld
+6 failed in 0.27s

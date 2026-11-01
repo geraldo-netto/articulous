@@ -1,0 +1,570 @@
+/tmp/morpha-test-zoowacax/source/articulous/xml_sources.py
+  /tmp/morpha-test-zoowacax/source/articulous/xml_sources.py:3:18 - error: "etree" is unknown import symbol (reportAttributeAccessIssue)
+/tmp/morpha-test-zoowacax/source/sitegen.py
+  /tmp/morpha-test-zoowacax/source/sitegen.py:7:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/conftest.py
+  /tmp/morpha-test-zoowacax/source/tests/conftest.py:25:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/conftest.py:26:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/conftest.py:27:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_article_fields.py
+  /tmp/morpha-test-zoowacax/source/tests/test_article_fields.py:7:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_article_progress.py
+  /tmp/morpha-test-zoowacax/source/tests/test_article_progress.py:6:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:12:8 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:13:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:14:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:15:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:16:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_snapshots.py:17:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py
+  /tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py:5:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py:9:10 - error: Import "articulous.xml_sources" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py:25:10 - error: Import "articulous.xml_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py:26:10 - error: Import "articulous.xml_sources" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_article_source_view.py:42:10 - error: Import "articulous.xml_sources" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_articles.py
+  /tmp/morpha-test-zoowacax/source/tests/test_articles.py:11:6 - error: Import "articulous.article_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_articles.py:12:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_asset_copy_safety.py
+  /tmp/morpha-test-zoowacax/source/tests/test_asset_copy_safety.py:9:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_asset_copy_safety.py:10:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_asset_copy_safety.py:11:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_asset_copy_safety.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_asset_hashing.py
+  /tmp/morpha-test-zoowacax/source/tests/test_asset_hashing.py:9:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py
+  /tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py:18:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py:19:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py:25:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py:31:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_bare_default_language.py:32:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_browser_fence.py
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_fence.py:8:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_fence.py:9:6 - error: Import "articulous.backends.processes" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_browser_process.py
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:14:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:15:6 - error: Import "articulous.backends.processes" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:32:10 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:74:10 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:75:10 - error: Import "articulous.backends.processes" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:78:31 - error: Cannot access attribute "token" for class "BaseException"
+    Attribute "token" is unknown (reportAttributeAccessIssue)
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_process.py:78:31 - error: "token" is not a known attribute of "None" (reportOptionalMemberAccess)
+/tmp/morpha-test-zoowacax/source/tests/test_browser_progress.py
+  /tmp/morpha-test-zoowacax/source/tests/test_browser_progress.py:9:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py:12:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py:13:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py:14:6 - error: Import "articulous.build_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py:17:6 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_contracts.py:76:10 - error: Import "articulous.build_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_build_materialization.py
+  /tmp/morpha-test-zoowacax/source/tests/test_build_materialization.py:8:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_materialization.py:9:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_materialization.py:10:6 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_build_materialization.py:11:6 - error: Import "articulous.publication_adapter" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_cache_recovery.py
+  /tmp/morpha-test-zoowacax/source/tests/test_cache_recovery.py:4:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_cache_recovery.py:5:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_cache_recovery.py:6:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_cache_recovery.py:7:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:2:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:3:6 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:4:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:5:6 - error: Import "articulous.capture_adapter" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:131:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_capture_lifetime.py:147:21 - error: "_active" is not a known attribute of "None" (reportOptionalMemberAccess)
+/tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:6:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:7:6 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:8:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:9:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:104:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_composition.py:166:10 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_captured_display_date.py
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_display_date.py:3:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_captured_display_date.py:4:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_catalogue.py
+  /tmp/morpha-test-zoowacax/source/tests/test_catalogue.py:6:6 - error: Import "articulous.article_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_catalogue.py:7:6 - error: Import "articulous.catalogue" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_cli.py
+  /tmp/morpha-test-zoowacax/source/tests/test_cli.py:7:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_cli_output_admission.py
+  /tmp/morpha-test-zoowacax/source/tests/test_cli_output_admission.py:6:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_cli_output_admission.py:7:6 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_cli_output_admission.py:8:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_code_browser.py
+  /tmp/morpha-test-zoowacax/source/tests/test_code_browser.py:8:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py:12:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py:13:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py:14:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py:15:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_gate.py:16:6 - error: Import "articulous.complexity_xpath" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_complexity_xpath.py
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xpath.py:12:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xpath.py:13:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xpath.py:14:6 - error: Import "articulous.complexity_xslt_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py:10:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py:11:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py:12:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py:13:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_complexity_xslt.py:14:6 - error: Import "articulous.complexity_xslt_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_composition.py
+  /tmp/morpha-test-zoowacax/source/tests/test_composition.py:11:6 - error: Import "articulous.composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_composition.py:12:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_composition.py:13:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_composition.py:14:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_composition.py:15:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_config.py
+  /tmp/morpha-test-zoowacax/source/tests/test_config.py:10:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:10:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:11:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:38:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:53:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:59:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:69:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:76:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:82:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_configuration_contracts.py:94:10 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:10:6 - error: Import "articulous.backends.imagemagick" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:11:6 - error: Import "articulous.backends.processes" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:61:10 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:83:10 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:84:10 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_converter_cancellation.py:85:10 - error: Import "articulous.source_files" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_coverage_gate.py
+  /tmp/morpha-test-zoowacax/source/tests/test_coverage_gate.py:10:6 - error: Import "articulous.coverage_gate" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_coverage_gate.py:121:10 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_coverage_gate.py:122:10 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_coverage_name_collisions.py
+  /tmp/morpha-test-zoowacax/source/tests/test_coverage_name_collisions.py:8:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_coverage_name_collisions.py:9:6 - error: Import "articulous.coverage_gate" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_distributions.py
+  /tmp/morpha-test-zoowacax/source/tests/test_distributions.py:16:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_document_bases.py
+  /tmp/morpha-test-zoowacax/source/tests/test_document_bases.py:7:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_document_bases.py:8:6 - error: Import "articulous.validation_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_document_bases.py:9:6 - error: Import "test_site_validation" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_durable_recovery.py
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_recovery.py:12:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_recovery.py:13:6 - error: Import "articulous.source_files" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:7:6 - error: Import "articulous.composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:8:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:9:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:10:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:11:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:12:6 - error: Import "test_composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_durable_routes.py:13:6 - error: Import "test_prepared_build" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py
+  /tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py:8:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py:9:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py:10:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py:11:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engine_value_contract.py:12:6 - error: Import "test_prepared_build" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_engines.py
+  /tmp/morpha-test-zoowacax/source/tests/test_engines.py:16:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engines.py:32:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engines.py:33:6 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_engines.py:34:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py:5:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py:6:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py:7:6 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py:8:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_extra_artifacts.py:9:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzz_article_validation.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_article_validation.py:7:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzz_config.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_config.py:9:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:26:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:32:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:33:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:34:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:35:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:41:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_edges.py:47:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py:9:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py:10:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py:11:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_limits.py:13:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzz_unit.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_unit.py:22:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_unit.py:27:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzz_unit.py:35:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_fuzzing.py
+  /tmp/morpha-test-zoowacax/source/tests/test_fuzzing.py:5:6 - error: Import "conftest" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_html5_serialization.py
+  /tmp/morpha-test-zoowacax/source/tests/test_html5_serialization.py:2:18 - error: "etree" is unknown import symbol (reportAttributeAccessIssue)
+  /tmp/morpha-test-zoowacax/source/tests/test_html5_serialization.py:4:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_html5_serialization.py:92:10 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_html5_serialization.py:93:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_html_serialization.py
+  /tmp/morpha-test-zoowacax/source/tests/test_html_serialization.py:4:6 - error: Import "articulous.html_serialization" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py
+  /tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py:8:6 - error: Import "articulous.backends.imagemagick" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py:9:6 - error: Import "articulous.image_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py:10:6 - error: Import "articulous.image_optimization" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py:166:10 - error: Import "articulous.resource_locks" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_image_optimization.py:199:10 - error: Import "articulous.image_optimization" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_image_read_identity.py
+  /tmp/morpha-test-zoowacax/source/tests/test_image_read_identity.py:4:6 - error: Import "articulous.image_optimization" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_image_read_identity.py:5:6 - error: Import "articulous.source_transactions" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_index_roots.py
+  /tmp/morpha-test-zoowacax/source/tests/test_index_roots.py:10:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_index_roots.py:11:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_index_roots.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_large_build_limits.py
+  /tmp/morpha-test-zoowacax/source/tests/test_large_build_limits.py:8:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_listing_route_values.py
+  /tmp/morpha-test-zoowacax/source/tests/test_listing_route_values.py:5:6 - error: Import "articulous.composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_listing_route_values.py:6:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_local_validation_bases.py
+  /tmp/morpha-test-zoowacax/source/tests/test_local_validation_bases.py:7:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_local_validation_bases.py:8:6 - error: Import "articulous.validation_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_local_validation_bases.py:9:6 - error: Import "test_site_validation" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_lock_release.py
+  /tmp/morpha-test-zoowacax/source/tests/test_lock_release.py:9:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_lock_release.py:56:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_markup.py
+  /tmp/morpha-test-zoowacax/source/tests/test_markup.py:8:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_markup.py:9:6 - error: Import "articulous.markup_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_model_projection.py
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:4:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:5:6 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:6:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:7:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:96:10 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:97:10 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:135:10 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_model_projection.py:136:10 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_models.py
+  /tmp/morpha-test-zoowacax/source/tests/test_models.py:10:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_models.py:11:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_models.py:26:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:11:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:12:6 - error: Import "articulous.backends.saxon" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:13:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:14:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:15:6 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:16:6 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:17:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:18:6 - error: Import "articulous.source_files" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:19:6 - error: Import "test_engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_native_borrows.py:75:18 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_output_metrics.py
+  /tmp/morpha-test-zoowacax/source/tests/test_output_metrics.py:8:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:9:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:10:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:11:6 - error: Import "articulous.migrations" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:12:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:13:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_output_migrations.py:151:12 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_output_types.py
+  /tmp/morpha-test-zoowacax/source/tests/test_output_types.py:8:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_ownership.py
+  /tmp/morpha-test-zoowacax/source/tests/test_ownership.py:6:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_ownership_admission.py
+  /tmp/morpha-test-zoowacax/source/tests/test_ownership_admission.py:7:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_page_references.py
+  /tmp/morpha-test-zoowacax/source/tests/test_page_references.py:3:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_partial_extras.py
+  /tmp/morpha-test-zoowacax/source/tests/test_partial_extras.py:6:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_partial_extras.py:7:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_partial_extras.py:8:6 - error: Import "test_composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_partial_extras.py:9:6 - error: Import "test_prepared_build" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_pidfds.py
+  /tmp/morpha-test-zoowacax/source/tests/test_pidfds.py:6:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_pipeline.py
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:17:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:18:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:19:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:20:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:21:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:22:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:64:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:65:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:66:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:527:10 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:1140:12 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:1522:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:1714:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:1854:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:1863:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2118:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2131:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2144:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2163:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2280:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2299:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2315:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2325:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2337:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2355:12 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_pipeline.py:2359:10 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:8:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:11:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:12:6 - error: Import "articulous.build_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:13:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:14:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_prepared_build.py:15:6 - error: Import "test_composition" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_preview.py
+  /tmp/morpha-test-zoowacax/source/tests/test_preview.py:11:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_preview.py:64:78 - error: No parameter named "directory" (reportCallIssue)
+/tmp/morpha-test-zoowacax/source/tests/test_preview_aliases.py
+  /tmp/morpha-test-zoowacax/source/tests/test_preview_aliases.py:8:6 - error: Import "articulous.preview" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_preview_aliases.py:9:6 - error: Import "test_preview" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_process_identity.py
+  /tmp/morpha-test-zoowacax/source/tests/test_process_identity.py:4:6 - error: Import "articulous.backends.processes" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_process_identity.py:9:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_process_identity.py:10:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_process_identity.py:165:10 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_process_identity.py:220:10 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_process_lifetime_model.py
+  /tmp/morpha-test-zoowacax/source/tests/test_process_lifetime_model.py:6:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_publication.py
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:12:6 - error: Import "articulous.backends.posix" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:13:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:14:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:15:6 - error: Import "articulous.publication_adapter" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:16:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:17:6 - error: Import "test_composition" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:18:6 - error: Import "test_prepared_build" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication.py:151:12 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_publication_contract.py
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_contract.py:12:6 - error: Import "articulous.builds" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_contract.py:13:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_contract.py:14:6 - error: Import "articulous.publication_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_publication_namespace.py
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_namespace.py:7:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_namespace.py:8:6 - error: Import "articulous.configuration_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_namespace.py:9:6 - error: Import "articulous.backends.posix" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_publication_namespace.py:10:6 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_recovery_records.py
+  /tmp/morpha-test-zoowacax/source/tests/test_recovery_records.py:13:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_recovery_records.py:14:6 - error: Import "articulous.recovery_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_recovery_records.py:17:6 - error: Import "articulous.source_files" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_redirect_fragments.py
+  /tmp/morpha-test-zoowacax/source/tests/test_redirect_fragments.py:6:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_redirect_fragments.py:7:6 - error: Import "test_site_validation" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_redirect_without_stubs.py
+  /tmp/morpha-test-zoowacax/source/tests/test_redirect_without_stubs.py:7:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_redirect_without_stubs.py:8:6 - error: Import "test_site_validation" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:49:14 - error: Import "articulous.resource_locks" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:93:14 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:114:14 - error: Import "articulous.resource_locks" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:128:10 - error: Import "articulous.resource_locks" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:148:10 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:149:10 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_resource_locks.py:163:10 - error: Import "articulous.resource_locks" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_retained_sitemap.py
+  /tmp/morpha-test-zoowacax/source/tests/test_retained_sitemap.py:8:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_retained_sitemap.py:9:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_retained_sitemap.py:10:6 - error: Import "test_composition" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_route_contracts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_route_contracts.py:8:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_route_contracts.py:26:10 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_route_url_types.py
+  /tmp/morpha-test-zoowacax/source/tests/test_route_url_types.py:7:6 - error: Import "articulous.composition_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_route_url_types.py:8:6 - error: Import "articulous.ownership" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_route_url_types.py:9:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py
+  /tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py:13:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py:14:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py:15:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py:16:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_rss_per_language.py:17:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_runtime.py
+  /tmp/morpha-test-zoowacax/source/tests/test_runtime.py:12:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_runtime.py:21:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_saxon_lifetime.py
+  /tmp/morpha-test-zoowacax/source/tests/test_saxon_lifetime.py:8:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_saxon_protocol_config.py
+  /tmp/morpha-test-zoowacax/source/tests/test_saxon_protocol_config.py:9:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_saxon_protocol_config.py:10:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py
+  /tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py:12:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py:13:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py:14:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py:15:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_saxonc_integration.py:16:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_search_resources.py
+  /tmp/morpha-test-zoowacax/source/tests/test_search_resources.py:3:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_search_resources.py:4:6 - error: Import "articulous.theme_resources" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_indexing.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_indexing.py:8:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_indexing.py:9:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_metadata.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_metadata.py:8:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_metadata.py:9:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_pagination.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_pagination.py:5:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_robots.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_robots.py:6:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_robots.py:7:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_metadata.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_metadata.py:8:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_metadata.py:9:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_metadata.py:10:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_shards.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_shards.py:9:8 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_shards.py:10:8 - error: Import "articulous.sitemaps" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_sitemap_shards.py:11:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_slugs.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_slugs.py:7:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_slugs.py:8:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_structured_data.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_structured_data.py:11:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_structured_data.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_structured_data.py:13:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_templates.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_templates.py:5:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:11:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:13:6 - error: Import "articulous.translations" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:171:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:182:10 - error: Import "articulous.publication" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:183:10 - error: Import "articulous.extensions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:207:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_seo_translations.py:208:10 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_session_materialization.py
+  /tmp/morpha-test-zoowacax/source/tests/test_session_materialization.py:11:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_session_materialization.py:12:6 - error: Import "articulous.backends.imagemagick" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_session_materialization.py:13:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_session_materialization.py:14:6 - error: Import "articulous.process_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_site_validation.py
+  /tmp/morpha-test-zoowacax/source/tests/test_site_validation.py:2:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_site_validation.py:3:6 - error: Import "articulous.validation_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_site_validation.py:9:6 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_site_validation.py:73:10 - error: Import "articulous.site_validation" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py
+  /tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py:7:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py:8:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py:9:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py:10:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_sitemap_routes.py:11:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_source_editing.py
+  /tmp/morpha-test-zoowacax/source/tests/test_source_editing.py:7:6 - error: Import "articulous.source_files" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_source_editing.py:8:6 - error: Import "articulous.source_transactions" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_source_editing.py:135:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_source_editing.py:155:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_source_rollback_conflicts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_source_rollback_conflicts.py:7:6 - error: Import "articulous.source_transactions" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_staged_output.py
+  /tmp/morpha-test-zoowacax/source/tests/test_staged_output.py:7:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_state_files.py
+  /tmp/morpha-test-zoowacax/source/tests/test_state_files.py:12:6 - error: Import "articulous.cli" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_state_files.py:13:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_state_files.py:14:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_state_files.py:15:6 - error: Import "articulous.runtime" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py
+  /tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py:14:6 - error: Import "articulous.articles" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py:15:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py:16:6 - error: Import "articulous.models" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py:17:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_tag_pagination.py:74:10 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_taxonomy_completeness.py
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_completeness.py:10:14 - error: Import "articulous.taxonomy_completeness" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_completeness.py:42:14 - error: Import "articulous.taxonomy_completeness" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_completeness.py:54:14 - error: Import "articulous.taxonomy_completeness" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_completeness.py:84:14 - error: Import "articulous.taxonomy_completeness" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_taxonomy_editing.py
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_editing.py:12:6 - error: Import "articulous.taxonomy_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_editing.py:13:6 - error: Import "articulous.taxonomy_editing" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_editing.py:199:14 - error: Import "articulous.source_transactions" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:14:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:36:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:60:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:76:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:92:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:136:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_policy.py:145:14 - error: Import "articulous.taxonomy_policy" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_taxonomy_reports.py
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_reports.py:5:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_taxonomy_reports.py:13:14 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_theme_attribute_policy.py
+  /tmp/morpha-test-zoowacax/source/tests/test_theme_attribute_policy.py:9:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_theme_resources.py
+  /tmp/morpha-test-zoowacax/source/tests/test_theme_resources.py:9:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_theme_resources.py:10:6 - error: Import "articulous.theme_resources" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_tooling_resources.py
+  /tmp/morpha-test-zoowacax/source/tests/test_tooling_resources.py:3:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_tooling_resources.py:19:10 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:10:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:11:6 - error: Import "articulous.filesystem" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:12:6 - error: Import "articulous.pipeline" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:54:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:78:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:85:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:92:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:103:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:111:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:128:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_transform_contracts.py:134:10 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:10:6 - error: Import "articulous.backends" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:11:6 - error: Import "articulous.translation_cache" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:12:6 - error: Import "articulous.translation_client" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:13:6 - error: Import "articulous.translation_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:14:6 - error: Import "articulous.translation_jobs" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:16:6 - error: Import "articulous.translation_xml" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:17:6 - error: Import "articulous.markup_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:78:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_authoring.py:139:18 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_translation_http.py
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:17:6 - error: Import "articulous.backends.translation_http" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:18:6 - error: Import "articulous.markup_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:19:6 - error: Import "articulous.translation_cache" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:20:6 - error: Import "articulous.translation_client" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:21:6 - error: Import "articulous.translation_contracts" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:22:6 - error: Import "articulous.translation_xml" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:199:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_http.py:210:10 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_translation_setup.py
+  /tmp/morpha-test-zoowacax/source/tests/test_translation_setup.py:6:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_url_placeholder_contract.py
+  /tmp/morpha-test-zoowacax/source/tests/test_url_placeholder_contract.py:7:6 - error: Import "articulous.config" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_url_placeholder_contract.py:8:6 - error: Import "articulous.sections" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_validation_resolution.py
+  /tmp/morpha-test-zoowacax/source/tests/test_validation_resolution.py:6:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_validation_resolution.py:7:6 - error: Import "articulous.validation_contracts" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_vbnet_resources.py
+  /tmp/morpha-test-zoowacax/source/tests/test_vbnet_resources.py:4:6 - error: Import "articulous.browser_process" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_vbnet_resources.py:5:6 - error: Import "articulous.theme_resources" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_xml_validation.py
+  /tmp/morpha-test-zoowacax/source/tests/test_xml_validation.py:6:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/test_xslt_acceptance.py
+  /tmp/morpha-test-zoowacax/source/tests/test_xslt_acceptance.py:4:6 - error: Import "articulous.complexity_xpath" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/test_xslt_acceptance.py:5:6 - error: Import "articulous" could not be resolved (reportMissingImports)
+/tmp/morpha-test-zoowacax/source/tests/tooling/installed-package.py
+  /tmp/morpha-test-zoowacax/source/tests/tooling/installed-package.py:8:8 - error: Import "articulous" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/tooling/installed-package.py:9:6 - error: Import "articulous.theme_resources" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/tooling/installed-package.py:10:6 - error: Import "articulous.tooling_resources" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/tooling/installed-package.py:29:20 - error: Argument of type "str | None" cannot be assigned to parameter "args" of type "StrPath" in function "__new__"
+    Type "str | None" is not assignable to type "StrPath"
+      Type "None" is not assignable to type "StrPath"
+        "None" is not assignable to "str"
+        "None" is incompatible with protocol "PathLike[str]"
+          "__fspath__" is not present (reportArgumentType)
+/tmp/morpha-test-zoowacax/source/tests/tooling/saxon-lifetime.py
+  /tmp/morpha-test-zoowacax/source/tests/tooling/saxon-lifetime.py:11:6 - error: Import "articulous.backends.recovery" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/tooling/saxon-lifetime.py:12:6 - error: Import "articulous.engines" could not be resolved (reportMissingImports)
+  /tmp/morpha-test-zoowacax/source/tests/tooling/saxon-lifetime.py:13:6 - error: Import "articulous.transform_contracts" could not be resolved (reportMissingImports)
+438 errors, 0 warnings, 0 informations

@@ -72,7 +72,7 @@ def test_seo10_reproducible_script_termination_fuzz(site_root, seo_config):
 
 @pytest.mark.parametrize("field,value", [
     ("structured-data", ""), ("structured-data", "Person"), ("structured-data", "article"),
-    ("author", ""), ("author", "x" * 513), ("image", ""), ("image", "javascript:alert(1)"),
+    ("author", ""), ("author", "x" * 513), ("image", "javascript:alert(1)"),
     ("image", "https://example.test/x y"), ("image", "https://example.test/x?q=%GG"),
     ("image", "https://example.test/x#fragment"), ("image", "https://user:pass@example.test/x"),
     ("image", "https://example.test/x?q=1#fragment"),

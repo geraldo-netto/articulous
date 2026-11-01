@@ -1,0 +1,162 @@
+{
+  "baseline": [
+    [
+      "test_article_source_view.py",
+      "16",
+      "20",
+      "\"source_xml\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "17",
+      "20",
+      "\"slug\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "18",
+      "31",
+      "\"text\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "21",
+      "20",
+      "\"title\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "36",
+      "59",
+      "Argument of type \"object\" cannot be assigned to parameter \"source\" of type \"XmlSource\" in function \"parse_article_source\""
+    ],
+    [
+      "test_article_source_view.py",
+      "38",
+      "39",
+      "Argument of type \"Literal['source.xml']\" cannot be assigned to parameter \"path\" of type \"Path\" in function \"parse_article_source\""
+    ],
+    [
+      "test_captured_display_date.py",
+      "18",
+      "20",
+      "\"display_date\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_captured_display_date.py",
+      "19",
+      "20",
+      "\"source_xml\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_html5_serialization.py",
+      "2",
+      "18",
+      "\"etree\" is unknown import symbol (reportAttributeAccessIssue)"
+    ],
+    [
+      "test_model_projection.py",
+      "149",
+      "5",
+      "Object of type \"None\" cannot be called (reportOptionalCall)"
+    ],
+    [
+      "test_model_projection.py",
+      "79",
+      "9",
+      "\"__setitem__\" method not defined on type \"Mapping[str, str]\" (reportIndexIssue)"
+    ],
+    [
+      "test_model_projection.py",
+      "81",
+      "40",
+      "Argument of type \"Literal[42]\" cannot be assigned to parameter \"project_model\" of type \"ModelProjection | None\" in function \"__init__\""
+    ],
+    [
+      "xml_sources.py",
+      "3",
+      "18",
+      "\"etree\" is unknown import symbol (reportAttributeAccessIssue)"
+    ]
+  ],
+  "final": [
+    [
+      "test_article_source_view.py",
+      "16",
+      "20",
+      "\"source_xml\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "17",
+      "20",
+      "\"slug\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "18",
+      "31",
+      "\"text\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "21",
+      "20",
+      "\"title\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_article_source_view.py",
+      "36",
+      "59",
+      "Argument of type \"object\" cannot be assigned to parameter \"source\" of type \"XmlSource\" in function \"parse_article_source\""
+    ],
+    [
+      "test_article_source_view.py",
+      "38",
+      "39",
+      "Argument of type \"Literal['source.xml']\" cannot be assigned to parameter \"path\" of type \"Path\" in function \"parse_article_source\""
+    ],
+    [
+      "test_captured_display_date.py",
+      "18",
+      "20",
+      "\"display_date\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_captured_display_date.py",
+      "19",
+      "20",
+      "\"source_xml\" is not a known attribute of \"None\" (reportOptionalMemberAccess)"
+    ],
+    [
+      "test_html5_serialization.py",
+      "2",
+      "18",
+      "\"etree\" is unknown import symbol (reportAttributeAccessIssue)"
+    ],
+    [
+      "test_model_projection.py",
+      "149",
+      "5",
+      "Object of type \"None\" cannot be called (reportOptionalCall)"
+    ],
+    [
+      "test_model_projection.py",
+      "79",
+      "9",
+      "\"__setitem__\" method not defined on type \"Mapping[str, str]\" (reportIndexIssue)"
+    ],
+    [
+      "test_model_projection.py",
+      "81",
+      "40",
+      "Argument of type \"Literal[42]\" cannot be assigned to parameter \"project_model\" of type \"ModelProjection | None\" in function \"__init__\""
+    ],
+    [
+      "xml_sources.py",
+      "3",
+      "18",
+      "\"etree\" is unknown import symbol (reportAttributeAccessIssue)"
+    ]
+  ]
+}

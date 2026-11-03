@@ -1,30 +1,61 @@
 # TODO
 
-## Open items
+Effort `—` means no change is planned for a retained `wont_fix` decision.
+
+## Engineering and validation
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-
-
 | TYPE-002 | open | low | S | Resolve two lxml etree import-attribution errors. | Correctness/contradictions: the documented full Pyright gate reports unknown etree imports in unchanged articulous/xml_sources.py and tests/test_html5_serialization.py despite pyproject.toml enabling library-source typing. Reproduce with Pyright 1.1.411 and the pinned environment, correct module import/typing without suppressions or changing XML behavior, then retain the existing source/build regressions. Independent prerequisite for TYPE-001. |
 | TYPE-003 | open | low | S | Make seven nullable test accesses explicit without weakening their oracles. | Correctness/contradictions: Pyright reports four nullable article/tree accesses in tests/test_article_source_view.py, two captured-article accesses in tests/test_captured_display_date.py and one optional callback in tests/test_model_projection.py. Assert or narrow the expected runtime values before accessing them; retain all semantic assertions and invalid-input coverage. Resolve with clean affected-file diagnostics and passing retained tests. Independent prerequisite for TYPE-001. |
 | TYPE-004 | open | low | S | Express four deliberate invalid typed inputs without static-check failures. | Correctness/contradictions: tests/test_article_source_view.py passes object as XmlSource and str as Path; tests/test_model_projection.py mutates a Mapping and passes integer 42 as ModelProjection. Preserve these runtime rejection/immutability tests using honest dynamic boundary values, without metric/type suppressions or weaker oracles. Resolve with clean affected-file diagnostics and unchanged rejection coverage. Independent prerequisite for TYPE-001. |
+| TYPE-001 | blocked | low | S | Reconcile full Pyright acceptance after TYPE-002, TYPE-003 and TYPE-004. | Correctness/contradictions: docs/development.md requires a clean full Pyright run; current and independently extracted unchanged HEAD each reproduce the same 13 exact file/line/column/error messages. This row owns full-gate integration only; the three children own the independent import, nullable-access and invalid-input corrections. Missing prerequisites: those three verified corrections. SOCIAL-018 changed files have 0 errors. Resolve with clean full Pyright and retained runtime regressions, not source suppressions. Evidence for all four items: reviews/social018-2026-11-01/{pyright-final.log,pyright-changed.log,pyright-baseline.log,pyright-baseline-comparison.json}. |
 
-## Other items
+
+## Build planning and rendering
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| TYPE-001 | blocked | low | S | Reconcile full Pyright acceptance after TYPE-002, TYPE-003 and TYPE-004. | Correctness/contradictions: docs/development.md requires a clean full Pyright run; current and independently extracted unchanged HEAD each reproduce the same 13 exact file/line/column/error messages. This row owns full-gate integration only; the three children own the independent import, nullable-access and invalid-input corrections. Missing prerequisites: those three verified corrections. SOCIAL-018 changed files have 0 errors. Resolve with clean full Pyright and retained runtime regressions, not source suppressions. Evidence for all four items: reviews/social018-2026-11-01/{pyright-final.log,pyright-changed.log,pyright-baseline.log,pyright-baseline-comparison.json}. |
-| REDOS-001 | wont_fix | medium | S | Optional taxonomy matcher can retry quadratically on separator-leading names. | Security/performance review; taxonomy_completeness.py:31-44: tag `-a` produces an unanchored separator run followed by `a`; searching whitespace ending in `!` retries the run from each position. Local missing_tags cases at 1k/2k/4k characters took about 5/21/79 ms; no default build caller, only the opt-in public helper. Owner instruction 2026-10-24: stop content-focused analysis and let these findings go; no post code was executed. Declined for this pass; reconsider only on explicit owner resumption. Any future fix requires permanent failing-before/passing-after scaling/semantic controls, including literal punctuation and valid phrase boundaries. Evidence/scope: reviews/regex/README.md. |
-| REDOS-002 | wont_fix | medium | M | Optional synchronous Prism highlighting has content-sensitive quadratic paths. | Security/performance review; code-blocks.js:29 calls highlightElement without a worker or admission bound. Packaged markup tag, Bash function and batch set-variable patterns show roughly 4x cost per doubled input in completed 1k–8k local text-only cases; no snippet was executed. Owner instruction 2026-10-24 declines further post-content/highlighting analysis and hardening. Keep disposition unless owner explicitly resumes. Future work must retain normal highlighting/copy behavior and permanent malformed-input/valid-boundary regressions, with owned cancellation if isolation is selected. Limited evidence and intentionally stopped vendor review: reviews/regex/README.md. |
 | PERF-01 | wont_fix | low | — | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
 | PERF-02 | wont_fix | low | — | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
-| SCAL-01 | wont_fix | low | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
-| CC-01 | wont_fix | low | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
 | DUP-01 | wont_fix | low | — | Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
-| REL-01 | wont_fix | low | — | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
-| REL-02 | wont_fix | low | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
-| UNUSED-01 | wont_fix | low | — | Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
 | UNUSED-02 | wont_fix | low | — | `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) are dispatched through `_add_per_lang_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
 | DOC-03 | wont_fix | low | — | private helpers `_passes_cli_filters` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
 | DUP-02 | wont_fix | low | — | `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |
+
+
+## Article discovery and models
+
+| id | status | severity | effort | description | notes |
+|----|--------|----------|--------|-------------|-------|
+| SCAL-01 | wont_fix | low | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
+| CC-01 | wont_fix | low | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
+| REL-02 | wont_fix | low | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
+
+
+## Cache persistence
+
+| id | status | severity | effort | description | notes |
+|----|--------|----------|--------|-------------|-------|
+| REL-01 | wont_fix | low | — | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
+
+
+## Configuration
+
+| id | status | severity | effort | description | notes |
+|----|--------|----------|--------|-------------|-------|
+| UNUSED-01 | wont_fix | low | — | Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
+
+
+## Taxonomy authoring
+
+| id | status | severity | effort | description | notes |
+|----|--------|----------|--------|-------------|-------|
+| REDOS-001 | wont_fix | medium | S | Optional taxonomy matcher can retry quadratically on separator-leading names. | Security/performance review; taxonomy_completeness.py:31-44: tag `-a` produces an unanchored separator run followed by `a`; searching whitespace ending in `!` retries the run from each position. Local missing_tags cases at 1k/2k/4k characters took about 5/21/79 ms; no default build caller, only the opt-in public helper. Owner instruction 2026-10-24: stop content-focused analysis and let these findings go; no post code was executed. Declined for this pass; reconsider only on explicit owner resumption. Any future fix requires permanent failing-before/passing-after scaling/semantic controls, including literal punctuation and valid phrase boundaries. Evidence/scope: reviews/regex/README.md. |
+
+
+## Browser code highlighting
+
+| id | status | severity | effort | description | notes |
+|----|--------|----------|--------|-------------|-------|
+| REDOS-002 | wont_fix | medium | M | Optional synchronous Prism highlighting has content-sensitive quadratic paths. | Security/performance review; code-blocks.js:29 calls highlightElement without a worker or admission bound. Packaged markup tag, Bash function and batch set-variable patterns show roughly 4x cost per doubled input in completed 1k–8k local text-only cases; no snippet was executed. Owner instruction 2026-10-24 declines further post-content/highlighting analysis and hardening. Keep disposition unless owner explicitly resumes. Future work must retain normal highlighting/copy behavior and permanent malformed-input/valid-boundary regressions, with owned cancellation if isolation is selected. Limited evidence and intentionally stopped vendor review: reviews/regex/README.md. |

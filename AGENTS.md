@@ -37,7 +37,7 @@ Primary source for agent conduct, edit norms, response expectations — follow b
   not inline.
 - Prefer explicit, maintainable solutions over clever shortcuts.
 - Propose business/design patterns + DDD only when improve clarity or structure.
-- ALWAYS record review findings in `TODO.md` — never chat-only. Any time scan, review, audit, or "look for issues" (not just major changes), add each finding to the appropriate lifecycle table before/while reporting. Name its review category in the description or notes.
+- ALWAYS record review findings in `TODO.md` — never chat-only. Any time scan, review, audit, or "look for issues" (not just major changes), add each finding to its owning domain table before/while reporting. Name its review category in the description or notes.
 - ALWAYS report every contradiction encountered, of any kind, and add or update a
   `contradictions` finding in `TODO.md`. This includes conflicting
   instructions, requirements, code, tests, documentation, and observed behavior.
@@ -51,17 +51,26 @@ Primary source for agent conduct, edit norms, response expectations — follow b
   removed; delete it after reconciliation and verification.
 - ALWAYS remove completed items from `TODO.md` — once finding resolved + verified,
   delete row from table outright. No "shipped" sub-sections, no struck-through entries.
-  `git log` = durable record. Keep deferred and declined items in **Other items**
-  with explicit reasons so future passes do not reopen them automatically.
-- Use two TODO tables: **Open items** for `open`/`in_progress`, and **Other items**
-  for `blocked`, `deferred`, `wont_fix` and other dispositions. Preserve IDs and
-  columns: `id | status | effort | description | notes`. Order Open by dependencies
-  and priority; make prerequisites explicit. Order Other with unresolved blockers
-  first, deferred work next and declined work last. Each unresolved row names the
-  exact next decision, evidence, prerequisite or review needed. Review that can
-  start now belongs in Open; review alone is not a blocker.
+  `git log` = durable record. Keep deferred and declined items in their domain
+  tables with explicit reasons so future passes do not reopen them automatically.
+- Owner decision 2026-11-03: organize `TODO.md` by domain, with one authoritative
+  table per domain and each item appearing exactly once under its primary owner.
+  This replaces the former **Open items** / **Other items** layout; do not restore
+  lifecycle sections or split domain tables by status. Review categories are
+  labels in descriptions or notes, not substitutes for domains.
+  Preserve IDs and columns: `id | status | severity | effort | description | notes`.
+  Keep lifecycle in `status`: `open`, `in_progress`, `blocked`, `deferred`,
+  `wont_fix` or another explicit disposition. Within each domain, order actionable
+  work by dependencies and priority, then blockers, deferred work and declined
+  work. Preserve direct and cross-domain dependencies and integration acceptance.
+  Each unresolved row names the exact next action, decision, evidence or
+  prerequisite needed. Review that can start now is `open`; review alone is not
+  a blocker. Grouping or decomposing rows never resumes deferred or declined work.
+  Keep table headers, separator rows and data rows contiguous so Markdown renders
+  every row inside its table. Leave exactly two blank lines between a table's last
+  row and the next domain heading. Shared skill defaults must not replace this format.
 - On major changes, rescan whole project + create or update `TODO.md`, covering
-  these review categories within the two lifecycle tables:
+  these review categories within the owning domain tables:
   - contradictions
   - security
   - performance

@@ -1,6 +1,6 @@
 """Native safe-XML adapter; readers close before returning the owned source view."""
 from functools import partial
-from lxml import etree
+import lxml.etree as etree
 from .engines import safe_xml_parser
 from .filesystem import open_regular_file
 from .xml_contracts import XmlSource

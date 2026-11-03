@@ -1,5 +1,6 @@
 """BUILD-038: shared source capture admits metadata and edits with one XML parse."""
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 import pytest
 from articulous import articles
@@ -13,9 +14,12 @@ def test_build038_parse_once_and_keep_original_bytes(site_root):
         source = read_source(path)
         article = articles.parse_article_source(path, source)
     assert parse.call_count == 1
+    assert article is not None
     assert article.source_xml == before
     assert article.slug == 'first-post'
-    source.root.find('title').text = 'Edited private copy'
+    title = source.root.find('title')
+    assert title is not None
+    title.text = 'Edited private copy'
     assert b'Edited private copy' in source.serialize()
     assert path.read_bytes() == before
     assert article.title == 'First Post'
@@ -32,10 +36,12 @@ def test_build038_invalid_source_contracts_reject_before_metadata(site_root):
         for value in values:
             with pytest.raises((TypeError, ValueError)):
                 XmlSource(**{**fields, name: value})
+    invalid_source: Any = object()
     with pytest.raises(TypeError):
-        articles.parse_article_source(Path('source.xml'), object())
+        articles.parse_article_source(Path('source.xml'), invalid_source)
+    invalid_path: Any = 'source.xml'
     with pytest.raises(TypeError):
-        articles.parse_article_source('source.xml', source)
+        articles.parse_article_source(invalid_path, source)
 
 
 def test_build038_reader_preserves_safe_xml_and_regular_file_admission(tmp_path):

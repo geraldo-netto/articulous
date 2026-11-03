@@ -2,16 +2,6 @@
 
 Effort `—` means no change is planned for a retained `wont_fix` decision.
 
-## Engineering and validation
-
-| id | status | severity | effort | description | notes |
-|----|--------|----------|--------|-------------|-------|
-| TYPE-002 | open | low | S | Resolve two lxml etree import-attribution errors. | Correctness/contradictions: the documented full Pyright gate reports unknown etree imports in unchanged articulous/xml_sources.py and tests/test_html5_serialization.py despite pyproject.toml enabling library-source typing. Reproduce with Pyright 1.1.411 and the pinned environment, correct module import/typing without suppressions or changing XML behavior, then retain the existing source/build regressions. Independent prerequisite for TYPE-001. |
-| TYPE-003 | open | low | S | Make seven nullable test accesses explicit without weakening their oracles. | Correctness/contradictions: Pyright reports four nullable article/tree accesses in tests/test_article_source_view.py, two captured-article accesses in tests/test_captured_display_date.py and one optional callback in tests/test_model_projection.py. Assert or narrow the expected runtime values before accessing them; retain all semantic assertions and invalid-input coverage. Resolve with clean affected-file diagnostics and passing retained tests. Independent prerequisite for TYPE-001. |
-| TYPE-004 | open | low | S | Express four deliberate invalid typed inputs without static-check failures. | Correctness/contradictions: tests/test_article_source_view.py passes object as XmlSource and str as Path; tests/test_model_projection.py mutates a Mapping and passes integer 42 as ModelProjection. Preserve these runtime rejection/immutability tests using honest dynamic boundary values, without metric/type suppressions or weaker oracles. Resolve with clean affected-file diagnostics and unchanged rejection coverage. Independent prerequisite for TYPE-001. |
-| TYPE-001 | blocked | low | S | Reconcile full Pyright acceptance after TYPE-002, TYPE-003 and TYPE-004. | Correctness/contradictions: docs/development.md requires a clean full Pyright run; current and independently extracted unchanged HEAD each reproduce the same 13 exact file/line/column/error messages. This row owns full-gate integration only; the three children own the independent import, nullable-access and invalid-input corrections. Missing prerequisites: those three verified corrections. SOCIAL-018 changed files have 0 errors. Resolve with clean full Pyright and retained runtime regressions, not source suppressions. Evidence for all four items: reviews/social018-2026-11-01/{pyright-final.log,pyright-changed.log,pyright-baseline.log,pyright-baseline-comparison.json}. |
-
-
 ## Build planning and rendering
 
 | id | status | severity | effort | description | notes |

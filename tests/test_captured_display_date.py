@@ -15,6 +15,7 @@ def test_build039_native_and_captured_display_date(site_root, seo_config, field,
     path.write_text(path.read_text().replace('</article>', field + '</article>'))
     source = path.read_bytes()
     article = parse_article_xml(path)
+    assert article is not None
     assert article.display_date == expected
     assert article.source_xml == source
     cli, config = seo_config

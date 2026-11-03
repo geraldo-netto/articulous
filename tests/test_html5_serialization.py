@@ -1,5 +1,5 @@
 """HTML5-001 / Morpha REV-197: native HTML output uses HTML5 void syntax."""
-from lxml import etree
+import lxml.etree as etree
 import pytest
 from articulous.engines import LxmlEngine
 

@@ -1,6 +1,7 @@
 """PERF-018/023: model projections follow preparation and remain caller-owned."""
 import pytest
 import hashlib
+from typing import Any
 from articulous.builds import prepare_build, render_prepared
 from articulous.extensions import BuildComposition, TemplateInput
 from articulous.composition_contracts import ExtraPage, Route
@@ -75,10 +76,12 @@ def test_perf018_projection_contract_owns_immutable_parameters():
     value = extensions.ModelInput(b'<root/>', 'index.html', params)
     params['key'] = 'after'
     assert value.parameters['key'] == 'before'
+    parameters: Any = value.parameters
     with pytest.raises(TypeError):
-        value.parameters['key'] = 'changed'
+        parameters['key'] = 'changed'
+    invalid_projection: Any = 42
     with pytest.raises(ValueError):
-        BuildComposition(project_model=42)
+        BuildComposition(project_model=invalid_projection)
 
 
 @pytest.mark.parametrize('source,path,parameters', [
@@ -146,5 +149,6 @@ def test_perf018_streamed_artifacts_bypass_presentation_projection(tmp_path):
     task = _make_xslt_task(xml_input=source, xsl_path=style, xsl_hash=stylesheet_hash(style),
                            output_path=output / 'index.html', cache={}, cache_key='stream',
                            engine=LxmlEngine(), ctx=context)
+    assert task is not None
     task()
     assert 'streamed' in (output / 'index.html').read_text()

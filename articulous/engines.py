@@ -31,8 +31,7 @@ from .filesystem import StagedOutput, atomic_output, open_regular_file, validate
 from .backends.saxon import run_transform_command
 from .backends.lxml_output import serialized_result
 from .native_workspace import native_workspace
-from .sections import REQUIRED_XSL_FILES, SECTION_XSL
-from .configuration_contracts import VALID_ENGINES, valid_engine_name
+from . import configuration_contracts, sections
 from .transform_contracts import (
     ExecutionCapabilities, TransformEngine, TransformFailure, TransformParameters,
     XmlInput, require_parameters,
@@ -41,8 +40,6 @@ from .transform_contracts import (
 __all__ = [
     "LxmlEngine",
     "NativeEngine",
-    "REQUIRED_XSL_FILES",
-    "SECTION_XSL",
     "SaxonCEngine",
     "check_dependencies",
     "configure_saxonc",
@@ -586,10 +583,10 @@ def make_engine(
     still falls back to the lxml engine, matching the historical
     behaviour.
     """
-    if not valid_engine_name(name):
+    if not configuration_contracts.valid_engine_name(name):
         raise ValueError(
             f"Unknown engine name {name!r}; "
-            f"must be one of {sorted(VALID_ENGINES)}"
+            f"must be one of {sorted(configuration_contracts.VALID_ENGINES)}"
         )
     if name == "native":
         return NativeEngine()
@@ -626,10 +623,10 @@ def check_dependencies(config, project_root: Path) -> None:
         raise FileNotFoundError(f"Missing XSL pages directory: {pages_dir}")
 
     configured = config.get("engines")
-    required_xsl = REQUIRED_XSL_FILES
+    required_xsl = sections.REQUIRED_XSL_FILES
     if isinstance(configured, dict):
         required_xsl = sorted(
-            SECTION_XSL[section]
+            sections.SECTION_XSL[section]
             for section, name in configured.items()
             if name != "native"
         )

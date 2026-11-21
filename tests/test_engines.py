@@ -16,10 +16,7 @@ import pytest
 from articulous.engines import (
     LxmlEngine,
     NativeEngine,
-    REQUIRED_XSL_FILES,
-    SECTION_XSL,
     SaxonCEngine,
-    VALID_ENGINES,
     _SnapshotResolver,
     _snapshot_stylesheet,
     check_dependencies,
@@ -29,7 +26,8 @@ from articulous.engines import (
     safe_xml_parser,
 )
 from articulous.filesystem import TempWorkspace
-from articulous.configuration_contracts import validate_engines
+from articulous.configuration_contracts import VALID_ENGINES, validate_engines
+from articulous.sections import REQUIRED_XSL_FILES, SECTION_XSL
 from articulous.transform_contracts import TransformEngine, TransformFailure
 
 
@@ -42,6 +40,11 @@ MINIMAL_XSLT = (
 
 
 # --- module-level constants ---
+
+def test_compat07_metadata_is_exported_by_its_registry():
+    from articulous import engines
+    assert {"SECTION_XSL", "REQUIRED_XSL_FILES", "VALID_ENGINES"}.isdisjoint(vars(engines))
+
 
 def test_required_xsl_files_match_section_xsl():
     assert set(REQUIRED_XSL_FILES) == set(SECTION_XSL.values())

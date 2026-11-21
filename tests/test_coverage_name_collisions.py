@@ -22,13 +22,15 @@ coverage.stop()
 coverage.json_report(outfile=sys.argv[2])
 '''
 
+CONDITIONAL_WORK = ('if {condition}:\n    def work():\n        return 1\n'
+                    'else:\n    def work():\n        return 2\nwork()\n')
+
 SOURCES = {
     'property': ('class Item:\n    @property\n    def value(self):\n        return 7\n'
                  '    @value.setter\n    def value(self, value):\n        self.stored = value\n'
                  'item = Item()\nitem.value = 4\n'),
     'repeated': 'def work():\n    return 1\ndef work():\n    return 2\nwork()\n',
-    'conditional': ('if False:\n    def work():\n        return 1\n'
-                    'else:\n    def work():\n        return 2\nwork()\n'),
+    'conditional': 'flag = False\n' + CONDITIONAL_WORK.format(condition='flag'),
 }
 
 
@@ -51,6 +53,15 @@ def native_report(root, source):
 def test_review031_ambiguous_native_names_are_rejected(tmp_path, kind):
     report, entry = native_report(tmp_path, SOURCES[kind])
     assert entry['missing_lines']
+    count, failures = check_report(tmp_path, ['code'], report)
+    assert count == 0
+    assert len(failures) == 1 and 'Ambiguous callable names' in failures[0]
+
+
+@pytest.mark.parametrize('condition', ['False', 'True'])
+def test_matrix01_constant_branch_still_has_ambiguous_lexical_names(tmp_path, condition):
+    report, entry = native_report(tmp_path, CONDITIONAL_WORK.format(condition=condition))
+    assert set(entry['functions']) - {''} == {'work'}
     count, failures = check_report(tmp_path, ['code'], report)
     assert count == 0
     assert len(failures) == 1 and 'Ambiguous callable names' in failures[0]

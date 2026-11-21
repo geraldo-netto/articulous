@@ -19297,8 +19297,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 55,
-            "end_line": 47,
-            "line": 35,
+            "end_line": 49,
+            "line": 37,
             "name": "native_report",
             "projection_sha256": "6fc519d72128e7dc3f85e8c24139625d46cbaa250c051346353bb9a5ec999598"
           },
@@ -19307,18 +19307,28 @@
             "column": 0,
             "complexity": 2,
             "end_column": 75,
-            "end_line": 56,
-            "line": 51,
+            "end_line": 58,
+            "line": 53,
             "name": "test_review031_ambiguous_native_names_are_rejected",
             "projection_sha256": "db28a5f0572f04236525fe6935d1a0e384798a66658831bc6005c3e65010665f"
+          },
+          {
+            "body_sha256": "8d4dd11aa3cb88cd4b7859668bd80a29578b809ecaab3a1aae105541ebef7958",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 75,
+            "end_line": 67,
+            "line": 62,
+            "name": "test_matrix01_constant_branch_still_has_ambiguous_lexical_names",
+            "projection_sha256": "3e74fbc4b7499ce0961e0ed1e6b37b15b66bc3da2f540f778fb34f66533a1a0c"
           },
           {
             "body_sha256": "c5933f52a48c9bf9324b013731d3979f6a1cfa9e28a2a938f3a8d595528ea7f1",
             "column": 0,
             "complexity": 1,
             "end_column": 62,
-            "end_line": 66,
-            "line": 59,
+            "end_line": 77,
+            "line": 70,
             "name": "test_review031_distinct_property_accessors_keep_native_coverage",
             "projection_sha256": "c54e707df22fcd223a9bb10b83d75593aa59f1ad0d096aa75ad67875af77d3fd"
           },
@@ -19327,15 +19337,15 @@
             "column": 0,
             "complexity": 4,
             "end_column": 79,
-            "end_line": 79,
-            "line": 69,
+            "end_line": 90,
+            "line": 80,
             "name": "test_review031_seeded_duplicate_names_fail_before_counter_admission",
             "projection_sha256": "b8eb16537a76d68089a85ed0653c9a5654f6403e7e1eda651236456433504201"
           }
         ],
         "language": "python",
         "path": "tests/test_coverage_name_collisions.py",
-        "sha256": "faa9e0c431fc970cc3a3c3b84a95adb0e7881bdc5c5f51f33846b8bd64b33754"
+        "sha256": "b010c180de08e3a149e5a2f2e4b69ae6a7b81d5505d1f4915b5dc6b0d07b2c32"
       },
       {
         "functions": [

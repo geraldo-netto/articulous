@@ -31,22 +31,30 @@ def cutoff_for(retention_days: int) -> int | None:
     return _cutoff(_now(), retention_days)
 
 
-def _expired_roots(roots: dict, active_root: str, cutoff: int | None):
+def _expired_roots(roots, active_root, cutoff, activity):
     for root, record in roots.items():
-        if root != active_root:
-            used = last_used(record)
-            if used is not None and (cutoff is None or used <= cutoff):
+        used = last_used(record)
+        if root != active_root and _is_expired(used, cutoff):
+            if _is_expired(activity.inactive(root, record), cutoff):
                 yield root
 
 
-def refresh_output_cache(roots: dict, active_root: str, cache: dict, retention_days: int) -> bool:
+def _is_expired(used, cutoff):
+    return used is not None and (cutoff is None or used <= cutoff)
+
+
+def refresh_output_cache(roots, active_root, cache, retention_days, activity):
     now = _now()
-    cache[LAST_USED_KEY] = max(now, last_used(roots.get(active_root)) or 0)
-    cutoff = _cutoff(now, retention_days)
-    expired = list(_expired_roots(roots, active_root, cutoff))
-    for root in expired:
-        del roots[root]
-    changed = cache_changed(cache)
-    if changed:
+    previous = roots.get(active_root)
+    used = activity.used(active_root, previous)
+    expired = list(_expired_roots(roots, active_root, _cutoff(now, retention_days), activity))
+    if cache_changed(cache) or expired:
+        cache[LAST_USED_KEY] = max(now, used or 0)
         roots[active_root] = dict(cache)
-    return changed or bool(expired)
+        for root in expired:
+            del roots[root]
+            activity.retire(root)
+        return True
+    if used is not None and now > used:
+        activity.touch(active_root, previous, now)
+    return False

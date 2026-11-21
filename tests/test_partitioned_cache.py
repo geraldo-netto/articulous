@@ -17,6 +17,7 @@ import pytest
 from articulous import cache_store, cache_usage_index, pipeline, publication_adapter
 from articulous.backends.posix import PosixPublicationBackend
 from articulous.builds import check_build
+from articulous.cache_activity import CacheActivity, activity_path, retirement_queue
 from articulous.config import normalize_configuration
 from articulous.configuration_contracts import BuildRequest, ConfigurationError
 from articulous.filesystem import cache_lock_path, lock_file
@@ -44,6 +45,11 @@ def _selected(root, name):
 
 def _record(root, name):
     return json.loads(_selected(root, name).path.read_text())['__output_roots__'][str(root / name)]
+
+
+def _used(site_root, name):
+    cache = _selected(site_root, name).path
+    return CacheActivity(cache, _base(site_root)).used(str(site_root / name), _record(site_root, name))
 
 
 @pytest.mark.parametrize('seed', range(4))
@@ -78,7 +84,7 @@ def test_perf31_migrates_shared_roots_and_admits_only_active_records(site_root, 
     pipeline.run_build(REQUEST, _config(enable=False), site_root)
     assert reads == [_selected(site_root, 'output').path]
     assert _base(site_root).read_bytes() == old
-    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert _used(site_root, 'output') == cache_clock[0]
 
 
 def test_perf31_custom_backend_keeps_cache_text_and_active_path_contract(site_root, monkeypatch):
@@ -327,7 +333,7 @@ def test_perf31_does_not_expire_unverified_cache_headers(tmp_path, fault):
         path.write_text(json.dumps({'__output_roots__': {other: {'__last_used__': 0}}}, indent=2))
     if fault == 'hardlink':
         os.link(path, namespace / 'unknown')
-    cache_store._prune_root(path, None, tmp_path)
+    cache_store._prune_root(path, None, tmp_path, _base(tmp_path))
     assert path.exists() is (fault != 'missing')
 
 
@@ -349,7 +355,7 @@ def _expiry_fixture(tmp_path):
 def test_perf41_reuses_stable_headers_and_invalidates_in_place_updates(tmp_path, cache_clock, monkeypatch):
     active, index = _expiry_fixture(tmp_path)
     path = _seed_partition(active, 'other', cache_clock[0])
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     expected = cache_usage_index.read_usage_index(index)
     assert expected[path.name][-1] == cache_clock[0]
     reads = []
@@ -360,13 +366,13 @@ def test_perf41_reuses_stable_headers_and_invalidates_in_place_updates(tmp_path,
         return read(candidate, project)
 
     monkeypatch.setattr(cache_store, '_read_usage', observe)
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert reads == []
     metadata = path.stat()
     _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     os.utime(path, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
     assert path.stat().st_size == metadata.st_size
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert reads == [path, path]
     assert not path.exists()
     assert cache_usage_index.read_usage_index(index) == {}
@@ -377,7 +383,7 @@ def test_perf41_expiry_hint_cannot_delete_a_refreshed_partition(tmp_path, cache_
     target = _seed_partition(active, 'other', cache_clock[0])
     expired = cache_clock[0] - 4 * DAY
     monkeypatch.setattr(cache_store, 'reusable_usage', lambda *_: [0, 0, 0, 0, 0, expired])
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert target.is_file()
 
 
@@ -386,7 +392,7 @@ def test_perf41_retention_still_visits_all_partitions_when_index_is_full(tmp_pat
     active, index = _expiry_fixture(tmp_path)
     fresh = [_seed_partition(active, f'fresh-{i}', cache_clock[0]) for i in range(4)]
     expired = [_seed_partition(active, f'old-{i}', cache_clock[0] - 4 * DAY) for i in range(4)]
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert all(path.is_file() for path in fresh)
     assert not any(path.exists() for path in expired)
     assert len(cache_usage_index.read_usage_index(index)) == 1
@@ -402,17 +408,17 @@ def test_rel44_bad_index_payloads_fall_back_to_authoritative_headers(tmp_path, c
     active, index = _expiry_fixture(tmp_path)
     target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     index.write_bytes(_index_message(payload))
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert not target.exists()
 
 
 def test_perf41_index_corruption_rebuilds_hints(tmp_path, cache_clock):
     active, index = _expiry_fixture(tmp_path)
     target = _seed_partition(active, 'other', cache_clock[0])
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     expected = index.read_bytes()
     index.write_bytes(expected[:-1] + b' ')
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert target.is_file()
     assert index.read_bytes() == expected
 
@@ -422,7 +428,7 @@ def test_perf41_changes_during_header_read_do_not_admit_a_partition(tmp_path, ca
     target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     generations = iter(([1], [2]))
     monkeypatch.setattr(cache_store, 'file_generation', lambda _: next(generations))
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert target.is_file()
     assert not index.exists()
 
@@ -444,7 +450,7 @@ def test_perf41_oversized_index_is_optional(tmp_path, cache_clock, monkeypatch):
     expired = _seed_partition(active, 'old', cache_clock[0] - 4 * DAY)
     original = b'x' * 33
     index.write_bytes(original)
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert not expired.exists()
     assert index.read_bytes() == original
 
@@ -470,7 +476,7 @@ def test_perf41_index_failure_preserves_cache_authority(tmp_path, cache_clock):
     unrelated = tmp_path / 'keep'
     unrelated.write_text('untouched')
     index.symlink_to(unrelated)
-    cache_store._expire_partitions(active, 3, tmp_path)
+    cache_store._expire_partitions(active, 3, tmp_path, _base(tmp_path))
     assert not expired.exists()
     assert unrelated.read_text() == 'untouched'
     assert index.is_symlink()
@@ -529,7 +535,7 @@ def test_review28_24_nested_partition_headers_do_not_fail_committed_builds(site_
     build(REQUEST, _config(), site_root)
     assert (site_root / 'output/rss.xml').is_file()
     assert not old.path.exists()
-    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert _used(site_root, 'output') == cache_clock[0]
     assert all(old.path.with_name(f'{i:064x}.json').exists() for i in range(3))
 
 
@@ -567,7 +573,7 @@ def test_review28_25_build_admission_during_partition_expiry(site_root, cache_cl
             release.set()
         maintenance.result()
         build.result()
-    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert _used(site_root, 'output') == cache_clock[0]
     assert _record(site_root, 'second')['__last_used__'] == cache_clock[0]
 
 
@@ -577,9 +583,9 @@ def test_review28_25_expiry_skips_namespace_during_writer_admission(site_root, c
     active = _selected(site_root, 'output').path
     cache_clock[0] += 4 * DAY
     with partition_directory_lock(active.parent):
-        assert not cache_store._prune_root(active, None, site_root)
+        assert not cache_store._prune_root(active, None, site_root, _base(site_root))
         assert active.is_file()
-    assert cache_store._prune_root(active, None, site_root)
+    assert cache_store._prune_root(active, None, site_root, _base(site_root))
     assert not active.exists()
 
 
@@ -604,4 +610,184 @@ def test_compat06_active_cache_requires_valid_activity(site_root, cache_clock, p
 
     pipeline.run_build(REQUEST, config, site_root)
     assert (page.stat().st_mtime_ns != 1_000_000_000) is rebuild
-    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert _used(site_root, 'output') == cache_clock[0]
+
+
+@pytest.mark.parametrize('partitioned', [False, True])
+def test_review28_27_noop_refresh_keeps_fingerprints_and_owners_untouched(site_root, cache_clock, partitioned):
+    config = _config(enable=partitioned)
+    pipeline.run_build(REQUEST, config, site_root)
+    root = site_root / 'output'
+    state = (_selected(site_root, 'output').path, ownership_path(root))
+    before = [(path.stat().st_ino, path.stat().st_mtime_ns, path.read_bytes()) for path in state]
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, config, site_root)
+    assert [(path.stat().st_ino, path.stat().st_mtime_ns, path.read_bytes()) for path in state] == before
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, _config('second', enable=partitioned), site_root)
+    assert str(root) in json.loads(_selected(site_root, 'output').path.read_bytes())['__output_roots__']
+    cache_clock[0] += DAY
+    pipeline.run_build(REQUEST, _config('second', enable=partitioned), site_root)
+    current = _selected(site_root, 'output').path
+    assert not current.exists() or str(root) not in json.loads(current.read_bytes())['__output_roots__']
+
+
+def test_review28_27_other_output_cannot_retire_activity_during_shared_rollback(site_root, cache_clock):
+    root = site_root / 'output'
+    pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    marker = activity_path(_base(site_root), str(root))
+    stamp = marker.read_bytes()
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, _config('third', enable=False), site_root)
+    cache_clock[0] += DAY
+    script = """
+import os, sys
+from pathlib import Path
+from articulous import output_cache
+from articulous.backends.posix import PosixPublicationBackend
+from articulous.configuration_contracts import BuildRequest
+from articulous.publication import build_site
+output_cache._now = lambda: int(sys.argv[2])
+class Interrupted(PosixPublicationBackend):
+    def _write_state(self, publication):
+        super()._write_state(publication)
+        os._exit(92)
+build_site(BuildRequest(), {'paths': {'output_dir': 'second'}}, Path(sys.argv[1]), backend=Interrupted())
+"""
+    result = subprocess.run([sys.executable, '-c', script, str(site_root), str(cache_clock[0])],
+                            cwd=Path(__file__).resolve().parents[1], capture_output=True)
+    assert result.returncode == 92, result.stderr.decode()
+    assert str(root) not in json.loads(_base(site_root).read_text())['__output_roots__']
+    pipeline.run_build(REQUEST, _config('third', enable=False, days=4), site_root)
+    assert marker.read_bytes() == stamp
+    recover_publication(site_root / 'second', _base(site_root))
+    pipeline.run_build(REQUEST, _config('third', enable=False, days=4), site_root)
+    assert _used(site_root, 'output') == cache_clock[0] - 3 * DAY
+
+
+@pytest.mark.parametrize('partitioned', [False, True])
+def test_review28_27_resume_activity_retirement_after_pruning(site_root, cache_clock, monkeypatch, partitioned):
+    config = _config(enable=partitioned)
+    pipeline.run_build(REQUEST, config, site_root)
+    root = site_root / 'output'
+    cache_clock[0] += DAY
+    pipeline.run_build(REQUEST, config, site_root)
+    marker = activity_path(_base(site_root), str(root))
+    old = json.loads(marker.read_text())
+    old[1] = 'stale-generation'
+    marker.write_text(json.dumps(old))
+
+    def interrupted(self, project, roots=None):
+        if self.queue.exists():
+            raise OSError('interrupted after pruning')
+
+    cache_clock[0] += 3 * DAY
+    with monkeypatch.context() as fault:
+        fault.setattr(CacheActivity, 'recover', interrupted)
+        pipeline.run_build(REQUEST, _config('second', enable=partitioned), site_root)
+    assert marker.exists()
+    pipeline.run_build(REQUEST, _config('second', enable=partitioned), site_root)
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize('partitioned', [False, True])
+def test_review28_27_unreadable_inactive_activity_retains_fingerprints(site_root, cache_clock, partitioned):
+    pipeline.run_build(REQUEST, _config(enable=partitioned), site_root)
+    root = site_root / 'output'
+    stamp = activity_path(_base(site_root), str(root))
+    path = _selected(site_root, 'output').path
+    stamp.write_text('[]')
+    pipeline.run_build(REQUEST, _config('other', enable=partitioned, days=0), site_root)
+    assert str(root) in json.loads(path.read_text())['__output_roots__']
+    with pytest.raises(ValueError, match='Invalid cache activity'):
+        pipeline.run_build(REQUEST, _config(enable=partitioned), site_root)
+    assert stamp.read_text() == '[]'
+
+
+@pytest.mark.parametrize('partitioned', [False, True])
+def test_review28_27_activity_belongs_to_resolved_cache_and_root(site_root, cache_clock, partitioned):
+    config = _config(enable=partitioned)
+    real = site_root / 'state.json'
+    _base(site_root).symlink_to(real.name)
+    pipeline.run_build(REQUEST, config, site_root)
+    cache_clock[0] += DAY
+    pipeline.run_build(REQUEST, config, site_root)
+    stamp = activity_path(real, str(site_root / 'output'))
+    assert stamp.stat().st_size < 256
+    assert not activity_path(_base(site_root), str(site_root / 'output')).exists()
+    previous = stamp.read_bytes()
+    config['build']['cache_file'] = 'alternate.json'
+    pipeline.run_build(REQUEST, config, site_root)
+    assert stamp.read_bytes() == previous
+
+
+@pytest.mark.parametrize('key', ['output_dir', 'cache_file', 'file'])
+@pytest.mark.parametrize('retiring', [False, True])
+def test_review28_27_activity_state_cannot_overlap_configured_paths(site_root, key, retiring):
+    base = _base(site_root)
+    name = (retirement_queue(base) if retiring else activity_path(base, str(site_root / 'other'))).name
+    config = _config(enable=False)
+    groups = {'output_dir': 'paths', 'cache_file': 'build', 'file': 'logging'}
+    config.setdefault(groups[key], {})[key] = name
+    with pytest.raises(ConfigurationError, match='reserved fingerprint cache activity'):
+        pipeline.run_build(REQUEST, config, site_root)
+    assert not (site_root / name).exists()
+
+
+@pytest.mark.parametrize('kind', ['hardlink', 'symlink', 'oversized'])
+def test_review28_27_active_activity_rejects_unsafe_files(site_root, kind):
+    path = activity_path(_base(site_root), str(site_root / 'output'))
+    foreign = site_root / 'reference'
+    foreign.write_text('keep me')
+    if kind == 'hardlink':
+        os.link(foreign, path)
+    elif kind == 'symlink':
+        path.symlink_to(foreign)
+    else:
+        path.write_bytes(b'x' * 513)
+    with pytest.raises(ValueError, match='hardlink|symlink|Oversized'):
+        pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    assert foreign.read_text() == 'keep me'
+    assert not (site_root / 'output').exists()
+
+
+def test_review28_27_touched_partition_with_reordered_generation_survives_expiry(site_root, cache_clock):
+    pipeline.run_build(REQUEST, _config(), site_root)
+    root = site_root / 'output'
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, _config(), site_root)
+    cache = _selected(site_root, 'output').path
+    data = json.loads(cache.read_text())
+    record = data['__output_roots__'][str(root)]
+    record['__generation__'] = record.pop('__generation__')
+    cache.write_text(json.dumps(data, indent=2))
+    cache_clock[0] += 2 * DAY
+    pipeline.run_build(REQUEST, _config('second'), site_root)
+    assert cache.is_file()
+    assert _used(site_root, 'output') == cache_clock[0] - 2 * DAY
+
+
+@pytest.mark.parametrize('expire', [False, True])
+def test_review28_27_incremental_activity_write_failure_is_recoverable(site_root, cache_clock, monkeypatch, caplog, expire):
+    from articulous import cache_activity
+    pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    base = _base(site_root)
+    if expire:
+        cache_clock[0] += DAY
+        pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    before = base.read_bytes()
+    cache_clock[0] += 4 * DAY
+    config = _config('second' if expire else 'output', enable=False)
+
+    def full_disk(*args, **kwargs):
+        raise OSError('disk full')
+
+    with monkeypatch.context() as fault:
+        fault.setattr(cache_activity, 'atomic_output', full_disk)
+        pipeline.run_build(REQUEST, config, site_root)
+    assert base.read_bytes() == before
+    assert 'Cache activity update failed' in caplog.text
+    pipeline.run_build(REQUEST, config, site_root)
+    assert _used(site_root, config['paths']['output_dir']) == cache_clock[0]

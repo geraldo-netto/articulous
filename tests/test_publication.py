@@ -12,10 +12,16 @@ import pytest
 from articulous.backends.posix import PosixPublicationBackend
 from articulous.builds import prepare_build, render_prepared, validate_generated
 from articulous.publication import build_site, publish_validated, recover_publication
+from articulous.cache_activity import CacheActivity
 from articulous.publication_adapter import publication_input
 from articulous.pipeline import run_build
 from test_composition import page
 from test_prepared_build import snapshot
+
+
+def detached_input(checked):
+    selected = checked._staged._owner.cache_selection
+    return publication_input(checked, CacheActivity(selected.path, selected.base))
 
 
 def published(root):
@@ -326,7 +332,7 @@ def test_arch005_journal_field_fuzz_preserves_stage(site_root, seo_config, chang
     backend = PosixPublicationBackend()
     with prepare_build(cli, config, site_root) as prepared:
         checked = validate_generated(render_prepared(prepared))
-        publication = publication_input(checked)
+        publication = detached_input(checked)
         transaction, data = backend._begin(publication)
         data.update(changes)
         (transaction / 'journal.json').write_text(json.dumps(data))
@@ -512,7 +518,7 @@ def test_compat03_version_one_journal_preserves_state_for_manual_recovery(site_r
     before = published(site_root) if existing else (None, None, None)
     with prepare_build(cli, config, site_root) as prepared:
         checked = validate_generated(render_prepared(prepared))
-        publication = publication_input(checked)
+        publication = detached_input(checked)
         transaction, data = backend._begin(publication)
         data['version'] = 1
         data.pop('cache_after')
@@ -537,7 +543,7 @@ def test_perf17_reject_damaged_snapshots_before_rollback(site_root, seo_config, 
     backend = PosixPublicationBackend()
     build_site(cli, config, site_root)
     with prepare_build(cli, config, site_root) as prepared:
-        publication = publication_input(validate_generated(render_prepared(prepared)))
+        publication = detached_input(validate_generated(render_prepared(prepared)))
         transaction, _ = backend._begin(publication)
         saved = transaction / 'cache.before'
         if mutation == 'bytes':
@@ -669,17 +675,17 @@ def test_review28_39_native_handoff_streams_cache_and_routes(site_root, seo_conf
     from uuid import uuid4
     from articulous.pipeline import OutputManifest
     from articulous.ownership import ownership_payload
-    from articulous.composition import route_cache_data
+    from dataclasses import asdict
     generation = uuid4()
     monkeypatch.setattr('articulous.publication_adapter.uuid4', lambda: generation)
     cli, config = seo_config
     with prepare_build(cli, config, site_root) as prepared:
         checked = validate_generated(render_prepared(prepared))
-        expected = publication_input(checked)
+        expected = detached_input(checked)
         monkeypatch.setattr(OutputManifest, 'route_values', lambda *_: pytest.fail('materialized all publication routes'))
         publish_validated(checked)
         assert expected.cache_path.read_bytes() == expected.cache_text.encode()
-        owners = ownership_payload(expected.destination, dict(expected.output_owners), route_cache_data(expected.output_routes),
+        owners = ownership_payload(expected.destination, dict(expected.output_owners), {key: asdict(route) for key, route in expected.output_routes.items()},
                                    generation=expected.generation, translations=dict(expected.translations))
         assert (site_root / '.output.articulous-ownership.json').read_bytes() == json.dumps(owners, indent=2, sort_keys=True).encode()
 
@@ -728,7 +734,7 @@ def test_review28_39_failed_json_writes_release_catalog_readers(site_root, seo_c
         @contextmanager
         def interrupt(path, *args, **kwargs):
             with original(path, *args, **kwargs) as stream:
-                if path.name == 'cache.json' and args == ('xb',):
+                if path.name == 'ownership.json' and args == ('xb',):
                     write = stream.write
                     def fail_when_reading(data):
                         if routes._readers:

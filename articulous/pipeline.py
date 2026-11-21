@@ -36,10 +36,11 @@ from uuid import uuid4
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
+from .cache_activity import CacheActivity
 from .cache_store import cache_payload, finish_cache_update, lock_selected_cache, selected_roots
 from .config import admit_configuration, normalize_configuration, validate_output_layout
 from .configuration_contracts import BuildOptions, ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS
-from .composition import route_cache_data, route_from_output, validate_page_url
+from .composition import route_from_output, validate_page_url
 from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
     NativeEngine,
@@ -106,7 +107,6 @@ from .structured_data import article_jsonld
 
 _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
-_OUTPUT_MANIFEST_KEY = "__outputs__"
 _SORT_CHUNK_SIZE = 1024
 _SORT_MERGE_FAN_IN = 32
 _SITEMAP_MAX_URLS = 50_000
@@ -1068,6 +1068,18 @@ def _transform_input_hash(source: Path | bytes | ArticleSnapshot) -> str:
     return file_hash(source)
 
 
+def _transform_options_fingerprint(parameters, xml_base_uri):
+    fields = ()
+    if parameters:
+        encoded = json.dumps(parameters, sort_keys=True, separators=(',', ':')).encode()
+        fields += (hashlib.sha256(encoded).hexdigest(),)
+    if xml_base_uri is not None:
+        fields += (xml_base_uri,)
+    if parameters and (group := parameters.get('articulous-translation')):
+        fields += ([group, parameters.get('articulous-alternates', '')],)
+    return fields
+
+
 def _make_xslt_task(
     *,
     xml_input: Path | bytes | ArticleSnapshot,
@@ -1102,10 +1114,7 @@ def _make_xslt_task(
     xml_hash = _transform_input_hash(xml_input)
 
     fingerprint = (xml_hash, xsl_hash, engine.cache_identity, relpath)
-    if parameters:
-        fingerprint += (json.dumps(parameters, sort_keys=True),)
-    if xml_base_uri is not None:
-        fingerprint += (xml_base_uri,)
+    fingerprint += _transform_options_fingerprint(parameters, xml_base_uri)
     projected = ctx.model_projection is not None and isinstance(xml_input, (bytes, ArticleSnapshot))
     if not projected and not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
@@ -2042,6 +2051,8 @@ def _load_build_cache(cache_path: Path, output_dir: Path, partitioned=False) -> 
     roots = selected_roots(stored, root, partitioned)
     data = roots.get(root)
     cache = TrackedCache(data if last_used(data) is not None else {})
+    if "__routes__" in cache or "__outputs__" in cache:
+        cache.clear()
     return cache, roots
 
 
@@ -2076,29 +2087,37 @@ def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     return {**retained, **{path: key for key, path in current_manifest.items()}}
 
 
-def _published_translations(ownership, cache, planned):
+def _published_translations(ownership, cache, planned, routes):
     if cache['__generation__'] == ownership.generation:
         return ownership.translations
     history = {key: pair for key, pair in ownership.translations.items()
-               if key not in planned and key in cache[_OUTPUT_MANIFEST_KEY]}
+               if key not in planned and key in routes}
     history.update(translation_history(cache, planned))
     return history
 
 
+def _save_fingerprints(ctx, cache, roots, selected):
+    activity = CacheActivity(selected.path, selected.base)
+    try:
+        if not refresh_output_cache(roots, str(ctx.output_dir.resolve()), cache, ctx.cache_retention_days, activity):
+            logging.debug("Cache unchanged — skipping save")
+            return True
+        activity.prepare_retirement()
+    except OSError as error:
+        logging.warning("Cache activity update failed: %s", error)
+        return False
+    return save_cache(selected.path, cache_payload(selected, roots))
+
+
 def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifest, selected, checked_parents) -> None:
     _prune_stale_outputs(ctx, cache, ownership.paths, next_manifest, checked_parents)
-    cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     routes = current_manifest.route_values()
-    cache['__routes__'] = route_cache_data(routes)
-    if refresh_output_cache(roots, str(ctx.output_dir.resolve()), cache, ctx.cache_retention_days):
-        if not save_cache(selected.path, cache_payload(selected, roots)):
-            logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
-            return
-    else:
-        logging.debug("Cache unchanged — skipping save")
+    if not _save_fingerprints(ctx, cache, roots, selected):
+        logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
+        return
     save_ownership(ctx.output_dir, next_manifest, routes=routes, generation=cache['__generation__'],
-                   translations=_published_translations(ownership, cache, current_manifest))
-    finish_cache_update(selected, ctx.cache_retention_days, ctx.partition_cache)
+                   translations=_published_translations(ownership, cache, current_manifest, routes))
+    finish_cache_update(selected, ctx.cache_retention_days, ctx.partition_cache, roots=roots)
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:

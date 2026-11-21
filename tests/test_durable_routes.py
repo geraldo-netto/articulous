@@ -86,11 +86,12 @@ def test_api006_legacy_metadata_admission(site_root, seo_config, defect):
     run_build(cli, config, site_root, extra_pages=[page(config)])
     state = ownership_path(site_root / 'output')
     legacy = json.loads(state.read_text())
-    legacy.pop('routes')
+    old_routes = legacy.pop('routes')
     state.write_text(json.dumps(legacy))
     cache = site_root / '.build-cache.json'
     data = json.loads(cache.read_text())
     metadata = data['__output_roots__'][str(site_root / 'output')]
+    metadata['__routes__'] = old_routes
     api006_damage_metadata(metadata, defect)
     cache.write_text(json.dumps(data))
     cli.only_sections = ['rss']

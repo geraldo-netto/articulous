@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from .cache_activity import reserved_activity_path
 from .cache_store import cache_namespace
 from .configuration_contracts import (
     ConfigurationOptions, CONFIG_BLOCK_KEYS, CONFIG_KEYS, ConfigurationError,
@@ -382,6 +383,8 @@ def _validate_cache_namespace(namespace, destination, paths):
 
 
 def _validate_partition_paths(build, cache, output, paths):
+    if any(reserved_activity_path(form, cache.parent) for path in paths for form in (path.absolute(), path.resolve())):
+        raise ValueError('Build state path overlaps reserved fingerprint cache activity file')
     namespace = cache_namespace(cache)
     if build["partition_cache"] or namespace.exists() or namespace.is_symlink():
         _validate_cache_namespace(namespace, output, paths)

@@ -1,6 +1,5 @@
 """Planning operation counts and preserved validation boundaries."""
 from collections import Counter
-from dataclasses import asdict
 import json
 from pathlib import Path
 
@@ -262,7 +261,7 @@ def test_perf33_models_are_shared_with_sitemap_and_routes_keep_section_order(sit
 
 def test_perf39_publication_projects_the_catalog_once(site_root, seo_config, monkeypatch):
     from articulous.composition import RouteCatalog
-    from articulous.publication_adapter import publication_input
+    from test_publication import detached_input
 
     cli, config = seo_config
     calls = []
@@ -276,11 +275,12 @@ def test_perf39_publication_projects_the_catalog_once(site_root, seo_config, mon
         expected = list(prepared.routes)
         checked = builds.validate_generated(builds.render_prepared(prepared))
         monkeypatch.setattr(RouteCatalog, '_reader', observe)
-        publication = publication_input(checked)
+        publication = detached_input(checked)
     assert len(calls) == 1
     assert list(publication.output_routes.values()) == expected
     root_cache = json.loads(publication.cache_text)['__output_roots__'][str(publication.destination)]
-    assert root_cache['__routes__'] == {route.key: asdict(route) for route in expected}
+    assert '__routes__' not in root_cache and '__outputs__' not in root_cache
+    assert {route.output_path: route.key for route in expected} == publication.output_owners
     assert not hasattr(publication.output_routes, 'clear')
 
 

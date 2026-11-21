@@ -60,9 +60,8 @@ class RouteCatalog:
     def __iter__(self):
         return (contracts.Route(**json.loads(data)) for data, in self._rows())
 
-    def serialized_routes(self, *, sorted_keys=False):
-        order = 'key' if sorted_keys else 'rowid'
-        for key, data in self._rows('SELECT key, data FROM routes ORDER BY ' + order):
+    def serialized_routes(self):
+        for key, data in self._rows('SELECT key, data FROM routes ORDER BY key'):
             yield key, json.loads(data)
 
     def output_paths(self, *, inverse=False):
@@ -85,10 +84,6 @@ class RouteCatalog:
 
     def __exit__(self, *_):
         self.close()
-
-
-def route_cache_data(routes):
-    return {key: asdict(route) for key, route in routes.items()}
 
 
 def route_from_output(base_url: str, key: str, output_path: str) -> contracts.Route:

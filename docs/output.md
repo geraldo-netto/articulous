@@ -116,24 +116,33 @@ to use a separate store.
 Incremental builds and whole-site publication record the current output's
 last cache use in UTC seconds. A cache update removes other dated entries
 whose inactivity reaches the updating build's `build.cache_retention_days`
-(default 3, in 24-hour days). An unchanged build refreshes that timestamp when
-the clock advances. Incremental dry runs and validation-only builds leave the
+(default 3, in 24-hour days). When only the clock advances, an unchanged build updates one small
+`.articulous-activity-*` file beside the resolved base cache. Its timestamp is
+valid for one output, fingerprint generation and checkpoint. The fingerprint
+and ownership files keep their existing bytes. Builds reserve these activity
+filenames. Incremental dry runs and validation-only builds leave the
 cache untouched. Retention leaves inactive records with missing or invalid
 activity timestamps in place. When that output is built again, selected pages
 are rebuilt and the cache receives a fresh timestamp.
 With partitioned storage, retention scans the inactive files and reuses
 timestamps from a bounded, rebuildable index when file metadata matches.
-It verifies each eligible file's header again under that output's cache lock
+It verifies each eligible file's header and activity under that output's cache lock
 and skips outputs with a live lock or pending publication. Deleting or
-corrupting the index triggers a scan of the authoritative headers.
+corrupting the index triggers a scan of the authoritative headers. Activity
+retirement is recorded before expiring a touched root. An interrupted cleanup
+resumes under the cache lock after publication recovery. Replacing or deleting
+the cache outside Articulous can leave small activity files for omitted roots.
+Their recorded timestamps apply only to the original generation and checkpoint.
 
 Ownership is stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.
 Deleting, corrupting or switching the fingerprint cache preserves this
 ownership history, so deleted/private pages can still be pruned.
 The sidecar also preserves immutable route metadata, including canonical URLs,
-language, category and sitemap eligibility. Cached route metadata is derived;
-it cannot override the ownership record. Both publication paths pair the cache
+language, category and sitemap eligibility. The fingerprint cache stores a SHA-256
+digest of transform parameters and, for grouped articles, their translation group
+and alternate links. The ownership sidecar holds the output path and route maps.
+Both publication paths pair the cache
 and sidecar with a generation identifier. An older or independently restored cache
 triggers rendering of the selected pages. The sidecar also records published
 translation groups and their reciprocal links so filtered builds can detect

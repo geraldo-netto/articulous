@@ -1668,9 +1668,9 @@ def test_partial_build_can_transfer_selected_output_ownership(site_root):
     assert etree.parse(str(root / "sitemap.xml")).getroot().tag == "rss"
     assert (root / "new-sitemap.xml").exists()
     assert not (root / "rss.xml").exists()
-    cache, _ = _load_build_cache(site_root / ".build-cache.json", root)
-    assert cache["__outputs__"]["rss"] == "sitemap.xml"
-    assert cache["__outputs__"]["sitemap"] == "new-sitemap.xml"
+    ownership = load_ownership(root)
+    assert ownership.paths["sitemap.xml"] == "rss"
+    assert ownership.paths["new-sitemap.xml"] == "sitemap"
 
 
 def test_collect_tasks_rejects_output_escape(tmp_path):
@@ -1909,9 +1909,8 @@ def test_filtered_rebuild_preserves_complete_shared_outputs(site_root, options):
     config["site"]["pagination"]["per_page"] = 1
     run_build(_CLI(), config, site_root)
     root = site_root / "output"
-    cache, _ = _load_build_cache(site_root / ".build-cache.json", root)
     shared = {path: (root / path).read_bytes()
-              for key, path in cache["__outputs__"].items()
+              for path, key in load_ownership(root).paths.items()
               if not key.startswith("article:")}
     french = next(root.glob("fr/articles/*/index.html"))
     modified = french.stat().st_mtime_ns

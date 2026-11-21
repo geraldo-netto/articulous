@@ -1,5 +1,4 @@
 """Explicit translation groups and reciprocal-link consistency."""
-import json
 import re
 import sqlite3
 from contextlib import closing
@@ -19,20 +18,19 @@ def hreflang(locale: str) -> str:
     return "-".join(part for part in (language, script, region) if part)
 
 
-def _cached_metadata(fingerprint) -> dict:
-    try:
-        value = json.loads(fingerprint[-2])
-    except (TypeError, ValueError, IndexError, KeyError):
-        return {}
-    return value if isinstance(value, dict) else {}
+def _cached_translation(fingerprint):
+    if not isinstance(fingerprint, list) or not fingerprint:
+        return None
+    pair = fingerprint[-1]
+    if isinstance(pair, list) and len(pair) == 2 and all(isinstance(value, str) for value in pair) and pair[0]:
+        return tuple(pair)
+    return None
 
 
 def translation_history(cache, planned):
     for key in planned:
-        if key.startswith('article:'):
-            metadata = _cached_metadata(cache.get(key))
-            if group := metadata.get('articulous-translation'):
-                yield key, (group, metadata.get('articulous-alternates', ''))
+        if key.startswith('article:') and (pair := _cached_translation(cache.get(key))):
+            yield key, pair
 
 
 class TranslationStore:

@@ -10,7 +10,7 @@ import pytest
 
 from articulous.articles import parse_article_xml
 from articulous.pipeline import run_build
-from articulous.translations import _cached_metadata, hreflang
+from articulous.translations import _cached_translation, hreflang
 
 
 def _translation_pair(root):
@@ -146,9 +146,9 @@ def test_seo06_partial_build_rejects_stale_unselected_peer(site_root, seo_config
         run_build(cli, config, site_root)
 
 
-@pytest.mark.parametrize("fingerprint", [None, [], {}, ["not-json", "base"], ["[]", "base"], ["{}", "base"]])
+@pytest.mark.parametrize("fingerprint", [None, [], {}, ["base"], [[1, "link"]], [["", "markup"]], [["group"]], [["group", None]]])
 def test_seo06_legacy_or_invalid_fingerprints_have_no_translation_metadata(fingerprint):
-    assert _cached_metadata(fingerprint) == {}
+    assert _cached_translation(fingerprint) is None
 
 
 def test_seo06_relative_urls_omit_annotations(site_root, seo_config):

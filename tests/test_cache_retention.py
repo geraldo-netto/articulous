@@ -4,6 +4,7 @@ import random
 
 import pytest
 
+from articulous.cache_activity import CacheActivity, activity_path
 from articulous.builds import check_build
 from articulous.configuration_contracts import BuildRequest, ConfigurationError
 from articulous.config import load_or_create_config, normalize_configuration
@@ -54,7 +55,7 @@ def test_dg01_noop_build_refreshes_activity_and_prunes_inactive_roots(site_root,
     before = page.stat().st_mtime_ns
     run_build(request, active, site_root)
     assert page.stat().st_mtime_ns == before
-    assert _roots(site_root)[str(output)]['__last_used__'] == cache_clock[0]
+    assert CacheActivity(_cache(site_root), _cache(site_root)).used(str(output), _roots(site_root)[str(output)]) == cache_clock[0]
     cache_clock[0] += 2 * DAY
     run_build(request, _output_config(site_root, 'third'), site_root)
     assert set(_roots(site_root)) == {str(output), str(site_root / 'third')}
@@ -74,12 +75,19 @@ def test_dg01_configured_retention_applies_to_native_publication(site_root, cach
 def test_dg01_dry_run_and_validation_preserve_cache(site_root, cache_clock):
     config = _output_config(site_root, 'output')
     run_build(BuildRequest(), config, site_root)
+    cache_clock[0] += 1
+    run_build(BuildRequest(), config, site_root)
     before = _cache(site_root).read_bytes()
+    stamp = activity_path(_cache(site_root), str(site_root / 'output'))
+    activity = stamp.read_bytes()
     cache_clock[0] += 4 * DAY
     other = _output_config(site_root, 'second')
+    run_build(BuildRequest(dry_run=True), config, site_root)
     run_build(BuildRequest(dry_run=True), other, site_root)
     check_build(BuildRequest(), other, site_root)
     assert _cache(site_root).read_bytes() == before
+    assert stamp.read_bytes() == activity
+    assert not activity_path(_cache(site_root), str(site_root / 'second')).exists()
 
 
 @pytest.mark.parametrize('seed', range(8))

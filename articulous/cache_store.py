@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 
+from .cache_activity import CacheActivity, activity_path, partition_with_queue, retirement_queue
 from .cache_usage_index import file_generation, read_usage_index, reusable_usage, save_usage_index
 from .filesystem import (
     cache_lock_path, lock_file, open_regular_file, partition_directory_lock, private_directory,
@@ -52,6 +53,7 @@ def select_cache(base: Path, destination: Path, project: Path | None = None) -> 
     base = base.resolve()
     namespace = cache_namespace(base)
     if not os.path.lexists(namespace):
+        CacheActivity(base, base).validate(str(destination.resolve()))
         return CacheSelection(base, base, project)
     validate_output_path(namespace)
     marker = namespace / _LAYOUT_MARKER
@@ -59,6 +61,7 @@ def select_cache(base: Path, destination: Path, project: Path | None = None) -> 
     if not marker.is_file():
         raise ValueError(f'Unrecognized fingerprint cache directory: {namespace}')
     active = partition_path(base, destination)
+    CacheActivity(active, base).validate(str(destination.resolve()))
     validate_output_path(active)
     state = validate_regular_file(active)
     if state is not None and state.st_nlink != 1:
@@ -84,8 +87,11 @@ def lock_selected_cache(base: Path, destination: Path,
 def partitioned_payload(roots: dict) -> dict:
     records = {}
     for root, record in roots.items():
-        timestamp = last_used(record)
-        records[root] = record if timestamp is None else {LAST_USED_KEY: timestamp, **record}
+        if last_used(record) is None:
+            records[root] = record
+        else:
+            header = {key: record[key] for key in (LAST_USED_KEY, '__generation__') if key in record}
+            records[root] = {**header, **record}
     return {CACHE_ROOTS_KEY: records}
 
 
@@ -166,14 +172,18 @@ def _read_usage(path: Path, project):
         source.readline(64)
         root_line = source.readline(_ROOT_LINE_LIMIT).strip()
         usage_line = source.readline(128).strip().rstrip(b',')
+        generation_line = source.readline(128).strip().rstrip(b',')
         if generation != file_generation(os.fstat(source.fileno())):
             raise ValueError('Fingerprint cache file changed during usage read')
     root = json.loads(root_line.removesuffix(b': {'))
     if not _usage_root_matches(root, path, project):
         raise ValueError('Fingerprint cache root does not match its file')
     if not usage_line.startswith(b'"' + LAST_USED_KEY.encode() + b'":'):
-        return root, None, generation
-    return root, last_used(json.loads(b'{' + usage_line + b'}')), generation
+        return root, None, generation, None
+    token = None
+    if generation_line.startswith(b'"__generation__":'):
+        token = json.loads(b'{' + generation_line + b'}')['__generation__']
+    return root, last_used(json.loads(b'{' + usage_line + b'}')), generation, token
 
 
 def _usage_root_matches(root, path, project):
@@ -192,61 +202,94 @@ def _is_expired(used, cutoff):
     return used is not None and (cutoff is None or used <= cutoff)
 
 
-def _prune_root(path, cutoff, project):
+def _prune_root(path, cutoff, project, base):
     try:
         with partition_directory_lock(path.parent, pruning=True), lock_file(cache_lock_path(path)):
-            usage = _dated_usage(path, project)
-            if _eligible_for_pruning(usage, cutoff):
+            activity = CacheActivity(path, base)
+            usage = _locked_usage(path, project, activity)
+            if usage is not None and _eligible_for_pruning(usage, cutoff):
+                activity.retire(usage[0])
+                activity.prepare_retirement()
                 path.unlink()
+                activity.recover(project, {})
                 return True
     except FileExistsError:
         pass
     return False
 
 
-def _eligible_for_pruning(usage, cutoff):
+def _locked_usage(path, project, activity):
+    usage = _dated_usage(path, project)
     if usage is None:
-        return False
-    root, used, _ = usage
+        return None
+    root, used, generation, token = usage
+    if not os.path.lexists(activity_path(activity.base, root)):
+        return usage
+    record = {LAST_USED_KEY: used, '__generation__': token}
+    if token is None:
+        record = output_cache_roots(load_cache(path)).get(root)
+    return root, activity.inactive(root, record), generation, token
+
+
+def _eligible_for_pruning(usage, cutoff):
+    root, used, _, _ = usage
     return _is_expired(used, cutoff) and not os.path.lexists(transaction_path(Path(root)))
 
 
-def _partition_usage(candidate, cutoff, cached, project):
+def _partition_usage(candidate, cutoff, cached, project, base):
     hint = reusable_usage(candidate, cached)
     if hint is None:
         usage = _dated_usage(Path(candidate.path), project)
         if usage is None:
             return None
-        _, used, generation = usage
+        _, used, generation, _ = usage
         hint = [*generation, used]
-    if _is_expired(hint[-1], cutoff) and _prune_root(Path(candidate.path), cutoff, project):
+    if _is_expired(hint[-1], cutoff) and _prune_root(Path(candidate.path), cutoff, project, base):
         return None
     return hint
 
 
-def _partition_entries(active, current, cutoff, project):
+def _recover_partition_queue(path, project, base):
+    try:
+        with partition_directory_lock(path.parent, pruning=True), lock_file(cache_lock_path(path)):
+            CacheActivity(path, base).recover(project)
+    except FileExistsError:
+        pass
+
+
+def _partition_entries(active, current, cutoff, project, base):
     with os.scandir(active.parent) as directory:
         for candidate in directory:
             name = candidate.name
             if name == active.name:
                 yield name, current.get(name)
             elif _ROOT_FILE.fullmatch(name) and candidate.is_file(follow_symlinks=False):
-                yield name, _partition_usage(candidate, cutoff, current.get(name), project)
+                yield name, _partition_usage(candidate, cutoff, current.get(name), project, base)
+            elif (path := partition_with_queue(candidate)) is not None and path != active:
+                _recover_partition_queue(path, project, base)
 
 
-def _expire_partitions(active: Path, retention_days: int, project: Path) -> None:
+def _expire_partitions(active: Path, retention_days: int, project: Path, base: Path) -> None:
     cutoff = cutoff_for(retention_days)
     index = active.parent / 'expiry-v1'
     current = read_usage_index(index)
-    save_usage_index(index, current, _partition_entries(active, current, cutoff, project))
+    save_usage_index(index, current, _partition_entries(active, current, cutoff, project, base))
 
 
-def finish_cache_update(selected: CacheSelection, retention_days: int, partition: bool) -> None:
+def _recover_shared_activity(selected, project, roots):
+    if os.path.lexists(retirement_queue(selected.path)) and not _has_pending_journal(selected.path, project):
+        CacheActivity(selected.path, selected.base).recover(project, roots)
+
+
+def finish_cache_update(selected: CacheSelection, retention_days: int, partition: bool, *, roots=None) -> None:
     project = selected.project or selected.base.parent
     try:
         if selected.partitioned:
-            _expire_partitions(selected.path, retention_days, project)
-        elif partition:
-            _activate_namespace(selected.base, project)
+            CacheActivity(selected.path, selected.base).recover(project, roots)
+            _expire_partitions(selected.path, retention_days, project, selected.base)
+        else:
+            _recover_shared_activity(selected, project, roots)
+            if partition:
+                _activate_namespace(selected.base, project)
     except (OSError, ValueError, RecursionError) as error:
         logging.warning('Fingerprint cache maintenance failed: %s', error)

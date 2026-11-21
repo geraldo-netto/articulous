@@ -536,7 +536,8 @@ Pass the configured cache filename to `recover_publication` for either cache
 layout. For a partitioned cache, the publication adapter gives custom backends
 the active cache file as `PublicationInput.cache_path`. The associated
 `cache_text` keeps the same JSON envelope and contains the active output's
-record. A backend sharing incremental ownership state persists the supplied
+fingerprints. The separate immutable mappings `output_owners` and `output_routes`
+supply path ownership and route metadata. A backend sharing incremental ownership state persists the supplied
 `generation` and `translations` with the output owners and routes. Backends
 use the paths they receive for locking, publication and recovery.
 Custom backends sharing the partitioned store coordinate cache and output

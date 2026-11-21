@@ -8,7 +8,7 @@ import pytest
 from articulous import pipeline
 from articulous.builds import prepare_build, render_prepared, validate_generated
 from articulous.extensions import BuildComposition
-from articulous.publication_adapter import publication_input
+from test_publication import detached_input
 
 
 @pytest.mark.parametrize('composed', [False, True])
@@ -39,7 +39,7 @@ def test_perf003_assets_copied_once(site_root, seo_config, monkeypatch, composed
         print(f'PERF-003 composed={composed} copies={len(copies)} bytes={sum(copies)} seconds={time.perf_counter() - started:.6f}')
         assert sum(copies) == expected, 'PERF-003: rendering must not recopy captured assets'
         assert target.stat().st_ino == identity
-        metadata = json.loads(publication_input(checked).cache_text)
+        metadata = json.loads(detached_input(checked).cache_text)
         assert 'assets' in metadata['__output_roots__'][str(site_root / 'output')]
     assert not staged.root.exists()
 

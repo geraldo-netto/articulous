@@ -170,3 +170,20 @@ def test_review28_46_integer_decoder_boundary(tmp_path):
                 assert path.read_text() == raw
     finally:
         sys.set_int_max_str_digits(previous)
+
+
+@pytest.mark.parametrize("key", ["article", "index", "tag", "rss", "sitemap", "search"])
+def test_route_segments_match_filesystem_structure(key):
+    """AUDIT1121-08: reject components a filesystem would collapse."""
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    tail = config["urls"][key].lstrip("/")
+    rng = random.Random(SEEDS[0])
+    for prefix in ("", "/"):
+        for segment in ("", ".", "..", ".well-known", "news.v2"):
+            parent = "/".join(rng.choices(("news", "feed", "archive"), k=rng.randint(1, 4)))
+            config["urls"][key] = f"{prefix}{parent}/{segment}/{tail}"
+            if segment in ("", ".", ".."):
+                with pytest.raises(ValueError, match="segments"):
+                    validate_config(config)
+            else:
+                validate_config(config)

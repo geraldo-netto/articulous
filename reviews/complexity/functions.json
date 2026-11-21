@@ -11072,22 +11072,22 @@
             "projection_sha256": "19e53ed448febbab53b4d4d097482bfb58524d0ece36faed2296e137012cf83f"
           },
           {
-            "body_sha256": "e2e7ecfae22393ba646df33e52e6e9e140822dc808913304a6ea74d99fd53c45",
+            "body_sha256": "f6248d9b3cf0162a32e8500c6dd41724e057fae3ed15541ada7dff02154ae46a",
             "column": 0,
             "complexity": 6,
-            "end_column": 9,
-            "end_line": 138,
+            "end_column": 32,
+            "end_line": 139,
             "line": 123,
             "name": "validate_url_pattern",
-            "projection_sha256": "b9fa81ce1bd8a3b728fe8b0c7d32ad0606c04972f87d0ddd3b4834d8a9ee5e02"
+            "projection_sha256": "3a12ef465e822a14acb7589ba58cbbdf4f6b8857f397a7af5667e98b72bac4b6"
           },
           {
             "body_sha256": "b371ff5099a1baf509ab79e3c26835a565235ef4217fa0bdac11adb8e98c240b",
             "column": 0,
             "complexity": 2,
             "end_column": 20,
-            "end_line": 145,
-            "line": 141,
+            "end_line": 146,
+            "line": 142,
             "name": "output_path_from_pattern",
             "projection_sha256": "f99949a69d7c56e76ab7eab242dcd5a1cb4046380d3200a182128bcaf819d5f9"
           },
@@ -11096,8 +11096,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 90,
-            "end_line": 150,
-            "line": 148,
+            "end_line": 151,
+            "line": 149,
             "name": "url_origin",
             "projection_sha256": "3e62aabcec9c4a21042976ec15ee2dbf3bd34d8dde1719e7159eec94a40c9a18"
           },
@@ -11106,8 +11106,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 35,
-            "end_line": 157,
-            "line": 153,
+            "end_line": 158,
+            "line": 154,
             "name": "_validate_absolute_web_url",
             "projection_sha256": "8fa67726e61a50a332e7866334c0c43b3ed54871ae500cbea9cedeaee30217ae"
           },
@@ -11116,8 +11116,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 39,
-            "end_line": 167,
-            "line": 160,
+            "end_line": 168,
+            "line": 161,
             "name": "_validate_web_url_resource",
             "projection_sha256": "a417c9b891d14068f9f07b7b345d121092c2096fadad74199beab192083ab741"
           },
@@ -11126,8 +11126,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 62,
-            "end_line": 174,
-            "line": 170,
+            "end_line": 175,
+            "line": 171,
             "name": "_validate_uri_encoding",
             "projection_sha256": "ea7e2abe0e18e499776d02f4dbba9b040121b2cbc9fd4afc661ee4ee3ffdb051"
           },
@@ -11136,8 +11136,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 63,
-            "end_line": 181,
-            "line": 177,
+            "end_line": 182,
+            "line": 178,
             "name": "validate_image_url",
             "projection_sha256": "03de14c8ec959cdafbee7a3ac0424f334524550fa54198fbbc26e5f985d08b9d"
           },
@@ -11146,8 +11146,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 74,
-            "end_line": 189,
-            "line": 184,
+            "end_line": 190,
+            "line": 185,
             "name": "_validate_web_url_path",
             "projection_sha256": "e1237fa303f92a9ac48b3b3286db74706abe20ae3bfca759b988cc88545b3277"
           },
@@ -11156,8 +11156,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 39,
-            "end_line": 200,
-            "line": 192,
+            "end_line": 201,
+            "line": 193,
             "name": "validate_base_url",
             "projection_sha256": "93d0513871f796a78974602006c2b86740c7a3fee2558b7b5d77b3208bbd3f6c"
           },
@@ -11166,15 +11166,15 @@
             "column": 0,
             "complexity": 2,
             "end_column": 84,
-            "end_line": 206,
-            "line": 203,
+            "end_line": 207,
+            "line": 204,
             "name": "validate_sitemap_location",
             "projection_sha256": "4d463676439e4c6ed782b8801247158489352f88f02bb6bc07cc7e9f1af3ee63"
           }
         ],
         "language": "python",
         "path": "articulous/sections.py",
-        "sha256": "0148ee02f0b59a098f18f83a81a8ded0b52aa13d4db1033d952a5eea4a8b0780"
+        "sha256": "4a3532fa25acc185198cf7ab926db063a3d589d64235745c53e0952f9b17fb8c"
       },
       {
         "functions": [
@@ -21297,11 +21297,21 @@
             "line": 153,
             "name": "test_review28_46_integer_decoder_boundary",
             "projection_sha256": "3053406c315bd3ba19009c2e2af82b81e0b5734d1bdeced35fc1ce6a12e0aab6"
+          },
+          {
+            "body_sha256": "13dc142102b8d517ee53ff4f3c7690826330701e3eb2d78c109cb48877b23354",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 39,
+            "end_line": 189,
+            "line": 176,
+            "name": "test_route_segments_match_filesystem_structure",
+            "projection_sha256": "15ba0250a5350d063e85dbd93a605a31dc35ed8a370b593c0acbae137657b6a4"
           }
         ],
         "language": "python",
         "path": "tests/test_fuzz_config.py",
-        "sha256": "10aeba4b3f492885896794c4e93ce8448ab3a913c9cf528e9cdca374462b9554"
+        "sha256": "9cd2379108852f7d288f295a17af492cb35d72369ba77de39c85d47ed563ef96"
       },
       {
         "functions": [

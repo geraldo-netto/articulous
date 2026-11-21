@@ -124,10 +124,10 @@ def validate_url_pattern(section: str, pattern: str) -> None:
     _validate_url_syntax(pattern)
     spec = SECTION_BY_NAME[section]
     _validate_placeholders(spec, pattern)
-    stripped = pattern.format(
+    path = pattern.format(
         lang="en", slug="slug", page=1, tag="tag",
-    ).lstrip("/")
-    suffix = Path(stripped).suffix
+    )
+    suffix = Path(path).suffix
     if spec.output_kind == "directory" and suffix:
         raise ValueError(
             f"config urls.{spec.url_key} must be a directory-style pattern"
@@ -136,6 +136,7 @@ def validate_url_pattern(section: str, pattern: str) -> None:
         raise ValueError(
             f"config urls.{spec.url_key} must be a file-style pattern"
         )
+    _validate_web_url_path(path)
 
 
 def output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path:

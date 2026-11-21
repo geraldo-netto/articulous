@@ -92,7 +92,7 @@ def test_cc003_encoding_and_nested_scope_projection():
     assert list(worker.identity_fields(node)) == []
 
 
-def test_cc003_class_and_async_projection_boundaries(monkeypatch):
+def test_cc003_class_and_async_projection_boundaries():
     source = 'def f():\n class C(Base, metaclass=Meta):\n  def method(self): return 1\n async def inner(): pass\n return C\n'
     rows = list(worker.definitions(ast.parse(source)))
     assert [name for name, _ in rows] == ['f', 'f.C.method', 'f.inner']
@@ -101,9 +101,9 @@ def test_cc003_class_and_async_projection_boundaries(monkeypatch):
     assert 'async def inner' not in projected
     nested = ast.parse('def outer():\n def inner(value=1): pass\n return inner\n').body[0]
     assert 'def inner' not in worker.projection(nested)
-    monkeypatch.setattr(worker.ast, 'get_source_segment', lambda *_: None)
+    rows[0][1].end_lineno = None
     with pytest.raises(ValueError, match='no source boundary'):
-        worker.function_identity('f', rows[0][1], source)
+        worker.function_identity('f', rows[0][1], worker._SourceIndex(source))
 
 
 def test_cc003_callable_header_decisions_are_preserved():
@@ -148,7 +148,7 @@ def test_cc003_worker_measurement_and_missing_boundary():
     analyzer = analyzer_for(worker.projection(node))
     assert worker.measure_source(analyzer, source)[0]['complexity'] == 1
     with pytest.raises(ValueError, match='complete isolated'):
-        worker.measure_function(analyzer_for(source, wrong=True), 'f', node, source)
+        worker.measure_source(analyzer_for(source, wrong=True), source)
 
 
 def test_cc003_projection_identity_survives_unparse_quote_changes(monkeypatch):
@@ -597,3 +597,41 @@ def test_review008_invalid_syntax_fails_even_with_empty_report(tmp_path):
              'sha256': worker.digest(path.read_bytes())}
     with pytest.raises(subprocess.CalledProcessError):
         gate.check_file(tmp_path, entry, {})
+
+
+@pytest.mark.parametrize(('codec', 'word'), [('utf-8', '東京'), ('utf-8-sig', '🧪'), ('cp1252', '€'), ('shift_jis', '漢')])
+@pytest.mark.parametrize('newline', ['\n', '\r\n', '\r'])
+def test_review28_67_byte_columns_preserve_python_segments(codec, word, newline):
+    declaration = 'utf-8' if codec == 'utf-8-sig' else codec
+    source = newline.join((
+        f'# coding: {declaration}', 'def outer():', f'    value = "{word}\v\f"; f = lambda: "{word}"',
+        f'    def inner(): return """{word}', f'{word}"""', '    return f, inner',
+    ))
+    expected = {}
+    for name, node in worker.definitions(ast.parse(source)):
+        segment = ast.get_source_segment(source, node)
+        assert segment is not None
+        expected[name] = worker.digest((worker.ast_identity(node) + '\0' + segment).encode())
+    rows = gate.python_identities(source.encode(codec))
+    assert {name: row['body_sha256'] for name, row in rows.items()} == expected
+
+
+@pytest.mark.parametrize('consumer', ['check', 'measure', 'baseline'])
+def test_review28_67_one_source_index_for_each_inventory(monkeypatch, tmp_path, consumer):
+    from unittest.mock import Mock
+    source = ''.join(f'def fn{number}():\n    return 1\n' for number in range(32))
+    index = Mock(wraps=worker._SourceIndex)
+    rescans = Mock(wraps=ast.get_source_segment)
+    monkeypatch.setattr(worker, '_SourceIndex', index)
+    monkeypatch.setattr(ast, 'get_source_segment', rescans)
+    if consumer == 'check':
+        result = gate.python_identities(source)
+    elif consumer == 'measure':
+        result = worker.measure_source(analyzer_for('def measurement():\n    return 1\n'), source)
+    else:
+        outputs = [SimpleNamespace(stdout=b'code.py\x00'), SimpleNamespace(stdout=source.encode())]
+        monkeypatch.setattr(worker.subprocess, 'run', Mock(side_effect=outputs))
+        result = worker.baseline_inventory(tmp_path, ['code.py'])['functions']['code.py']
+    assert len(result) == 32
+    index.assert_called_once()
+    rescans.assert_not_called()

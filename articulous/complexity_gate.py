@@ -8,7 +8,7 @@ from pathlib import Path
 from . import complexity_native as native
 from . import complexity_xslt as xslt
 from .complexity_contracts import AGGREGATE_SCHEMA, MAX_EVIDENCE_BYTES, decode_function, require_aggregate, require_digest, require_relative
-from .complexity_python import BASELINE, CALIBRATIONS, ast_identity, definitions, digest, function_identity, projection, python_text
+from .complexity_python import BASELINE, CALIBRATIONS, ast_identity, digest, indexed_functions, projection
 from .filesystem import write_text_atomic
 from .tree_entries import tree_entries
 
@@ -65,10 +65,8 @@ def baseline_data(root):
 
 
 def python_identities(content):
-    source = python_text(content)
-    return {name: dict(function_identity(name, node, source),
-                       projection_sha256=digest(ast_identity(ast.parse(projection(node))).encode()))
-            for name, node in definitions(ast.parse(source))}
+    return {row['name']: dict(row, projection_sha256=digest(ast_identity(ast.parse(projection(node))).encode()))
+            for node, row in indexed_functions(content)}
 
 
 def check_python_function(row, identities):

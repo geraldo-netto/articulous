@@ -5,9 +5,9 @@ from copy import deepcopy
 import hashlib
 import importlib
 import importlib.metadata
-import io
 import json
 from pathlib import Path
+import re
 import subprocess
 import tokenize
 
@@ -114,21 +114,42 @@ def projection(node):
 def python_text(content):
     if isinstance(content, str):
         return content
-    encoding, _ = tokenize.detect_encoding(io.BytesIO(content).readline)
+    lines = (match[0] for match in re.finditer(rb'[^\r\n]*(?:\r\n?|\n|$)', content))
+    encoding, _ = tokenize.detect_encoding(lines.__next__)
     return content.decode(encoding)
 
 
-def function_identity(name, node, source):
-    segment = ast.get_source_segment(source, node)
-    if segment is None:
-        raise ValueError('Python callable has no source boundary')
-    identity = ast_identity(node) + '\0' + segment
+class _SourceIndex:
+    def __init__(self, source):
+        self.utf8 = memoryview(source.encode())
+        self.starts = [0, *(match.end() for match in re.finditer(rb'\r\n?|\n', self.utf8))]
+
+    def segment(self, node):
+        try:
+            start = self.starts[node.lineno - 1] + node.col_offset
+            end = self.starts[node.end_lineno - 1] + node.end_col_offset
+        except (AttributeError, TypeError) as error:
+            raise ValueError('Python callable has no source boundary') from error
+        return self.utf8[start:end]
+
+
+def function_identity(name, node, index):
+    fingerprint = hashlib.sha256(ast_identity(node).encode())
+    fingerprint.update(b'\0')
+    fingerprint.update(index.segment(node))
     return {'name': name, 'line': node.lineno, 'column': node.col_offset,
             'end_line': node.end_lineno, 'end_column': node.end_col_offset,
-            'body_sha256': digest(identity.encode())}
+            'body_sha256': fingerprint.hexdigest()}
 
 
-def measure_function(analyzer, name, node, original):
+def indexed_functions(content):
+    source = python_text(content)
+    nodes = definitions(ast.parse(source))
+    index = _SourceIndex(source)
+    return ((node, function_identity(name, node, index)) for name, node in nodes)
+
+
+def measure_function(analyzer, node, identity):
     source = projection(node)
     measured = analyzer.analyze_file.analyze_source_code('projection.py', source).function_list
     tree = ast.parse(source).body[0]
@@ -136,13 +157,12 @@ def measure_function(analyzer, name, node, original):
                and row.start_line == tree.lineno and row.end_line == tree.end_lineno]
     if len(measured) != 1 or len(matches) != 1:
         raise ValueError('Lizard did not measure the complete isolated callable')
-    return dict(function_identity(name, node, original), complexity=matches[0].cyclomatic_complexity,
+    return dict(identity, complexity=matches[0].cyclomatic_complexity,
                 projection_sha256=digest(ast_identity(ast.parse(source)).encode()))
 
 
 def measure_source(analyzer, source):
-    source = python_text(source)
-    return [measure_function(analyzer, name, node, source) for name, node in definitions(ast.parse(source))]
+    return [measure_function(analyzer, node, identity) for node, identity in indexed_functions(source)]
 
 
 CALIBRATIONS = (
@@ -184,10 +204,9 @@ def baseline_inventory(root, files):
     for name in files:
         if name not in present:
             continue
-        source = python_text(subprocess.run(['git', '-C', str(root), 'show', BASELINE + ':' + name],
-                                capture_output=True, check=True).stdout)
-        result[name] = {label: function_identity(label, node, source)['body_sha256']
-                        for label, node in definitions(ast.parse(source))}
+        source = subprocess.run(['git', '-C', str(root), 'show', BASELINE + ':' + name],
+                                capture_output=True, check=True).stdout
+        result[name] = {row['name']: row['body_sha256'] for _, row in indexed_functions(source)}
     return {'revision': BASELINE, 'functions': result}
 
 

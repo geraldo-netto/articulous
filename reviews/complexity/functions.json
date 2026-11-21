@@ -10,7 +10,7 @@
         "version": "10.8.1"
       },
       "python": {
-        "adapter_sha256": "993026278588bdbc60d7ba2be71f640121ef5067de585dc2ad501fc46eb71d21",
+        "adapter_sha256": "a0a1f5ea54aa194ed7214710c395788b9a57a378e79a543a150b511623abd414",
         "analyzer": "Lizard",
         "calibration": [
           {
@@ -3514,22 +3514,22 @@
             "projection_sha256": "1172267230996549345916bdb83c17a7543f4646f410943f533a186eb74ddb73"
           },
           {
-            "body_sha256": "76229e3a2ca0f0d08d8dcb1279955649a68c943c924b3fae0d0191e827f89c24",
+            "body_sha256": "f2cd7123a7e555d31188089a22278b693adc5be5ed65e39907beee709368a3c9",
             "column": 0,
             "complexity": 2,
-            "end_column": 61,
-            "end_line": 71,
+            "end_column": 56,
+            "end_line": 69,
             "line": 67,
             "name": "python_identities",
-            "projection_sha256": "53d4edb99c5ef098ee9bf1ac4f214842d553964ac58d7c8d245005373c95d135"
+            "projection_sha256": "aa4b6a8de35d0dffe459906f0292a5c5a0e0426dcb94480e35636ee2a792e642"
           },
           {
             "body_sha256": "604f830749c2d97b6bc279f8af6e7cb9369dd967ae872d95fe8e5139618599da",
             "column": 0,
             "complexity": 4,
             "end_column": 85,
-            "end_line": 80,
-            "line": 74,
+            "end_line": 78,
+            "line": 72,
             "name": "check_python_function",
             "projection_sha256": "c2e5ee086dfce0f0ae46c82c50fe3bf25588bdd24683acd9a09c4ef940dc9cd7"
           },
@@ -3538,8 +3538,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 15,
-            "end_line": 88,
-            "line": 83,
+            "end_line": 86,
+            "line": 81,
             "name": "unique_functions",
             "projection_sha256": "bc24ef92dadf80e7577990c00968c8332b9d694cb4c07fb29e450cd9b2b16b13"
           },
@@ -3548,8 +3548,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 37,
-            "end_line": 96,
-            "line": 91,
+            "end_line": 94,
+            "line": 89,
             "name": "javascript_region_identity",
             "projection_sha256": "7f160750e330ae40769085a37217911da29742f8ba6b886962b53958c0b89b6c"
           },
@@ -3558,8 +3558,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 51,
-            "end_line": 101,
-            "line": 99,
+            "end_line": 99,
+            "line": 97,
             "name": "javascript_record_identity",
             "projection_sha256": "d1a1fdc20386dddecb1c1091de1229afa2c65255fd7bdcbb7460cdb0eda8611e"
           },
@@ -3568,8 +3568,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 77,
-            "end_line": 112,
-            "line": 104,
+            "end_line": 110,
+            "line": 102,
             "name": "check_javascript_functions",
             "projection_sha256": "5849791a58eb884adcac2b64e9f147b446a75ac8e5121468ac33cca3754dcb0f"
           },
@@ -3578,8 +3578,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 20,
-            "end_line": 127,
-            "line": 115,
+            "end_line": 125,
+            "line": 113,
             "name": "check_functions",
             "projection_sha256": "f64bb84b63e855e6c905b103e7b24e7c4ff6bdbf900cf98560a518fb12a4c9eb"
           },
@@ -3588,8 +3588,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 77,
-            "end_line": 145,
-            "line": 130,
+            "end_line": 143,
+            "line": 128,
             "name": "check_file",
             "projection_sha256": "c9705caaf086f2f03dc243a2a796098024b2903b980bf21a7bd0ff1152ccaaf5"
           },
@@ -3598,8 +3598,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 66,
-            "end_line": 157,
-            "line": 148,
+            "end_line": 155,
+            "line": 146,
             "name": "check_python_calibration",
             "projection_sha256": "eae526334ce9a7da61d6b5d5ddbfc9962005033a190632a216529626b0ddb6bf"
           },
@@ -3608,8 +3608,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 66,
-            "end_line": 167,
-            "line": 160,
+            "end_line": 165,
+            "line": 158,
             "name": "check_javascript_calibration",
             "projection_sha256": "afa196f4cc283dcf37062133636a421cb295d40d52b821d58dc7b3e71b62e7bf"
           },
@@ -3618,8 +3618,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 78,
-            "end_line": 184,
-            "line": 170,
+            "end_line": 182,
+            "line": 168,
             "name": "check_report",
             "projection_sha256": "92a5bcb55e02a4a960341300b02cae2bc4554d54abde71d28872d56ff9feab0e"
           },
@@ -3628,8 +3628,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 17,
-            "end_line": 197,
-            "line": 187,
+            "end_line": 195,
+            "line": 185,
             "name": "measured_report",
             "projection_sha256": "aa2c1596c7d9de53163568e9d4eb1932a88f88e9d4dbdf474523c42de35e0234"
           },
@@ -3638,8 +3638,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 17,
-            "end_line": 207,
-            "line": 200,
+            "end_line": 205,
+            "line": 198,
             "name": "measured_all",
             "projection_sha256": "d970c5cc33e5011c78ff466b061241e692e4c09d830c88d36b09eff49cd47c13"
           },
@@ -3648,8 +3648,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 214,
-            "line": 210,
+            "end_line": 212,
+            "line": 208,
             "name": "check_all",
             "projection_sha256": "265cd50e10eedcd8f3fa3402f74016051a594fe412a78310100f57eac3fd0e2b"
           },
@@ -3658,15 +3658,15 @@
             "column": 0,
             "complexity": 3,
             "end_column": 12,
-            "end_line": 232,
-            "line": 217,
+            "end_line": 230,
+            "line": 215,
             "name": "main",
             "projection_sha256": "5996c9779426714d48e75fc601c12426e615816766e9124d41577b9809fb8eaf"
           }
         ],
         "language": "python",
         "path": "articulous/complexity_gate.py",
-        "sha256": "dfff6956f42424fd8fc9cc650e657d63a4ad9b89765a4488b5942286d9c57a32"
+        "sha256": "46f775a3f2cc6bc575f78a29c7953b284421dbb0f6974acaa28cca84e19528b2"
       },
       {
         "functions": [
@@ -3998,52 +3998,82 @@
             "projection_sha256": "c7684e79d7e548c3344d40e96196a0f31796292e908bfec94f9230f6b242b53a"
           },
           {
-            "body_sha256": "73b7dd368098e6992bade1ebf48e56de604aae3a568f52690302b6f3e37b6123",
+            "body_sha256": "c4666de3930c3e766c1eb3444215d5714973e9bfae18403eaa92fb506c20f6b3",
             "column": 0,
-            "complexity": 2,
+            "complexity": 3,
             "end_column": 35,
-            "end_line": 118,
+            "end_line": 119,
             "line": 114,
             "name": "python_text",
-            "projection_sha256": "955e15323b89b68c5fc68818fcc4cf43efc336318c9aa4707b4c86872df7ff7f"
+            "projection_sha256": "aef93609a141adbc3a448689facea3a306ceda170d946e419e1f8faf85f57a11"
           },
           {
-            "body_sha256": "2b927f9ea397630c6dd62b316e7f5d36fd2b3bc215e42e1759b8c90ecedbba67",
+            "body_sha256": "616b40980ad3efcbbe40bfb5c6d1261bb062ba47ff12917e7dc67087be1a7d97",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 91,
+            "end_line": 125,
+            "line": 123,
+            "name": "_SourceIndex.__init__",
+            "projection_sha256": "087b771f738f28d28399b24e5180a701473a828dbb12f7f5fc7af4bc2c8bae00"
+          },
+          {
+            "body_sha256": "e3c711f2b30af3b28343cbd4497ca1cefc216499382d73270b271a5780e8af6b",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 35,
+            "end_line": 133,
+            "line": 127,
+            "name": "_SourceIndex.segment",
+            "projection_sha256": "5f46d42a86f8ef191fc7425eed68eb9fe17f3eceec488c87bae101d7e18af6d3"
+          },
+          {
+            "body_sha256": "9fa7cc8486c51c59de5816f3ef4cb12e0473b3eab3158cab05335de7b99affdd",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 51,
+            "end_line": 142,
+            "line": 136,
+            "name": "function_identity",
+            "projection_sha256": "7d18d900f85eafc8aba3a55c90cda6c4d9dada3e174280e6ede8f64a9357fbf0"
+          },
+          {
+            "body_sha256": "6ab30d2e272c8a86957dfcb82ae67eee8de0a7890675a1481db630d63f989c8e",
             "column": 0,
             "complexity": 2,
-            "end_column": 53,
-            "end_line": 128,
-            "line": 121,
-            "name": "function_identity",
-            "projection_sha256": "d7f9014f32e4436035a30ec3a00a91a31972c88576a0ee8e8207d16d2836e8fd"
+            "end_column": 81,
+            "end_line": 149,
+            "line": 145,
+            "name": "indexed_functions",
+            "projection_sha256": "a78ddecc77d478bcbf0b236e1216c0b8c5b46b747a53d5a04d9c498450da05bd"
           },
           {
-            "body_sha256": "b4d80a89d9a959e5f4cba6f508298d03436e0ec399216d07e088ab3f30f0cfb9",
+            "body_sha256": "c322eedca8daae0934de40ac501eec846091e99e70a3acb4d7d559d45a7d6104",
             "column": 0,
             "complexity": 7,
             "end_column": 83,
-            "end_line": 140,
-            "line": 131,
+            "end_line": 161,
+            "line": 152,
             "name": "measure_function",
-            "projection_sha256": "f9bf4487d287061deb88c36820ccdb4f4df53ff7e11bdc0c2154ed070a564e64"
+            "projection_sha256": "7b2bf492b0755ff972507c39e3a18576e2210b41fdb3a2e2cd75c4a0ebb8fb1c"
           },
           {
-            "body_sha256": "89dc6c4b441004c4d0ad8c41f1bb957f0462590a706e44949aed45379b1dd252",
+            "body_sha256": "e8fb8588bce693829439df5cea0efeaac74de47a766d1a598beae20250144c05",
             "column": 0,
             "complexity": 2,
-            "end_column": 108,
-            "end_line": 145,
-            "line": 143,
+            "end_column": 103,
+            "end_line": 165,
+            "line": 164,
             "name": "measure_source",
-            "projection_sha256": "58ad0b49050fbf5f4aedba4d27cad691d06e35a93a2018e77b8aa5928ec6fb70"
+            "projection_sha256": "66a280a7c3597f17404bc105da04ba92b6f39ed5201fd207114c1300ae50cdb5"
           },
           {
             "body_sha256": "32402a48de4008a8626dd8023be4f0ce7ed2a8e173ebb114ccaecba066128c7f",
             "column": 0,
             "complexity": 4,
             "end_column": 18,
-            "end_line": 172,
-            "line": 165,
+            "end_line": 192,
+            "line": 185,
             "name": "calibrate",
             "projection_sha256": "ad6aeaef7a1e92fbeee0428077ab0ac2440399987ceaf4131ca86424f54dc979"
           },
@@ -4052,35 +4082,35 @@
             "column": 0,
             "complexity": 1,
             "end_column": 82,
-            "end_line": 176,
-            "line": 175,
+            "end_line": 196,
+            "line": 195,
             "name": "installed_analyzer",
             "projection_sha256": "d8987384d598219e4af1a054e29d63779f1adbe2b65314fb150c61f94dd3ef3d"
           },
           {
-            "body_sha256": "2f5ca2b1530ad88c3af77f931e95865a65eda9563206704617000281d098a04f",
+            "body_sha256": "0b664272160657d9e97d244f63cbab3507770ed48152b4dbfa54763f6e8263fd",
             "column": 0,
             "complexity": 4,
             "end_column": 54,
-            "end_line": 191,
-            "line": 179,
+            "end_line": 210,
+            "line": 199,
             "name": "baseline_inventory",
-            "projection_sha256": "a0999438d42cb92b230f2c7e547d44dc2238f6d53fa5f4fda31c7c85a453087a"
+            "projection_sha256": "a6c7bf1d5171c099c10aa8959e02609ca4474708ee499aeb3d73440866030958"
           },
           {
             "body_sha256": "0db39391ce080e1cf69f4094a8bd40f4f7ba31433fb595339659672d491847af",
             "column": 0,
             "complexity": 3,
             "end_column": 12,
-            "end_line": 212,
-            "line": 194,
+            "end_line": 231,
+            "line": 213,
             "name": "main",
             "projection_sha256": "f52e6bb29d3024c2a42a20a4efec6ee0db0d03dceb174c976eaf83ea94bd4fdc"
           }
         ],
         "language": "python",
         "path": "articulous/complexity_python.py",
-        "sha256": "993026278588bdbc60d7ba2be71f640121ef5067de585dc2ad501fc46eb71d21"
+        "sha256": "a0a1f5ea54aa194ed7214710c395788b9a57a378e79a543a150b511623abd414"
       },
       {
         "functions": [
@@ -16433,24 +16463,14 @@
             "projection_sha256": "327dbd1923360b53bbea45b22e15c0416a3c8bc188d9d5c8fdcc2aa9e21b5c92"
           },
           {
-            "body_sha256": "9f5ceed735d8d2e3e35014ff3e55786d3a62209da18e8faa43ad23f5bbd9116d",
+            "body_sha256": "54b2584f1f5e03b134c51ba8d29386ade168584b81600edb4d7e69eacccdb9a8",
             "column": 0,
             "complexity": 3,
-            "end_column": 57,
+            "end_column": 78,
             "end_line": 106,
             "line": 95,
             "name": "test_cc003_class_and_async_projection_boundaries",
-            "projection_sha256": "cdd1d2871ec7ec3b099ba2023ddc9d1b367e6ad8bd3653d3ccb4ab50eeaf41da"
-          },
-          {
-            "body_sha256": "4bd8da06d82796e5cb970ed6e8a1b50f215b102067d9662d71ed927899a53bc1",
-            "column": 58,
-            "complexity": 1,
-            "end_column": 73,
-            "end_line": 104,
-            "line": 104,
-            "name": "test_cc003_class_and_async_projection_boundaries.<lambda>@104:58",
-            "projection_sha256": "434fcc990b6968532db2f4267c989d072083f5e5da9546d95e8f91a161570d60"
+            "projection_sha256": "47ceb1f3e332e04a14be6e2c0d7c89317d10a147af5597201487f655020e410e"
           },
           {
             "body_sha256": "c06a0e16728ad44c59d04e0b21f9224200b13553751d0c47aed5bc0f6025f7f5",
@@ -16503,14 +16523,14 @@
             "projection_sha256": "a9d1346b18356a9c85412bad5b97670744231f18db5738414c034e6b2825f18f"
           },
           {
-            "body_sha256": "669867a7381dec8d2c4bdabb6f0aaff191ca8a2126d2fd3721c57102d446dfcc",
+            "body_sha256": "8d178efa3a37e77ed4accd837d3733c64802825db62640b8eb83ba3f0b351ac0",
             "column": 0,
             "complexity": 1,
-            "end_column": 84,
+            "end_column": 71,
             "end_line": 151,
             "line": 145,
             "name": "test_cc003_worker_measurement_and_missing_boundary",
-            "projection_sha256": "0106099ef0ced1e949dab97f0500a12ecdbba25752dad17fdaff88a8dc4327a7"
+            "projection_sha256": "0dafb2f1d450fbbdf4213badb6fc0ffe3b38c1c6477cbe95569f5ada26415772"
           },
           {
             "body_sha256": "1223ffbbe9ec0c5d36f9d61efad0a7df596b02b1b9bce2d37ba1ae3f183b5027",
@@ -17201,11 +17221,31 @@
             "line": 593,
             "name": "test_review008_invalid_syntax_fails_even_with_empty_report",
             "projection_sha256": "3457b5c169ee9d3c2156dd470a9a28a88446e5afe01922a1f3db787c8a719094"
+          },
+          {
+            "body_sha256": "77a9b2ec7f8800e8e2bb6e886116a259367beaaaab85e414ceec9ea0102eb56b",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 79,
+            "end_line": 616,
+            "line": 604,
+            "name": "test_review28_67_byte_columns_preserve_python_segments",
+            "projection_sha256": "6cf2b9bf12f0620ee85b232bc80677ed2dbb55a8624e7e8e7adbb90c6d9d8796"
+          },
+          {
+            "body_sha256": "cf78223020c4d0ca68413c4e5a15a4f113e0e945302ec7e43d581c5fa6f152b0",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 31,
+            "end_line": 637,
+            "line": 620,
+            "name": "test_review28_67_one_source_index_for_each_inventory",
+            "projection_sha256": "0bed43e815527d9fe5224e971d130ba0322a549488c057611921d0049830907a"
           }
         ],
         "language": "python",
         "path": "tests/test_complexity_gate.py",
-        "sha256": "692590ea9d704f7029c27873660e3b1bf06ad7183b142df73df06b52d03386ec"
+        "sha256": "0ee5a42c290a17e844c4a2b8aef1ac7ea9e7ad93eb88bfd65c85dc9eceaa7678"
       },
       {
         "functions": [

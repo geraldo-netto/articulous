@@ -1,10 +1,13 @@
 """REV-087/REV-089: empty archives and actual UTF-8 accounting."""
 
 from contextlib import redirect_stdout
+import gzip
 import io
 from pathlib import Path
 import tempfile
 import unittest
+
+import pytest
 from articulous import output_metrics as report
 
 REGIONS = (("header", "//header"),)
@@ -115,3 +118,27 @@ def test_review29_08_region_bytes_exclude_following_body_text(tmp_path, capsys):
     assert report.scan(tmp_path, regions=REGIONS)['regions']['header'] == size
     report.one_page(path, regions=REGIONS)
     assert f'{size / 1024:7.1f} KB' in capsys.readouterr().out.splitlines()[-1]
+
+
+@pytest.mark.parametrize('raw', [b'<!--comment-->', b'<!doctype html>', b'<?editor value?>'])
+def test_review28_42_element_free_pages_count_all_bytes(tmp_path, raw):
+    empty = tmp_path / 'a.html'
+    empty.write_bytes(raw)
+    markup = b'<header class="used">ok</header>'
+    (tmp_path / 'b.html').write_bytes(markup)
+    metrics = report.scan(tmp_path, regions=REGIONS)
+    assert sorted(metrics['sizes']) == sorted([len(raw), len(markup)])
+    assert metrics['raw'] == len(raw) + len(markup)
+    assert metrics['gzip'] == len(gzip.compress(raw, 6)) + len(gzip.compress(markup, 6))
+    assert metrics['region_pages'] == {'header': 1}
+    assert metrics['class_bytes'] == 4
+
+
+@pytest.mark.parametrize('raw', [b'<!--comment-->', b'<!doctype html>', b'<?editor value?>'])
+def test_review28_42_one_element_free_page_reports_size(tmp_path, raw, capsys):
+    page = tmp_path / 'one.html'
+    page.write_bytes(raw)
+    report.one_page(page, regions=REGIONS)
+    assert capsys.readouterr().out.splitlines() == [
+        f'{page}: {len(raw)/1024:.0f} KB raw, {len(gzip.compress(raw, 6))/1024:.0f} KB estimated gzip',
+    ]

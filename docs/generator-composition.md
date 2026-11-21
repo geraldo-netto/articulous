@@ -605,8 +605,10 @@ caller-selected data/regions; site selectors and styling advice stay outside
 the engine. Each HTML file is read/parsed once per scan. DOMs and page bytes
 are released between files; retained size rows scale with page count and
 counters with distinct extensions, sections, regions and class strings.
-Callers own the returned mutable metrics. Empty trees and empty HTML are valid;
-invalid XPath expressions fail without modifying artifacts. Gzip values are
+Callers own the returned mutable metrics. Files containing only comments, a
+doctype or processing instructions contribute raw and estimated gzip bytes and
+have no regions or classes. Empty trees and empty HTML are valid. Invalid XPath
+expressions fail without modifying artifacts. Gzip values are
 local estimates, not measurements of HTTP encoding or transfers.
 
 ### Source editing

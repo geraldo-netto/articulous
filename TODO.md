@@ -60,7 +60,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-42 | open | low | small | Correctness: `output_metrics.scan` and `one_page` abort on an HTML file that has no element. | `output_metrics.py:67-69,114-117` guard only `raw.strip()`; `site_validation.py:66-70` catches `ParserError`. Reproduced with a comment-only, doctype-only and PI-only file: `ParserError Document is empty`. `docs/generator-composition.md:595` says empty HTML is valid. Next: catch `etree.ParserError` and treat the file as element-free. |
 
 
 ## Sitemap generation

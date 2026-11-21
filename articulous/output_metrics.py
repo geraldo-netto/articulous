@@ -5,6 +5,7 @@ from pathlib import Path
 from statistics import median
 from typing import TypedDict
 
+import lxml.etree as etree
 from lxml import html
 
 from .tree_entries import tree_entries
@@ -34,6 +35,13 @@ def _class_metrics(document, metrics: OutputMetrics):
             metrics['class_bytes'] += size
             if size >= 40:
                 metrics['recipes'][value] += 1
+
+
+def _html_document(raw):
+    try:
+        return html.fromstring(raw)
+    except etree.ParserError:
+        return None
 
 
 def _region_bytes(elements):
@@ -70,7 +78,9 @@ def scan(output: Path, *, regions=()) -> OutputMetrics:
         metrics['gzip'] += len(gzip.compress(raw, 6))
         if not raw.strip():
             continue
-        document = html.fromstring(raw)
+        document = _html_document(raw)
+        if document is None:
+            continue
         for label, selector in regions:
             found = document.xpath(selector)
             if found:
@@ -118,8 +128,10 @@ def one_page(path: Path, *, regions=()) -> None:
     if not raw.strip():
         print(f'{path}: empty HTML file')
         return
-    document = html.fromstring(raw)
+    document = _html_document(raw)
     print(f'{path}: {len(raw)/1024:.0f} KB raw, {len(gzip.compress(raw, 6))/1024:.0f} KB estimated gzip')
+    if document is None:
+        return
     for label, selector in regions:
         size = _region_bytes(document.xpath(selector))
         if size:

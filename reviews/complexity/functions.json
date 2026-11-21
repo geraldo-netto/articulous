@@ -7408,8 +7408,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 36,
-            "end_line": 26,
-            "line": 25,
+            "end_line": 27,
+            "line": 26,
             "name": "megabytes",
             "projection_sha256": "312893df3d2045370fc093b907743d40bd4488df40f0e3c7e156b84b9c15c875"
           },
@@ -7418,18 +7418,28 @@
             "column": 0,
             "complexity": 4,
             "end_column": 46,
-            "end_line": 36,
-            "line": 29,
+            "end_line": 37,
+            "line": 30,
             "name": "_class_metrics",
             "projection_sha256": "e742922f6c3fbadfc60d11be163f37e0d5fe428a5786372d5dc7587671ab3ee0"
+          },
+          {
+            "body_sha256": "f474d4f7b534d804ca61ef7a0c3a1ea2ad1b50ff07d0c5d0026861189a7f87a4",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 19,
+            "end_line": 44,
+            "line": 40,
+            "name": "_html_document",
+            "projection_sha256": "f265619a14044279db31a63df28a39c943eb3e8eff3d92bd70f19ee68ac26138"
           },
           {
             "body_sha256": "b1a4dbfa135fb4083f4be5825051b2d91f1ee28ce43e25593bf518c86c331110",
             "column": 0,
             "complexity": 2,
             "end_column": 102,
-            "end_line": 40,
-            "line": 39,
+            "end_line": 48,
+            "line": 47,
             "name": "_region_bytes",
             "projection_sha256": "8cfa67765e87ceccce6e5df4207ab91219ad691f040903862aa678fca073cc58"
           },
@@ -7438,28 +7448,28 @@
             "column": 0,
             "complexity": 2,
             "end_column": 35,
-            "end_line": 48,
-            "line": 43,
+            "end_line": 56,
+            "line": 51,
             "name": "_output_entries",
             "projection_sha256": "51d8d30323cc438648742423e2e034b5b1a267ba2f5de726949452bc09a6b9b4"
           },
           {
-            "body_sha256": "e0bc932450f40580eaba4495e8669bf0cfcd86f76eea44211f146c1e9f5fbffd",
+            "body_sha256": "f2a2e89d7a84a99b4a45099ebe3218838f22c746d8a9ec10f5ecd0d15d451167",
             "column": 0,
-            "complexity": 8,
+            "complexity": 9,
             "end_column": 18,
-            "end_line": 80,
-            "line": 51,
+            "end_line": 90,
+            "line": 59,
             "name": "scan",
-            "projection_sha256": "bad774a45b6b0780cb6f9339bb38b6359246afeca3cbe5db5969f09decf76e9e"
+            "projection_sha256": "bf536ec73e67c8f16e90a7f7123293b25ebd728f5dc25c0366bd61580965d708"
           },
           {
             "body_sha256": "e68aa96c8f3087c15173aff060f632176554378410addbefaf3e2fe060de05ef",
             "column": 0,
             "complexity": 5,
             "end_column": 88,
-            "end_line": 93,
-            "line": 83,
+            "end_line": 103,
+            "line": 93,
             "name": "overall",
             "projection_sha256": "cdce8c26f4d8d5d36be180db7c35bcc97bf89c3d50a58af711ea747ef332e5dd"
           },
@@ -7468,8 +7478,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 94,
-            "end_line": 100,
-            "line": 96,
+            "end_line": 110,
+            "line": 106,
             "name": "repeated_markup",
             "projection_sha256": "82cf223d56e6b04d45cd0ad58740816120930ab8ed30acab3fac1b4713c00db3"
           },
@@ -7478,8 +7488,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 93,
-            "end_line": 113,
-            "line": 103,
+            "end_line": 123,
+            "line": 113,
             "name": "class_weight",
             "projection_sha256": "c1973dc20e107d3e94084c26a913af414ce5bbd77c009b04f4dc7994e7718e4d"
           },
@@ -7488,25 +7498,25 @@
             "column": 8,
             "complexity": 1,
             "end_column": 58,
-            "end_line": 110,
-            "line": 109,
+            "end_line": 120,
+            "line": 119,
             "name": "class_weight.recipe_weight",
             "projection_sha256": "0934a50d919c0fbb37c5532ca74ee1bba3f533193dc68514f61012f78ca34aac"
           },
           {
-            "body_sha256": "0e8970cff6515c8ec4b64f1ffdb6c9eacc873fa2e4707f51b8f6f964a57b7081",
+            "body_sha256": "6ecc1a5d51a53ec764732ab5e415a8f94c8a2f67133ef4a486f01be11237ec06",
             "column": 0,
-            "complexity": 4,
+            "complexity": 5,
             "end_column": 77,
-            "end_line": 126,
-            "line": 116,
+            "end_line": 138,
+            "line": 126,
             "name": "one_page",
-            "projection_sha256": "da58e7a140318dc84c77ec6d0ebf63618b71b7f2d97998d51d8a5f89b0088722"
+            "projection_sha256": "3326bba2550a521c5814aca66320031dbe0e449eaef4076512318b4eef3d9c18"
           }
         ],
         "language": "python",
         "path": "articulous/output_metrics.py",
-        "sha256": "bb4864345e66d6563ed7c92db4a163859f1c4a101f5f7ce5584066f9f2f04a10"
+        "sha256": "e06f16ffbf13ed2d595973407faff7ab6b0bf9be52d55753550d00b869886a17"
       },
       {
         "functions": [
@@ -22750,8 +22760,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 63,
-            "end_line": 40,
-            "line": 14,
+            "end_line": 43,
+            "line": 17,
             "name": "SizeReport.test_rev087_empty_missing_and_zero_byte_output",
             "projection_sha256": "9bde97cd227a5008d3cf025d6c4ed6e26a91aa8937aeeab37c5e8fd28d251e8f"
           },
@@ -22760,8 +22770,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 74,
-            "end_line": 70,
-            "line": 42,
+            "end_line": 73,
+            "line": 45,
             "name": "SizeReport.test_rev089_utf8_regions_and_classes_count_bytes",
             "projection_sha256": "a51bd300ca3d5b32216e3439d3fee6cc83a4c1a1d357e80dd7ce5955b7028f94"
           },
@@ -22770,9 +22780,9 @@
             "column": 57,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 57,
-            "line": 57,
-            "name": "SizeReport.test_rev089_utf8_regions_and_classes_count_bytes.<lambda>@57:57",
+            "end_line": 60,
+            "line": 60,
+            "name": "SizeReport.test_rev089_utf8_regions_and_classes_count_bytes.<lambda>@60:57",
             "projection_sha256": "05455ba5b9f788cf0b7c90c9618e19332399aee54560478ec0f4fcf37fa06961"
           },
           {
@@ -22780,8 +22790,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 84,
-            "end_line": 94,
-            "line": 74,
+            "end_line": 97,
+            "line": 77,
             "name": "MetricsBoundaryTests.test_obs001_machine_readable_metrics_and_single_parse",
             "projection_sha256": "5300a579caf09828c47c2b113529dd7c41903fdc3b90f5652e39920ecf1a3ecd"
           },
@@ -22790,8 +22800,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 55,
-            "end_line": 106,
-            "line": 96,
+            "end_line": 109,
+            "line": 99,
             "name": "MetricsBoundaryTests.test_obs001_invalid_selectors_cannot_modify_artifacts",
             "projection_sha256": "7279b7acda28ebc64c9935740c7c356891c829182c0ca3b11a8d58a654b3d3dc"
           },
@@ -22800,15 +22810,35 @@
             "column": 0,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 117,
-            "line": 109,
+            "end_line": 120,
+            "line": 112,
             "name": "test_review29_08_region_bytes_exclude_following_body_text",
             "projection_sha256": "6aeb82460a70eeee71d8e86b133f7427cb594a9361aa5e5224ed20bbaf260776"
+          },
+          {
+            "body_sha256": "fda39bbf0d16f5476afc47c6a0c163e36cd4d30fcdc60a1164bdd2b931c77033",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 38,
+            "end_line": 134,
+            "line": 124,
+            "name": "test_review28_42_element_free_pages_count_all_bytes",
+            "projection_sha256": "f2f4ea232183759664456d53ad0d0621da226dc22ad1e257eb2f3640482a0383"
+          },
+          {
+            "body_sha256": "f3f3c51a0a33a7aa163b203c6687f3cf2ce58fe3f891337ea3d6d6133b92624b",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 5,
+            "end_line": 144,
+            "line": 138,
+            "name": "test_review28_42_one_element_free_page_reports_size",
+            "projection_sha256": "81d62b449106191a399cb5d6de13d87f8c184233e044a918c4870a0673cc5996"
           }
         ],
         "language": "python",
         "path": "tests/test_output_metrics.py",
-        "sha256": "9a5eb8d35ec6511fce7bd6c34ea7b802bed323df25b8f916d2ce0a5a2bf07773"
+        "sha256": "8287fd9ee9c54a86773823a7df64a724f6461ba4ef0e316f25918313990d37b1"
       },
       {
         "functions": [

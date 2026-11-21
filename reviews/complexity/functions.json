@@ -11948,108 +11948,198 @@
             "column": 0,
             "complexity": 2,
             "end_column": 52,
-            "end_line": 53,
-            "line": 52,
+            "end_line": 52,
+            "line": 51,
             "name": "_ratio",
             "projection_sha256": "ad06952fbb7711987ed5e15905aed08d5a40fe21ca3bbdd9dc74601a319cb7b2"
           },
           {
-            "body_sha256": "33fc5002db642527c4f7da6c011f85e6f86687fae544d22acb93d0a00f244bf6",
+            "body_sha256": "e1c52ad26654622dedc69d31ae44dc36fc997b208196f7ba486a157b2f65460d",
             "column": 0,
-            "complexity": 1,
-            "end_column": 69,
-            "end_line": 71,
-            "line": 56,
+            "complexity": 2,
+            "end_column": 68,
+            "end_line": 64,
+            "line": 55,
             "name": "_window",
-            "projection_sha256": "df21ba3bfd7c873b84b1e85f29bdadbdc79d14007027e19f0e8da73e03cfc996"
+            "projection_sha256": "c7796f805fede13dd7fe5d31cb6b476fec42f03053d4ecca2716e14ea1bff614"
           },
           {
             "body_sha256": "260ce0b23e2c772cb5ba5dcbab3269352019835e7a3c90bba61b5dfdc2af81a9",
             "column": 4,
             "complexity": 1,
             "end_column": 48,
-            "end_line": 58,
-            "line": 57,
+            "end_line": 57,
+            "line": 56,
             "name": "_window.shorter_bound",
             "projection_sha256": "d00ddce7a94a93b7d8325b30b10fa05edbc26d9c33c64249f7b4eff0f5ad0a40"
           },
           {
-            "body_sha256": "737a3ede7ad88280be4acfa0e43f70db995f79c5bc67e415fb68dae65fdb1da3",
-            "column": 4,
+            "body_sha256": "eb1c644fa8a50f474ee75b25de8c6c8b9b36581fd52befe5d450b9fda509c640",
+            "column": 0,
             "complexity": 1,
-            "end_column": 49,
-            "end_line": 64,
-            "line": 63,
-            "name": "_window.overlap_bound",
-            "projection_sha256": "af5e08d088baa36f4b1b229af5c1f72338f587f2fc76a70386d689f184e7b7f7"
+            "end_column": 75,
+            "end_line": 70,
+            "line": 67,
+            "name": "_minimum_matches",
+            "projection_sha256": "9986f55f91f3218f112d97e2411f168686219b6fc5244b5771316a0e9f06c713"
           },
           {
-            "body_sha256": "a96b190817a88c2c74052e9da505ea4fb0317533e61e46fc6e4a306ce7b06ece",
+            "body_sha256": "cf658f1b926ba798844581b2fd22f49567075aa85256a8a1cd6dc93f32ba718b",
             "column": 4,
             "complexity": 1,
             "end_column": 46,
-            "end_line": 67,
-            "line": 66,
-            "name": "_window.longer_bound",
-            "projection_sha256": "817512d078aed165768e4e011b0db89ac5d9965440532d9fef7718122a00dcfe"
+            "end_line": 69,
+            "line": 68,
+            "name": "_minimum_matches.score",
+            "projection_sha256": "041c336364b9d15ca118273260f55ea49cf025b26f26d9aeeacbb6b3f25cb97a"
           },
           {
-            "body_sha256": "9ce9cadabd60c19ca469224284dbff798b4a902089c67a4113ca2e6baeb0997b",
+            "body_sha256": "65759638d4a560efa1d7a2585ca9609aba5ec5666220fb0ad6d123775fff38ce",
             "column": 0,
-            "complexity": 3,
-            "end_column": 34,
+            "complexity": 1,
+            "end_column": 69,
             "end_line": 81,
-            "line": 74,
-            "name": "_ordered_tokens",
-            "projection_sha256": "84acbe1962d78af18f01955dd451393d29f2451841890a166f51fb412847736f"
+            "line": 73,
+            "name": "_minimum_bigrams",
+            "projection_sha256": "7177e168b81996a7e91a59fbb8c558f07744933436a852449a6f3cf5c2a08ccb"
           },
           {
-            "body_sha256": "d6af2174df161ec2c531af5e1d055d810afde30cb2d2230a96d02dc75cb86645",
+            "body_sha256": "6ea79f71aadf178ad1637940c54781757db1cfee7f5979348a9ccbf8bca1bf77",
             "column": 4,
             "complexity": 1,
-            "end_column": 38,
-            "end_line": 77,
-            "line": 76,
-            "name": "_ordered_tokens.frequency_order",
-            "projection_sha256": "2f34f2a8075da8752ca37ea6ae30a7b5ebfb4df69d19bd7af3bc4cc394231d96"
+            "end_column": 55,
+            "end_line": 79,
+            "line": 78,
+            "name": "_minimum_bigrams.upper_bound",
+            "projection_sha256": "d97346e765f6d22ab8f846a31411c085353d9effceddc92aacf826eff9a5e149"
           },
           {
-            "body_sha256": "b004549c669aa10aa3054e0e69862e6a0b1ac525977a4bb75f39da81c7d8e5e6",
+            "body_sha256": "1439c762f654b98f7afea7c6fb4459fd3d87147c6fdfee8f295efc82708a87da",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 34,
+            "end_line": 88,
+            "line": 84,
+            "name": "_occurrences",
+            "projection_sha256": "f35c20b6286fdd4d1d857b515cf7a309ff1136dd531a3fbb1dc27d403e461973"
+          },
+          {
+            "body_sha256": "533b924f4494d5c1bd79488cffc4dc379cca0879e82bab0847d7a01b74bae696",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 23,
+            "end_line": 101,
+            "line": 94,
+            "name": "_add_occurrences",
+            "projection_sha256": "4fead5e04b71a56274ca03e0c4705b86ab8d9916fde575c994acc4296520e249"
+          },
+          {
+            "body_sha256": "2a0b418a2afa85540cf952c701ad638dfb8a9b4dda246b0bac3f63285fa30524",
             "column": 0,
             "complexity": 4,
             "end_column": 18,
-            "end_line": 90,
-            "line": 84,
-            "name": "_prefix_matches",
-            "projection_sha256": "13c0d685c6b4adf0cbbf35ca8caeb7e4f8828d52fb6d0f5ab5af91d5b12c7915"
+            "end_line": 115,
+            "line": 104,
+            "name": "_at_least",
+            "projection_sha256": "63156cfafb358e86eeb89c26f11e27e2a04a4c0df470b42d9a5d418be3df235c"
+          },
+          {
+            "body_sha256": "a555dbba5216948badd2c0d7c0c896b001dbe3be37a2227c6398dd9a58f8965e",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 26,
+            "end_line": 125,
+            "line": 120,
+            "name": "_OverlapIndex.__init__",
+            "projection_sha256": "9184d0544d0e91389694310a260e3514daad15d675f29187942c47380f924fee"
+          },
+          {
+            "body_sha256": "d72342927c8dcf9fb346088b79b8efd06c7a60948be97178f8bef0e9718f1032",
+            "column": 4,
+            "complexity": 3,
+            "end_column": 58,
+            "end_line": 136,
+            "line": 127,
+            "name": "_OverlapIndex.add",
+            "projection_sha256": "ed08a2cb870acf23bdf5ddc917e532794cc93c481ee28205cabd0b8ce4023a5d"
+          },
+          {
+            "body_sha256": "9a581f5d76f1fb1b8b04d7d31ed0608e724990bc9270202cc99d5345ff244e99",
+            "column": 4,
+            "complexity": 3,
+            "end_column": 21,
+            "end_line": 143,
+            "line": 138,
+            "name": "_OverlapIndex._counts",
+            "projection_sha256": "1b1451c6b3b1ddae358e80aceec962a7ffc7bf27e226e57b50d86c6d08d1abb9"
+          },
+          {
+            "body_sha256": "db151a60bc8c978c8c21a18089253c01a3b1c134a0c2352de1998d4d1f46afc6",
+            "column": 4,
+            "complexity": 3,
+            "end_column": 21,
+            "end_line": 151,
+            "line": 145,
+            "name": "_OverlapIndex._character_counts",
+            "projection_sha256": "5dcb4b044cd237a854690b46f44c1064de3c053cf6b8ff2b6ee7324ab098f495"
+          },
+          {
+            "body_sha256": "e09ff4734662d6858d9cbf9268c1fdac9fd08e05a9ad3a03420adab6625308e4",
+            "column": 4,
+            "complexity": 3,
+            "end_column": 19,
+            "end_line": 159,
+            "line": 153,
+            "name": "_OverlapIndex._qualified",
+            "projection_sha256": "a735d5549bb448940d0898b03c64607964086b328c223c66383c4055271ee5b8"
+          },
+          {
+            "body_sha256": "038b77909f75e7ccd9f75819c926643e6958604a4700b4c7dd4c2d09c6c8f76c",
+            "column": 4,
+            "complexity": 5,
+            "end_column": 21,
+            "end_line": 172,
+            "line": 161,
+            "name": "_OverlapIndex.matches",
+            "projection_sha256": "fe23dc32233e0a3cf28c5614970e2e6ae05d8cd9a6e4a5a3d0fcd4756d6ba771"
+          },
+          {
+            "body_sha256": "11bc768b2d6fef85d8f2a807964d3efd678e37f04f17d9b9025c1de587c22bed",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 23,
+            "end_line": 178,
+            "line": 174,
+            "name": "_OverlapIndex._values_at",
+            "projection_sha256": "b2da1a2ff5ccb56f0e23da4a3d194f66e68c7b275a5ce8c16ca02b31258595ec"
           },
           {
             "body_sha256": "47fbf7d13bc9afbc89e0cac1d57fef956af354e34cc08abb2e7254baf136aa0e",
             "column": 0,
             "complexity": 5,
             "end_column": 77,
-            "end_line": 98,
-            "line": 93,
+            "end_line": 186,
+            "line": 181,
             "name": "_matching_positions",
             "projection_sha256": "f9c8ae786f614f3e32d24092b856caab7aa406f9530e0bf72890c0e87e286bfa"
           },
           {
-            "body_sha256": "5fb76d2f4c23997ec542ca3420f243992a08fb333d011f6f9f88b6a3e778872b",
+            "body_sha256": "58a21bc742b3c1517bf5d457dfd9c89e3f3bdaf565a6bcdfa3566b873e8e38e5",
             "column": 0,
-            "complexity": 8,
+            "complexity": 5,
             "end_column": 30,
-            "end_line": 116,
-            "line": 101,
+            "end_line": 199,
+            "line": 189,
             "name": "_indexed_positions",
-            "projection_sha256": "cc8949eba27672c051843928aed1aa74ff0a2af11f8cf213a9042d86edd6ae81"
+            "projection_sha256": "15395ebeb3b5d53426aa38e707d7beffa690aab024c85f8e1b1169b2b950fdaa"
           },
           {
             "body_sha256": "0d49c080ebb3d84b95bb4ec904e2bbeb95d47a131551770e3758ed7e9019b502",
             "column": 0,
             "complexity": 2,
             "end_column": 30,
-            "end_line": 124,
-            "line": 119,
+            "end_line": 207,
+            "line": 202,
             "name": "_exact_positions",
             "projection_sha256": "47e3363aa9ba16a4be7e0c87da2f06486b95e97b20feb663a09aef9a444b1e9c"
           },
@@ -12058,28 +12148,28 @@
             "column": 0,
             "complexity": 4,
             "end_column": 39,
-            "end_line": 132,
-            "line": 127,
+            "end_line": 215,
+            "line": 210,
             "name": "_candidate_positions",
             "projection_sha256": "8ca96abc36e170c334f41e57194db863a77c88f6a15fa486666f84c040ca0b33"
           },
           {
-            "body_sha256": "dafe2f92c92c1cdc25202abdecae2b67135c7a9756f45ce2dab20aab7eace0a3",
+            "body_sha256": "49f0b23468a9ce87a353e28eac9301827989fbde9f50cc01bda258dd9a3a656f",
             "column": 0,
-            "complexity": 6,
-            "end_column": 68,
-            "end_line": 147,
-            "line": 135,
+            "complexity": 5,
+            "end_column": 64,
+            "end_line": 229,
+            "line": 218,
             "name": "_score_candidates",
-            "projection_sha256": "1664cb3edf65c3f511d195c15d833b04055ed126a8e8362870103bb0c43243d3"
+            "projection_sha256": "9427e263a2bd7c542057d2004b87c565f3292841ef5c088560983b7453ceab2f"
           },
           {
             "body_sha256": "2730ccdd8662a9c68fa0fe4772008a16a0b897cec3670df81156140e156cbff0",
             "column": 0,
             "complexity": 4,
             "end_column": 82,
-            "end_line": 158,
-            "line": 150,
+            "end_line": 240,
+            "line": 232,
             "name": "duplicate_candidates",
             "projection_sha256": "304b2c25170a9236637d22fa0a73f033366163ee89920b0253647576027ec98c"
           },
@@ -12088,8 +12178,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 71,
-            "end_line": 163,
-            "line": 162,
+            "end_line": 245,
+            "line": 244,
             "name": "near_duplicates",
             "projection_sha256": "dd1c7bf6de3e3bf1dd8f1db89fc41806806cde014c0b54c565ba923af5494aad"
           },
@@ -12098,15 +12188,15 @@
             "column": 0,
             "complexity": 6,
             "end_column": 44,
-            "end_line": 177,
-            "line": 166,
+            "end_line": 259,
+            "line": 248,
             "name": "duplicate_summary",
             "projection_sha256": "5055f13b4f70bf9de696a792e7d12ea215b3dc0591caf46267506c3adc76fb5b"
           }
         ],
         "language": "python",
         "path": "articulous/taxonomy_reports.py",
-        "sha256": "90a7ed3a92c4ee96ad25cbcd554c21395f5ecf9d146e56d1e9080739abf37673"
+        "sha256": "37355e1f86db9968c3add3be4ac787c1993f1d9ed71bafed3afde1424614253b"
       },
       {
         "functions": [
@@ -33312,24 +33402,24 @@
             "projection_sha256": "57663bff980e18dba1064138bb18f8cc96d9b7fdd2de00872d9930d67cc946f6"
           },
           {
-            "body_sha256": "dbc3da877fd62413a0f431be07f3bd51983e1b2a8e6412d80490b3108804db5a",
+            "body_sha256": "2b813c297eab619d1e6797b52504608d9b442a57eed0d3da19081bc0308c25cb",
             "column": 0,
             "complexity": 2,
             "end_column": 36,
             "end_line": 83,
             "line": 72,
             "name": "test_review28_53_equal_length_tags_skip_unrelated_pairs",
-            "projection_sha256": "082ea06427dfc5f424cc7c8d4916c4aae0b7f24599a756254c0c8f47172f272f"
+            "projection_sha256": "e2534d50a671c7ebb95cb4ae9ae5fcc894b97e65dbd8dcedde53625c8ed3e9bf"
           },
           {
-            "body_sha256": "860be4b79ac0f3c10f461b57e611deef2f69c7c5c8d9e98ff8d6cf40d3121a6c",
+            "body_sha256": "a40e1db64da99c1c3736282c06a2d759e597b3021c9f6f9df6d95f86b5bb4fbe",
             "column": 4,
             "complexity": 1,
-            "end_column": 35,
+            "end_column": 39,
             "end_line": 79,
             "line": 77,
             "name": "test_review28_53_equal_length_tags_skip_unrelated_pairs.count",
-            "projection_sha256": "05c963458f2bd7d0204f178a2f6bf3866fc4bd38f282e7764b34a3bcd1aaf16c"
+            "projection_sha256": "f51e88842d0a41e90298e38843b957077c8ff06fd0e79a43e5044ec8979ece06"
           },
           {
             "body_sha256": "9e87324c0566bf5cd56284f82c0d3d727d07bfbe32fde49a7e87f3981ef906d6",
@@ -33390,11 +33480,51 @@
             "line": 142,
             "name": "test_review28_51_permuting_tags_preserves_scores_pairs_and_top_k",
             "projection_sha256": "77f78237697d42a95c1e046f587439d4abc18f79854d244eb70f3a6d79048690"
+          },
+          {
+            "body_sha256": "eb4e499c651636850cde1c78d7b922cd344a896ecf6974245ec400223ca37d5f",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 77,
+            "end_line": 169,
+            "line": 154,
+            "name": "_realistic_names",
+            "projection_sha256": "e031bc041bdef8d575bb5ce3e6665b5e490db3a54721e3629fe41bcc72e38672"
+          },
+          {
+            "body_sha256": "7ff15582ffb44dc6a97af020aab5fe5cbca3ded3a3ea6a07d667b67b1636cdac",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 25,
+            "end_line": 188,
+            "line": 173,
+            "name": "test_review28_53_realistic_alphabet_limits_pair_scorers",
+            "projection_sha256": "eae6cd6d2eaede7bdd4b4fb2ad18876e977f0d48392592ac1ae82c1d20677c98"
+          },
+          {
+            "body_sha256": "ac06b9ee4565787a327a3adf36ea631e0960e5b8dcfc93b2720395394d7f9e71",
+            "column": 4,
+            "complexity": 1,
+            "end_column": 39,
+            "end_line": 182,
+            "line": 179,
+            "name": "test_review28_53_realistic_alphabet_limits_pair_scorers.counted",
+            "projection_sha256": "857885d7be641a2b566458c765cd13e4c6d6c8c75131eaf2d243bf6405f5666f"
+          },
+          {
+            "body_sha256": "9aafd74d6081948001b2f2efd2de957ce52bf94a37779719afc21372367f84e1",
+            "column": 0,
+            "complexity": 8,
+            "end_column": 65,
+            "end_line": 201,
+            "line": 191,
+            "name": "test_review28_53_parallel_overlap_counters_match_scalar_counts",
+            "projection_sha256": "84439350e5812da5973d78dfad6b2fee4d578a84377d06f125efc9f056fdf1c8"
           }
         ],
         "language": "python",
         "path": "tests/test_taxonomy_reports.py",
-        "sha256": "3f3169b29271ff412acb1528bb3d1d56027b72294c8917809907be0b5b5b9373"
+        "sha256": "d7ce8803ced4807b95c12132daffc572868cf0da14f3f102a3ed3a3c7527b4d1"
       },
       {
         "functions": [

@@ -1,7 +1,7 @@
 """Optional vocabulary comparisons; no owner vocabulary or display policy."""
-from bisect import bisect_left, bisect_right
+from bisect import bisect_left
 from collections import Counter, defaultdict
-from itertools import islice
+from functools import lru_cache, partial
 from typing import NamedTuple
 import difflib
 import heapq
@@ -44,9 +44,8 @@ def plural_pairs(names: set[str]) -> list[tuple[str, str]]:
 
 
 class _Window(NamedTuple):
-    min_length: int
-    max_length: int
-    prefix_length: int
+    width: int
+    overlap: int
 
 
 def _ratio(matches, length):
@@ -59,35 +58,124 @@ def _window(length, lengths, threshold):
 
     least = bisect_left(range(length + 1), threshold, key=shorter_bound)
     shortest = lengths[bisect_left(lengths, least)]
-    # The shortest eligible length gives the weakest overlap bound for this bucket.
-    def overlap_bound(overlap):
-        return _ratio(overlap, length + shortest)
-
-    def longer_bound(other):
-        return -_ratio(length, length + other)
-
-    needed = bisect_left(range(shortest + 1), threshold, key=overlap_bound)
-    right = bisect_right(lengths, -threshold, lo=bisect_left(lengths, length), key=longer_bound)
-    return _Window(shortest, lengths[right - 1], length - needed + 1)
+    shared_bigrams = _minimum_bigrams(length, shortest, threshold)
+    if shared_bigrams > 0:
+        return _Window(2, shared_bigrams)
+    return _Window(1, _minimum_matches(length, shortest, threshold))
 
 
-def _ordered_tokens(value, frequencies):
-    counts = Counter(value)
-    def frequency_order(char):
-        return frequencies[char], char
-
-    for char in sorted(counts, key=frequency_order):
-        for occurrence in range(counts[char]):
-            yield char, occurrence
+def _minimum_matches(first, second, threshold):
+    def score(matches):
+        return _ratio(matches, first + second)
+    return bisect_left(range(min(first, second) + 1), threshold, key=score)
 
 
-def _prefix_matches(prefix, window, index):
-    matches = set()
-    for token in prefix:
-        for length, values in index.get(token, {}).items():
-            if window.min_length <= length <= window.max_length:
-                matches.update(values)
-    return matches
+def _minimum_bigrams(length, shortest, threshold):
+    combined = length + shortest
+    # M ordered matches in combined length N form at most N - 2*M + 1 runs.
+    # With fewer than b shared bigrams, 3*M <= N + b. The resulting ratio
+    # bound 2*(N + b)/(3*N) is weakest at the shortest eligible N.
+    def upper_bound(bigrams):
+        return _ratio(combined + bigrams, 3 * combined)
+
+    return bisect_left(range(length), threshold, key=upper_bound) - 1
+
+
+def _occurrences(value, width):
+    grams = (value[offset:offset + width] for offset in range(len(value) - width + 1))
+    for gram, count in Counter(grams).items():
+        for occurrence in range(count):
+            yield gram, occurrence
+
+
+_BLOCK_SIZE = 256
+
+
+def _add_occurrences(planes, mask):
+    """Add one to each selected counter, with one bit per tag in each binary digit."""
+    for place, plane in enumerate(planes):
+        planes[place] = plane ^ mask
+        mask &= plane
+        if not mask:
+            return
+    planes.append(mask)
+
+
+def _at_least(planes, minimum):
+    """Compare each counter to minimum - 1, from least to most significant bit."""
+    if minimum.bit_length() > len(planes):
+        return 0
+    threshold = minimum - 1
+    greater = 0
+    for place, plane in enumerate(planes):
+        if threshold & (1 << place):
+            greater &= plane
+        else:
+            greater |= plane
+    return greater
+
+
+class _OverlapIndex:
+    """Bound sparse token postings to fixed-size blocks of distinct folded names."""
+    def __init__(self, windows, threshold):
+        self.minimum_matches = lru_cache(maxsize=256)(partial(_minimum_matches, threshold=threshold))
+        self.widths = {1, *(window.width for window in windows.values())}
+        self.lengths = defaultdict(dict)
+        self.values = []
+        self.postings = {}
+
+    def add(self, value):
+        block, offset = divmod(len(self.values), _BLOCK_SIZE)
+        self.values.append(value)
+        bit = 1 << offset
+        lengths = self.lengths[block]
+        lengths[len(value)] = lengths.get(len(value), 0) | bit
+        for width in self.widths:
+            for token in _occurrences(value, width):
+                blocks = self.postings.setdefault(token, {})
+                blocks[block] = blocks.get(block, 0) | bit
+
+    def _counts(self, tokens):
+        counts = {}
+        for token in tokens:
+            for block, mask in self.postings.get(token, {}).items():
+                _add_occurrences(counts.setdefault(block, []), mask)
+        return counts
+
+    def _character_counts(self, tokens, block, selected):
+        planes = []
+        for token in tokens:
+            shared = selected & self.postings.get(token, {}).get(block, 0)
+            if shared:
+                _add_occurrences(planes, shared)
+        return planes
+
+    def _qualified(self, block, selected, planes, length):
+        mask = 0
+        for size, members in self.lengths[block].items():
+            subset = selected & members
+            if subset:
+                mask |= subset & _at_least(planes, self.minimum_matches(length, size))
+        return mask
+
+    def matches(self, value, window):
+        chars = tuple(_occurrences(value, 1))
+        tokens = chars if window.width == 1 else _occurrences(value, window.width)
+        result = set()
+        for block, planes in self._counts(tokens).items():
+            selected = _at_least(planes, window.overlap)
+            if selected:
+                if window.width > 1:
+                    planes = self._character_counts(chars, block, selected)
+                mask = self._qualified(block, selected, planes, len(value))
+                result.update(self._values_at(block, mask))
+        return result
+
+    def _values_at(self, block, mask):
+        while mask:
+            bit = mask & -mask
+            yield self.values[block * _BLOCK_SIZE + bit.bit_length() - 1]
+            mask ^= bit
 
 
 def _matching_positions(matches, prior, equal):
@@ -101,18 +189,13 @@ def _matching_positions(matches, prior, equal):
 def _indexed_positions(normalized, threshold):
     lengths = sorted({len(value) for value in normalized})
     windows = {length: _window(length, lengths, threshold) for length in lengths}
-    frequencies = Counter(char for value in set(normalized) for char in set(value))
     prior = defaultdict(list)
-    index = {}
+    index = _OverlapIndex(windows, threshold)
     for position, value in enumerate(normalized):
-        window = windows[len(value)]
-        # A pair reaching the overlap bound shares a token in these prefixes.
-        prefix = tuple(islice(_ordered_tokens(value, frequencies), window.prefix_length))
         equal = prior[value]
-        yield _matching_positions(_prefix_matches(prefix, window, index), prior, equal)
+        yield _matching_positions(index.matches(value, windows[len(value)]), prior, equal)
         if not equal:
-            for token in prefix:
-                index.setdefault(token, {}).setdefault(len(value), []).append(value)
+            index.add(value)
         equal.append(position)
 
 
@@ -141,10 +224,9 @@ def _score_candidates(names, normalized, index, positions, threshold):
         if matcher is None:
             matcher = difflib.SequenceMatcher(None, '', normalized[index])
         matcher.set_seq1(normalized[position])
-        if matcher.quick_ratio() >= threshold:
-            ratio = matcher.ratio()
-            if ratio >= threshold:
-                yield round(ratio, 2), names[position], names[index]
+        ratio = matcher.ratio()
+        if ratio >= threshold:
+            yield round(ratio, 2), names[position], names[index]
 
 
 def duplicate_candidates(names: list[str], threshold: float = 0.8):

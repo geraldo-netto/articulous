@@ -71,14 +71,14 @@ def test_review28_49_distinct_scripts_do_not_fill_the_exact_duplicate_sample():
 
 def test_review28_53_equal_length_tags_skip_unrelated_pairs(monkeypatch):
     names = [f"tag-{chr(0x4E00 + index) * 12}" for index in range(512)]
-    quick_ratio = difflib.SequenceMatcher.quick_ratio
+    set_seq1 = difflib.SequenceMatcher.set_seq1
     checks = []
 
-    def count(matcher):
+    def count(matcher, value):
         checks.append(1)
-        return quick_ratio(matcher)
+        return set_seq1(matcher, value)
 
-    monkeypatch.setattr(difflib.SequenceMatcher, "quick_ratio", count)
+    monkeypatch.setattr(difflib.SequenceMatcher, "set_seq1", count)
     assert reports.duplicate_summary(names) == (0, [])
     assert len(checks) <= len(names)
 
@@ -149,3 +149,53 @@ def test_review28_51_permuting_tags_preserves_scores_pairs_and_top_k():
         assert reports.near_duplicates(list(order)) == pairs
         assert list(reports.duplicate_candidates(list(order))) == pairs
         assert reports.duplicate_summary(list(order), 1) == (2, pairs[:1])
+
+
+def _realistic_names(size, shape):
+    from string import ascii_lowercase
+
+    rng = random.Random(2853)
+    if shape == 'mixed':
+        return [''.join(rng.choices(ascii_lowercase, k=rng.randrange(3, 21))) for _ in range(size)]
+    if shape == 'words':
+        words = ('article backup build cache client cloud code command config content database debug design '
+                 'disk domain engine event file filter format frame graph guide hash host index input kernel '
+                 'language layer link linux locale log memory model module network node object output page '
+                 'parser patch path policy project public query queue record render request route schema '
+                 'search server service shell site snapshot source stack state store stream string style '
+                 'sync system tag task template test text theme thread time token tool trace tree value '
+                 'view web window word work worker write').split()
+        return ['-'.join(rng.choices(words, k=2)) for _ in range(size)]
+    return [''.join(rng.choices(ascii_lowercase, k=12)) for _ in range(size)]
+
+
+@pytest.mark.parametrize(('shape', 'limit'), [('random', 1000), ('mixed', 1000), ('words', 6000)])
+def test_review28_53_realistic_alphabet_limits_pair_scorers(monkeypatch, shape, limit):
+    names = _realistic_names(1000, shape)
+    names.extend((names[0][:-1] + '0', names[1][:-1] + '1'))
+    original = difflib.SequenceMatcher.set_seq1
+    checks = 0
+
+    def counted(matcher, value):
+        nonlocal checks
+        checks += bool(value)
+        return original(matcher, value)
+
+    monkeypatch.setattr(difflib.SequenceMatcher, 'set_seq1', counted)
+    pairs = list(reports.duplicate_candidates(names))
+    assert len(pairs) >= 2
+    assert any(names[0] in pair for pair in pairs)
+    assert checks < limit
+
+
+def test_review28_53_parallel_overlap_counters_match_scalar_counts():
+    from itertools import product
+
+    for masks in product(range(4), repeat=4):
+        planes = []
+        for mask in masks:
+            reports._add_occurrences(planes, mask)
+        totals = [sum(bool(mask & bit) for mask in masks) for bit in (1, 2)]
+        for minimum in range(1, 6):
+            expected = sum(1 << place for place, total in enumerate(totals) if total >= minimum)
+            assert reports._at_least(planes, minimum) == expected

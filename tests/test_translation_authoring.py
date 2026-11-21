@@ -369,3 +369,22 @@ def test_review28_61_only_real_retries_are_announced_or_delayed(retries, fault):
     assert 'retry' not in messages[-1]
     assert ('endpoint error' if isinstance(fault, TimeoutError) else 'placeholder mismatch') in messages[-1]
     assert [call.args for call in sleep.call_args_list] == [(2,)] * (retries if isinstance(fault, TimeoutError) else 0)
+
+
+def test_audit1121_06_resolves_each_provenance_hop_once(tmp_path, monkeypatch):
+    from pathlib import Path
+    paths = [tmp_path / name for name in ('fr.xml', 'en.xml')]
+    for path in paths:
+        path.touch()
+    calls = []
+    resolve = Path.resolve
+
+    def counted(path):
+        calls.append(path)
+        return resolve(path)
+
+    monkeypatch.setattr(Path, 'resolve', counted)
+    def origin(path):
+        return ('en', paths[1]) if path == paths[0] else ('en', None)
+    assert resolve_original(paths[0], tmp_path, origin) == ('en', paths[1])
+    assert calls == [tmp_path, *paths]

@@ -21,10 +21,13 @@ def collect_variants(content, languages):
 def resolve_original(path, root, read_origin):
     root = root.resolve()
     seen = set()
-    while path.is_file() and path.resolve() not in seen:
-        if not path.resolve().is_relative_to(root):
+    while path.is_file():
+        resolved = path.resolve()
+        if resolved in seen:
+            return None
+        if not resolved.is_relative_to(root):
             raise ValueError(f'Translation original escapes content directory: {path}')
-        seen.add(path.resolve())
+        seen.add(resolved)
         origin = read_origin(path)
         if origin is None:
             return None

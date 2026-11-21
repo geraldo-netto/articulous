@@ -2,8 +2,8 @@
 Transform engines and the dependency-check machinery that backs them.
 
 Concrete XSLT adapters share :class:`XsltEngine` snapshot and dry-run machinery.
-Consumers depend on the independent structural ``TransformEngine`` contract;
-external providers need not inherit implementation storage. NativeEngine
+The pipeline calls these adapters through the internal ``TransformEngine``
+protocol. NativeEngine
 identifies native writers implemented by the build pipeline.
 
 Section-to-XSL metadata lives in :mod:`articulous.sections` so config,

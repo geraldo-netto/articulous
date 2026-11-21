@@ -352,10 +352,13 @@ identity is preserved for inspection instead of recursively deleting its replace
 
 ## Transformation boundary
 
-`transform_contracts.TransformEngine` defines the structural engine interface,
-path/byte inputs, read-only string parameters and synchronous `None` result
-without importing lxml, storage or native adapters. Independent providers can
-implement it directly.
+Sites select built-in engines by name in the `engines` configuration block.
+Each section accepts `lxml` or `saxonc`. Search and sitemap also accept
+`native`. For an extra page, set `ExtraPage.engine` to `lxml` or `saxonc`.
+
+Inside Articulous, `transform_contracts.TransformEngine` defines how the
+pipeline calls an XSLT adapter. It accepts a path or XML bytes and read-only
+string parameters, and returns `None` when the transform completes.
 
 Concrete adapters use the shared `engines.XsltEngine` implementation. Their public
 preparation/render boundary reports `TransformFailure(operation, detail,

@@ -7,7 +7,6 @@ Existing estimates describe the declined work.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-19 | blocked | low | medium | Wiring gap/docs: transform engines are listed as a site extension point but no public entry point accepts one. | `docs/architecture.md:182-183` and `docs/generator-composition.md:354-355` versus the signatures of `run_build`, `prepare_build`, `check_build` and `build_site`; engines come only from `make_engine` (`pipeline.py:181-184,1595-1599`) and configured names. The only test with an independent engine replaces `BuildCtx.engines` and calls private helpers (`tests/test_transform_contracts.py:52-70`). Blocked on an owner decision: add a public admission route or reword both docs to call the protocol an internal seam. |
 | PERF-01 | wont_fix | low | — | Performance: XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
 | PERF-02 | wont_fix | low | — | Performance: In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
 | DUP-01 | wont_fix | low | — | Code duplication: Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |

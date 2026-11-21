@@ -106,8 +106,8 @@ without requiring concrete planner, engine or storage classes.
 | [`process_contracts.py`](../articulous/process_contracts.py), [`recovery_contracts.py`](../articulous/recovery_contracts.py), [`lock_contracts.py`](../articulous/lock_contracts.py) | Native-session operations, recovery identities and resource exclusion. |
 | [`validation_contracts.py`](../articulous/validation_contracts.py) | Caller-supplied publication expectations and compact validation results. |
 
-Implementations consume these abstractions. For example, the pipeline uses
-`TransformEngine`; an external engine need not inherit `XsltEngine`. A composer
+The pipeline calls its built-in XSLT adapters through the internal
+`TransformEngine` protocol. A composer
 receives `CapturedSite` and route values rather than the private article store.
 The publication adapter emits `PublicationInput` with serialized cache data,
 read-only ownership/routes and a verification callback. The native publisher
@@ -183,8 +183,9 @@ Retained recovery depends on eventual native stop evidence, successful resource
 cleanup/storage and an owner or operator completing recovery. It does not prove
 safe containment of detached workloads or unrestricted OS behavior.
 
-Sites extend through composition callbacks, extra pages/artifacts, transform
-engines, validators and publication/provider backends. Content vocabulary,
+Sites select built-in rendering engines by name for each section. Sites extend
+the build through composition callbacks, extra pages and artifacts, validators
+and publication/provider backends. Content vocabulary,
 templates, hosted redirects and deployment remain site responsibilities. Use
 [Python integration](generator-composition.md) for those contracts and lifetime
 rules, [engines](engines.md) for rendering policy and

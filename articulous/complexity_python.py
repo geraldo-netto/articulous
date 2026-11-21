@@ -82,7 +82,9 @@ class LexicalBody(ast.NodeTransformer):
         return self.definition(node)
 
     def visit_ClassDef(self, node):
-        return self.definition(node)
+        body = ast.Module(node.body, [])
+        self.generic_visit(body)
+        return self.definition(node) + body.body
 
     def visit_Lambda(self, node):
         return ast.Tuple([*(self.visit(value) for value in definition_inputs(node)), ast.Constant(None)], ast.Load())
@@ -177,6 +179,7 @@ CALIBRATIONS = (
     ('comprehension', 'def f(xs):\n return [x for x in xs if x]\n', [3]),
     ('exceptions', 'def f():\n try:\n  return 1\n except ValueError:\n  return 2\n finally:\n  pass\n', [3]),
     ('async', 'async def f(x):\n if x:\n  await x\n', [2]),
+    ('nested-class-body', 'def f(xs):\n class C:\n  items = [v for v in xs if v]\n  n = 1 if xs else 2\n return C\n', [4]),
     ('syntax-boundary', 'def f():\n class C:\n  def m(self): return "if or while"\n return C\n', [1, 1]),
     ('threshold-boundary', 'def f(xs):\n' + ' if xs:\n  pass\n' * 8, [9]),
 )

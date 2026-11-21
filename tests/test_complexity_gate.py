@@ -635,3 +635,20 @@ def test_review28_67_one_source_index_for_each_inventory(monkeypatch, tmp_path, 
     assert len(result) == 32
     index.assert_called_once()
     rescans.assert_not_called()
+
+
+def test_review28_65_nested_class_bindings_belong_to_enclosing_callable():
+    source = """def outer(xs):
+    class A:
+        class B:
+            selected = [v for v in xs if v]
+            def inner(self, x=1 if xs else 2):
+                return 3 if x else 4
+    return A
+"""
+    outer, inner = (ast.parse(worker.projection(node)) for _, node in worker.definitions(ast.parse(source)))
+    assert len([item for item in ast.walk(outer) if isinstance(item, ast.comprehension)]) == 1
+    assert [ast.unparse(item) for item in ast.walk(outer) if isinstance(item, ast.IfExp)] == ['1 if xs else 2']
+    assert {ast.unparse(item) for item in ast.walk(inner) if isinstance(item, ast.IfExp)} == {
+        '1 if xs else 2', '3 if x else 4',
+    }

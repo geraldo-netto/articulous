@@ -47,7 +47,8 @@ branches. This includes Lizard's conservative `finally` increment. Python's AST
 independently inventories named functions, methods, async functions and lambdas.
 Each lexical body is projected into an isolated callable before Lizard measures
 it. Nested callable bodies belong to their own measurements; nested definition
-defaults/decorators and class bases belong to the containing evaluation scope.
+defaults and decorators belong to the containing evaluation scope, as do
+class bases and statements executed while building a nested class.
 Own defaults/decorators/annotations are counted in each callable's projection, preserving
 header decisions conservatively even when they execute in an enclosing scope.
 Formatted-string values and format specifications are exposed as tuple expressions

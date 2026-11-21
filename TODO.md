@@ -115,7 +115,7 @@ Existing estimates describe the declined work.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-68 | blocked | low | small | Contradictions/wiring gap: the XSLT complexity inventory covers only the packaged stylesheet although AGENTS.md includes tests without exemptions. | `complexity_xslt.py:22,142-143` versus `complexity_gate.py:26-30` (tests are inventoried for Python and JS) and `docs/development.md:133`. The six `tests/fixtures/site/xsl/pages/*.xsl` files are in no inventory; `article.xsl` scores 10 for `match=/article` by `measure_template` and its top-level declarations are rejected by the gate parser. `reviews/complexity/xslt.md` scopes the metric to maintained packaged XSLT. Blocked on an owner decision: bring fixture XSLT into the inventory and baseline, or record the exclusion in AGENTS.md and the complexity guide. |
+| REVIEW28-68 | wont_fix | low | small | Verification: six site fixture XSLT stylesheets are outside the packaged-template complexity inventory. | Owner decision 2026-11-21: retain the packaged XSLT scope. The fixture article template measures 10 and its top-level declarations are outside the gate parser. Reconsider only if the owner reopens fixture measurement. |
 
 
 ## Packaged content stylesheet

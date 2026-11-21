@@ -5,6 +5,8 @@ for the maintained packaged XSLT. It uses the installed libxml2 XPath compiler
 (native version `20914`, meaning 2.9.14) through an isolated Linux worker.
 This is a calibrated equivalent complexity workflow; it does not claim numerical
 identity with an unavailable SonarQube XSLT analyzer.
+The six site fixtures in `tests/fixtures/site/xsl/pages/` are outside this
+inventory by owner decision (REVIEW28-68).
 
 Each template scores **1 + explicit control decisions + XPath decisions**.
 Explicit decisions are `xsl:if`, each `xsl:when`, and `xsl:for-each`.

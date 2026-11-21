@@ -41,6 +41,9 @@ Current interoperability contracts and explicitly retained site behavior still a
   support; validate analyzer gaps rather than treating missing results as passes.
   Track unavailable measurement in TODO.md. Do not
   download an analyzer on the metered connection without owner authorization.
+- Owner decision 2026-11-21 (REVIEW28-68): the XSLT complexity inventory covers
+  maintained packaged templates. The six site fixture stylesheets under
+  `tests/fixtures/site/xsl/pages/` are outside that inventory.
 - Avoid code duplication. Apply SOLID only when improve clarity or structure.
 - Default no comments. Add one only when WHY non-obvious (hidden constraint, subtle
   invariant, workaround for specific bug). Record assumptions/design intent in commit notes

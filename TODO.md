@@ -71,7 +71,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 |----|--------|----------|--------|-------------|-------|
 | REVIEW28-41 | open | low | small | Correctness: `read_pages` reads directories whose name ends in `.html`. | `site_validation.py:61-62`. Reproduced: `IsADirectoryError`. `output_metrics.scan` filters with `is_file()`. Same class as REVIEW27-07. Next: filter to regular files. |
 | REVIEW28-42 | open | low | small | Correctness: `output_metrics.scan` and `one_page` abort on an HTML file that has no element. | `output_metrics.py:67-69,114-117` guard only `raw.strip()`; `site_validation.py:66-70` catches `ParserError`. Reproduced with a comment-only, doctype-only and PI-only file: `ParserError Document is empty`. `docs/generator-composition.md:595` says empty HTML is valid. Next: catch `etree.ParserError` and treat the file as element-free. |
-| REVIEW28-43 | open | low | small | Performance: site validation repeats target resolution for every link occurrence. | `site_validation.py:184-202,153-161,13-16`. 1,000 pages with 100 links each to 1,000 unique targets: 101,000 `is_file`, 204,000 `urljoin` and 305,049 `urlsplit` calls in 1.79-1.84 s CPU; linear in links. A memo keyed by the fragment-less resolved URL gave 2.5-2.7x with identical failures. Opt-in validator. Next: memoize target, final URL and existence per validation; keep per-link diagnostics and order, fragment carry through redirects and trailing-slash rules. |
 
 
 ## Sitemap generation

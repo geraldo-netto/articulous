@@ -2,7 +2,7 @@
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 from articulous import site_validation as validation
 from articulous.validation_contracts import ValidationPlan
 
@@ -72,3 +72,62 @@ class ResolutionScope(unittest.TestCase):
         with patch.object(validation, 'local_path', wraps=validation.local_path) as resolve:
             validation.validate_site(self.output, self.base, self.plan)
         self.assertEqual(2, resolve.call_count)
+
+    def test_review28_43_redirect_target_checked_once_across_query_and_fragment_variants(self):
+        self.plan.redirects['/old.html'] = '/target.html'
+        links = ('old.html#anchor', 'old.html#absent', 'old.html#',
+                 'old.html?variant=1#missing', 'old.html#absent')
+        self.page(''.join(f'<a href="{link}">link</a>' for link in links))
+        with patch.object(Path, 'is_file', autospec=True, side_effect=Path.is_file) as exists:
+            with self.assertRaises(ValueError) as failure:
+                validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(str(failure.exception).splitlines(), [
+            'index.html: missing fragment old.html#absent',
+            'index.html: missing fragment old.html?variant=1#missing',
+            'index.html: missing fragment old.html#absent',
+        ])
+        self.assertLessEqual(exists.call_args_list.count(call(self.output / 'target.html')), 2)
+
+    def test_review28_43_missing_target_rechecked_on_next_validation(self):
+        self.page('<img src="picture.png#x"><img src="picture.png#y">')
+        with patch.object(Path, 'is_file', autospec=True, side_effect=Path.is_file) as exists:
+            with self.assertRaises(ValueError) as failure:
+                validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(str(failure.exception).splitlines(), [
+            'index.html: missing picture.png#x', 'index.html: missing picture.png#y',
+        ])
+        self.assertEqual(exists.call_args_list.count(call(self.output / 'picture.png')), 1)
+        (self.output / 'picture.png').touch()
+        validation.validate_site(self.output, self.base, self.plan)
+
+    def test_review28_43_aborted_validation_releases_link_cache(self):
+        retained = []
+        original = validation.check_link
+
+        def interrupt(output, value, page_url, base, redirects, *rest):
+            original(output, value, page_url, base, redirects, *rest)
+            self.assertTrue(redirects.links)
+            retained.append(redirects.links)
+            raise KeyboardInterrupt
+
+        with patch.object(validation, 'check_link', interrupt), self.assertRaises(KeyboardInterrupt):
+            validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(retained, [{}])
+
+    def test_review28_43_redirect_outcomes_remain_per_link_and_in_order(self):
+        self.plan.redirects.update({
+            '/replace': '/target.html#missing',
+            '/clear': '/next#',
+            '/next': '/target.html',
+            '/cycle': '/cycle',
+        })
+        links = ('/replace#anchor', '/clear#absent', '/cycle#one', '/cycle#two', '/replace#top')
+        self.page(''.join(f'<a href="{link}">link</a>' for link in links))
+        with self.assertRaises(ValueError) as failure:
+            validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(str(failure.exception).splitlines(), [
+            'index.html: missing fragment /replace#anchor',
+            'index.html: redirect loop for /cycle',
+            'index.html: redirect loop for /cycle',
+            'index.html: missing fragment /replace#top',
+        ])

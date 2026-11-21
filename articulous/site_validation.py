@@ -116,6 +116,7 @@ class _RedirectResolver:
         self.redirects = dict(redirects)
         self.paths = paths
         self.suffixes = {}
+        self.links = {}
 
     def _step(self, route):
         value = self.redirects[route]
@@ -161,6 +162,17 @@ class _RedirectResolver:
             return None, resolved
         return suffix.target, _redirect_url(resolved, suffix.url)
 
+    def link(self, resolved, failures, label):
+        url = resolved.partition('#')[0]
+        key = url.partition('?')[0]
+        if key not in self.links:
+            result = _link_target(self.output, self.base, resolved, url, self, failures, label, self.paths)
+            if result[0] is None:
+                return result
+            self.links[key] = result
+        target, final, exists = self.links[key]
+        return target, final if '#' in final else resolved, exists
+
 
 def redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths=None):
     if isinstance(redirects, _RedirectResolver):
@@ -182,28 +194,36 @@ def redirect_target(output, target, resolved, base, redirects, failures, label, 
     return target, resolved
 
 
+def _link_target(output, base, resolved, redirect_url, redirects, failures, label, paths):
+    target = resolved_path(output, resolved, base, paths)
+    if target is None:
+        return None, resolved, False
+    target, final = redirect_target(output, target, redirect_url, base, redirects, failures, label, paths)
+    return target, final, target is not None and target.is_file()
+
+
 def check_link(output, value, page_url, base, redirects, pages, failures, label, resolved_paths=None):
     try:
-        _check_reference(output, value, page_url, base, redirects, pages, failures, label, resolved_paths)
+        resolved = urljoin(page_url, value)
+        if isinstance(redirects, _RedirectResolver):
+            target, final, exists = redirects.link(resolved, failures, label)
+        else:
+            target, final, exists = _link_target(
+                output, base, resolved, resolved, redirects, failures, label, resolved_paths,
+            )
+        if target is not None:
+            if exists:
+                _check_fragment(final, pages.get(target), value, failures, label)
+            else:
+                failures.append(f'{label}: missing {value}')
     except ValueError as error:
         failures.append(f'{label}: invalid reference {value}: {error}')
 
 
-def _check_reference(output, value, page_url, base, redirects, pages, failures, label, resolved_paths):
-    resolved = urljoin(page_url, value)
-    target = resolved_path(output, resolved, base, resolved_paths)
-    if target is None:
-        return
-    target, resolved = redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths)
-    if target is None:
-        return
-    if not target.is_file():
-        failures.append(f'{label}: missing {value}')
-        return
+def _check_fragment(resolved, document, value, failures, label):
     fragment = unquote(urlsplit(resolved).fragment).split(':~:text=', 1)[0]
     if not fragment:
         return
-    document = pages.get(target)
     if document is not None and fragment.lower() != 'top':
         if fragment not in document.anchors:
             failures.append(f'{label}: missing fragment {value}')
@@ -229,15 +249,18 @@ def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
     for filename in plan.page_urls:
         if (output / filename).resolve() not in pages:
             failures.append(f'{filename}: expected HTML page missing')
-    for path, references in pages.items():
-        filename = path.relative_to(output).as_posix()
-        expected = plan.page_urls.get(filename)
-        if references.canonicals != (expected,):
-            failures.append(f'{filename}: canonical must be {expected}')
-        route = page_route(output, path)
-        reference_base = document_base(base + route, references.base_href)
-        for value in references.links:
-            check_link(output, value, reference_base, base, redirects, pages, failures, filename, resolved_paths)
+    try:
+        for path, references in pages.items():
+            filename = path.relative_to(output).as_posix()
+            expected = plan.page_urls.get(filename)
+            if references.canonicals != (expected,):
+                failures.append(f'{filename}: canonical must be {expected}')
+            route = page_route(output, path)
+            reference_base = document_base(base + route, references.base_href)
+            for value in references.links:
+                check_link(output, value, reference_base, base, redirects, pages, failures, filename, resolved_paths)
+    finally:
+        redirects.links.clear()
 
 
 def validate_search(output, plan, failures):

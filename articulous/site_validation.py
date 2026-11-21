@@ -281,8 +281,35 @@ def document_base(page_url, href):
         return page_url
 
 
+_MAX_VERIFIED_LINKS = 4096
+
+
+def _remember_rooted_link(verified, value):
+    if not value.startswith(('/', 'https://', 'http://')):
+        return
+    parts = urlsplit(value)
+    if parts.netloc or parts.path.startswith('/'):
+        if len(verified) >= _MAX_VERIFIED_LINKS:
+            verified.clear()
+        verified.add(value)
+
+
+def _check_page_links(redirects, pages, path, references, failures, label, verified):
+    page_url = redirects.base + page_route(redirects.output, path)
+    reference_base = document_base(page_url, references.base_href)
+    shared = references.base_href is None
+    for value in references.links:
+        if shared and value in verified:
+            continue
+        previous = len(failures)
+        check_link(redirects.output, value, reference_base, redirects.base, redirects, pages, failures, label)
+        if shared and previous == len(failures):
+            _remember_rooted_link(verified, value)
+
+
 def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
     redirects = _RedirectResolver(output, base, plan.redirects, resolved_paths)
+    verified = set()
     for filename in plan.page_urls:
         if _physical_path(output / filename) not in pages:
             failures.append(f'{filename}: expected HTML page missing')
@@ -292,12 +319,10 @@ def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
             expected = plan.page_urls.get(filename)
             if references.canonicals != (expected,):
                 failures.append(f'{filename}: canonical must be {expected}')
-            route = page_route(output, path)
-            reference_base = document_base(base + route, references.base_href)
-            for value in references.links:
-                check_link(output, value, reference_base, base, redirects, pages, failures, filename, resolved_paths)
+            _check_page_links(redirects, pages, path, references, failures, filename, verified)
         redirects.validate_unreferenced(pages, failures)
     finally:
+        verified.clear()
         redirects.links.clear()
 
 

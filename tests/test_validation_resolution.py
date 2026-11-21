@@ -131,3 +131,38 @@ class ResolutionScope(unittest.TestCase):
             'index.html: redirect loop for /cycle',
             'index.html: missing fragment /replace#top',
         ])
+
+    def test_audit1121_21_reuses_only_successful_page_independent_links(self):
+        body = '<a href="/target.html#anchor">good</a><a href="/target.html#absent">bad</a>'
+        self.page(body)
+        (self.output / 'other.html').write_text(
+            f'<link rel="canonical" href="{self.base}/other.html">{body}')
+        self.plan.page_urls['other.html'] = self.base + '/other.html'
+        with patch.object(validation, 'check_link', wraps=validation.check_link) as check:
+            with self.assertRaises(ValueError) as failure:
+                validation.validate_site(self.output, self.base, self.plan)
+        checked = [args[1] for args, _ in check.call_args_list]
+        self.assertEqual(checked.count('/target.html#anchor'), 1)
+        self.assertEqual(checked.count('/target.html#absent'), 2)
+        self.assertEqual(str(failure.exception).count('missing fragment'), 2)
+
+    def test_audit1121_21_eviction_and_base_dependent_references(self):
+        self.page('<p id="first"></p><a href="#first">self</a><a href="//">page</a>'
+                  '<a href="/target.html#anchor">one</a><a href="/search.json">two</a>'
+                  '<a href="/target.html#anchor">one</a>')
+        (self.output / 'second.html').write_text(
+            f'<link rel="canonical" href="{self.base}/second.html"><a href="#first">missing</a>')
+        self.plan.page_urls['second.html'] = self.base + '/second.html'
+        with patch.object(validation, '_MAX_VERIFIED_LINKS', 1):
+            with self.assertRaises(ValueError) as failure:
+                validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(str(failure.exception), 'second.html: missing fragment #first')
+
+    def test_audit1121_21_explicit_base_never_shares_default_base_results(self):
+        self.page('<base href="https://elsewhere.test/"><img src="/absent.png">')
+        (self.output / 'second.html').write_text(
+            f'<link rel="canonical" href="{self.base}/second.html"><img src="/absent.png">')
+        self.plan.page_urls['second.html'] = self.base + '/second.html'
+        with self.assertRaises(ValueError) as failure:
+            validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(str(failure.exception), 'second.html: missing /absent.png')

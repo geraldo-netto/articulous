@@ -355,7 +355,7 @@ identity is preserved for inspection instead of recursively deleting its replace
 `transform_contracts.TransformEngine` defines the structural engine interface,
 path/byte inputs, read-only string parameters and synchronous `None` result
 without importing lxml, storage or native adapters. Independent providers can
-implement it directly. `ExecutionCapabilities.external_process` identifies engines that launch a process and remains visible through stylesheet-capture wrappers.
+implement it directly.
 
 Concrete adapters use the shared `engines.XsltEngine` implementation. Their public
 preparation/render boundary reports `TransformFailure(operation, detail,

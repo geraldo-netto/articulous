@@ -100,7 +100,7 @@ without requiring concrete planner, engine or storage classes.
 |----------|------|
 | [`configuration_contracts.py`](../articulous/configuration_contracts.py) | Build requests, configuration schemas and engine-name admission. |
 | [`composition_contracts.py`](../articulous/composition_contracts.py), [`extensions.py`](../articulous/extensions.py) | Routes, extra pages/artifacts, captured-site readers and composition callbacks. |
-| [`transform_contracts.py`](../articulous/transform_contracts.py) | Structural engine interface, execution capabilities and ordinary transform failures. |
+| [`transform_contracts.py`](../articulous/transform_contracts.py) | Structural engine interface and ordinary transform failures. |
 | [`build_contracts.py`](../articulous/build_contracts.py) | Prepared/staged/validated capabilities, artifact readers, validators, diagnostics and reports. |
 | [`publication_contracts.py`](../articulous/publication_contracts.py) | Backend capabilities and the publication input boundary. |
 | [`process_contracts.py`](../articulous/process_contracts.py), [`recovery_contracts.py`](../articulous/recovery_contracts.py), [`lock_contracts.py`](../articulous/lock_contracts.py) | Native-session operations, recovery identities and resource exclusion. |

@@ -7,16 +7,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from articulous.engines import LxmlEngine, SaxonCEngine, StylesheetCapture
+from articulous.engines import LxmlEngine, StylesheetCapture
 from articulous.filesystem import atomic_output
 from articulous.pipeline import _make_xslt_task, _resolve_parallelism, _section_runtime, build_ctx_from_config
-
-
-def test_matrix05_captured_engines_report_provider_capabilities(tmp_path):
-    capture = StylesheetCapture()
-    for engine, external in ((LxmlEngine(), False), (SaxonCEngine(tmp_path / 'Transform'), True)):
-        assert engine.capabilities.external_process is external
-        assert capture.wrap(engine).capabilities == engine.capabilities
 
 
 def test_api002_contract_import_needs_no_engine_or_native_modules():
@@ -24,7 +17,7 @@ def test_api002_contract_import_needs_no_engine_or_native_modules():
 import sys
 sys.modules['lxml'] = None
 sys.modules['fcntl'] = None
-from articulous.transform_contracts import TransformEngine, TransformFailure, ExecutionCapabilities
+from articulous.transform_contracts import TransformEngine, TransformFailure
 assert 'articulous.engines' not in sys.modules
 assert 'articulous.filesystem' not in sys.modules
 '''
@@ -36,8 +29,7 @@ class IndependentEngine:
     name = 'independent'
     cache_identity = 'independent:v1'
 
-    def __init__(self, capabilities):
-        self.capabilities = capabilities
+    def __init__(self):
         self.calls = 0
 
     def prepare_stylesheet(self, path):
@@ -56,11 +48,11 @@ class IndependentEngine:
         self.calls += 1
 
 
-@pytest.mark.parametrize('external', [False, True])
-def test_api002_structural_engine_runs_captured_pipeline(site_root, seo_config, monkeypatch, external):
-    from articulous.transform_contracts import ExecutionCapabilities
+def test_review28_15_structural_engine_runs_captured_pipeline(seo_config, monkeypatch):
+    from articulous.transform_contracts import require_transform
     _, config = seo_config
-    engine = IndependentEngine(ExecutionCapabilities(external))
+    engine = IndependentEngine()
+    assert require_transform(engine) is engine
     capture = StylesheetCapture()
     wrapped = capture.wrap(engine)
     assert wrapped is not engine
@@ -87,13 +79,6 @@ def test_api002_rejects_incomplete_engine_contract(value):
         require_transform(value)
 
 
-@pytest.mark.parametrize('value', [None, 0, 1, 'true', [], {}])
-def test_api002_capability_values_are_boolean(value):
-    from articulous.transform_contracts import ExecutionCapabilities
-    with pytest.raises(ValueError, match='boolean'):
-        ExecutionCapabilities(value)
-
-
 @pytest.mark.parametrize('value', [None, -1, {}, False])
 def test_api002_invalid_inputs_use_independent_errors(tmp_path, value):
     from articulous.transform_contracts import TransformFailure
@@ -115,9 +100,9 @@ def test_api002_invalid_parameter_mappings_reject_before_output(tmp_path, parame
 
 
 def test_api002_capture_preserves_provider_failure_identity(tmp_path):
-    from articulous.transform_contracts import ExecutionCapabilities, TransformFailure
+    from articulous.transform_contracts import TransformFailure
     failure = TransformFailure('provider', 'failed', 17)
-    engine = IndependentEngine(ExecutionCapabilities())
+    engine = IndependentEngine()
     capture = StylesheetCapture()
     wrapped = capture.wrap(engine)
     wrapped.prepare_stylesheet(tmp_path / 'captured.xsl')

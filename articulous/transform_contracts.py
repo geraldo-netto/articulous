@@ -1,6 +1,5 @@
 """Transform inputs, synchronous engine interface and provider-neutral failures."""
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
 import re
 from typing import Protocol, runtime_checkable
@@ -14,15 +13,6 @@ _NAME_START = (r'A-Z_a-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02ff\u0370-\u037d\u03
                r'\ufdf0-\ufffd\U00010000-\U000effff')
 _NCNAME = rf'[{_NAME_START}][{_NAME_START}0-9.\u00b7\u0300-\u036f\u203f-\u2040-]*'
 _PARAMETER_NAME = re.compile(rf'{_NCNAME}(?::{_NCNAME})?')
-
-
-@dataclass(frozen=True)
-class ExecutionCapabilities:
-    external_process: bool = False
-
-    def __post_init__(self):
-        if type(self.external_process) is not bool:
-            raise ValueError('Engine execution capability must be boolean')
 
 
 class TransformFailure(ValueError):
@@ -51,10 +41,6 @@ class TransformEngine(Protocol):
 
     @property
     def cache_identity(self) -> str:
-        ...
-
-    @property
-    def capabilities(self) -> ExecutionCapabilities:
         ...
 
     def prepare_stylesheet(self, path: Path) -> str:

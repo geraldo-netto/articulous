@@ -33,7 +33,7 @@ from .backends.lxml_output import serialized_result
 from .native_workspace import native_workspace
 from . import configuration_contracts, sections
 from .transform_contracts import (
-    ExecutionCapabilities, TransformEngine, TransformFailure, TransformParameters,
+    TransformEngine, TransformFailure, TransformParameters,
     XmlInput, require_parameters,
 )
 
@@ -50,8 +50,6 @@ __all__ = [
 
 _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
 _ADAPTER_ERRORS = (ValueError, TypeError, OSError, etree.Error, subprocess.CalledProcessError)
-_LOCAL_EXECUTION = ExecutionCapabilities()
-_EXTERNAL_EXECUTION = ExecutionCapabilities(True)
 
 
 def _transform_failure(operation, error):
@@ -200,10 +198,6 @@ class XsltEngine(ABC):
     def cache_identity(self) -> str:
         ...
 
-    @property
-    def capabilities(self) -> ExecutionCapabilities:
-        return _LOCAL_EXECUTION
-
     def run(
         self,
         xml_input: XmlInput,
@@ -263,7 +257,6 @@ class XsltEngine(ABC):
 
 class NativeEngine:
     name = "native"
-    capabilities = _LOCAL_EXECUTION
 
     @property
     def cache_identity(self) -> str:
@@ -298,10 +291,6 @@ class _DeferredEngine(XsltEngine):
     @property
     def cache_identity(self):
         return self._engine.cache_identity
-
-    @property
-    def capabilities(self):
-        return self._engine.capabilities
 
     def prepare_stylesheet(self, path):
         if self._frozen:
@@ -469,10 +458,6 @@ class SaxonCEngine(XsltEngine):
     def __init__(self, saxonc_bin: Path):
         super().__init__()
         self.saxonc_bin = saxonc_bin
-
-    @property
-    def capabilities(self) -> ExecutionCapabilities:
-        return _EXTERNAL_EXECUTION
 
     @property
     def cache_identity(self) -> str:

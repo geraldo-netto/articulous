@@ -121,7 +121,9 @@ XML is spooled to disk for article rendering; shared listings keep metadata.
 Sorting uses temporary chunks. Sitemap/search sinks are disk-backed, RSS keeps
 a bounded newest-item heap (or one per language), and translation-link lookup
 uses SQLite. Listing pages share one pagination pass with sitemap planning when
-listing URLs are enabled. Transform descriptors are written to private files
+listing URLs are enabled. Tag planning consumes one group at a time and releases
+its membership list as it advances. The public tag model builder returns a list.
+Transform descriptors are written to private files
 and decoded only after worker admission. The thread pool admits up to 64 MiB
 of charged input at once, with one task admitted alone when its charge exceeds
 that budget. The charge includes the descriptor and source bytes, while
@@ -132,7 +134,7 @@ fingerprint maps and some model collections still grow with admitted content.
 | Resource or state | Owner and lifetime |
 |-------------------|--------------------|
 | Article stores, model spools and task queues | The containing build/capture owns them until planning/rendering and submitted tasks settle; cleanup closes readers before removing their temporary files. |
-| Route catalog cursors | The catalog owns admitted cursors. Iterator completion releases a cursor; catalog close settles remaining readers. Caller-created catalogs have a caller-owned context; prepared builds own their internal catalog. |
+| Route metadata | Incremental builds keep immutable route values in the manifest. Prepared builds keep routes in their SQLite catalog and take one immutable snapshot at publication. The catalog owns cursors until iterator completion or catalog close. Caller-created catalogs have a caller-owned context. |
 | Prepared generation | One private `_BuildState` owns lifecycle state. Public handles expose scoped views. Artifact readers settle before publication; closing the owner retires capabilities, and containing-context exit reclaims workspaces and locks. |
 | Generated-output staging file | The filesystem adapter owns the original staging descriptor and verifies identity before atomic replacement. Callers borrow the writer within its scope. |
 | Native Saxon session | The native adapter admits descriptor borrows; the session holds the leader's PID lease through group quiescence, diagnostic drainage and pipe closure. Uncertain cleanup retains the reservation and private inputs for recovery. |
@@ -142,6 +144,7 @@ durable source for retained files and route semantics; derived cache metadata
 cannot override it. Partial sitemap builds include eligible retained extra pages
 using that saved policy. Missing required route semantics force a full build.
 The current plan's `OutputManifest` checks route collisions before writes.
+The path trie uses a terminal value for each generated file.
 
 Whole-site publication has a separate journal and backup lifecycle. Its reserved
 transaction directory cannot overlap source/configuration or state paths.

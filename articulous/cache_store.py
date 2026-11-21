@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 
+from .cache_usage_index import file_generation, read_usage_index, reusable_usage, save_usage_index
 from .filesystem import (
     cache_lock_path, lock_file, open_regular_file, private_directory,
     validate_output_path, validate_regular_file, write_text_atomic,
@@ -145,18 +146,22 @@ def _activate_namespace(base: Path, destination: Path) -> None:
 
 def _read_usage(path: Path):
     with open_regular_file(path) as source:
-        if os.fstat(source.fileno()).st_nlink != 1:
+        metadata = os.fstat(source.fileno())
+        if metadata.st_nlink != 1:
             raise ValueError('Fingerprint cache file has multiple hardlinks')
+        generation = file_generation(metadata)
         source.readline(4)
         source.readline(64)
         root_line = source.readline(_ROOT_LINE_LIMIT).strip()
         usage_line = source.readline(128).strip().rstrip(b',')
+        if generation != file_generation(os.fstat(source.fileno())):
+            raise ValueError('Fingerprint cache file changed during usage read')
     root = json.loads(root_line.removesuffix(b': {'))
     if not _usage_root_matches(root, path):
         raise ValueError('Fingerprint cache root does not match its file')
     if not usage_line.startswith(b'"' + LAST_USED_KEY.encode() + b'":'):
-        return root, None
-    return root, last_used(json.loads(b'{' + usage_line + b'}'))
+        return root, None, generation
+    return root, last_used(json.loads(b'{' + usage_line + b'}')), generation
 
 
 def _usage_root_matches(root, path):
@@ -164,35 +169,64 @@ def _usage_root_matches(root, path):
             and _root_path(path.parent, root) == path)
 
 
-def _expired_usage(path, cutoff):
+def _dated_usage(path):
     try:
-        root, used = _read_usage(path)
+        return _read_usage(path)
     except (OSError, ValueError):
         return None
-    if used is not None and (cutoff is None or used <= cutoff):
-        return root
-    return None
+
+
+def _is_expired(used, cutoff):
+    return used is not None and (cutoff is None or used <= cutoff)
 
 
 def _prune_root(path, cutoff):
-    if _expired_usage(path, cutoff) is None:
-        return
     try:
         with lock_file(cache_lock_path(path)):
-            root = _expired_usage(path, cutoff)
-            if root is not None and not os.path.lexists(transaction_path(Path(root))):
+            usage = _dated_usage(path)
+            if _eligible_for_pruning(usage, cutoff):
                 path.unlink()
+                return True
     except FileExistsError:
         pass
+    return False
+
+
+def _eligible_for_pruning(usage, cutoff):
+    if usage is None:
+        return False
+    root, used, _ = usage
+    return _is_expired(used, cutoff) and not os.path.lexists(transaction_path(Path(root)))
+
+
+def _partition_usage(candidate, cutoff, cached):
+    hint = reusable_usage(candidate, cached)
+    if hint is None:
+        usage = _dated_usage(Path(candidate.path))
+        if usage is None:
+            return None
+        _, used, generation = usage
+        hint = [*generation, used]
+    if _is_expired(hint[-1], cutoff) and _prune_root(Path(candidate.path), cutoff):
+        return None
+    return hint
+
+
+def _partition_entries(active, current, cutoff):
+    with os.scandir(active.parent) as directory:
+        for candidate in directory:
+            name = candidate.name
+            if name == active.name:
+                yield name, current.get(name)
+            elif _ROOT_FILE.fullmatch(name) and candidate.is_file(follow_symlinks=False):
+                yield name, _partition_usage(candidate, cutoff, current.get(name))
 
 
 def _expire_partitions(active: Path, retention_days: int) -> None:
     cutoff = cutoff_for(retention_days)
-    with os.scandir(active.parent) as directory:
-        for candidate in directory:
-            path = Path(candidate.path)
-            if path != active and _ROOT_FILE.fullmatch(candidate.name) and candidate.is_file(follow_symlinks=False):
-                _prune_root(path, cutoff)
+    index = active.parent / 'expiry-v1'
+    current = read_usage_index(index)
+    save_usage_index(index, current, _partition_entries(active, current, cutoff))
 
 
 def finish_cache_update(selected: CacheSelection, destination: Path, retention_days: int,

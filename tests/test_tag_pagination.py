@@ -13,7 +13,7 @@ import pytest
 
 from articulous.articles import Article
 from articulous.config import DEFAULT_CONFIG, load_or_create_config, validate_config
-from articulous.models import SiteModelCtx, build_tags_models
+from articulous.models import SiteModelCtx, _iter_tag_pages, build_tags_models
 from articulous.pipeline import run_build
 
 
@@ -53,6 +53,26 @@ def test_tag01_default_remains_unpaginated():
     assert len(pages) == 1
     assert pages[0].articles == articles
     assert pages[0].url == "https://example.test/blog/en/tags/news/"
+
+
+def test_perf40_yields_one_tag_group_at_a_time(monkeypatch):
+    from articulous import models
+
+    observed = []
+    original = models._tag_pages
+
+    def observe(tag, *args):
+        observed.append(tag)
+        return original(tag, *args)
+
+    monkeypatch.setattr(models, '_tag_pages', observe)
+    articles = [_article(1, tags=('Z', 'A', 'Z')), _article(2, tags=('Z', 'B'))]
+    pages = _iter_tag_pages(iter(articles), 'en', _context(per_page=1), paginate=True)
+    assert next(pages).articles == articles[:1]
+    assert observed == ['Z']
+    assert [(page.tag, page.articles) for page in pages] == [
+        ('Z', articles[1:]), ('A', articles[:1]), ('B', articles[1:]),
+    ]
 
 
 @pytest.mark.parametrize("pattern,lang,prefix", [

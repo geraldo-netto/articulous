@@ -120,9 +120,11 @@ the clock advances. Incremental dry runs and validation-only builds leave the
 cache untouched. Older cache entries with no valid activity timestamp stay
 available until that output is used again, preserving any legacy ownership
 manifest during migration.
-With partitioned storage, retention reads a bounded header per inactive file
-and skips outputs with a live cache lock or pending publication. A later
-successful cache update checks them again.
+With partitioned storage, retention scans the inactive files and reuses
+timestamps from a bounded, rebuildable index when file metadata matches.
+It verifies each eligible file's header again under that output's cache lock
+and skips outputs with a live lock or pending publication. Deleting or
+corrupting the index triggers a scan of the authoritative headers.
 
 Ownership is also stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.

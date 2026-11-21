@@ -320,7 +320,7 @@ def _prepare_locked(stack, cli, original, selected, pages, composer=None, artifa
     context, snapshot, composition = _composition_context(stack, context, composer, original)
     workspace = stack.enter_context(TempWorkspace())
     routes = stack.enter_context(RouteCatalog())
-    manifest = OutputManifest(context, routes)
+    manifest = OutputManifest(context, route_store=routes)
     stream = snapshot.original_articles if snapshot is not None else _article_stream_factory(context, ArticleStats())
     plan = _collect_tasks(stream, cli, context,
                           cache, workspace, manifest)

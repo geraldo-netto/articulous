@@ -1,5 +1,7 @@
 """Planning operation counts and preserved validation boundaries."""
 from collections import Counter
+from dataclasses import asdict
+import json
 from pathlib import Path
 
 import pytest
@@ -181,7 +183,7 @@ def test_perf33_models_are_shared_with_sitemap_and_routes_keep_section_order(sit
     cli, config = seo_config
     config['sitemap']['include_listings'] = True
     counts = Counter()
-    indexes, tags = pipeline.build_index_models, pipeline.build_tags_models
+    indexes, tags = pipeline.build_index_models, pipeline._iter_tag_pages
 
     def index(rows, lang, ctx):
         counts['index', lang] += 1
@@ -192,13 +194,37 @@ def test_perf33_models_are_shared_with_sitemap_and_routes_keep_section_order(sit
         return tags(rows, lang, ctx, **options)
 
     monkeypatch.setattr(pipeline, 'build_index_models', index)
-    monkeypatch.setattr(pipeline, 'build_tags_models', tag)
+    monkeypatch.setattr(pipeline, '_iter_tag_pages', tag)
     with RouteCatalog() as catalog:
         pipeline.run_build(cli, config, site_root, route_catalog=catalog)
         routes = list(catalog)
     assert counts == dict.fromkeys(((section, lang) for section in ('index','tags')
                                    for lang in config['site']['languages']),1)
     assert [route.section for route in routes[:3]] == ['rss','sitemap','search']
+
+
+def test_perf39_publication_projects_the_catalog_once(site_root, seo_config, monkeypatch):
+    from articulous.composition import RouteCatalog
+    from articulous.publication_adapter import publication_input
+
+    cli, config = seo_config
+    calls = []
+    read = RouteCatalog._reader
+
+    def observe(catalog):
+        calls.append(catalog)
+        return read(catalog)
+
+    with builds.prepare_build(cli, config, site_root) as prepared:
+        expected = list(prepared.routes)
+        checked = builds.validate_generated(builds.render_prepared(prepared))
+        monkeypatch.setattr(RouteCatalog, '_reader', observe)
+        publication = publication_input(checked)
+    assert len(calls) == 1
+    assert list(publication.output_routes.values()) == expected
+    root_cache = json.loads(publication.cache_text)['__output_roots__'][str(publication.destination)]
+    assert root_cache['__routes__'] == {route.key: asdict(route) for route in expected}
+    assert not hasattr(publication.output_routes, 'clear')
 
 
 def test_perf21_short_pread_completes_a_queued_payload(site_root, monkeypatch):

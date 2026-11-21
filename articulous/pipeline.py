@@ -22,12 +22,13 @@ import stat
 import tempfile
 from struct import Struct
 import time
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from contextlib import closing, contextmanager
 from functools import partial
 from itertools import chain
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Callable, NamedTuple, Optional, Protocol
 from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
@@ -37,7 +38,7 @@ from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .cache_store import cache_payload, finish_cache_update, lock_selected_cache, selected_roots
 from .config import admit_configuration, normalize_configuration, validate_output_layout
 from .configuration_contracts import BuildOptions, ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS
-from .composition import route_from_output, validate_page_url
+from .composition import route_cache_data, route_from_output, validate_page_url
 from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
     NativeEngine,
@@ -60,7 +61,7 @@ from .models import (
     build_rss_model,
     build_search_model,
     build_sitemap_model,
-    build_tags_models,
+    _iter_tag_pages,
     build_url_from_pattern,
     section_pattern,
 )
@@ -98,7 +99,6 @@ from .structured_data import article_jsonld
 _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
-_OUTPUT_OWNER = object()
 _SORT_CHUNK_SIZE = 1024
 _SORT_MERGE_FAN_IN = 32
 _SITEMAP_MAX_URLS = 50_000
@@ -702,36 +702,47 @@ class _ListingRecords:
                 manifest.record(*record)
 
 
+def _record_output_path(owners: dict, relpath: str) -> None:
+    *parents, leaf = Path(relpath).parts
+    for part in parents:
+        child = owners.setdefault(part, {})
+        if child is None:
+            raise ValueError(f"Duplicate generated output path: {relpath}")
+        owners = child
+    if leaf in owners:
+        raise ValueError(f"Duplicate generated output path: {relpath}")
+    owners[leaf] = None
+
+
 class OutputManifest(dict):
-    def __init__(self, ctx=None, catalog: RouteWriter | None = None):
+    def __init__(self, ctx=None, catalog: RouteWriter | None = None, *, route_store: RouteWriter | None = None):
         super().__init__()
         self._owners: dict = {}
         self.ctx = ctx
         self.catalog = catalog
-        self.route_metadata: dict = {}
+        self._route_store = route_store
+        self._routes: dict[str, Route] = {}
 
     def record(self, cache_key: str, relpath: str, route: Route | None = None) -> None:
         if cache_key in self:
             raise ValueError(f"Duplicate generated cache key: {cache_key}")
-        node = self._owners
-        for part in Path(relpath).parts:
-            if _OUTPUT_OWNER in node:
-                raise ValueError(f"Duplicate generated output path: {relpath}")
-            node = node.setdefault(part, {})
-        if node:
-            raise ValueError(f"Duplicate generated output path: {relpath}")
-        node[_OUTPUT_OWNER] = cache_key
+        _record_output_path(self._owners, relpath)
         super().__setitem__(cache_key, relpath)
         if self.ctx is not None:
             self.record_route(route or route_from_output(self.ctx.base_url, cache_key, relpath))
 
     def record_route(self, route: Route) -> None:
-        self.route_metadata[route.key] = asdict(route)
+        if self._route_store is None:
+            self._routes[route.key] = route
+        else:
+            self._route_store.record(route)
         if self.catalog is not None:
             self.catalog.record(route)
 
-    def route_values(self) -> dict[str, Route]:
-        return {key: Route(**data) for key, data in self.route_metadata.items()}
+    def route_values(self):
+        if self._route_store is None:
+            return MappingProxyType(self._routes)
+        return MappingProxyType({route.key: route for route in self._route_store})
 
 
 def _read_pickled_articles(path: Path, count: int):
@@ -1220,7 +1231,7 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
         tasks = _TaskQueue(ctx, cache)
 
     if pages is None:
-        pages = build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags)
+        pages = _iter_tag_pages(lang_articles, lang, ctx, paginate=ctx.paginate_tags)
     for page in pages:
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
         output = _admit_output(ctx, ctx.output_dir / page.output_path)
@@ -1622,7 +1633,7 @@ def _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, 
     else:
         for _ in indexes:
             pass
-    tags = _observed_listings(build_tags_models(listings, lang, ctx, paginate=ctx.paginate_tags), projection)
+    tags = _observed_listings(_iter_tag_pages(listings, lang, ctx, paginate=ctx.paginate_tags), projection)
     if selected and want("tags"):
         build_tags_section(listings, lang, ctx, cache, records,
                            _tasks_for(plan, "tags", ctx, cache), pages=tags)
@@ -1961,14 +1972,15 @@ def _next_output_paths(cli, ctx, old_manifest, current_manifest):
 def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_manifest, selected) -> None:
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
-    cache['__routes__'] = current_manifest.route_metadata
+    routes = current_manifest.route_values()
+    cache['__routes__'] = route_cache_data(routes)
     if refresh_output_cache(roots, str(ctx.output_dir.resolve()), cache, ctx.cache_retention_days):
         if not save_cache(selected.path, cache_payload(selected, roots)):
             logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
             return
     else:
         logging.debug("Cache unchanged — skipping save")
-    save_ownership(ctx.output_dir, next_manifest, routes=current_manifest.route_values())
+    save_ownership(ctx.output_dir, next_manifest, routes=routes)
     finish_cache_update(selected, ctx.output_dir, ctx.cache_retention_days, ctx.partition_cache)
 
 

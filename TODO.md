@@ -6,8 +6,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| PERF-42 | open | medium | small | Use terminal values in the output-path trie. | Data structure review; `OutputManifest.record` allocates a dictionary plus an owner key per generated file. Replace each leaf dictionary with a terminal value in its parent. At 50,000 nested paths, the prototype reduced traced heap from 34.4 to 23.7 MiB with the same route mapping and all three duplicate/prefix rejections. Verify exact output and collision behavior through normal builds. |
-| PERF-39 | open | medium | medium | Remove duplicated route representation during build and publication. | Data structure review; `pipeline.OutputManifest.record_route` expands every Route into a dictionary while prepared builds insert the same payload into `composition.RouteCatalog`. `route_values` reconstructs each Route for ownership and publication. A typed manifest probe at 20,000 routes reduced incremental retained traced heap from 23.0 to 18.3 MiB with identical route JSON. Preserve insertion order, retained metadata, immutable publication input, repeated iteration and closure. Measure peak RSS and exact artifact bytes. |
 | PERF-01 | wont_fix | low | — | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
 | PERF-02 | wont_fix | low | — | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
 | DUP-01 | wont_fix | low | — | Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
@@ -20,7 +18,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| PERF-40 | open | medium | medium | Stream tag page groups to internal consumers. | Data structure review; `models.build_tags_models` keeps tag membership lists then copies their article references into a second set of page lists. A consuming iterator reduced peak traced heap from 14.2 to 6.8 MiB with 800,000 ordered memberships and 2,000 page models matching. Keep the public list contract. Verify first-seen order, equal-date ordering, page counts and exact site output. SCAL-01 still permits one language's authoritative tag membership. |
 | SCAL-01 | wont_fix | low | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
 | CC-01 | wont_fix | low | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
 | REL-02 | wont_fix | low | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
@@ -30,7 +27,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| PERF-41 | open | low | small | Evaluate a rebuildable index for partition expiry candidates. | Data structure and scalability review; `cache_store._expire_partitions` opens each inactive root's bounded header. At 8, 1000 and 4000 fresh roots, a maintenance-only scan took median 0.41, 36.36 and 145.29 ms CPU over five runs each. Measure full warm builds with sparse expiry and constant active payload. Proceed with indexing if the scan dominates and a rebuildable index can preserve current lock ordering, authoritative usage timestamps and the locked eligibility check. |
 | REL-01 | wont_fix | low | — | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
 
 

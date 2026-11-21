@@ -75,6 +75,10 @@ class RouteCatalog:
         self.close()
 
 
+def route_cache_data(routes):
+    return {key: asdict(route) for key, route in routes.items()}
+
+
 def route_from_output(base_url: str, key: str, output_path: str) -> contracts.Route:
     prefix, _, tail = key.partition(':')
     section = {'article': 'articles', 'tag': 'tags'}.get(prefix, prefix)

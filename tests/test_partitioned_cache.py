@@ -1,6 +1,7 @@
 """PERF-31 and PERF-37: root-local fingerprints, migration and isolation."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -9,10 +10,11 @@ import shutil
 import subprocess
 import sys
 from threading import Barrier
+from types import SimpleNamespace
 
 import pytest
 
-from articulous import cache_store, pipeline, publication_adapter
+from articulous import cache_store, cache_usage_index, pipeline, publication_adapter
 from articulous.backends.posix import PosixPublicationBackend
 from articulous.builds import check_build
 from articulous.config import normalize_configuration
@@ -322,3 +324,148 @@ def test_perf31_does_not_expire_unverified_cache_headers(tmp_path, fault):
         os.link(path, namespace / 'unknown')
     cache_store._prune_root(path, None)
     assert path.exists() is (fault != 'missing')
+
+
+def _seed_partition(active, name, timestamp):
+    root = str(active.parent.parent / name)
+    path = cache_store._root_path(active.parent, root)
+    value = cache_store.partitioned_payload({root: {'__last_used__': timestamp}})
+    path.write_text(json.dumps(value, indent=2))
+    return path
+
+
+def _expiry_fixture(tmp_path):
+    namespace = cache_store.cache_namespace(_base(tmp_path))
+    namespace.mkdir()
+    active = cache_store._root_path(namespace, str(tmp_path / 'active'))
+    return active, namespace / 'expiry-v1'
+
+
+def test_perf41_reuses_stable_headers_and_invalidates_in_place_updates(tmp_path, cache_clock, monkeypatch):
+    active, index = _expiry_fixture(tmp_path)
+    path = _seed_partition(active, 'other', cache_clock[0])
+    cache_store._expire_partitions(active, 3)
+    expected = cache_usage_index.read_usage_index(index)
+    assert expected[path.name][-1] == cache_clock[0]
+    reads = []
+    read = cache_store._read_usage
+
+    def observe(candidate):
+        reads.append(candidate)
+        return read(candidate)
+
+    monkeypatch.setattr(cache_store, '_read_usage', observe)
+    cache_store._expire_partitions(active, 3)
+    assert reads == []
+    metadata = path.stat()
+    _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
+    os.utime(path, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+    assert path.stat().st_size == metadata.st_size
+    cache_store._expire_partitions(active, 3)
+    assert reads == [path, path]
+    assert not path.exists()
+    assert cache_usage_index.read_usage_index(index) == {}
+
+
+def test_perf41_expiry_hint_cannot_delete_a_refreshed_partition(tmp_path, cache_clock, monkeypatch):
+    active, _ = _expiry_fixture(tmp_path)
+    target = _seed_partition(active, 'other', cache_clock[0])
+    expired = cache_clock[0] - 4 * DAY
+    monkeypatch.setattr(cache_store, 'reusable_usage', lambda *_: [0, 0, 0, 0, 0, expired])
+    cache_store._expire_partitions(active, 3)
+    assert target.is_file()
+
+
+def test_perf41_retention_still_visits_all_partitions_when_index_is_full(tmp_path, cache_clock, monkeypatch):
+    monkeypatch.setattr(cache_usage_index, '_MAX_ENTRIES', 1)
+    active, index = _expiry_fixture(tmp_path)
+    fresh = [_seed_partition(active, f'fresh-{i}', cache_clock[0]) for i in range(4)]
+    expired = [_seed_partition(active, f'old-{i}', cache_clock[0] - 4 * DAY) for i in range(4)]
+    cache_store._expire_partitions(active, 3)
+    assert all(path.is_file() for path in fresh)
+    assert not any(path.exists() for path in expired)
+    assert len(cache_usage_index.read_usage_index(index)) == 1
+
+
+def _index_message(payload):
+    return sha256(payload).hexdigest().encode() + b'\n' + payload
+
+
+@pytest.mark.parametrize('payload', [b'[]', b'{oops', b'[' * 2000 + b']' * 2000],
+                         ids=['array', 'invalid-json', 'deeply-nested'])
+def test_rel44_bad_index_payloads_fall_back_to_authoritative_headers(tmp_path, cache_clock, payload):
+    active, index = _expiry_fixture(tmp_path)
+    target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
+    index.write_bytes(_index_message(payload))
+    cache_store._expire_partitions(active, 3)
+    assert not target.exists()
+
+
+def test_perf41_index_corruption_rebuilds_hints(tmp_path, cache_clock):
+    active, index = _expiry_fixture(tmp_path)
+    target = _seed_partition(active, 'other', cache_clock[0])
+    cache_store._expire_partitions(active, 3)
+    expected = index.read_bytes()
+    index.write_bytes(expected[:-1] + b' ')
+    cache_store._expire_partitions(active, 3)
+    assert target.is_file()
+    assert index.read_bytes() == expected
+
+
+def test_perf41_changes_during_header_read_do_not_admit_a_partition(tmp_path, cache_clock, monkeypatch):
+    active, index = _expiry_fixture(tmp_path)
+    target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
+    generations = iter(([1], [2]))
+    monkeypatch.setattr(cache_store, 'file_generation', lambda _: next(generations))
+    cache_store._expire_partitions(active, 3)
+    assert target.is_file()
+    assert not index.exists()
+
+
+def test_perf41_missing_candidate_makes_its_hint_unusable(tmp_path, cache_clock):
+    active, _ = _expiry_fixture(tmp_path)
+    path = _seed_partition(active, 'other', cache_clock[0])
+    observation = [*cache_usage_index.file_generation(path.stat()), cache_clock[0]]
+    with os.scandir(path.parent) as directory:
+        entry = next(directory)
+        path.unlink()
+        assert cache_usage_index.reusable_usage(entry, observation) is None
+
+
+def test_perf41_oversized_index_is_optional(tmp_path, cache_clock, monkeypatch):
+    monkeypatch.setattr(cache_usage_index, '_MAX_FILE_BYTES', 32)
+    active, index = _expiry_fixture(tmp_path)
+    _seed_partition(active, 'fresh', cache_clock[0])
+    expired = _seed_partition(active, 'old', cache_clock[0] - 4 * DAY)
+    original = b'x' * 33
+    index.write_bytes(original)
+    cache_store._expire_partitions(active, 3)
+    assert not expired.exists()
+    assert index.read_bytes() == original
+
+
+def test_perf41_index_size_change_during_read_discards_hints(tmp_path, monkeypatch):
+    _, index = _expiry_fixture(tmp_path)
+    index.write_bytes(_index_message(b'{"root":[1,2,3,4,5,6]}'))
+    fstat = os.fstat
+
+    def observe(fd):
+        metadata = fstat(fd)
+        return SimpleNamespace(st_mode=metadata.st_mode, st_size=metadata.st_size + 1,
+                               st_nlink=metadata.st_nlink)
+
+    monkeypatch.setattr(cache_usage_index.os, 'fstat', observe)
+    assert cache_usage_index.read_usage_index(index) == {}
+
+
+def test_perf41_index_failure_preserves_cache_authority(tmp_path, cache_clock):
+    active, index = _expiry_fixture(tmp_path)
+    _seed_partition(active, 'fresh', cache_clock[0])
+    expired = _seed_partition(active, 'old', cache_clock[0] - 4 * DAY)
+    unrelated = tmp_path / 'keep'
+    unrelated.write_text('untouched')
+    index.symlink_to(unrelated)
+    cache_store._expire_partitions(active, 3)
+    assert not expired.exists()
+    assert unrelated.read_text() == 'untouched'
+    assert index.is_symlink()

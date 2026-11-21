@@ -297,7 +297,8 @@ def _tag_pages(tag, items, lang, ctx, paginate):
     size = ctx.per_page if paginate else len(items)
     total = (len(items) + size - 1) // size
     pattern = section_pattern(ctx, "tags", lang)
-    for number, batch in enumerate(_page_batches(items, size), 1):
+    batches = _page_batches(items, size) if paginate else (items,)
+    for number, batch in enumerate(batches, 1):
         yield TagPage(
             lang=lang, tag=tag, tag_slug=tag_slug, articles=batch,
             output_path=build_output_path_from_pattern(
@@ -310,6 +311,17 @@ def _tag_pages(tag, items, lang, ctx, paginate):
         )
 
 
+def _iter_tag_pages(lang_articles, lang: str, ctx: SiteModelCtx, *, paginate: bool = False) -> Iterator[TagPage]:
+    if not isinstance(paginate, bool):
+        raise ValueError("paginate must be a boolean")
+    tag_map: dict = {}
+    for art in lang_articles:
+        for tag in dict.fromkeys(art.tags):
+            tag_map.setdefault(tag, []).append(art)
+    for tag in tuple(tag_map):
+        yield from _tag_pages(tag, tag_map.pop(tag), lang, ctx, paginate)
+
+
 def build_tags_models(
     lang_articles, lang: str, ctx: SiteModelCtx, *, paginate: bool = False,
 ) -> list[TagPage]:
@@ -319,16 +331,7 @@ def build_tags_models(
     tag route; subsequent pages append ``page/N/``. API callers can supply
     a global tag pattern without ``{lang}`` and an empty language.
     """
-    if not isinstance(paginate, bool):
-        raise ValueError("paginate must be a boolean")
-    tag_map: dict = {}
-    for art in lang_articles:
-        for tag in dict.fromkeys(art.tags):
-            tag_map.setdefault(tag, []).append(art)
-    models: list[TagPage] = []
-    for tag, items in tag_map.items():
-        models.extend(_tag_pages(tag, items, lang, ctx, paginate))
-    return models
+    return list(_iter_tag_pages(lang_articles, lang, ctx, paginate=paginate))
 
 
 def build_rss_model(articles, ctx: SiteModelCtx, lang: str | None = None) -> RssFeed:

@@ -89,10 +89,15 @@ def test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace(tmp
     executable.chmod(0o700)
     before = set(processes._RETAINED)
     workspace, identity = None, None
+    defer = imagemagick.defer_workspace_cleanup
+    def fail_target_handoff(token, path, expected):
+        if path == workspace:
+            raise OSError('handoff')
+        defer(token, path, expected)
     try:
         with patch.dict(os.environ, PATH=str(tmp_path) + os.pathsep + os.environ['PATH']):
             with patch.object(processes, 'await_group_exit', side_effect=TimeoutError('missing fence')):
-                with patch.object(imagemagick, 'defer_workspace_cleanup', side_effect=OSError('handoff')):
+                with patch.object(imagemagick, 'defer_workspace_cleanup', side_effect=fail_target_handoff):
                     with pytest.raises(NativeCleanupError, match='manual recovery') as retained:
                         with ImageMagick().workspace() as workspace:
                             identity = workspace_identity(workspace)
@@ -109,3 +114,32 @@ def test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace(tmp
             processes.recover_session(token)
         if workspace is not None and identity is not None:
             cleanup_workspace(workspace, identity)
+
+
+def test_review28_31_literal_aliases_survive_unsettled_native_session(tmp_path):
+    from articulous.backends import processes
+    from articulous.process_contracts import NativeCleanupError
+
+    tool = tmp_path / 'convert'
+    tool.write_text('#!' + sys.executable + '\npass\n')
+    tool.chmod(0o700)
+    before = set(processes._RETAINED)
+    source = tmp_path / 'source%d.jpg'
+    target_root, target = None, None
+    try:
+        with patch.dict(os.environ, PATH=str(tmp_path) + os.pathsep + os.environ['PATH']):
+            with patch.object(processes, 'await_group_exit', side_effect=TimeoutError('missing fence')):
+                with pytest.raises(NativeCleanupError) as retained:
+                    with ImageMagick().workspace() as target_root:
+                        target = target_root / 'target%d.jpg'
+                        ImageMagick().shrink(source, target, 4, 82)
+        pending = processes._RETAINED[retained.value.token].borrowed
+        aliases, output = pending
+        assert target_root is not None and target is not None
+        assert output.path == target_root
+        assert {path.readlink() for path in aliases.path.iterdir()} == {source, target}
+        processes.recover_session(retained.value.token)
+        assert not aliases.path.exists() and not output.path.exists()
+    finally:
+        for token in set(processes._RETAINED) - before:
+            processes.recover_session(token)

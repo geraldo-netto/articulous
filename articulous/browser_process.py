@@ -55,7 +55,7 @@ def settled_checkpoint(stderr: str | bytes | None, previous: str, report) -> str
     return latest
 
 
-def run_browser_suite(command: object, *, checkpoint: object = 30, report=report_progress, tooling=True) -> subprocess.CompletedProcess[str]:
+def run_browser_suite(command: object, *, checkpoint: object = 30, report=report_progress, tooling=True, pass_fds=()) -> subprocess.CompletedProcess[str]:
     """Observe a protocol-bounded finite suite; checkpoint expiry is not failure.
 
     The caller owns case admission; native CDP commands retain their 10-second
@@ -65,7 +65,7 @@ def run_browser_suite(command: object, *, checkpoint: object = 30, report=report
     """
     arguments = command_arguments(command)
     seconds = deadline_seconds(checkpoint)
-    with open_session(arguments, options=SessionOptions(tooling=tooling, checkpoint_output=True)) as session:
+    with open_session(arguments, options=SessionOptions(tooling=tooling, checkpoint_output=True), pass_fds=pass_fds) as session:
         return observe_session(arguments, session, seconds, report)
 
 
@@ -80,8 +80,8 @@ def observe_session(arguments: list[str], session: ProcessSession, seconds: floa
             previous = settled_checkpoint(error.stderr, previous, report)
 
 
-def run_owned(command, *, tooling=True):
-    result = run_browser_suite(command, tooling=tooling)
+def run_owned(command, *, tooling=True, pass_fds=()):
+    result = run_browser_suite(command, tooling=tooling, pass_fds=pass_fds)
     result.check_returncode()
     return result
 

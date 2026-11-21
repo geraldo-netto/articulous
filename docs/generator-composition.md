@@ -570,8 +570,12 @@ local rendering does not establish actual HTTP behavior.
 `articulous.image_optimization.optimize` is a separate, explicit maintenance
 iterator. Supply an `image_contracts.ImageBackend`, roots, format choices and
 size/quality thresholds. `backends.imagemagick.ImageMagick` adapts installed
-`convert`, `identify` and optional `optipng`; no tool is downloaded. The iterator
-owns one private scratch workspace until exhaustion/close. Consumers that can
+`identify` and `convert`. PNG optimization also requires `optipng`. The adapter
+treats source and target names literally, including names containing percent
+signs, brackets, wildcard characters or leading hyphens. Each ImageMagick
+command inherits a descriptor for a private directory holding fixed-name
+aliases. Its process session settles before the directory is released. The
+iterator owns one private scratch workspace until exhaustion/close. Consumers that can
 stop early must close it, including on cancellation. Each conversion settles
 before its result is yielded; apply mode atomically replaces a source only if
 the result is smaller and its captured file identity, mutation metadata and content

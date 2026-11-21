@@ -1,5 +1,7 @@
 """Explicit ImageMagick/optipng process adapter; never installs tools."""
 from pathlib import Path
+import os
+import re
 import tempfile
 
 from contextlib import contextmanager
@@ -11,20 +13,39 @@ from ..image_contracts import KINDS, validate_options
 
 
 class ImageMagick:
+    @contextmanager
+    def _literal_paths(self, *paths):
+        with self.workspace() as directory:
+            descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                names = []
+                for index, path in enumerate(paths):
+                    suffix = path.suffix if re.fullmatch(r'\.[A-Za-z0-9]+', path.suffix) else ''
+                    name = f'image-{index}{suffix}'
+                    os.symlink(path.absolute(), name, dir_fd=descriptor)
+                    names.append(f'/proc/self/fd/{descriptor}/{name}')
+                yield (descriptor,), names
+            finally:
+                os.close(descriptor)
+
     def dimensions(self, path: Path) -> tuple[int, int]:
-        out = run_owned(['identify', '-format', '%w %h', str(path) + '[0]'], tooling=False).stdout.split()
+        with self._literal_paths(path) as (descriptors, names):
+            out = run_owned(['identify', '-format', '%w %h', names[0] + '[0]'],
+                            pass_fds=descriptors, tooling=False).stdout.split()
         return int(out[0]), int(out[1])
 
     def shrink(self, path: Path, target: Path, largest: int, quality: int) -> None:
         validate_options(largest, quality)
         kind = KINDS[path.suffix.lower()]
         resize = f'{largest}x{largest}>'
-        if kind == 'jpeg':
-            run_owned(['convert', str(path), '-auto-orient', '-resize', resize, '-strip',
-                            '-interlace', 'Plane', '-quality', str(quality), str(target)], tooling=False)
-        else:
-            run_owned(['convert', str(path), '-resize', resize, '-strip', str(target)], tooling=False)
-            run_owned(['optipng', '-quiet', '-o2', str(target)], tooling=False)
+        with self._literal_paths(path, target) as (descriptors, names):
+            source, output = names
+            if kind == 'jpeg':
+                run_owned(['convert', source, '-auto-orient', '-resize', resize, '-strip',
+                           '-interlace', 'Plane', '-quality', str(quality), output], pass_fds=descriptors, tooling=False)
+            else:
+                run_owned(['convert', source, '-resize', resize, '-strip', output], pass_fds=descriptors, tooling=False)
+                run_owned(['optipng', '-quiet', '-o2', str(target.absolute())], tooling=False)
 
     @contextmanager
     def workspace(self):

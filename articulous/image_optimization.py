@@ -52,7 +52,7 @@ def optimize(root: Path, backend: ImageBackend, *, largest: int, quality: int,
             digest = fingerprint(path)
             require_image(path, generation, digest)
             width, height = backend.dimensions(path)
-            target = temporary / path.name
+            target = temporary / ('converted' + path.suffix.lower())
             target.unlink(missing_ok=True)
             backend.shrink(path, target, largest, quality)
             require_image(path, generation, digest)

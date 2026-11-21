@@ -231,3 +231,61 @@ def test_review28_28_build_excludes_source_locks_and_prunes_old_copies(site_root
         assert lock.stat().st_ino == identity
     assert (mirrored / '.thumbnail').read_bytes() == b'ordinary hidden asset'
     assert (mirrored / 'photo.jpg').read_bytes() == b'new'
+
+
+@pytest.mark.parametrize('name', [
+    '50%discount.jpg', '-resize.jpg', 'source[0].jpg', 'question?.jpg',
+    'label:note.jpg', '@list.jpg', 'quote" name.jpg', 'literal*.jpg', '雪.png',
+])
+def test_review28_31_literal_image_names_in_native_batch(tmp_path, monkeypatch, name):
+    from pathlib import Path
+
+    root = tmp_path / 'assets'
+    root.mkdir()
+    monkeypatch.chdir(root)
+    source = Path(name)
+    encoded = subprocess.check_output(['convert', '-size', '16x8', 'xc:red', source.suffix[1:] + ':-'])
+    source.write_bytes(encoded)
+    results = list(optimize(Path('.'), ImageMagick(), largest=4, quality=80,
+                            threshold=0, kinds={'png', 'jpeg'}))
+    assert [(result.path, result.width, result.height) for result in results] == [(source, 16, 8)]
+    assert source.read_bytes() == encoded
+
+
+@pytest.mark.parametrize('suffix', ['png', 'jpg'])
+def test_review28_31_literal_source_and_target_in_special_directories(tmp_path, monkeypatch, suffix):
+    import tempfile
+
+    directory = tmp_path / 'scratch with %d and [x]'
+    directory.mkdir()
+    monkeypatch.setattr(tempfile, 'tempdir', str(directory))
+    source = directory / f'original*.{suffix}'
+    source.write_bytes(subprocess.check_output(['convert', '-size', '12x6', 'xc:red', suffix + ':-']))
+    target = directory / f'resized%d.{suffix}'
+    ImageMagick().shrink(source, target, 4, 82)
+    assert ImageMagick().dimensions(target) == (4, 2)
+    assert set(directory.iterdir()) == {target, source}
+
+
+def test_review28_31_missing_glob_source_cannot_select_another_file(tmp_path):
+    source = tmp_path / 'real.jpg'
+    source.write_bytes(subprocess.check_output(['convert', '-size', '12x6', 'xc:red', 'jpg:-']))
+    missing = tmp_path / '*.jpg'
+    target = tmp_path / 'converted.jpg'
+    with pytest.raises(subprocess.CalledProcessError):
+        ImageMagick().dimensions(missing)
+    with pytest.raises(subprocess.CalledProcessError):
+        ImageMagick().shrink(missing, target, 4, 82)
+    assert not target.exists()
+
+
+def test_review28_31_seeded_literal_names_and_extensionless_input(tmp_path):
+    import random
+
+    rng = random.Random(2831)
+    content = subprocess.check_output(['convert', '-size', '5x3', 'xc:blue', 'png:-'])
+    for _ in range(20):
+        name = 'sample' + ''.join(rng.choices('%d-[]?*.雪= @#', k=7))
+        source = tmp_path / name
+        source.write_bytes(content)
+        assert ImageMagick().dimensions(source) == (5, 3)

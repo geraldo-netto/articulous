@@ -677,39 +677,49 @@
       {
         "functions": [
           {
-            "body_sha256": "0c0ed5071604519c6564d977a08eba10e92e497b8fd2c9ec32bcda37adfec308",
+            "body_sha256": "f66cbf60841b7210fcb8ad12484acedad898aa3cf6fedaea2342201c83f735b1",
+            "column": 4,
+            "complexity": 4,
+            "end_column": 36,
+            "end_line": 29,
+            "line": 17,
+            "name": "ImageMagick._literal_paths",
+            "projection_sha256": "308e479611e280c6299df037f3e8ae94bbcba70b8fae8c944f6f8219466e0076"
+          },
+          {
+            "body_sha256": "b032948c994ecb110b85bf78c7f37157f2ab205df87a8e2d43f3c5ffc7c0ae77",
             "column": 4,
             "complexity": 1,
             "end_column": 39,
-            "end_line": 16,
-            "line": 14,
+            "end_line": 35,
+            "line": 31,
             "name": "ImageMagick.dimensions",
-            "projection_sha256": "7f9cb5e136ae5a8175829be370b4a553e14851a87d88e70fcac0717b04e41fae"
+            "projection_sha256": "b1dbd24201c7e44e9a29b589196fe267f5a3853d8b0e25db14fdc57e73a60d31"
           },
           {
-            "body_sha256": "956d3836845a941970e1a7777375678d2e90d78e827d050a7d61124dd24eeee7",
+            "body_sha256": "0123cac04c40e2c9add6d60e2b722b763dd58eba3ed3ad752352f2b7606efaa5",
             "column": 4,
             "complexity": 2,
-            "end_column": 79,
-            "end_line": 27,
-            "line": 18,
+            "end_column": 94,
+            "end_line": 48,
+            "line": 37,
             "name": "ImageMagick.shrink",
-            "projection_sha256": "b7035eadb2bd4784307712517732b43e88e8e84468b7b53d0b2e40e99a6f9dfa"
+            "projection_sha256": "eb81be7fff773a578d69308a767614ddf9170a7a6df02c62a0841a25b49b4e11"
           },
           {
             "body_sha256": "eb5b91d1dfca7211bc626af9c78a9179de78a3b76bfb336267b14fb9d1d61a74",
             "column": 4,
             "complexity": 5,
             "end_column": 54,
-            "end_line": 46,
-            "line": 30,
+            "end_line": 67,
+            "line": 51,
             "name": "ImageMagick.workspace",
             "projection_sha256": "88559589d82edb6da02ebb2a550c165d83568c14841232bc30d95599478d7faa"
           }
         ],
         "language": "python",
         "path": "articulous/backends/imagemagick.py",
-        "sha256": "86ad2ca76a3f95d0bdf2d2a7af01723e67e8179157d8e932c64b32d0526e8e78"
+        "sha256": "caa35bec58a2705add294c11be21aca5db1bc101ebdd9b5d6610689efd8b992d"
       },
       {
         "functions": [
@@ -2051,14 +2061,14 @@
             "projection_sha256": "622b33f5c658477812034d9a3b81592e81a505765a821126edb77f0633c72da2"
           },
           {
-            "body_sha256": "45185b0971e50145a76c7e886ad2f6d399c2e888c15ce5db899b592cba4b1f25",
+            "body_sha256": "d7edee1fbaed83b0e8f3c9b7aae1c82968fd06899bda2f7e68d5252d6bf8a0f4",
             "column": 0,
             "complexity": 1,
             "end_column": 67,
             "end_line": 69,
             "line": 58,
             "name": "run_browser_suite",
-            "projection_sha256": "1521de2cfb02d75e7db23ae94bfbc7986f3996fa2902578f072b2c0f739b78a6"
+            "projection_sha256": "ba4ecd84b089b24d9496e7b34cdf217ccc6cd372c489ae9590d02dc81c8fd03e"
           },
           {
             "body_sha256": "f7ea23a1cbbf66c375677fc0a728261762dd88658204519f9f2130bf70eea1d7",
@@ -2071,14 +2081,14 @@
             "projection_sha256": "7b29534249c4f7b3b5f74f52f74acedf55c502313b5f2c6a7a5d94857870f736"
           },
           {
-            "body_sha256": "5274a50284a14e0d9341f9ff70be0141c9d8c9c7a53c331350e0a9f14663892a",
+            "body_sha256": "01fbebb2ff0d4b4c16db685199214f59bd69f0c4d65ff5d105633ba9a4550955",
             "column": 0,
             "complexity": 1,
             "end_column": 17,
             "end_line": 86,
             "line": 83,
             "name": "run_owned",
-            "projection_sha256": "af30ded8aae44fb1859db667cbc998bde216c4e62cf408428c19d23253062f4b"
+            "projection_sha256": "d43cc09d5050dc65a23ee91c6ec60f50640279af9ec04b9f4eee21a515abb4f0"
           },
           {
             "body_sha256": "2b68a146060787dc7b53483266797be7d886c938255febc549881b022739e878",
@@ -2093,7 +2103,7 @@
         ],
         "language": "python",
         "path": "articulous/browser_process.py",
-        "sha256": "1c15987e4c2c58d1bbc3578c9f00e2e006b2490ab9246c0e191df3abcf213114"
+        "sha256": "75da23130531f9f02cc31c881cbdf9f9385c8e0325848463decf4be1a595e6b1"
       },
       {
         "functions": [
@@ -6603,19 +6613,19 @@
             "projection_sha256": "0062833cf79a65f911acc0ead4180cfec8dc2512d18ef02eff2184179988f60d"
           },
           {
-            "body_sha256": "7ed3dcef8ebf973936af131595151bf8a275d6ba098984f84280f2f3d0439d13",
+            "body_sha256": "6a76cfc4337fb05251d3cdecc330cb663510b273f8b64edc753d8ca92a459fff",
             "column": 0,
             "complexity": 4,
             "end_column": 70,
             "end_line": 62,
             "line": 46,
             "name": "optimize",
-            "projection_sha256": "589f0f53a3094a9a05de8db67d88d31cbf5dc834ad578419c3d644f86e62e3ee"
+            "projection_sha256": "4eaa56b69cea66835b3853be85bb11b6d97557c45be4229c54e71938f937f3b4"
           }
         ],
         "language": "python",
         "path": "articulous/image_optimization.py",
-        "sha256": "3ca0710263fc11c3526eb2321fd50ae10c6e673cdda6c79e99d15e1dedbc39e1"
+        "sha256": "683cae4216f825afc59f202ec533b339ecb5e24801614f9fbf4ccff5b94da7ee"
       },
       {
         "functions": [],
@@ -18635,19 +18645,39 @@
             "projection_sha256": "c59813de9e9cd18e79e158c14154d6bb3671a04ce74719397685044a45b80115"
           },
           {
-            "body_sha256": "5d127a426ba9a2c399e92512912086b9cfb98a7f539432551b89774c235d0c8d",
+            "body_sha256": "8c4a88c0fae9560a4e61c1b5bd3400cc2f5213b70cf7e629249496192ba47db1",
             "column": 0,
             "complexity": 6,
             "end_column": 50,
-            "end_line": 111,
+            "end_line": 116,
             "line": 82,
             "name": "test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace",
-            "projection_sha256": "7c9ae8342ff9a4435c3e6481f98b69cb1b599f8ae2f63a4b0ce466770255c02b"
+            "projection_sha256": "caf84a4e191f285dab26265a93835bc4af3b400433cdeafc535b26a377f17632"
+          },
+          {
+            "body_sha256": "92d3038ac2603cc7d16eb73c0eb9c8e740f01def108e1d26bb5a8be549fbc187",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 36,
+            "end_line": 96,
+            "line": 93,
+            "name": "test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace.fail_target_handoff",
+            "projection_sha256": "1c81de4be229ed660116aeae37542e96ab28d046c6c841b41683523c3bdc871e"
+          },
+          {
+            "body_sha256": "2afdefd2d7556f7a3fbe3fddd61141fb3894eeb2006f7341f75bf0cb66b3b530",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 44,
+            "end_line": 145,
+            "line": 119,
+            "name": "test_review28_31_literal_aliases_survive_unsettled_native_session",
+            "projection_sha256": "a923f8674afff91ed77e2842d3f6555f61e20b59bd03819cfc87aa3729446c25"
           }
         ],
         "language": "python",
         "path": "tests/test_converter_cancellation.py",
-        "sha256": "1ad8f46e1b40ee0750aec8154daa36bdca2957539872ab77e81675312bde5306"
+        "sha256": "22a59a09cd14459d41d3501da153360c016eb7f2b1afa5afe28048658a1821c9"
       },
       {
         "functions": [
@@ -21597,11 +21627,51 @@
             "line": 210,
             "name": "test_review28_28_build_excludes_source_locks_and_prunes_old_copies",
             "projection_sha256": "98aaf8e81265fec8818b34fa5d3c3a9ca1994b9e134cfacb7bfe0c670eb1882b"
+          },
+          {
+            "body_sha256": "57528e9ee8f5e80400d9ba0eb638aaf9aba24b3e899fe428acb48e54dd157bb8",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 41,
+            "end_line": 252,
+            "line": 240,
+            "name": "test_review28_31_literal_image_names_in_native_batch",
+            "projection_sha256": "7a204a107109991a2df068a650690e56d34700cc8a32639b6a9d85f24857e9ea"
+          },
+          {
+            "body_sha256": "7be8d3007a451034be244b20e43a0a2056c37abf4240a509b743514cacd1d008",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 55,
+            "end_line": 267,
+            "line": 256,
+            "name": "test_review28_31_literal_source_and_target_in_special_directories",
+            "projection_sha256": "908b01b1263530fe8b6269c2dd807adc774e7baea3117cf7eaaf8285fc4003f3"
+          },
+          {
+            "body_sha256": "7d16484b87735c2fd0e8fe170ff8c1bebbd1a39f0c69234c243ce356207123db",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 30,
+            "end_line": 279,
+            "line": 270,
+            "name": "test_review28_31_missing_glob_source_cannot_select_another_file",
+            "projection_sha256": "9ca53e4da647fe6b52faca24be00e548603653145d45b991792d96eefd656bf3"
+          },
+          {
+            "body_sha256": "21e510237e523c841c5222b62ea348b2576e6062aec83509deb63d24a2f7d099",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 57,
+            "end_line": 291,
+            "line": 282,
+            "name": "test_review28_31_seeded_literal_names_and_extensionless_input",
+            "projection_sha256": "499259b4df4df41ff9f9cacebab8847430b3a36e96347944129bf05533e8dd53"
           }
         ],
         "language": "python",
         "path": "tests/test_image_optimization.py",
-        "sha256": "fb035d3e94ae92c6647d88841f965c23239521f3a3aea64cf70241aa2ae3d154"
+        "sha256": "bf1690c305700f76736e62c3287e9c3d861b8928933cfa7d6c1ec782434674fe"
       },
       {
         "functions": [

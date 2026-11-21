@@ -107,7 +107,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-61 | open | low | small | Observability: the translator logs a retry and sleeps two seconds after the final attempt. | `translation_client.py:64-65,71`. Reproduced with `retries=0` and a refusing endpoint: one call, a 2 s sleep and a logged `retry 1` that never happens. Next: log and sleep only when another attempt remains. |
 
 
 ## Local preview

@@ -351,3 +351,21 @@ def test_review28_60_skip_protected_blocks_but_translate_attributes_and_literals
     assert entry.find('body/p/img').get('alt') == 'Texte'
     assert entry.findtext('body/li/b/code') == 'stay'
     assert entry.findtext('body/p[2]') == 'literal <z1/>'
+
+
+@pytest.mark.parametrize('retries', [0, 2])
+@pytest.mark.parametrize('fault', [TimeoutError('offline'), ''])
+def test_review28_61_only_real_retries_are_announced_or_delayed(retries, fault):
+    messages = []
+    with open_cache(':memory:') as cache:
+        translator = Translator(Provider(), cache, prompt, normalize, messages.append, retries=retries)
+        with patch.object(translator, '_post', side_effect=[fault] * (retries + 1)), \
+                patch('articulous.translation_client.time.sleep') as sleep:
+            assert translator.translate('Original', 'en', 'fr') is None
+    assert translator.calls == retries + 1
+    assert len(messages) == retries + 1
+    assert [message.split('; retry ')[-1] for message in messages[:-1]] == [
+        str(number) for number in range(1, retries + 1)]
+    assert 'retry' not in messages[-1]
+    assert ('endpoint error' if isinstance(fault, TimeoutError) else 'placeholder mismatch') in messages[-1]
+    assert [call.args for call in sleep.call_args_list] == [(2,)] * (retries if isinstance(fault, TimeoutError) else 0)

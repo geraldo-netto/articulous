@@ -61,19 +61,25 @@ class Translator:
         self.cache.delete(key)
         return None
 
+    def _report_failure(self, reason, attempt, *, backoff=False):
+        retry = attempt < self.retries
+        suffix = f'; retry {attempt + 1}' if retry else ''
+        self.log(f'    ! {reason}{suffix}')
+        if retry and backoff:
+            time.sleep(2)
+
     def _attempt(self, system, text, wanted, markup, attempt, accept):
         try:
             self.calls += 1
             candidate = self._post(system, text)
         except (urllib.error.URLError, KeyError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
-            self.log(f'    ! endpoint error ({error}); retry {attempt + 1}')
-            time.sleep(2)
+            self._report_failure(f'endpoint error ({error})', attempt, backoff=True)
             return None
         if isinstance(candidate, str):
             candidate = self.normalize(candidate)
         if self._valid(candidate, wanted, markup, accept):
             return candidate
-        self.log(f'    ! empty translation or placeholder mismatch; retry {attempt + 1}')
+        self._report_failure('empty translation or placeholder mismatch', attempt)
         return None
 
     def translate(self, text, source, target, keep_placeholders=True, *, accept=None):

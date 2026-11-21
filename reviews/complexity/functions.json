@@ -12409,29 +12409,39 @@
             "projection_sha256": "1bdc3ddef6f8ffca59fe02fb50e47f6e77c77e9093ef597c43ac3a773c037470"
           },
           {
-            "body_sha256": "48ab6b5ae9d2d01302af48a9122be4065208b8b65f964fa9f0b181f8cb70799c",
+            "body_sha256": "5015c29bebf7f442f29260a1e328d2b49f4b963987c4d8177f07108bb93f49c9",
+            "column": 4,
+            "complexity": 4,
+            "end_column": 25,
+            "end_line": 69,
+            "line": 64,
+            "name": "Translator._report_failure",
+            "projection_sha256": "6c410dc6ac812c9ec4c956074f39222c8775cff1e0c67884add9b6a40a5205d9"
+          },
+          {
+            "body_sha256": "85b8a79deb086eb9d53bebe0a523785d020e4544c62407b855be5390cd3f342a",
             "column": 4,
             "complexity": 4,
             "end_column": 19,
-            "end_line": 77,
-            "line": 64,
+            "end_line": 83,
+            "line": 71,
             "name": "Translator._attempt",
-            "projection_sha256": "35aae6832739c7f560dfadd69934ac57986f93e6ad83e26a0f4eab8503c7fb24"
+            "projection_sha256": "0b947216cd2ad963b0a0dd6c3b4620a55733bb2e913ebd97f2f43515511f303e"
           },
           {
             "body_sha256": "16482792c64ef34a78816f1b31c58ce0455fb85d68e851f136ea0e40caf79332",
             "column": 4,
             "complexity": 6,
             "end_column": 19,
-            "end_line": 93,
-            "line": 79,
+            "end_line": 99,
+            "line": 85,
             "name": "Translator.translate",
             "projection_sha256": "4d73181be35cf2075c8a0c3f483bfa3b246af04283e13e929708d61827fcb475"
           }
         ],
         "language": "python",
         "path": "articulous/translation_client.py",
-        "sha256": "c88de38df547dfd96df673c11230dda35c70bd1de4523159950cbf8f92638b78"
+        "sha256": "490f051ee3f8b8b81d589059ba21f49bec76acccbcebc550814526eb12680c77"
       },
       {
         "functions": [
@@ -34155,11 +34165,21 @@
             "line": 341,
             "name": "test_review28_60_skip_protected_blocks_but_translate_attributes_and_literals.translate",
             "projection_sha256": "bb3389498c8fd5e924fc202f997ade4058237207c9e2a7ef2e25004bc03b7ccc"
+          },
+          {
+            "body_sha256": "1999451b7bbe335dde6eeb562a688073ee6c392f78c1cf5fe024c5a10d2df68d",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 119,
+            "end_line": 371,
+            "line": 358,
+            "name": "test_review28_61_only_real_retries_are_announced_or_delayed",
+            "projection_sha256": "818de896548842b458ef00d46d1f09bfcb2f66e331c4f42a6da86ebbcb2eafc9"
           }
         ],
         "language": "python",
         "path": "tests/test_translation_authoring.py",
-        "sha256": "dc2b152aea07d898c0c61eb73db51a0d52cd97093c5fdbe9b891415db33098e6"
+        "sha256": "fc4ec6fbd396469f73280ce54578a08e1089abce033b429a24176b8ac7c27b58"
       },
       {
         "functions": [

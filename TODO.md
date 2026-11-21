@@ -73,7 +73,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
 | REVIEW28-47 | open | low | small | Contradictions: two grammars define a language identifier. | `config.py:172` admits `[A-Za-z0-9_-]+` and the docs cite `en_US`; `translation_jobs.py:10-11` rejects underscores and case-folded duplicates. Reproduced: configuration admits `['en','pt_BR','en_US']` and `['en','EN']`, `collect_variants` rejects both. Next: share one identifier rule. |
-| REVIEW28-48 | open | low | small | Docs: the root `config.json` sample omits six documented keys. | Diff against `config.DEFAULT_CONFIG`: `sitemap.include_listings`, `robots.enabled`, `site.bare_default_language`, `site.pagination.paginate_tags`, `site.pagination.empty_index`, `urls.index_first`, all documented in `docs/configuration.md:16-19`; commits 25f7405 and 74ebcde added only their own keys. The file still loads through default merging. Next: regenerate it from the defaults or state that it is deliberately partial. |
 | UNUSED-01 | wont_fix | low | — | Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
 
 

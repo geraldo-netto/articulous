@@ -19,20 +19,32 @@
     "home": null
   },
 
+  "sitemap": {
+    "include_listings": false
+  },
+
+  "robots": {
+    "enabled": false
+  },
+
   "site": {
     "site_name": "Articulous",
     "base_url": "https://example.com",
     "languages": ["en"],
     "default_language": "en",
+    "bare_default_language": [],
     "pagination": {
       "per_page": 10,
-      "rss_items": 20
+      "rss_items": 20,
+      "paginate_tags": false,
+      "empty_index": false
     }
   },
 
   "urls": {
     "article": "/{lang}/articles/{slug}/",
     "index": "/{lang}/page/{page}/",
+    "index_first": null,
     "tag": "/{lang}/tags/{tag}/",
     "rss": "/rss.xml",
     "sitemap": "/sitemap.xml",

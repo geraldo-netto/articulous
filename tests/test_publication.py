@@ -364,7 +364,7 @@ def test_api007_invalid_identity_preserves_recovery_obligations(tmp_path, phase,
 def api007_journal(destination, cache, previous, stage, phase):
     prior, staged = previous.stat(), stage.stat()
     return {
-        'version': 1, 'destination': str(destination), 'cache': str(cache),
+        'version': 2, 'cache_after': 'a' * 64, 'destination': str(destination), 'cache': str(cache),
         'previous': [prior.st_dev, prior.st_ino], 'new': [staged.st_dev, staged.st_ino],
         'stage': str(stage), 'stage_identity': [staged.st_dev, staged.st_ino],
         'cache_before': None, 'ownership_before': None, 'phase': phase,
@@ -424,13 +424,14 @@ build_site(BuildRequest(), {}, Path(sys.argv[1]))
     assert not (site_root / '.output.articulous-transaction').exists()
 
 
-@pytest.mark.parametrize('version,snapshot_claim', [(1, None), (2, [0, 1, 'a' * 64])])
-def test_rel42_rejects_inconsistent_capture_intent(version, snapshot_claim):
+@pytest.mark.parametrize('claimed', ['cache_before', 'ownership_before'])
+def test_rel42_rejects_inconsistent_capture_intent(claimed):
     from articulous.backends.posix import _validate_phase
 
     with pytest.raises(ValueError, match='Invalid snapshot capture phase'):
-        _validate_phase({'phase': 'capturing', 'version': version,
-                         'cache_before': snapshot_claim, 'ownership_before': None})
+        data = {'phase': 'capturing', 'cache_before': None, 'ownership_before': None}
+        data[claimed] = [0, 1, 'a' * 64]
+        _validate_phase(data)
 
 
 def test_arch005_rename_never_overwrites_unexpected_destination(tmp_path):
@@ -501,7 +502,7 @@ build_site(BuildRequest(), {"paths":{"output_dir":"other"}}, Path(sys.argv[1]),
 
 
 @pytest.mark.parametrize('existing', [False, True])
-def test_perf17_version_one_journal_still_rolls_back_byte_exactly(site_root, seo_config, existing):
+def test_compat03_version_one_journal_preserves_state_for_manual_recovery(site_root, seo_config, existing):
     import base64
 
     cli, config = seo_config
@@ -518,7 +519,10 @@ def test_perf17_version_one_journal_still_rolls_back_byte_exactly(site_root, seo
         for key, value in zip(('cache_before', 'ownership_before'), before[1:]):
             data[key] = base64.b64encode(value).decode() if value is not None else None
         backend._set_phase(transaction, data, 'prepared')
-        backend.recover(publication.destination, publication.cache_path)
+        retained = snapshot(transaction), snapshot(publication.root)
+        with pytest.raises(ValueError, match='preserve it for recovery'):
+            backend.recover(publication.destination, publication.cache_path)
+        assert (snapshot(transaction), snapshot(publication.root)) == retained
     if existing:
         assert published(site_root) == before
     else:

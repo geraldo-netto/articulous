@@ -1,5 +1,4 @@
 """Linux-validated directory publication with rollback and a recovery journal."""
-import base64
 import hashlib
 from contextlib import contextmanager
 import json
@@ -10,7 +9,7 @@ import shutil
 
 from ..cache_store import partition_path
 from ..filesystem import (
-    _directory_handle, atomic_output, cache_lock_path, lock_file, open_regular_file,
+    _directory_handle, cache_lock_path, lock_file, open_regular_file,
     private_directory, validate_output_path, write_text_atomic,
 )
 from ..ownership import ownership_path, save_ownership, validate_owned_output
@@ -27,10 +26,12 @@ def _cache_digest(publication):
 
 
 def _validate_journal_header(data, destination, cache):
+    if not isinstance(data, dict):
+        raise ValueError('Invalid journal fields')
+    if type(data.get('version')) is not int or data['version'] != 2:
+        raise ValueError('Wrong journal version')
     fields = {'version', 'destination', 'cache', 'phase', 'previous', 'new',
-              'stage', 'stage_identity', 'cache_before', 'ownership_before'}
-    if _journal_version(data) == 2:
-        fields.add('cache_after')
+              'stage', 'stage_identity', 'cache_before', 'ownership_before', 'cache_after'}
     if set(data) != fields:
         raise ValueError('Invalid journal fields')
     if data['destination'] != str(destination) or data['cache'] != str(cache):
@@ -44,15 +45,6 @@ def _retired_cache_identity(data, destination, cache):
     return original if partition_path(original, destination) == cache else cache
 
 
-def _journal_version(data):
-    if not isinstance(data, dict):
-        raise ValueError('Invalid journal fields')
-    version = data.get('version')
-    if type(version) is not int or version not in (1, 2):
-        raise ValueError('Wrong journal version')
-    return version
-
-
 def _validate_identity_part(part):
     if type(part) is not int or part < 0:
         raise ValueError('Invalid journal file identity')
@@ -60,7 +52,7 @@ def _validate_identity_part(part):
 
 def _validate_phase(data):
     if data['phase'] == 'capturing':
-        if data['version'] != 2 or any(data[key] is not None for key in ('cache_before', 'ownership_before')):
+        if any(data[key] is not None for key in ('cache_before', 'ownership_before')):
             raise ValueError('Invalid snapshot capture phase')
     elif data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed', 'rolled_back'):
         raise ValueError('Invalid journal phase')
@@ -74,17 +66,6 @@ def _identity(path):
     return [metadata.st_dev, metadata.st_ino]
 
 
-def _restore_file(path, saved):
-    validate_output_path(path)
-    if saved is None:
-        path.unlink(missing_ok=True)
-        return
-    content = base64.b64decode(saved, validate=True)
-    with atomic_output(path, generated=True) as staged:
-        with staged.open('wb') as target:
-            target.write(content)
-
-
 def _remove_tree(path):
     validate_output_path(path)
     with _directory_handle(path.parent) as parent:
@@ -92,31 +73,22 @@ def _remove_tree(path):
 
 
 def _validate_saved_state(data):
-    if data['version'] == 2:
-        snapshots.require_digest(data['cache_after'])
-        snapshots.validate_claim(data['cache_before'])
-        snapshots.validate_claim(data['ownership_before'])
-    else:
-        for key in ('cache_before', 'ownership_before'):
-            if data[key] is not None:
-                base64.b64decode(data[key], validate=True)
+    snapshots.require_digest(data['cache_after'])
+    snapshots.validate_claim(data['cache_before'])
+    snapshots.validate_claim(data['ownership_before'])
 
 
 def _verify_saved_state(transaction, data):
-    if data['version'] == 2 and data['phase'] not in ('committed', 'rolled_back'):
+    if data['phase'] not in ('committed', 'rolled_back'):
         snapshots.verify_snapshot(transaction / 'cache.before', data['cache_before'])
         snapshots.verify_snapshot(transaction / 'ownership.before', data['ownership_before'])
 
 
 def _restore_saved_state(transaction, data, destination, cache):
     owners = ownership_path(destination)
-    if data['version'] == 1:
-        _restore_file(cache, data['cache_before'])
-        _restore_file(owners, data['ownership_before'])
-    else:
-        snapshots.restore_cache(cache, transaction / 'cache.before', data['cache_before'],
-                                data['cache_after'], str(destination))
-        snapshots.restore_snapshot(owners, transaction / 'ownership.before', data['ownership_before'])
+    snapshots.restore_cache(cache, transaction / 'cache.before', data['cache_before'],
+                            data['cache_after'], str(destination))
+    snapshots.restore_snapshot(owners, transaction / 'ownership.before', data['ownership_before'])
 
 
 class PosixPublicationBackend:

@@ -187,12 +187,11 @@ def section_pattern(ctx: SiteModelCtx, section: str, lang: str | None) -> str:
 
     With ``site.bare_default_language`` naming the section, the default
     language drops its ``/{lang}/`` segment, so it owns the bare routes the
-    way a site's untranslated pages usually do. API contexts predate the
-    setting and may not carry it; they keep the configured pattern.
+    way a site's untranslated pages usually do.
     """
     pattern = ctx.url_patterns[url_key_for_section(section)]
-    bare = section in getattr(ctx, "bare_default_language", ())
-    if bare and lang is not None and lang == getattr(ctx, "default_language", None):
+    bare = section in ctx.bare_default_language
+    if bare and lang is not None and lang == ctx.default_language:
         return bare_pattern(pattern)
     return pattern
 
@@ -217,7 +216,7 @@ def _index_pattern(page, lang, ctx, options):
     if page != 1 or options.first_pattern is None:
         return section_pattern(ctx, 'index', lang)
     pattern = options.first_pattern
-    if 'index' in getattr(ctx, 'bare_default_language', ()) and lang == ctx.default_language:
+    if 'index' in ctx.bare_default_language and lang == ctx.default_language:
         return bare_pattern(pattern)
     return pattern
 

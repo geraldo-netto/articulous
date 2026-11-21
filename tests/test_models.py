@@ -29,6 +29,8 @@ from articulous.sections import validate_url_pattern
 def _ctx(**overrides):
     base = {
         "base_url": "https://example.test",
+        "default_language": "en",
+        "bare_default_language": (),
         "languages": ["en", "fr"],
         "per_page": 2,
         "rss_items": 5,

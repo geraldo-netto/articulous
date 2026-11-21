@@ -72,6 +72,8 @@ URL_PATTERNS = {
 def _model_ctx(**overrides):
     base = {
         "base_url": "https://e.test",
+        "default_language": "en",
+        "bare_default_language": (),
         "languages": ["en"],
         "per_page": 10,
         "rss_items": 20,

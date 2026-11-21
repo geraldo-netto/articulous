@@ -56,6 +56,9 @@ The public model equivalent is
 `build_index_models(articles, lang, ctx, options=IndexOptions(first_pattern="/{lang}/", include_empty=True))`
 from [`articulous.models`](../articulous/models.py). Omitting `options` uses
 `ctx.index_options` when present, otherwise the default `IndexOptions()`.
+Model contexts supply `default_language` and `bare_default_language` as defined
+by `SiteModelCtx`. An empty `bare_default_language` tuple preserves each
+configured language prefix.
 Inputs must already be publication-filtered, language-filtered and sorted newest
 first. The collection supplies its length and supports iteration; pages consume
 it in bounded batches. The builder rejects disabled languages and nonpositive

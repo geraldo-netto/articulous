@@ -23,6 +23,7 @@ from articulous.config import (
     validate_config,
 )
 from articulous.models import (
+    IndexOptions,
     build_index_models,
     build_rss_model,
     build_tags_models,
@@ -157,11 +158,13 @@ def test_section_pattern_is_bare_only_for_the_default_language_and_listed_sectio
     assert section_pattern(ctx, "rss", None) == "/{lang}/rss.xml"
 
 
-def test_a_context_that_predates_the_setting_keeps_its_pattern():
+@pytest.mark.parametrize("property_name", ["bare_default_language", "default_language"])
+@pytest.mark.parametrize("first_pattern", [None, "/{lang}/"])
+def test_compat05_index_routes_require_declared_language_properties(property_name, first_pattern):
     ctx = _ctx()
-    del ctx.bare_default_language
-    del ctx.default_language
-    assert section_pattern(ctx, "index", "en") == "/{lang}/page/{page}/"
+    delattr(ctx, property_name)
+    with pytest.raises(AttributeError, match=property_name):
+        list(build_index_models([1], "en", ctx, options=IndexOptions(first_pattern=first_pattern)))
 
 
 # --- models ---

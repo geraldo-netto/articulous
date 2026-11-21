@@ -28,6 +28,7 @@ def _article(index, **changes):
 
 def _context(**changes):
     values = dict(base_url="https://example.test/blog", languages=["en"], per_page=10,
+                  default_language="en", bare_default_language=(),
                   rss_items=10, url_patterns={"tag": "/{lang}/tags/{tag}/"})
     values.update(changes)
     return cast(SiteModelCtx, SimpleNamespace(**values))

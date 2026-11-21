@@ -36,6 +36,9 @@ _SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation", "author"
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 _SCALAR_FIELDS = _SINGLETON_FIELDS | {"tag"}
+_END_OF_DAY = re.compile(
+    r"[0-9]{4}(?:-?[0-9]{2}-?[0-9]{2}|-?W[0-9]{2}(?:-?[1-7])?)(?P<separator>.)24", re.DOTALL
+)
 _OFFSET_FIELDS = re.compile(r"[+-][0-9]{2}:?([0-9]{2})(?::?([0-9]{2}))?(?:[.,][0-9]+)?\Z")
 
 
@@ -123,8 +126,16 @@ class _ScanProgress:
         self._reported_at = now
 
 
+def _parse_article_datetime(raw: str) -> datetime:
+    rollover = _END_OF_DAY.match(raw)
+    # A numeric separator in an ISO week date can also place a minute at this position.
+    if rollover and (not rollover["separator"].isdigit() or datetime.fromisoformat(raw).hour == 0):
+        raise ValueError("Article timestamp hours must be between 00 and 23")
+    return datetime.fromisoformat(raw)
+
+
 def _parse_utc(raw: str) -> datetime:
-    value = datetime.fromisoformat(raw)
+    value = _parse_article_datetime(raw)
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     offset = _OFFSET_FIELDS.search(raw)
@@ -167,7 +178,7 @@ def _validated_modified(raw: str | None) -> str:
     pattern = r"[0-9]{4}-[0-9]{2}-[0-9]{2}(?:T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9]))?"
     if re.fullmatch(pattern, raw) is None:
         raise ValueError("<modified> must be an ISO date or timestamp with timezone")
-    datetime.fromisoformat(raw)
+    _parse_article_datetime(raw)
     return raw
 
 

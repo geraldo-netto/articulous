@@ -43,7 +43,8 @@ special files are skipped with an error. Each article has this shape:
 - `<date>` must be ISO‑8601 (`YYYY-MM-DD` or full timestamp). Articles
   with a missing or invalid date are skipped with a warning. Dates and
   publication timestamps without a timezone are treated as UTC; timezone
-  offsets are converted to UTC for sorting and scheduling.
+  offsets are converted to UTC for sorting and scheduling. Timestamp hours in
+  `<date>`, `<publish-at>`, and `<modified>` must be between `00` and `23`.
 - Optional `<display-date>` text is captured as `Article.display_date` and
   `CapturedArticle.display_date`. The first element is used, with whitespace
   preserved; absent/empty text is an empty string. It does not affect sorting or

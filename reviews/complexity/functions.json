@@ -213,8 +213,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 22,
-            "end_line": 56,
-            "line": 50,
+            "end_line": 59,
+            "line": 53,
             "name": "ArticleSnapshot.read_bytes",
             "projection_sha256": "8f433efae42d4aa0aeffe436998cee196c5c26a025c2a06a55f57046cb617c4f"
           },
@@ -223,8 +223,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 21,
-            "end_line": 90,
-            "line": 86,
+            "end_line": 93,
+            "line": 89,
             "name": "Article.policy",
             "projection_sha256": "99b5f7caee453af264410f912d332d5f8567a0b8f8341706a7892f0ab3adb7a2"
           },
@@ -233,8 +233,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 60,
-            "end_line": 94,
-            "line": 93,
+            "end_line": 97,
+            "line": 96,
             "name": "Article.indexable",
             "projection_sha256": "4b95247905427f60dc2c58ec32386a4bf029e3174fec2277f7e133f0427489c1"
           },
@@ -243,8 +243,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 49,
-            "end_line": 100,
-            "line": 97,
+            "end_line": 103,
+            "line": 100,
             "name": "Article.publication_state",
             "projection_sha256": "7b1f89e0772a8a7899701c301ff2ff08600b459db18517264d29eaa7d8fa5bd9"
           },
@@ -253,8 +253,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 39,
-            "end_line": 113,
-            "line": 111,
+            "end_line": 116,
+            "line": 114,
             "name": "_ScanProgress.__init__",
             "projection_sha256": "0af1bb809a086992f903dac6a228eb02df97eeabbc7f8babd27bebdf5d522114"
           },
@@ -263,28 +263,38 @@
             "column": 4,
             "complexity": 2,
             "end_column": 31,
-            "end_line": 123,
-            "line": 115,
+            "end_line": 126,
+            "line": 118,
             "name": "_ScanProgress.report",
             "projection_sha256": "d3b3fac418bee0632bb58d4c1355ec0a1f80585b94ae3718e04ae5f84602ff09"
           },
           {
-            "body_sha256": "3fa0e3dbb9d58f9634462dfdfe25f5634a012c49e0bbd9ea38af2c6298b2e596",
+            "body_sha256": "ce16c8489b0caf95f910bb8ab5ab395a1d3733ca0f1488bbdb2f52f0e095301a",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 38,
+            "end_line": 134,
+            "line": 129,
+            "name": "_parse_article_datetime",
+            "projection_sha256": "de093ef1aa287abcb92bc3ce8628b604f29461565f89d28337127dbf3cdcb035"
+          },
+          {
+            "body_sha256": "2e16ad1224a5137a6259a596f50f35f9e14b075d4a3905fbf3015e40d7bc6d4c",
             "column": 0,
             "complexity": 5,
             "end_column": 41,
-            "end_line": 133,
-            "line": 126,
+            "end_line": 144,
+            "line": 137,
             "name": "_parse_utc",
-            "projection_sha256": "4cec09e7d0a5934d8f0ccb1165283af9784e1db5af185b6a0e813d3748584d2f"
+            "projection_sha256": "266e21f03da0b1c0c0399db20a14a9a1854829a2715ff7b95130a778e6baf5eb"
           },
           {
             "body_sha256": "72a1842e0700caa68b2103930fe4319c41ec9c50e11c85f03957ad28875a935c",
             "column": 0,
             "complexity": 3,
             "end_column": 17,
-            "end_line": 141,
-            "line": 136,
+            "end_line": 152,
+            "line": 147,
             "name": "_track_singleton_field",
             "projection_sha256": "e0ce843c26bf9d47cce875fdf7affd2b522dd162da5980f59390c5c511330e32"
           },
@@ -293,8 +303,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 37,
-            "end_line": 147,
-            "line": 144,
+            "end_line": 158,
+            "line": 155,
             "name": "_field_text",
             "projection_sha256": "6e0e7c35a20e4a6aa80c68048d0df7d47b18ec20e87fde43b5a39f5e6ea23aca"
           },
@@ -303,8 +313,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 14,
-            "end_line": 153,
-            "line": 150,
+            "end_line": 164,
+            "line": 161,
             "name": "_validated_indexing",
             "projection_sha256": "8ff455abc6a3612f457b955f88c3fc27737047fb503514130be5c872b4571b76"
           },
@@ -313,28 +323,28 @@
             "column": 0,
             "complexity": 4,
             "end_column": 14,
-            "end_line": 161,
-            "line": 156,
+            "end_line": 172,
+            "line": 167,
             "name": "_validated_slug",
             "projection_sha256": "1d2f89f016754a9fed21b604a90237cbecf1e2cb88b8fd2c26b0397358b92375"
           },
           {
-            "body_sha256": "ed473c82c1425df66efde018fdf4ad38dd4084d67e047a933fc549137a8825af",
+            "body_sha256": "27874a4041b8300230b97a74c2f44d7e7936edfd2b1f4e160a7d0d733a77e2d0",
             "column": 0,
             "complexity": 3,
             "end_column": 14,
-            "end_line": 171,
-            "line": 164,
+            "end_line": 182,
+            "line": 175,
             "name": "_validated_modified",
-            "projection_sha256": "57411ebc7fe63cf1e545ae4da9b9d3756134a3a4ca7feebc5466aa930420de58"
+            "projection_sha256": "f3af02eb7de099984ddcafa74d86aaddda8107d3f45f178f2184d37d7e3cbd0e"
           },
           {
             "body_sha256": "d1d748db7e42297fd5796b1c79a7fab82466d2896cdde8c55cd4b62856e23cde",
             "column": 0,
             "complexity": 4,
             "end_column": 14,
-            "end_line": 179,
-            "line": 174,
+            "end_line": 190,
+            "line": 185,
             "name": "_validated_translation",
             "projection_sha256": "9d2001545b747a72858b720b839b57aac9b4cc95dddc62120946d0727762afd4"
           },
@@ -343,8 +353,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 14,
-            "end_line": 187,
-            "line": 182,
+            "end_line": 198,
+            "line": 193,
             "name": "_validated_author",
             "projection_sha256": "e415455f9ab1c4df3b7519cd3c31923e0d1ff865026bf411ab3ba0fa2912b58f"
           },
@@ -353,8 +363,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 14,
-            "end_line": 194,
-            "line": 190,
+            "end_line": 205,
+            "line": 201,
             "name": "_validated_image",
             "projection_sha256": "0e980ba217cb48ddc8b07a89ff4633db8d002477114a06ae644216fb035dcc78"
           },
@@ -363,8 +373,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 14,
-            "end_line": 202,
-            "line": 197,
+            "end_line": 213,
+            "line": 208,
             "name": "_validated_structured_data",
             "projection_sha256": "749ee53388fdee5630be8fb30025736efc7208fab9b54ea276f8f7db69843d67"
           },
@@ -373,8 +383,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 5,
-            "end_line": 241,
-            "line": 205,
+            "end_line": 252,
+            "line": 216,
             "name": "_read_article_fields",
             "projection_sha256": "3ff5e49a483e690ba614ce00e1a653f494156327ddb51a3b864aa618e3822fe3"
           },
@@ -383,8 +393,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 56,
-            "end_line": 253,
-            "line": 244,
+            "end_line": 264,
+            "line": 255,
             "name": "_parse_publish_at",
             "projection_sha256": "e1b1d1934be8d47018a095c2ba424983029c629891dd32dbbaf683b2611708c3"
           },
@@ -393,8 +403,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 15,
-            "end_line": 271,
-            "line": 256,
+            "end_line": 282,
+            "line": 267,
             "name": "_validated_publication",
             "projection_sha256": "74212dbf690e4b1c1a1e9f65c9a3eeb3285047fe13a97cf69ea1a3ef7607cdbb"
           },
@@ -403,8 +413,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 15,
-            "end_line": 295,
-            "line": 274,
+            "end_line": 306,
+            "line": 285,
             "name": "_validated_lang",
             "projection_sha256": "31920d490389e4d7ad6eb3c718a925adfbd8458e178c1238890dbbc775bfaa9a"
           },
@@ -413,8 +423,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 15,
-            "end_line": 305,
-            "line": 298,
+            "end_line": 316,
+            "line": 309,
             "name": "_article_slug",
             "projection_sha256": "56ce9bb3fb55a73289c08d6ed3c4a0f743e4ffe3d9143816845dd472d27e7f05"
           },
@@ -423,8 +433,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 85,
-            "end_line": 351,
-            "line": 308,
+            "end_line": 362,
+            "line": 319,
             "name": "parse_article_xml",
             "projection_sha256": "cd03993376fdcbfdd6d083799b031e5a024bd1f2907eb2c3a4d71261a2ab7666"
           },
@@ -433,8 +443,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 5,
-            "end_line": 414,
-            "line": 354,
+            "end_line": 425,
+            "line": 365,
             "name": "parse_article_source",
             "projection_sha256": "e3519186919e7db650cb3376b22f80eb0bfb93e2023d8ab2428a1c855f529514"
           },
@@ -443,8 +453,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 67,
-            "end_line": 424,
-            "line": 417,
+            "end_line": 435,
+            "line": 428,
             "name": "_directory_entries",
             "projection_sha256": "131e73511da623932a7f9018a3317937253dc5e9592f15bd11926d34379e8c40"
           },
@@ -453,8 +463,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 91,
-            "end_line": 433,
-            "line": 427,
+            "end_line": 444,
+            "line": 438,
             "name": "_spool_article_paths",
             "projection_sha256": "12c96f8f7cdef0b1130cabde4522a29b094f48e1059dea852482a9230907a14b"
           },
@@ -463,8 +473,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 41,
-            "end_line": 443,
-            "line": 436,
+            "end_line": 454,
+            "line": 447,
             "name": "_discover_article_files",
             "projection_sha256": "7934600f64baccda9e8514910b9534fef2e2ea656338a36f13ebd53a2cc7e26a"
           },
@@ -473,15 +483,15 @@
             "column": 0,
             "complexity": 6,
             "end_column": 21,
-            "end_line": 481,
-            "line": 446,
+            "end_line": 492,
+            "line": 457,
             "name": "iter_articles",
             "projection_sha256": "84b4666a65e678ab4e2a4c42053f610bfac83aba62d5b69b3d94793539e5d6ec"
           }
         ],
         "language": "python",
         "path": "articulous/articles.py",
-        "sha256": "8de4ac57dc3212b1ff32d13ae05c41b9d6df57ef78c845a747711fd97353915d"
+        "sha256": "eac65591782809ce0d67fcd19ae6df19d8aa85c6a899aa000492755efed64a4d"
       },
       {
         "functions": [
@@ -20804,8 +20814,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 15,
-            "end_line": 21,
-            "line": 17,
+            "end_line": 22,
+            "line": 18,
             "name": "_article_root",
             "projection_sha256": "861732f3f5766378cc0ec575984ea03bbd2a94665f1a31095e8b997a03320e04"
           },
@@ -20814,8 +20824,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 39,
-            "end_line": 40,
-            "line": 25,
+            "end_line": 41,
+            "line": 26,
             "name": "test_fuzz_repeated_singletons_never_select_a_winning_value",
             "projection_sha256": "f44e5679a4123a60f041bdd5c7f2f62f58b57be58459ad7fa25c91d1c6d931a6"
           },
@@ -20824,8 +20834,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 58,
-            "end_line": 49,
-            "line": 43,
+            "end_line": 50,
+            "line": 44,
             "name": "_invalid_dates",
             "projection_sha256": "07542c3393be544df6863d4abbf927f9ed34d4fab3da7e93630e7b7775448102"
           },
@@ -20834,15 +20844,45 @@
             "column": 0,
             "complexity": 2,
             "end_column": 52,
-            "end_line": 61,
-            "line": 53,
+            "end_line": 62,
+            "line": 54,
             "name": "test_fuzz_out_of_range_article_dates_are_skipped",
             "projection_sha256": "2de925ba56047eadf201c35c6d191b277375dea9b37e0e52840bc2a36b71780c"
+          },
+          {
+            "body_sha256": "43ca507fde15e1b2c0a85bd351bdd68a81bae670b7bd097171970fe3c0568b85",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 52,
+            "end_line": 84,
+            "line": 70,
+            "name": "test_end_of_day_hour_rejected_for_article_dates",
+            "projection_sha256": "fa845b7e2c6edaeef2fc2eca2d5677e8b2ad818b87b0a9eeab3a96ad378bb496"
+          },
+          {
+            "body_sha256": "26289ad42f93bb39d573d4a507bcd2584eb98a2c40dbb3c72899a077850482d2",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 42,
+            "end_line": 93,
+            "line": 87,
+            "name": "test_end_of_day_hour_rejected_for_modification_date",
+            "projection_sha256": "e1ee6b359983071c368ccc88ffb7b9141656703cc160dc79588ca681619fc411"
+          },
+          {
+            "body_sha256": "5301f03b54730d3030a4f80dc75ed77a109bf72b53825e72bbf229e5ef70cde7",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 51,
+            "end_line": 113,
+            "line": 105,
+            "name": "test_article_clock_boundaries",
+            "projection_sha256": "e9b8dc147da5d067a9a5768429801cef4c76c35fe330e16746d673cd83452352"
           }
         ],
         "language": "python",
         "path": "tests/test_fuzz_article_validation.py",
-        "sha256": "0b84ee1d9c177c3d1b39901560414429964d7e197af946d62c95403a9aed79a6"
+        "sha256": "ad7a388d5947d03817142d80daa326d634145356756ea6f48325c971bf9d5e43"
       },
       {
         "functions": [

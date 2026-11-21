@@ -2514,3 +2514,21 @@ def test_review28_08_unpublish_when_an_old_parent_is_a_regular_file(site_root):
     state = load_ownership(output)
     assert not state.pending and relative not in state.paths
     assert page.parent.read_text() == 'manual replacement'
+
+
+@pytest.mark.parametrize("version", [True, 1.0, "1", None, -1, 2**128, 1])
+def test_cache_valid01_asset_version_requires_an_integer(site_root, cache_clock, version):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    path = site_root / ".build-cache.json"
+    root = str(site_root / "output")
+    data = json.loads(path.read_text())
+    data["__output_roots__"][root]["assets"]["version"] = version
+    path.write_text(json.dumps(data))
+    before = path.stat().st_mtime_ns
+
+    run_build(_CLI(), config, site_root)
+    saved = json.loads(path.read_text())["__output_roots__"][root]["assets"]["version"]
+    assert type(saved) is int and saved == 1
+    if type(version) is int and version == 1:
+        assert path.stat().st_mtime_ns == before

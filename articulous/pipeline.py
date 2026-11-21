@@ -294,7 +294,8 @@ def _validated_asset_cache_entry(cache: Optional[dict]) -> Optional[dict]:
     entry = cache.get(_ASSET_CACHE_KEY)
     if not isinstance(entry, dict):
         return None
-    if entry.get("version") != _ASSET_CACHE_VERSION:
+    version = entry.get("version")
+    if type(version) is not int or version != _ASSET_CACHE_VERSION:
         return None
     manifest = entry.get("manifest")
     if not isinstance(manifest, dict):
@@ -323,11 +324,10 @@ def _asset_output_mismatches(dest: Path, manifest: dict) -> set[str]:
 
 
 def _assets_unchanged(
-    cache: Optional[dict], manifest: dict, ctx: BuildCtx, mismatches: set[str],
+    entry: Optional[dict], manifest: dict, ctx: BuildCtx, mismatches: set[str],
 ) -> bool:
     if ctx.force:
         return False
-    entry = _validated_asset_cache_entry(cache)
     return (
         entry is not None
         and entry.get("manifest") == manifest
@@ -335,11 +335,13 @@ def _assets_unchanged(
     )
 
 
-def _cached_asset_manifest(cache: Optional[dict]) -> dict:
-    entry = _validated_asset_cache_entry(cache)
-    if entry is None:
-        return {}
-    return entry["manifest"]
+def _save_asset_manifest(cache: Optional[dict], previous: Optional[dict], manifest: dict) -> None:
+    if cache is None:
+        return
+    if previous is None:
+        # JSON true and 1.0 compare equal to 1 in Python's dictionary change tracking.
+        cache.pop(_ASSET_CACHE_KEY, None)
+    cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
 
 
 def _asset_destination_paths(dest: Path) -> set[str]:
@@ -408,7 +410,8 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None, *, before_mutation=
 def _mirror_existing_assets(ctx, cache, dest, destination_paths, before_mutation):
     assert_disjoint_trees(ctx.assets_dir, dest)
     manifest = _asset_manifest(ctx.assets_dir)
-    old_manifest = _cached_asset_manifest(cache)
+    entry = _validated_asset_cache_entry(cache)
+    old_manifest = (entry or {}).get("manifest", {})
     for rel in old_manifest.keys() | manifest.keys():
         _asset_target(dest, rel)
     stale = destination_paths - manifest.keys()
@@ -418,15 +421,14 @@ def _mirror_existing_assets(ctx, cache, dest, destination_paths, before_mutation
         return
 
     mismatches = set(manifest) if ctx.force else _asset_output_mismatches(dest, manifest)
-    if not stale and dest.is_dir() and _assets_unchanged(cache, manifest, ctx, mismatches):
+    if not stale and dest.is_dir() and _assets_unchanged(entry, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")
         return
 
     if before_mutation is not None:
         before_mutation()
     _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, mismatches, stale)
-    if cache is not None:
-        cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
+    _save_asset_manifest(cache, entry, manifest)
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
 
 

@@ -304,3 +304,19 @@ def test_audit1121_01_empty_conversion_preserves_source(tmp_path, apply):
     finally:
         assert source.read_bytes() == b'original'
         assert backend.closed
+
+
+def test_audit1121_05_discovers_only_selected_image_files(tmp_path, monkeypatch):
+    for name in ('z.jpg', 'a.jpg', 'ignore.png', 'notes.txt'):
+        (tmp_path / name).write_bytes(b'image')
+    source_type = type(tmp_path)
+    is_file = source_type.is_file
+    checked = []
+
+    def observe(path):
+        checked.append(path.name)
+        return is_file(path)
+
+    monkeypatch.setattr(source_type, 'is_file', observe)
+    assert [p.name for p in candidates(tmp_path, 5, {'jpeg'})] == ['a.jpg', 'z.jpg']
+    assert sorted(checked) == ['a.jpg', 'z.jpg']

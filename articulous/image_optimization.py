@@ -11,9 +11,9 @@ from .resource_locks import resource_lock
 
 
 def candidates(root: Path, threshold: int, kinds: set[str]):
-    for path in sorted(tree_entries(root, skip_directory_prefix=SOURCE_STAGE_PREFIX)):
-        if path.is_file() and KINDS.get(path.suffix.lower()) in kinds and path.stat().st_size >= threshold:
-            yield path
+    entries = tree_entries(root, skip_directory_prefix=SOURCE_STAGE_PREFIX)
+    yield from sorted(path for path in entries
+                      if KINDS.get(path.suffix.lower()) in kinds and path.is_file() and path.stat().st_size >= threshold)
 
 
 def image_generation(path):

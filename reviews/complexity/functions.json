@@ -6800,14 +6800,14 @@
       {
         "functions": [
           {
-            "body_sha256": "e1d221057524857b4581b3a02c6449292e64d4b4f5f392c5267beab642bb1b5b",
+            "body_sha256": "e30088cff794e48094a18feb00cbeb5a132a65c675d467b4be2148f2a09bada9",
             "column": 0,
             "complexity": 5,
-            "end_column": 22,
+            "end_column": 121,
             "end_line": 16,
             "line": 13,
             "name": "candidates",
-            "projection_sha256": "1808c7f36721c8a779b3a325b0938710d5b4c494cf2d62f62ce8e01e2b983d0d"
+            "projection_sha256": "030c1b4894f12b45a3bdba961826bf86da9bde1b76bcb78e1a16361a32a6b2c2"
           },
           {
             "body_sha256": "8d16bd61979f71b9cabf0fdf48668e48ac8e7f1bf927885e2d0ae976d214abef",
@@ -6862,7 +6862,7 @@
         ],
         "language": "python",
         "path": "articulous/image_optimization.py",
-        "sha256": "690c0f95ca7d12402fd3533c6c610d37e5458bfaa9a2f8c5875a5313db24ed61"
+        "sha256": "ab8d1491b6fd514e70f49f9484b51f9c2034be392479ed4b86fa7ab9fdedcd05"
       },
       {
         "functions": [
@@ -22523,11 +22523,31 @@
             "line": 295,
             "name": "test_audit1121_01_empty_conversion_preserves_source",
             "projection_sha256": "9844452ccb5fbaefe019c0d7dec87dd160f5f2e9da0d6b6b8d88caf579000815"
+          },
+          {
+            "body_sha256": "780f3465fad6b14391b7708ef9c8594f7e7276c1a6ef38a69461519442ea0de7",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 48,
+            "end_line": 322,
+            "line": 309,
+            "name": "test_audit1121_05_discovers_only_selected_image_files",
+            "projection_sha256": "ab55282f9a0ee658645ed24206cb645bb082b83a4e5a0e75bf06362fc9ee09b3"
+          },
+          {
+            "body_sha256": "374dd56c5106c56e5b60c3431b2ea9395065ae0aa9c926f52ddc910a83004bd8",
+            "column": 4,
+            "complexity": 1,
+            "end_column": 28,
+            "end_line": 318,
+            "line": 316,
+            "name": "test_audit1121_05_discovers_only_selected_image_files.observe",
+            "projection_sha256": "21778c1bf266696a5577bb8717c5b52a1f42ef3d5b40160a0cc22612831a317b"
           }
         ],
         "language": "python",
         "path": "tests/test_image_optimization.py",
-        "sha256": "251fcd324e47cb6f7e9cb07ba1d97c112348e9782df2eb2c151f8851bfadf30f"
+        "sha256": "fd79b61db7bfa0432eeeaca4ae61f89bcd1660b11ba293d8b0d8982bb5f2e0b9"
       },
       {
         "functions": [

@@ -30,6 +30,13 @@ def _physical_path(path):
     return Path(os.path.realpath(path))
 
 
+def _contained_target(root, path, value):
+    target = _physical_path(path)
+    if not target.is_relative_to(root):
+        raise ValueError(f'Local URL escapes output: {value}')
+    return target
+
+
 def local_path(output, value, base):
     parsed = urlsplit(urljoin(base.rstrip('/') + '/', value))
     origin = urlsplit(base)
@@ -41,11 +48,12 @@ def local_path(output, value, base):
         decoded += '/'
     if not decoded.startswith(prefix):
         return None
-    target = _physical_path(output / decoded[len(prefix):])
-    if not target.is_relative_to(output.resolve()):
-        raise ValueError(f'Local URL escapes output: {value}')
+    root = output.resolve()
+    target = _contained_target(root, root / decoded[len(prefix):], value)
     if parsed.path.endswith('/') or target.is_dir():
         target /= 'index.html'
+        if target.is_symlink():
+            target = _contained_target(root, target, value)
     return target
 
 

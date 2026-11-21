@@ -285,3 +285,16 @@ def test_audit1121_18_keeps_disappearing_file_diagnostic(publication, monkeypatc
         validate_site(root, base, plan)
     assert 'disappearing.html: cannot read HTML page' in str(failure.value)
     assert 'missing absent.png' in str(failure.value)
+
+
+@pytest.mark.parametrize('route', ['/section', '/section/', '/section/index.html'])
+def test_audit1121_20_directory_index_alias_checks_target_fragments(tmp_path, route):
+    base = 'https://example.test'
+    (tmp_path / 'section').mkdir()
+    (tmp_path / 'shared.html').write_text(html_page(base + '/shared.html', '<p id="present">ok</p>'))
+    (tmp_path / 'section/index.html').symlink_to('../shared.html')
+    failures = []
+    pages = read_pages(tmp_path, failures)
+    for fragment in ('present', 'absent', '%70resent', 'absent%20anchor'):
+        check_link(tmp_path, route + '#' + fragment, base + '/', base, {}, pages, failures, 'page')
+    assert failures == [f'page: missing fragment {route}#absent', f'page: missing fragment {route}#absent%20anchor']

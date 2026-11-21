@@ -11429,14 +11429,14 @@
             "projection_sha256": "e1c2d587e20b7a06f12838b020ecc4a2c78ecaaede1b9d0900db3075857b474c"
           },
           {
-            "body_sha256": "3ea773aff42d014e146270bf2e6ac9904d135e2f8e995f6bc3f6f4022f891b06",
+            "body_sha256": "7dd1692be9d52e33a0012fd2740af1bff30e6d6de26324049cb864f1f2e44f57",
             "column": 0,
             "complexity": 5,
-            "end_column": 71,
+            "end_column": 66,
             "end_line": 249,
             "line": 237,
             "name": "check_link",
-            "projection_sha256": "697c49a0b1c954427873730b99cf45de813f631ddebd2e26ef19f1415d96b54d"
+            "projection_sha256": "6628b37e58c7c3f06e8eb7793efa159638bba50731b7418b8f97fe0abd8edb14"
           },
           {
             "body_sha256": "c13cdae38e1027874b6665d3d8c1c3891fecb31a79983ba55cfa100cd6e6f78e",
@@ -11561,7 +11561,7 @@
         ],
         "language": "python",
         "path": "articulous/site_validation.py",
-        "sha256": "4041956ffcb5793a4900f265fb2c565100365c9797d898ef844f8e2c2e386185"
+        "sha256": "88cf05427816aa0f896c1052663f70bdcd142f1cb47ac715901b014322463908"
       },
       {
         "functions": [
@@ -33178,14 +33178,14 @@
             "projection_sha256": "c05117d715d065219c6e8946d35dcdaa8cc36f380dffc670b05896aabc55a624"
           },
           {
-            "body_sha256": "3308c33ee663b5c10108ceda115d557a677ba58586c1ad48046da43b8e9ecc80",
+            "body_sha256": "7ba4bc57a3608f638aad1d82dd129c5bbf24aaa0b26ade22121d899242d1467d",
             "column": 0,
-            "complexity": 2,
+            "complexity": 1,
             "end_column": 30,
             "end_line": 190,
             "line": 183,
             "name": "test_review28_40_malformed_reference_preserves_other_failures",
-            "projection_sha256": "1742c8afc1943d541ba2acd2f0c3bc4e0a97dbdc8fc350607faf4b7a9dcb9de8"
+            "projection_sha256": "5f422ed1fc5671cf1341ea2e6e26b4a459e4f0d31487e31d15290d1de9a2c348"
           },
           {
             "body_sha256": "bbe0690c480d23d8d771b5d3c2a71a6715a7e98aa49011709b844a4d581529b9",
@@ -33260,7 +33260,7 @@
         ],
         "language": "python",
         "path": "tests/test_site_validation.py",
-        "sha256": "38ab502311178b3e17ad51cb4f19c2508083d973974dffedb48b67c58dc3c486"
+        "sha256": "d3abe7268f6a4cbaa97a2cd7d975892078b3d1c505597c6f6cc3f3595921825b"
       },
       {
         "functions": [

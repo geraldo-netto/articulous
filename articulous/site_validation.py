@@ -246,7 +246,7 @@ def check_link(output, value, page_url, base, redirects, pages, failures, label,
             else:
                 failures.append(f'{label}: missing {value}')
     except ValueError as error:
-        failures.append(f'{label}: invalid reference {value}: {error}')
+        failures.append(f'{label}: invalid link {value}: {error}')
 
 
 def _check_fragment(resolved, document, value, failures, label):

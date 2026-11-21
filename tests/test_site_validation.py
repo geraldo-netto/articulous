@@ -185,7 +185,7 @@ def test_review28_40_malformed_reference_preserves_other_failures(tmp_path, url)
     failures = ['other.html: missing file']
     check_link(tmp_path, url, 'http://localhost/page', 'http://localhost', {}, {}, failures, 'page.html')
     assert len(failures) == 2
-    assert 'page.html' in failures[-1] and url in failures[-1]
+    assert failures[-1].startswith(f'page.html: invalid link {url}:')  # AUDIT1121-19
     assert list(sitemap_index_targets(tmp_path, 'http://localhost', [url], failures)) == []
     assert url in failures[-1]
 

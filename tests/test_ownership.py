@@ -95,3 +95,23 @@ def test_invalid_publication_identities_are_rejected(tmp_path, existing):
     ownership_path(output).write_text(json.dumps(data))
     with pytest.raises(ValueError, match="Invalid output ownership publication identities"):
         load_ownership(output)
+
+
+@pytest.mark.parametrize('value', [None, False, 0, '', [], [[]], [{}]])
+def test_matrix02_invalid_root_shape_names_recovery_action(tmp_path, value):
+    output = tmp_path / 'output'
+    sidecar = ownership_path(output)
+    payload = json.dumps(value).encode()
+    sidecar.write_bytes(payload)
+    with pytest.raises(ValueError, match='Invalid output ownership.*restore') as failure:
+        load_ownership(output, {'rss': 'rss.xml'})
+    assert str(sidecar) in str(failure.value)
+    assert sidecar.read_bytes() == payload
+
+
+@pytest.mark.parametrize('version,field,mapping', [(1, 'outputs', {'rss': 'rss.xml'}), (2, 'paths', {'rss.xml': 'rss'})])
+def test_matrix02_valid_object_versions_preserve_ownership(tmp_path, version, field, mapping):
+    output = tmp_path / 'output'
+    sidecar = ownership_path(output)
+    sidecar.write_text(json.dumps({'version': version, 'output_dir': str(output), field: mapping}))
+    assert load_ownership(output).paths == {'rss.xml': 'rss'}

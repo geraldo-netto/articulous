@@ -7688,22 +7688,22 @@
             "projection_sha256": "5ca9cc3a46bcf6dc33f86a86ccfe68327321fac685a604b4927cfc1351cae932"
           },
           {
-            "body_sha256": "55e10cc05694d57250c084be7af92117087685b1be370765b7419da76b13d88a",
+            "body_sha256": "1f3baf093d0f21a22c1cbff179211cc671bd36a7a7c6b5a20641fabc898df1cd",
             "column": 0,
             "complexity": 7,
             "end_column": 54,
-            "end_line": 94,
+            "end_line": 96,
             "line": 83,
             "name": "_decode_ownership",
-            "projection_sha256": "5f509a51a111738f752a5efa64ff8de97072e2a10d02d16e173d5c61b36b87e1"
+            "projection_sha256": "e85ef4336579e7e8713bd125f249f7c7c64ab2e86c0ab84a19f376eae1cd541d"
           },
           {
             "body_sha256": "c068fdae0a7e757da1934a5f0439d030f8b07a15ce2896ea40a7194bec8123a4",
             "column": 0,
             "complexity": 6,
             "end_column": 17,
-            "end_line": 109,
-            "line": 97,
+            "end_line": 111,
+            "line": 99,
             "name": "_decode_routes",
             "projection_sha256": "fb1878569e1b156e4478d7f88f5e72142bce82dd0f9fb3161bfd563a13e90e61"
           },
@@ -7712,8 +7712,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 80,
-            "end_line": 117,
-            "line": 112,
+            "end_line": 119,
+            "line": 114,
             "name": "_current_ownership",
             "projection_sha256": "6033f04ab464ae7a1086d0558c638ae57a332ab61abbd77cd6105995af13963d"
           },
@@ -7722,8 +7722,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 16,
-            "end_line": 123,
-            "line": 120,
+            "end_line": 125,
+            "line": 122,
             "name": "_generation",
             "projection_sha256": "bdfe197487024a0cfcc413e6638f5530cf7980d3f71b0bf6d61a0aecebea6f5f"
           },
@@ -7732,8 +7732,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 102,
-            "end_line": 127,
-            "line": 126,
+            "end_line": 129,
+            "line": 128,
             "name": "_valid_translation_pair",
             "projection_sha256": "52645754f2153b4b05adcecbff79d309a0b6edd94efadd9f67e6877e3e1b122a"
           },
@@ -7742,8 +7742,8 @@
             "column": 0,
             "complexity": 9,
             "end_column": 17,
-            "end_line": 139,
-            "line": 130,
+            "end_line": 141,
+            "line": 132,
             "name": "_translation_metadata",
             "projection_sha256": "f9bb21c4f3988b37f2a23b8bb6ed0ce585a1ee20c606ccc9920bd29b002d6569"
           },
@@ -7752,8 +7752,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 20,
-            "end_line": 157,
-            "line": 142,
+            "end_line": 159,
+            "line": 144,
             "name": "load_ownership",
             "projection_sha256": "7dd014d0527a5c2c95d0eff99e2fe98cf04cfa8da58178828e1911b9341f62de"
           },
@@ -7762,8 +7762,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 33,
-            "end_line": 163,
-            "line": 160,
+            "end_line": 165,
+            "line": 162,
             "name": "ownership_payload",
             "projection_sha256": "6b99f437291c97ecdbc5e00de9a073eb8590bd4c22c4fd8559f7109c2d39a7a7"
           },
@@ -7772,8 +7772,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 33,
-            "end_line": 178,
-            "line": 166,
+            "end_line": 180,
+            "line": 168,
             "name": "save_ownership",
             "projection_sha256": "02fe1438f768fb91f6c9ed933c2e6248548d0eac66f1b9a362fc21a79cb6a15f"
           },
@@ -7782,8 +7782,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 103,
-            "end_line": 183,
-            "line": 181,
+            "end_line": 185,
+            "line": 183,
             "name": "journal_ownership",
             "projection_sha256": "1a6c81344831bcba05ec1ece5fb8cdc10b0fbfcebf3bd43d468252dcb78eb132"
           },
@@ -7792,8 +7792,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 71,
-            "end_line": 196,
-            "line": 186,
+            "end_line": 198,
+            "line": 188,
             "name": "_validate_owned_entry",
             "projection_sha256": "b92dbf3f5d552966a8a6b08c7f3bca10e284c78e70b57f1ee892a37e9116a893"
           },
@@ -7802,15 +7802,15 @@
             "column": 0,
             "complexity": 8,
             "end_column": 20,
-            "end_line": 209,
-            "line": 199,
+            "end_line": 211,
+            "line": 201,
             "name": "validate_owned_output",
             "projection_sha256": "9eef7029b53aca9c12e9385739f0ce3f25e02df56f9a35ea92c79ba15ced619e"
           }
         ],
         "language": "python",
         "path": "articulous/ownership.py",
-        "sha256": "058280c0ac52174740d175d7d5978176396b069469a65806c4a4fe4fd1945a8a"
+        "sha256": "d316da84e6bfb90f5cf88786600c17684fdcb1f20daefa01dd97704ae3f68d46"
       },
       {
         "functions": [
@@ -23479,11 +23479,31 @@
             "line": 91,
             "name": "test_invalid_publication_identities_are_rejected",
             "projection_sha256": "5af002c9536e2d4d34307052c097d387a53af548b585bcc74058f9f35d018b6a"
+          },
+          {
+            "body_sha256": "ad68a1ac7a197030d99c3aa88d806b69240c21206fbe9ff54b99c6c573297f2f",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 42,
+            "end_line": 109,
+            "line": 101,
+            "name": "test_matrix02_invalid_root_shape_names_recovery_action",
+            "projection_sha256": "4f0cd6d79f6ac92a127fde0d5420878ffbd7135c3c5e70c0b5b744dd59852695"
+          },
+          {
+            "body_sha256": "6af36138b48c07b348fdb5513be808e24ae81e978453e09c2b0ffb08a32bc51a",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 61,
+            "end_line": 117,
+            "line": 113,
+            "name": "test_matrix02_valid_object_versions_preserve_ownership",
+            "projection_sha256": "8c49ef0d1aff8a1d7b060a36b8e63a5ccba416a0a55388c51eacbda4d04560bb"
           }
         ],
         "language": "python",
         "path": "tests/test_ownership.py",
-        "sha256": "eeb045164e8f3bb53ae9849cc02cfbdc95019a758e93fe73fc812480e5d79b6b"
+        "sha256": "51813d149e2a0afdd299cb9904587215928539346c3891d060f10c0fa3af1f3a"
       },
       {
         "functions": [

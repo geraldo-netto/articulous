@@ -7,6 +7,7 @@ import os
 import shutil
 import tracemalloc
 import sqlite3
+from collections.abc import Callable
 from contextlib import ExitStack, closing, contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -1133,13 +1134,31 @@ def test_build_in_memory_cross_sections_with_xslt(tmp_path):
     assert json.loads(search.read_text())[0]["title"] == "A"
 
 
-def test_cross_builders_accept_manifest_as_fifth_arg(tmp_path):
+def test_cross_builders_accept_explicit_manifest(tmp_path):
     ctx = _ctx_for(tmp_path)
     manifest = OutputManifest()
-    assert build_sitemap_section([], ctx, {}, manifest) != []
-    assert build_search_section([], ctx, {}, manifest) != []
+    assert build_sitemap_section([], ctx, {}, manifest=manifest) != []
+    assert build_search_section([], ctx, {}, manifest=manifest) != []
     assert "sitemap" in manifest
     assert "search" in manifest
+
+
+@pytest.mark.parametrize("builder", [build_sitemap_section, build_search_section])
+def test_compat04_section_workspace_rejects_manifest(tmp_path, builder):
+    manifest = OutputManifest()
+    with pytest.raises(TypeError, match="workspace"):
+        builder([], _ctx_for(tmp_path), {}, manifest)
+    assert not manifest
+
+
+def test_compat04_planner_requires_owned_workspace(tmp_path):
+    cli = _FakeCLI(sections=["search"])
+    ctx = _ctx_for(tmp_path)
+    call_planner = cast(Callable[..., object], _collect_tasks)
+    with pytest.raises(TypeError, match="workspace"):
+        call_planner(lambda: iter(()), cli, ctx, {}, OutputManifest())
+    with pytest.raises(TypeError, match="workspace"):
+        call_planner(lambda: iter(()), cli, ctx, {})
 
 
 def test_sorted_store_articles_none_returns_empty():
@@ -1480,8 +1499,9 @@ def test_collect_tasks_only_subset(tmp_path):
     ctx = _ctx_for(tmp_path)
     cli = _FakeCLI()
     cli.only_sections = ["search"]
-    plan = _collect_tasks(lambda: iter(()), cli, ctx, {})
-    assert list(plan.keys()) == ["search"]
+    with _planning_workspace(tmp_path) as scope:
+        plan = _inspect_plan(scope, lambda: iter(()), cli, ctx)
+        assert list(plan.keys()) == ["search"]
 
 
 def test_collect_tasks_per_lang_populated(tmp_path, planning_scope):
@@ -1533,8 +1553,9 @@ def test_collect_tasks_only_sitemap_subset(tmp_path):
     """Subset that includes one cross-lang section but skips the others."""
     ctx = _ctx_for(tmp_path)
     cli = _FakeCLI(sections=["sitemap"])
-    plan = _collect_tasks(lambda: iter(()), cli, ctx, {})
-    assert list(plan.keys()) == ["sitemap"]
+    with _planning_workspace(tmp_path) as scope:
+        plan = _inspect_plan(scope, lambda: iter(()), cli, ctx)
+        assert list(plan.keys()) == ["sitemap"]
 
 
 def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path, planning_scope):
@@ -1576,8 +1597,8 @@ def test_collect_tasks_rejects_duplicate_cache_key(tmp_path):
         return iter([a, b])
 
     manifest = OutputManifest()
-    with pytest.raises(ValueError, match="Duplicate generated cache key"):
-        _collect_tasks(stream_factory, cli, ctx, {}, manifest)
+    with TempWorkspace() as workspace, pytest.raises(ValueError, match="Duplicate generated cache key"):
+        _collect_tasks(stream_factory, cli, ctx, {}, workspace, manifest)
 
 
 def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
@@ -1592,8 +1613,8 @@ def test_collect_tasks_rejects_duplicate_output_path(tmp_path):
         return iter(())
 
     manifest = OutputManifest()
-    with pytest.raises(ValueError, match="Duplicate generated output path"):
-        _collect_tasks(stream_factory, cli, ctx, {}, manifest)
+    with TempWorkspace() as workspace, pytest.raises(ValueError, match="Duplicate generated output path"):
+        _collect_tasks(stream_factory, cli, ctx, {}, workspace, manifest)
 
 
 @pytest.mark.parametrize("paths", [
@@ -1664,8 +1685,8 @@ def test_collect_tasks_rejects_output_escape(tmp_path):
         return iter(())
 
     manifest = OutputManifest()
-    with pytest.raises(ValueError, match="escapes output_dir"):
-        _collect_tasks(stream_factory, cli, ctx, {}, manifest)
+    with TempWorkspace() as workspace, pytest.raises(ValueError, match="escapes output_dir"):
+        _collect_tasks(stream_factory, cli, ctx, {}, workspace, manifest)
 
 
 @pytest.mark.parametrize("old_path", ["en/1/index.html", "en/1", "en"])

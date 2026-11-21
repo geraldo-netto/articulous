@@ -1404,11 +1404,15 @@ def _validated_sitemap_source(base_url: str, sitemap_url: str, source):
         yield value
 
 
+def _require_workspace(workspace):
+    if not isinstance(workspace, TempWorkspace):
+        raise TypeError("workspace must be a TempWorkspace")
+
+
 def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=None):
     """Build sitemap.xml from a streamed list of URL strings."""
-    if isinstance(workspace, dict) and manifest is None:
-        manifest = workspace
-        workspace = None
+    if workspace is not None:
+        _require_workspace(workspace)
     sitemap = build_sitemap_model([], ctx)
     if isinstance(ctx.engine_for("sitemap"), NativeEngine):
         with closing(_validated_sitemap_source(ctx.base_url, sitemap.url, urls)) as validated:
@@ -1482,9 +1486,8 @@ def _sequential_tasks(tasks):
 
 def build_search_section(items, ctx: BuildCtx, cache, workspace=None, manifest=None):
     """Build the search output with the configured native or XSLT engine."""
-    if isinstance(workspace, dict) and manifest is None:
-        manifest = workspace
-        workspace = None
+    if workspace is not None:
+        _require_workspace(workspace)
     index = build_search_model([], ctx)
     if isinstance(ctx.engine_for("search"), NativeEngine):
         source = items if isinstance(items, SearchSink) else list(items)
@@ -1920,15 +1923,6 @@ def _translation_context(projection, cli, ctx):
     return ctx
 
 
-def _planning_inputs(workspace, manifest):
-    if isinstance(workspace, dict) and manifest is None:
-        return TempWorkspace(), workspace
-    if workspace is None:
-        workspace = TempWorkspace()
-    assert isinstance(workspace, TempWorkspace)
-    return workspace, manifest
-
-
 def _collect_explicit_outputs(plan, ctx, cache, manifest):
     if ctx.extra_pages:
         _collect_extra_plan(ctx, cache, manifest, _tasks_for(plan, 'pages', ctx, cache))
@@ -1937,14 +1931,14 @@ def _collect_explicit_outputs(plan, ctx, cache, manifest):
 
 
 def _collect_tasks(
-    stream_factory, cli, ctx: BuildCtx, cache, workspace=None, manifest=None,
+    stream_factory, cli, ctx: BuildCtx, cache, workspace: TempWorkspace, manifest=None,
 ) -> BuildPlan:
     """
     Stream the article set and dispatch every requested section.
 
     Returns a dict-like plan ready for parallel execution.
     """
-    workspace, manifest = _planning_inputs(workspace, manifest)
+    _require_workspace(workspace)
     sections = frozenset(cli.only_sections or SECTION_NAMES)
     with projection_route_check(cli, sections, ctx.sitemap_listings) as check_route:
         return _plan_sections(stream_factory, cli, ctx, cache, workspace, manifest, sections, check_route)

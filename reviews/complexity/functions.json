@@ -19284,31 +19284,41 @@
             "line": 154,
             "name": "test_cov001_native_source_position_requires_integer",
             "projection_sha256": "59f5e1dd10014d4f02c2176fd231df0240b9580e9ce41130656125983bf568a1"
+          },
+          {
+            "body_sha256": "54f725fe8bfdf4c4fb59713529350bf881670d73af096c557232b86c769d27cf",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 51,
+            "end_line": 182,
+            "line": 159,
+            "name": "test_matrix06_configured_tracer_observes_exception_only_cleanup_exit",
+            "projection_sha256": "334ee89c84e73abe375c4fbf53d387f12877d079fafb291ac0cb03cbbdcf956c"
           }
         ],
         "language": "python",
         "path": "tests/test_coverage_gate.py",
-        "sha256": "1ca7c796519088fe33b87fb10f9447b0661e6a26981c053aef1c0b5541552f15"
+        "sha256": "054bd5f60ca3b1a0d1851d2cbca3c766ac14f59134f9befceb2628819590e8f4"
       },
       {
         "functions": [
           {
-            "body_sha256": "796fb9708aa3ca107c1a64a67bae0d23d7741ccdac5dde33acef63662c68ae6d",
+            "body_sha256": "bf87567e97d5defa5422f9950b689959d179c7c914d7cb56de39b1fa4aba4d4c",
             "column": 0,
             "complexity": 1,
             "end_column": 55,
-            "end_line": 49,
-            "line": 37,
+            "end_line": 50,
+            "line": 38,
             "name": "native_report",
-            "projection_sha256": "6fc519d72128e7dc3f85e8c24139625d46cbaa250c051346353bb9a5ec999598"
+            "projection_sha256": "93c5ecdad51909de7388cba429f258fb32d199fcbc1436fbdba6fea4ac8ab780"
           },
           {
             "body_sha256": "ff3536a94172fd9d252fa176fd39fbc97d1cd6421292241d2cf5b8a95edf30ea",
             "column": 0,
             "complexity": 2,
             "end_column": 75,
-            "end_line": 58,
-            "line": 53,
+            "end_line": 59,
+            "line": 54,
             "name": "test_review031_ambiguous_native_names_are_rejected",
             "projection_sha256": "db28a5f0572f04236525fe6935d1a0e384798a66658831bc6005c3e65010665f"
           },
@@ -19317,8 +19327,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 75,
-            "end_line": 67,
-            "line": 62,
+            "end_line": 68,
+            "line": 63,
             "name": "test_matrix01_constant_branch_still_has_ambiguous_lexical_names",
             "projection_sha256": "3e74fbc4b7499ce0961e0ed1e6b37b15b66bc3da2f540f778fb34f66533a1a0c"
           },
@@ -19327,8 +19337,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 62,
-            "end_line": 77,
-            "line": 70,
+            "end_line": 78,
+            "line": 71,
             "name": "test_review031_distinct_property_accessors_keep_native_coverage",
             "projection_sha256": "c54e707df22fcd223a9bb10b83d75593aa59f1ad0d096aa75ad67875af77d3fd"
           },
@@ -19337,15 +19347,15 @@
             "column": 0,
             "complexity": 4,
             "end_column": 79,
-            "end_line": 90,
-            "line": 80,
+            "end_line": 91,
+            "line": 81,
             "name": "test_review031_seeded_duplicate_names_fail_before_counter_admission",
             "projection_sha256": "b8eb16537a76d68089a85ed0653c9a5654f6403e7e1eda651236456433504201"
           }
         ],
         "language": "python",
         "path": "tests/test_coverage_name_collisions.py",
-        "sha256": "b010c180de08e3a149e5a2f2e4b69ae6a7b81d5505d1f4915b5dc6b0d07b2c32"
+        "sha256": "c9727aa80b5d20d8322f8c66d450475951575a773925f468724c29f365ffc6c3"
       },
       {
         "functions": [

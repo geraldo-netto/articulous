@@ -154,3 +154,29 @@ def test_test001_projection_default_has_native_function_counters():
 def test_cov001_native_source_position_requires_integer(evidence, start):
     evidence[2]['start_line'] = start
     assert check(evidence)[1], 'COV-001: a native source position must be an actual integer'
+
+
+def test_matrix06_configured_tracer_observes_exception_only_cleanup_exit(tmp_path):
+    from pathlib import Path
+    from test_coverage_name_collisions import native_report
+
+    source = """def finish(retain):
+    try:
+        if retain:
+            raise RuntimeError
+    finally:
+        if not retain:
+            cleaned.append(True)
+cleaned = []
+finish(False)
+try:
+    finish(True)
+except RuntimeError:
+    pass
+assert cleaned == [True]
+"""
+    config = Path(__file__).resolve().parents[1] / 'pyproject.toml'
+    _, entry = native_report(tmp_path, source, config)
+    function = entry['functions']['finish']
+    assert function['missing_branches'] == []
+    assert [6, -1] in function['executed_branches']

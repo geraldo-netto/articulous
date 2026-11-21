@@ -1,6 +1,7 @@
 """REVIEW-031: native counters must distinguish every lexical callable."""
 from hashlib import sha256
 import json
+from pathlib import Path
 import random
 import sys
 
@@ -15,7 +16,7 @@ from pathlib import Path
 import sys
 from coverage import Coverage
 path = Path(sys.argv[1])
-coverage = Coverage(config_file=False, data_file=None, branch=True, source=[str(path.parent)])
+coverage = Coverage(config_file=sys.argv[3] or False, data_file=None, branch=True, source=[str(path.parent)])
 coverage.start()
 exec(compile(path.read_text(), str(path), 'exec'), {})
 coverage.stop()
@@ -34,14 +35,14 @@ SOURCES = {
 }
 
 
-def native_report(root, source):
+def native_report(root, source, config_file: str | Path = ''):
     directory = root / 'code'
     directory.mkdir(exist_ok=True)
     path = directory / 'example.py'
     path.write_text(source)
     source_digest = sha256(path.read_bytes()).hexdigest()
     report_path = root / 'native.json'
-    result = run_browser_suite([sys.executable, '-c', NATIVE_REPORT, str(path), str(report_path)], tooling=False)
+    result = run_browser_suite([sys.executable, '-c', NATIVE_REPORT, str(path), str(report_path), str(config_file)], tooling=False)
     result.check_returncode()
     data = json.loads(report_path.read_text())
     entry = next(iter(data['files'].values()))

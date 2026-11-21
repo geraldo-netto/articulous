@@ -48,6 +48,8 @@ useLibraryCodeForTypes = true
 reportMissingTypeStubs = "none"
 
 [tool.coverage.run]
+# coverage.py 7.14.1 misses exception-only finally exits with sys.monitoring on Python 3.14.
+core = "ctrace"
 source = ["articulous"]
 branch = true
 omit = ["articulous/__main__.py"]

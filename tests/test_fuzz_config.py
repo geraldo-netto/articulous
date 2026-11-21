@@ -129,3 +129,44 @@ def test_fuzz_invalid_base_urls_cannot_change_published_site(site_root, run_site
         assert _output_contents(site_root / "output") == output_before
         assert (site_root / ".build-cache.json").read_bytes() == cache_before
         assert (site_root / ".output.articulous-ownership.json").read_bytes() == ownership_before
+
+
+def test_review28_46_invalid_utf8_and_nesting_report_config_path(tmp_path):
+    import sys
+    from articulous.configuration_contracts import ConfigurationError
+    path = tmp_path / 'local-site.json'
+    rng = random.Random(46)
+    depth = max(sys.getrecursionlimit() + 100, 10000)
+    cases = [b'[' * depth + b'0' + b']' * depth]
+    cases.extend(b'{"site":{"site_name":"' + bytes([rng.randrange(0x80, 0x100)]) + b'"}}' for _ in range(16))
+    for raw in cases:
+        path.write_bytes(raw)
+        with pytest.raises(ConfigurationError) as rejected:
+            load_or_create_config(path)
+        assert str(path) in str(rejected.value)
+        assert path.read_bytes() == raw
+    path.write_bytes(b'[' * 64 + b'0' + b']' * 64)
+    with pytest.raises(ConfigurationError, match='not a JSON object'):
+        load_or_create_config(path)
+
+
+def test_review28_46_integer_decoder_boundary(tmp_path):
+    import sys
+    from articulous.configuration_contracts import ConfigurationError
+    path = tmp_path / 'numbers.json'
+    previous = sys.get_int_max_str_digits()
+    limit = sys.int_info.str_digits_check_threshold
+    try:
+        sys.set_int_max_str_digits(limit)
+        for digits in (limit - 1, limit, limit + 1):
+            raw = '{"site":{"pagination":{"rss_items":' + '1' * digits + '}}}'
+            path.write_text(raw)
+            if digits <= limit:
+                assert load_or_create_config(path)['site']['pagination']['rss_items'] == int('1' * digits)
+            else:
+                with pytest.raises(ConfigurationError) as rejected:
+                    load_or_create_config(path)
+                assert str(path) in str(rejected.value)
+                assert path.read_text() == raw
+    finally:
+        sys.set_int_max_str_digits(previous)

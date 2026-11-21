@@ -77,7 +77,7 @@ def test_cli_rejects_special_state_files_without_blocking(site_root, role, kind)
 def test_json_readers_reject_special_files(tmp_path, loader, kind):
     path = tmp_path / "input.json"
     _make_special(path, kind)
-    with pytest.raises(ValueError, match="must be a regular file"):
+    with pytest.raises(ValueError, match="^Path must be a regular file"):
         loader(path)
 
 

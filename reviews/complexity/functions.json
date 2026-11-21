@@ -4957,14 +4957,14 @@
             "projection_sha256": "9700911731c4e6282e24800ca304ef8d6098de66671281783ab2e8586fc7c61e"
           },
           {
-            "body_sha256": "52d3f8dfe49e9c299cfe7767ccc371e052e93d23c284609f61ce756f7d4f289e",
+            "body_sha256": "4a71c941118cd34490531b3ad1c86716c7a5d209562501060133363653d0f97a",
             "column": 0,
             "complexity": 4,
             "end_column": 35,
             "end_line": 353,
             "line": 328,
             "name": "load_or_create_config",
-            "projection_sha256": "ee261611ccf3951aeeb19c03a09598564d947d6ae9d1e46fdfce5574d7a77063"
+            "projection_sha256": "5875d90170ea8f5b671900e06b0d6e7953980c6f88c8664c97b5365b67aa0d5c"
           },
           {
             "body_sha256": "f6ec3cf47288ba18d1e32e1ea675a447ce9df505b2538d94b9a4e38b220bf3e1",
@@ -5049,7 +5049,7 @@
         ],
         "language": "python",
         "path": "articulous/config.py",
-        "sha256": "1aa96310bcf48b63156f3c3f8f66d6405064bf2fcbca29841d19188219711c7a"
+        "sha256": "87c664c31ff6b474a0153d772ed03ceeec6f0e7242f9332e9bbc9f73f24c3dc2"
       },
       {
         "functions": [
@@ -20461,11 +20461,31 @@
             "line": 114,
             "name": "test_fuzz_invalid_base_urls_cannot_change_published_site",
             "projection_sha256": "0811433d0b168e22bd51896540756388801645a2698a3ad8d32327d2df2c8111"
+          },
+          {
+            "body_sha256": "fe45a4b96a562c1c3510f2b2d4263eef96fc5336d875dbe641bb1841a09f9e5f",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 35,
+            "end_line": 150,
+            "line": 134,
+            "name": "test_review28_46_invalid_utf8_and_nesting_report_config_path",
+            "projection_sha256": "4f89246dd418500f45bb733c838be0d3c6d3b446187c650a53afd8d32fb0415b"
+          },
+          {
+            "body_sha256": "00758f1df443070aa0a766ef6ac22180cfec347d6c00088115d24c144347ce64",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 44,
+            "end_line": 172,
+            "line": 153,
+            "name": "test_review28_46_integer_decoder_boundary",
+            "projection_sha256": "3053406c315bd3ba19009c2e2af82b81e0b5734d1bdeced35fc1ce6a12e0aab6"
           }
         ],
         "language": "python",
         "path": "tests/test_fuzz_config.py",
-        "sha256": "d2e6cd14b431dfa9052695db874fe5ce44d343d65c38288cd8ed2e300f81f45a"
+        "sha256": "10aeba4b3f492885896794c4e93ce8448ab3a913c9cf528e9cdca374462b9554"
       },
       {
         "functions": [
@@ -32040,14 +32060,14 @@
             "projection_sha256": "1bdbdc5ae4d9529f85b3bf9c9f2c00e3ca8d2bb53ef7806d329b18d0d0761b4f"
           },
           {
-            "body_sha256": "662ffb80f15b5ed26f7ab4d575c256e0ec9d169b5567e45afbbaf7869de69348",
+            "body_sha256": "7f14c601253afb09aa40c06a74fda8b6f142c437befdee17dc7d4a554d20ed4f",
             "column": 0,
             "complexity": 1,
             "end_column": 20,
             "end_line": 81,
             "line": 77,
             "name": "test_json_readers_reject_special_files",
-            "projection_sha256": "dd96f842370585d6f0c1cc0e5460e2698d62d8532c74389d1a2e2925cbb0343d"
+            "projection_sha256": "38249344461f265605ec57d8201da4286ca8b6c4aeb94e1545048d5b2ab5bc49"
           },
           {
             "body_sha256": "59677838841f688b716aec85f25bfa601c7fb311b5e0ae551e091802a37f18c4",
@@ -32112,7 +32132,7 @@
         ],
         "language": "python",
         "path": "tests/test_state_files.py",
-        "sha256": "aa7917478b88cd324392787daf5fb2003b6ba086d52edab24e5250c02d2f23c8"
+        "sha256": "ce14d1c36483127ca6b1e8b9f2aa84df1bb7501a43299a36f448f4d858cb9b9e"
       },
       {
         "functions": [

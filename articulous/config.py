@@ -336,11 +336,11 @@ def load_or_create_config(path: Path) -> SiteConfiguration:
         write_text_atomic(path, json.dumps(cfg, indent=2))
         return cfg
 
-    try:
-        with open_regular_file(path.resolve()) as source:
+    with open_regular_file(path.resolve()) as source:
+        try:
             data = json.loads(source.read().decode("utf-8"), object_pairs_hook=_config_object)
-    except (json.JSONDecodeError, ConfigurationError) as e:
-        raise ConfigurationError(f"Invalid config JSON at {path}: {e}") from e
+        except (ValueError, RecursionError) as e:
+            raise ConfigurationError(f"Invalid config JSON at {path}: {e}") from e
 
     if not isinstance(data, dict):
         raise ConfigurationError(

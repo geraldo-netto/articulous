@@ -19,7 +19,7 @@ def test_review009_native_code_and_clipboard_lifetimes(tmp_path, monkeypatch):
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(report_path.read_text())
     assert set(report['cases']) == {
-        'admission', 'normalization', 'success', 'rejection', 'defaultLabels', 'cutoffBeforeWrite',
+        'admission', 'grammarAdmission', 'normalization', 'success', 'rejection', 'defaultLabels', 'cutoffBeforeWrite',
         'detachedAdmission', 'movedWrapper', 'changedWrapperClass', 'staleTimer', 'wrapperOwnership', 'initialization',
         'stale-success', 'stale-error', 'unsupported', 'missing-toolbar', 'missing-prism',
     }

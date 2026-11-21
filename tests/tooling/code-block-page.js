@@ -224,8 +224,45 @@ const CodeTest = (() => {
     }
   }
 
+  function invalidGrammars() {
+    const code = document.createElement('code');
+    const names = [...Object.getOwnPropertyNames(Object.prototype), 'extend', 'insertBefore', 'DFS'];
+    for (const name of names) {
+      for (const prefix of ['', 'language-']) {
+        code.className = prefix + name;
+        check(CodeBlocks.language(code) === 'none', 'REVIEW28-54 reserved hint: '+code.className);
+      }
+    }
+    try {
+      for (const value of [null, false, 'text', 1, [], /text/]) {
+        Prism.languages['test-invalid'] = value;
+        code.className = 'language-test-invalid';
+        check(CodeBlocks.language(code) === 'none', 'REVIEW28-54 invalid grammar: '+value);
+      }
+    } finally {delete Prism.languages['test-invalid'];}
+  }
+
+  function grammarAdmission() {
+    const host = document.createElement('section');
+    host.innerHTML = '<pre><code class="language-constructor">literal</code></pre>'+
+      '<pre><code class="extend">literal</code></pre><pre><code class="language-JS">const x = 1;</code></pre>';
+    document.body.append(host);
+    const controllers = [];
+    try {
+      controllers.push(...CodeBlocks.init(host));
+      check(controllers.length === 3, 'REVIEW28-54 later blocks mounted');
+      check(host.querySelectorAll('.copy-to-clipboard-button').length === 3, 'all copy controls mounted');
+      check(host.querySelectorAll('code.language-none').length === 2, 'unavailable grammars use plain text');
+      check(host.querySelector('code.language-javascript .token.keyword'), 'later block highlighted');
+      invalidGrammars();
+    } finally {
+      for (const controller of controllers) controller.dispose();
+      host.remove();
+    }
+  }
+
   async function normal() {
-    const cases = [admission,normalization,success,rejection,defaultLabels,cutoffBeforeWrite,
+    const cases = [admission,grammarAdmission,normalization,success,rejection,defaultLabels,cutoffBeforeWrite,
       detachedAdmission,movedWrapper,changedWrapperClass,staleTimer,wrapperOwnership,initialization];
     for (const run of cases) {
       await run();

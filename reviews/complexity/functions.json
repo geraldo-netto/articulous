@@ -16316,19 +16316,19 @@
       {
         "functions": [
           {
-            "body_sha256": "6bcfdd8677eb68cad87527e1df8b739dfbe2aa1d1669c68b02b304929bd506f0",
+            "body_sha256": "4c048efc54e7b0b9a6df0729c48596976ab2ed45770f9b573aac977735ee15c0",
             "column": 0,
             "complexity": 6,
             "end_column": 62,
             "end_line": 31,
             "line": 11,
             "name": "test_review009_native_code_and_clipboard_lifetimes",
-            "projection_sha256": "679d70c0b46bbc41c8b0da94bff4171b9acc9032d42f1f714237c38470237406"
+            "projection_sha256": "dc4ff777c727a01eab511cb52dd19fcca5e8f6cd69ed712b99a01e9ba613b43f"
           }
         ],
         "language": "python",
         "path": "tests/test_code_browser.py",
-        "sha256": "6d12926b5881532a3c64e54090cb715d00c129731a67a4e41fc10fd7cc3e3d99"
+        "sha256": "c82ec384942aa5fe5aca72cb4d228dde08442084aa2e20d96bdcbe3d5e1722b8"
       },
       {
         "functions": [
@@ -34333,52 +34333,52 @@
       {
         "functions": [
           {
-            "body_sha256": "e4481fde8c7a94907e98c5ab35b22b49b714911df38ba77be8562dd0bc688d0a",
+            "body_sha256": "c73135fe7a43c52df6c8b6740c3da7944d71fc65310f3699f89b9120e96c85f5",
             "column": 20,
             "complexity": 1,
             "end_column": 1,
-            "end_line": 56,
+            "end_line": 66,
             "line": 3,
             "name": "Arrow function",
-            "projection_sha256": "e4481fde8c7a94907e98c5ab35b22b49b714911df38ba77be8562dd0bc688d0a"
+            "projection_sha256": "c73135fe7a43c52df6c8b6740c3da7944d71fc65310f3699f89b9120e96c85f5"
           },
           {
-            "body_sha256": "011c5da1f744d2e09034af367e5e5de5adc37f3e473b048ff9a80752e1eaf597",
+            "body_sha256": "db377442765d0c6d24cca3cfd9474c514513f892439d8e46e365ad901534fadb",
             "column": 2,
             "complexity": 4,
             "end_column": 3,
-            "end_line": 12,
+            "end_line": 11,
             "line": 7,
+            "name": "Function 'grammarName'",
+            "projection_sha256": "db377442765d0c6d24cca3cfd9474c514513f892439d8e46e365ad901534fadb"
+          },
+          {
+            "body_sha256": "77ce838023e9dca1d174cd3ddb736d4381cd6e02bd49ddef36c7f1106ba24096",
+            "column": 2,
+            "complexity": 5,
+            "end_column": 3,
+            "end_line": 22,
+            "line": 13,
             "name": "Function 'language'",
-            "projection_sha256": "011c5da1f744d2e09034af367e5e5de5adc37f3e473b048ff9a80752e1eaf597"
+            "projection_sha256": "77ce838023e9dca1d174cd3ddb736d4381cd6e02bd49ddef36c7f1106ba24096"
           },
           {
             "body_sha256": "800eb0b1d3c78780227caebc86e811488404e5ba7fa85c7adfaa0aa5aeecf7bf",
             "column": 34,
             "complexity": 1,
             "end_column": 70,
-            "end_line": 9,
-            "line": 9,
+            "end_line": 15,
+            "line": 15,
             "name": "Arrow function",
             "projection_sha256": "800eb0b1d3c78780227caebc86e811488404e5ba7fa85c7adfaa0aa5aeecf7bf"
-          },
-          {
-            "body_sha256": "e756b9f20f12ec917b18dcb7600895a4aeccdfac284b4950adc0721439db73ec",
-            "column": 61,
-            "complexity": 2,
-            "end_column": 107,
-            "end_line": 10,
-            "line": 10,
-            "name": "Arrow function",
-            "projection_sha256": "e756b9f20f12ec917b18dcb7600895a4aeccdfac284b4950adc0721439db73ec"
           },
           {
             "body_sha256": "ca28fc31c895167450100a462c65a246e2a67659dbc1edc09827a11da541d697",
             "column": 2,
             "complexity": 6,
             "end_column": 3,
-            "end_line": 22,
-            "line": 14,
+            "end_line": 32,
+            "line": 24,
             "name": "Function 'codeElement'",
             "projection_sha256": "ca28fc31c895167450100a462c65a246e2a67659dbc1edc09827a11da541d697"
           },
@@ -34387,8 +34387,8 @@
             "column": 2,
             "complexity": 7,
             "end_column": 3,
-            "end_line": 50,
-            "line": 24,
+            "end_line": 60,
+            "line": 34,
             "name": "Function 'mount'",
             "projection_sha256": "da9e6992431aff612de552f40f3bfa0e90948aa38b876d3fb930a2cced77b4b9"
           },
@@ -34397,8 +34397,8 @@
             "column": 4,
             "complexity": 9,
             "end_column": 5,
-            "end_line": 48,
-            "line": 37,
+            "end_line": 58,
+            "line": 47,
             "name": "Function 'dispose'",
             "projection_sha256": "0e2f2a0776c6ada413af667992a1137f73bb966e6308dbc6f428bfde47e519df"
           },
@@ -34407,15 +34407,15 @@
             "column": 2,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 54,
-            "line": 52,
+            "end_line": 64,
+            "line": 62,
             "name": "Function 'init'",
             "projection_sha256": "78f4a011acb754de8f398094f21ce03e936c770074637dfb5b18613f188e9fe3"
           }
         ],
         "language": "javascript",
         "path": "articulous/theme_assets/assets/js/code-blocks.js",
-        "sha256": "f1b8a380f2ab9ae7349c8e90f07c9f394615cdc67f8db127fa23bd13a323f880"
+        "sha256": "af0d248a32cfeb39215dd3d2bbd43cce96a165a5bec2211283dfbe6b262dbdfc"
       },
       {
         "functions": [
@@ -36059,14 +36059,14 @@
       {
         "functions": [
           {
-            "body_sha256": "bb8afe0c40f9b96158e972a894a53ac10f4bff64b0e15e10e6d4758ae64bab8d",
+            "body_sha256": "80ed4445e57323d6231da11922bd62253c7b5eba41bad64872ef8a0fcb5351fb",
             "column": 18,
             "complexity": 3,
             "end_column": 1,
-            "end_line": 254,
+            "end_line": 291,
             "line": 1,
             "name": "Arrow function",
-            "projection_sha256": "bb8afe0c40f9b96158e972a894a53ac10f4bff64b0e15e10e6d4758ae64bab8d"
+            "projection_sha256": "80ed4445e57323d6231da11922bd62253c7b5eba41bad64872ef8a0fcb5351fb"
           },
           {
             "body_sha256": "fa97a9c87d91a41538f0010b530fdda8266b291900c878a5ea568e907611f4ed",
@@ -36289,22 +36289,42 @@
             "projection_sha256": "c2a79d3934f8314733ce5c6c95ca62334ecab69560a5945fdedf24364acb4b02"
           },
           {
-            "body_sha256": "a61468b52b2d50431aa2d48d168a15dcaa0ac2831eedfb7eccdddf3163ee4ca5",
+            "body_sha256": "9741e370949fc74e97d49e7f9142ce718b7f0ae779dadec19593e8071f2d89a3",
+            "column": 2,
+            "complexity": 4,
+            "end_column": 3,
+            "end_line": 243,
+            "line": 227,
+            "name": "Function 'invalidGrammars'",
+            "projection_sha256": "9741e370949fc74e97d49e7f9142ce718b7f0ae779dadec19593e8071f2d89a3"
+          },
+          {
+            "body_sha256": "6548a27ecea5f6430539fed2ca37c8032facbd529c2b0100e0d4af3dd4c8149c",
             "column": 2,
             "complexity": 2,
             "end_column": 3,
-            "end_line": 236,
-            "line": 227,
+            "end_line": 262,
+            "line": 245,
+            "name": "Function 'grammarAdmission'",
+            "projection_sha256": "6548a27ecea5f6430539fed2ca37c8032facbd529c2b0100e0d4af3dd4c8149c"
+          },
+          {
+            "body_sha256": "e1866190df68f064cf314e72cde6f522495f7cc5b36d0c03d5596d6d906f3110",
+            "column": 2,
+            "complexity": 2,
+            "end_column": 3,
+            "end_line": 273,
+            "line": 264,
             "name": "Async function 'normal'",
-            "projection_sha256": "a61468b52b2d50431aa2d48d168a15dcaa0ac2831eedfb7eccdddf3163ee4ca5"
+            "projection_sha256": "e1866190df68f064cf314e72cde6f522495f7cc5b36d0c03d5596d6d906f3110"
           },
           {
             "body_sha256": "0520f2e4dd44ab64293a3906c85da7297ce07dcefcc741d47113b4d0a3ffe177",
             "column": 25,
             "complexity": 1,
             "end_column": 38,
-            "end_line": 235,
-            "line": 235,
+            "end_line": 272,
+            "line": 272,
             "name": "Arrow function",
             "projection_sha256": "0520f2e4dd44ab64293a3906c85da7297ce07dcefcc741d47113b4d0a3ffe177"
           },
@@ -36313,15 +36333,15 @@
             "column": 2,
             "complexity": 4,
             "end_column": 3,
-            "end_line": 252,
-            "line": 238,
+            "end_line": 289,
+            "line": 275,
             "name": "Async function 'run'",
             "projection_sha256": "7d90d4dfc7c84c4fafca49b20aa51b196f61319b70f9117f05ab5ba0983130ff"
           }
         ],
         "language": "javascript",
         "path": "tests/tooling/code-block-page.js",
-        "sha256": "d5a925ef6f32ed8e0b7f40a4ad6823249e9ad289eb580870f4f109549fa01a85"
+        "sha256": "700dbc6d35d898bab39fde62afa3dee43f47359193fe76209e5146f7f72d4a26"
       },
       {
         "functions": [

@@ -828,12 +828,15 @@ Sanitization and exact code/leading-line handling are shared. Site-specific imag
 table, embed, widget and localization policies remain in the site's stylesheet.
 The JS adapter has no automatic DOM admission: call
 `CodeBlocks.init(document, selector)` or mount individual code containers, then
-dispose controllers before reusing those identities. The existing plugin fences
+dispose controllers before reusing those identities. A `language-*` class selects
+a registered Prism grammar, including the aliases `cmd`, `vb`, `xml` and `js`.
+Without that prefix, the adapter uses the first class naming a registered grammar
+or alias. Unknown names and registry helpers render as plain text. The plugin fences
 late clipboard results, timers and listeners by controller identity. Prism remains
 optional theme tooling; generator core adds no default JS dependency.
 
 Repository acceptance runs `tests/test_code_browser.py` with
-`tests/tooling/code-browser.mjs` and `code-block-page.js`. Seventeen native Chromium
+`tests/tooling/code-browser.mjs` and `code-block-page.js`. Eighteen native Chromium
 scenarios cover invalid/detached admission, exact text and markup, language
 normalization, labels, success/rejection, disposal, remounts, wrapper ownership and stale callbacks.
 V8 counters independently checked against parsed source inventory require >=80%

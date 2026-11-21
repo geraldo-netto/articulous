@@ -4,11 +4,21 @@ const CodeBlocks = (() => {
   const owners = new WeakMap();
   const aliases = {cmd:'batch', vb:'visual-basic', xml:'markup', js:'javascript'};
 
+  function grammarName(hint) {
+    const name = Object.hasOwn(aliases, hint) ? aliases[hint] : hint;
+    if (!Object.hasOwn(Prism.languages, name)) return null;
+    return Prism.util.type(Prism.languages[name]) === 'Object' ? name : null;
+  }
+
   function language(code) {
     const classes = [...code.classList];
     const labelled = classes.find(name => name.startsWith('language-'));
-    const hint = labelled ? labelled.slice(9) : classes.find(name => Prism.languages[aliases[name] || name]);
-    return aliases[hint] || hint || 'none';
+    if (labelled) return grammarName(labelled.slice(9).toLowerCase()) || 'none';
+    for (const name of classes) {
+      const grammar = grammarName(name);
+      if (grammar) return grammar;
+    }
+    return 'none';
   }
 
   function codeElement(pre) {

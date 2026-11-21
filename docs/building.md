@@ -142,8 +142,10 @@ part of `build.cache_file` is used, under the project root.
 The output root and its parent paths must not be symbolic links. Configured
 source and output folders must stay inside the project root. Output must stay
 separate from every source folder, and configuration must stay outside output.
-Logs, cache, lock and ownership files must stay separate from configuration and
-the source/output trees. A rejected path is a reason to fix the configuration or
+Build logs, cache, output/cache locks and ownership files must stay separate from
+configuration and the source/output trees. Image optimization keeps its own
+sibling locks in the asset source. The mirror skips regular files named
+`.<name>.articulous.lock` and prunes any previously mirrored copies. A rejected path is a reason to fix the configuration or
 inspect the files, not to bypass the check.
 
 ## Recover after a failure

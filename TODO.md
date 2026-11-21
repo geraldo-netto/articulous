@@ -43,7 +43,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-28 | open | low | small | Contradictions/data governance: apply-mode image optimisation leaves lock files in the asset source tree and the build publishes them. | `image_optimization.py:39`; the asset manifest (`pipeline.py:239-252`) has no exclusion. Reproduced: `assets/img/.photo.jpg.articulous.lock` is mirrored to `output/assets/img/`. `docs/generator-composition.md:574-580` calls the sibling lock intentional while `docs/building.md:144` says lock files stay outside source and output trees. Next: keep image locks outside the mirrored tree or exclude `.*.articulous.lock` from the asset manifest. |
 
 
 ## Native execution

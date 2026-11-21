@@ -585,7 +585,8 @@ lock and leave its inode in place. Callers must exclude uncooperative writers
 and directory replacement during this handoff: content checks alone cannot
 provide filesystem isolation. Conversion/replacement failure leaves owner edits
 intact. The lock descriptor and replacement staging directory settle before yield;
-the persistent lock file is retained for subsequent acquisitions.
+the persistent lock file is retained for subsequent acquisitions. Asset mirroring
+excludes these lock files and removes copies left by earlier builds.
 The source batch and largest selected image bound storage; caller owns admission
 and returned `ImageResult` records. Native PNG dimensions and EXIF-oriented JPEG
 rotation/format/metadata stripping are tested on Linux; other native platforms

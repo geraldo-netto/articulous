@@ -253,6 +253,8 @@ def _asset_manifest(root: Path) -> dict:
         if stat.S_ISDIR(metadata.st_mode):
             manifest[rel] = ["d", metadata.st_mtime_ns]
         elif stat.S_ISREG(metadata.st_mode):
+            if path.name.startswith(".") and path.name[1:].endswith(".articulous.lock"):
+                continue
             manifest[rel] = ["f", metadata.st_size, metadata.st_mtime_ns, file_hash(path), stat.S_IMODE(metadata.st_mode)]
         else:
             raise ValueError(f"Asset symlinks and special files are not supported: {path}")

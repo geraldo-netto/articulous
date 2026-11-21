@@ -205,3 +205,29 @@ def test_review012_content_and_metadata_are_both_checked(tmp_path):
     with patch('articulous.image_optimization.image_generation', side_effect=[generation, None]):
         with pytest.raises(ValueError, match='changed during optimization'):
             require_image(source, generation, __import__('hashlib').sha256(source.read_bytes()).digest())
+
+
+def test_review28_28_build_excludes_source_locks_and_prunes_old_copies(site_root, seo_config, tmp_path):
+    from articulous.pipeline import run_build
+    from articulous.resource_locks import resource_lock
+
+    cli, config = seo_config
+    source = site_root / 'assets/images'
+    source.mkdir()
+    (source / 'photo.jpg').write_bytes(b'original')
+    (source / '.thumbnail').write_bytes(b'ordinary hidden asset')
+    result, = optimize(source, FakeImages(tmp_path, b'new'), largest=1, quality=82,
+                       threshold=0, kinds={'jpeg'}, apply=True)
+    assert result.after == 3
+    lock = source / '.photo.jpg.articulous.lock'
+    identity = lock.stat().st_ino
+    run_build(cli, config, site_root)
+    mirrored = site_root / 'output/assets/images'
+    assert not (mirrored / lock.name).exists()
+    (mirrored / lock.name).write_bytes(b'previously mirrored lock')
+    with resource_lock(lock):
+        run_build(cli, config, site_root)
+        assert not (mirrored / lock.name).exists()
+        assert lock.stat().st_ino == identity
+    assert (mirrored / '.thumbnail').read_bytes() == b'ordinary hidden asset'
+    assert (mirrored / 'photo.jpg').read_bytes() == b'new'

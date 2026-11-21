@@ -709,7 +709,8 @@ fragments, ignores inert templates and remote/outside-prefix URLs, and reads
 sitemap indexes without revisiting a shard. No language or theme paths are
 assumed. Sitemap XML disables entity resolution and networking.
 Redirect sources and intermediate hops need no generated stub files; only the
-terminal local target must exist. Cycles remain validation failures.
+terminal local target must exist. Validation also checks redirect chains that no
+HTML page links to, including their terminal fragments and any cycles.
 HTML references use the first non-template `base` element with an `href`, resolved
 against the document URL. The base itself is not a resource to fetch; later bases
 are ignored. Absent, unparseable, `data:` and `javascript:` bases use the document

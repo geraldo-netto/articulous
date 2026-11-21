@@ -240,3 +240,15 @@ def test_audit1121_02_collects_independent_artifact_failures(publication, search
         validate_site(root, base, plan)
     for name in ('missing.html', 'lookup.json', 'one.xml', 'two.xml'):
         assert name in str(error.value)
+
+
+@pytest.mark.parametrize('end,problem', [('/start/', 'loop'), ('/absent', 'missing'), ('/#lost', 'fragment'),
+                                        ('/%00', 'invalid'), ('/#caf%C3%A9', None), ('/lookup.json', None)])
+def test_audit1121_10_validates_unlinked_redirects(publication, end, problem):
+    root, base, plan = publication
+    plan.redirects.update({'/start/': '/middle/', '/middle/': end})
+    if problem is None:
+        assert validate_site(root, base, plan).html_pages == 2
+    else:
+        with pytest.raises(ValueError, match=problem):
+            validate_site(root, base, plan)

@@ -172,6 +172,21 @@ class _RedirectResolver:
             return None, resolved
         return suffix.target, _redirect_url(resolved, suffix.url)
 
+    def validate_unreferenced(self, pages, failures):
+        for route in self.redirects:
+            if route in self.suffixes:
+                continue
+            try:
+                suffix = self._resolve(route)
+                if suffix.error:
+                    failures.append(f'{route}: {suffix.error}')
+                elif not suffix.target.is_file():
+                    failures.append(f'{route}: missing redirect target {suffix.url}')
+                else:
+                    _check_fragment(suffix.url, pages.get(suffix.target), suffix.url, failures, route)
+            except ValueError as error:
+                failures.append(f'{route}: invalid redirect: {error}')
+
     def link(self, resolved, failures, label):
         url = resolved.partition('#')[0]
         key = url.partition('?')[0]
@@ -269,6 +284,7 @@ def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
             reference_base = document_base(base + route, references.base_href)
             for value in references.links:
                 check_link(output, value, reference_base, base, redirects, pages, failures, filename, resolved_paths)
+        redirects.validate_unreferenced(pages, failures)
     finally:
         redirects.links.clear()
 

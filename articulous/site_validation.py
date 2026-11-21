@@ -137,10 +137,19 @@ class _RedirectResolver:
     def __init__(self, output, base, redirects, paths):
         self.output = output
         self.base = base
-        self.redirects = dict(redirects)
+        self.redirects = redirects
+        self.prefix = urlsplit(base).path.rstrip('/')
         self.paths = paths
         self.suffixes = {}
         self.links = {}
+
+    def _route(self, url):
+        path = urlsplit(url).path
+        route = path.removeprefix(self.prefix) or '/'
+        if route in self.redirects:
+            return route
+        relative = unquote(path).removeprefix(unquote(self.prefix)) or '/'
+        return quote(relative, safe='/')
 
     def _step(self, route):
         value = self.redirects[route]
@@ -149,7 +158,7 @@ class _RedirectResolver:
         if target is None:
             self.suffixes[route] = _RedirectSuffix(error=f'missing redirect target {value}')
             return None, url
-        following = page_route(self.output, target)
+        following = self._route(url)
         if following not in self.redirects:
             self.suffixes[route] = _RedirectSuffix(target, url)
             return None, url
@@ -177,7 +186,7 @@ class _RedirectResolver:
         return self.suffixes[first]
 
     def follow(self, target, resolved, failures, label):
-        route = page_route(self.output, target)
+        route = self._route(resolved)
         if route not in self.redirects:
             return target, resolved
         suffix = self._resolve(route)
@@ -201,11 +210,18 @@ class _RedirectResolver:
             except ValueError as error:
                 failures.append(f'{route}: invalid redirect: {error}')
 
+    def _link_target(self, url, failures, label):
+        target = resolved_path(self.output, url, self.base, self.paths)
+        if target is None:
+            return None, url, False
+        target, final = self.follow(target, url, failures, label)
+        return target, final, target is not None and target.is_file()
+
     def link(self, resolved, failures, label):
         url = resolved.partition('#')[0]
         key = url.partition('?')[0]
         if key not in self.links:
-            result = _link_target(self.output, self.base, resolved, url, self, failures, label, self.paths)
+            result = self._link_target(url, failures, label)
             if result[0] is None:
                 return result
             self.links[key] = result
@@ -213,43 +229,12 @@ class _RedirectResolver:
         return target, final if '#' in final else resolved, exists
 
 
-def redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths=None):
-    if isinstance(redirects, _RedirectResolver):
-        return redirects.follow(target, resolved, failures, label)
-    seen = set()
-    route = page_route(output, target)
-    while route in redirects:
-        if route in seen:
-            failures.append(f'{label}: redirect loop for {route}')
-            return None, resolved
-        seen.add(route)
-        value = redirects[route]
-        resolved = _redirect_url(resolved, base.rstrip('/') + value)
-        target = resolved_path(output, resolved, base, resolved_paths)
-        if target is None:
-            failures.append(f'{label}: missing redirect target {value}')
-            return None, resolved
-        route = page_route(output, target)
-    return target, resolved
-
-
-def _link_target(output, base, resolved, redirect_url, redirects, failures, label, paths):
-    target = resolved_path(output, resolved, base, paths)
-    if target is None:
-        return None, resolved, False
-    target, final = redirect_target(output, target, redirect_url, base, redirects, failures, label, paths)
-    return target, final, target is not None and target.is_file()
-
-
 def check_link(output, value, page_url, base, redirects, pages, failures, label, resolved_paths=None):
     try:
         resolved = urljoin(page_url, value)
-        if isinstance(redirects, _RedirectResolver):
-            target, final, exists = redirects.link(resolved, failures, label)
-        else:
-            target, final, exists = _link_target(
-                output, base, resolved, resolved, redirects, failures, label, resolved_paths,
-            )
+        if not isinstance(redirects, _RedirectResolver):
+            redirects = _RedirectResolver(output, base, redirects, resolved_paths)
+        target, final, exists = redirects.link(resolved, failures, label)
         if target is not None:
             if exists:
                 _check_fragment(final, pages.get(target), value, failures, label)

@@ -51,3 +51,23 @@ def test_review027_seeded_encoded_routes_and_outside_origins(tmp_path):
         check_link(tmp_path, url, 'https://example.test/blog/', 'https://example.test/blog',
                    {'/old.html': '/missing.html'}, pages, failures, 'outside')
         assert failures == []
+
+
+@pytest.mark.parametrize('base', ['', '/blog', 'https://example.test/blog'])
+@pytest.mark.parametrize('route,anchor', [('/from', 'terminal'), ('/from/', 'directory'),
+                                          ('/from/index.html', 'directory'), ('/via/', 'terminal')])
+def test_audit1121_17_redirects_match_requested_route_before_directory_index(tmp_path, base, route, anchor):
+    from articulous.site_validation import validate_pages
+    from articulous.validation_contracts import ValidationPlan
+    (tmp_path / 'from').mkdir()
+    urls = {'from/index.html': base + '/from/', 'new.html': base + '/new.html', 'index.html': base + '/'}
+    (tmp_path / 'from/index.html').write_text(html_page(urls['from/index.html'], '<b id="directory">ok</b>'))
+    (tmp_path / 'new.html').write_text(html_page(urls['new.html'], '<b id="terminal">ok</b>'))
+    link = base + route + '#' + anchor
+    (tmp_path / 'index.html').write_text(html_page(urls['index.html'], f'<a href="{link}">route</a>'))
+    redirects = {'/from': '/new.html', '/via/': '/from'}
+    pages = read_pages(tmp_path, [])
+    failures = []
+    check_link(tmp_path, link, base + '/', base, redirects, pages, failures, 'single')
+    validate_pages(tmp_path, base, ValidationPlan(urls, frozenset(), frozenset(), '', '', redirects), pages, failures)
+    assert failures == []

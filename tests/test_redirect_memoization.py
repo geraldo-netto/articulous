@@ -11,13 +11,29 @@ from articulous import site_validation as validation
 BASE = 'https://example.test'
 
 
+def walk(output, mapping, route, fragment):
+    seen = set()
+    first = route
+    url = BASE + route + fragment
+    while route in mapping:
+        if route in seen:
+            return None, url, [f'{first}: redirect loop for {route}']
+        seen.add(route)
+        destination = BASE + mapping[route]
+        if '#' not in destination and '#' in url:
+            destination += '#' + urlsplit(url).fragment
+        url = destination
+        if validation.local_path(output, url, BASE) is None:
+            return None, url, [f'{first}: missing redirect target {mapping[route]}']
+        route = urlsplit(url).path
+    return validation.local_path(output, url, BASE), url, []
+
+
 def assert_result(output, memo, mapping, route, fragment):
     initial = BASE + route + fragment
     target = output / route.strip('/') / 'index.html'
-    expected_errors, errors = [], []
-    expected_path, expected_url = validation.redirect_target(
-        output, target, initial, BASE, mapping, expected_errors, route,
-    )
+    errors = []
+    expected_path, expected_url, expected_errors = walk(output, mapping, route, fragment)
     path, url = memo.follow(target, initial, errors, route)
     assert errors == expected_errors
     assert path == expected_path

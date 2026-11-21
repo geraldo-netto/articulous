@@ -711,6 +711,8 @@ assumed. Sitemap XML disables entity resolution and networking.
 Redirect sources and intermediate hops need no generated stub files; only the
 terminal local target must exist. Validation also checks redirect chains that no
 HTML page links to, including their terminal fragments and any cycles.
+Rules match the requested URL path at each hop, so `/from`, `/from/` and
+`/from/index.html` can have distinct destinations.
 HTML references use the first non-template `base` element with an `href`, resolved
 against the document URL. The base itself is not a resource to fetch; later bases
 are ignored. Absent, unparseable, `data:` and `javascript:` bases use the document

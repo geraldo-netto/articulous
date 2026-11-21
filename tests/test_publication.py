@@ -607,6 +607,21 @@ def test_rel40_merge_only_restores_the_recovering_root(tmp_path, prior, current,
     assert json.loads(cache.read_text()) == {'__output_roots__': merged}
 
 
+@pytest.mark.parametrize('prior,current,expected', [
+    ({'flat': 1}, {'__output_roots__': {'other': 2, 'active': 3}}, {'__output_roots__': {'other': 2}}),
+    ({'flat': 1}, {'flat': 2}, {'flat': 2}),
+])
+def test_compat01_publication_rollback_cannot_assign_flat_fingerprints(tmp_path, prior, current, expected):
+    from articulous.backends import publication_snapshots as state
+
+    cache, backup = tmp_path / 'cache', tmp_path / 'backup'
+    cache.write_text(json.dumps(prior))
+    claim = state.snapshot(cache, backup)
+    cache.write_text(json.dumps(current))
+    state.restore_cache(cache, backup, claim, 'x', 'active')
+    assert json.loads(cache.read_text()) == expected
+
+
 def test_rel40_recovery_with_missing_or_invalid_cache(tmp_path):
     from articulous.backends import publication_snapshots as state
 

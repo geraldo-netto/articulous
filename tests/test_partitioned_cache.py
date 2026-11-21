@@ -248,7 +248,7 @@ def test_perf37_lock_selection_retries_if_layout_changes_before_lock(site_root):
         paths.append(path)
         with lock_file(cache_lock_path(path)):
             if path == base:
-                cache_store.finish_cache_update(_selected(site_root, 'output'), root, 3, True)
+                cache_store.finish_cache_update(_selected(site_root, 'output'), 3, True)
             yield
 
     with cache_store.lock_selected_cache(base, root, lock) as selected:
@@ -290,28 +290,30 @@ def test_perf31_activation_preserves_state_if_directory_cannot_be_scanned(tmp_pa
         onerror(PermissionError('unreadable directory'))
 
     monkeypatch.setattr(cache_store.os, 'walk', unreadable)
-    cache_store.finish_cache_update(selected, tmp_path / 'output', 3, True)
+    cache_store.finish_cache_update(selected, 3, True)
     assert base.read_text() == '{"fingerprint": [1]}'
     assert 'cache maintenance failed: unreadable directory' in caplog.text
 
 
-@pytest.mark.parametrize('value', [None, '{"fingerprint":[1]}'])
-def test_perf31_legacy_flat_values_bind_to_migrating_output(tmp_path, value):
+@pytest.mark.parametrize('value', [None, '{"fingerprint":[1]}', '{"__output_roots__": []}'])
+def test_compat01_partition_activation_discards_unscoped_fingerprints(tmp_path, value):
     base = _base(tmp_path)
     if value is not None:
         base.write_text(value)
     destination = tmp_path / 'output'
-    assert cache_store._migration_records(base, destination, tmp_path) == (
-        {} if value is None else {str(destination): json.loads(value)}
-    )
+    cache_store.finish_cache_update(cache_store.select_cache(base, destination), 3, True)
+    selected = cache_store.select_cache(base, destination)
+    assert selected.partitioned
+    assert not selected.path.exists()
+    assert json.loads(base.read_text()) == {'__output_roots__': {}}
 
 
-def test_perf31_malformed_legacy_root_paths_are_ignored(tmp_path):
+def test_perf31_malformed_root_paths_are_ignored(tmp_path):
     base = _base(tmp_path)
     invalid_paths = ('relative', str(tmp_path.parent), str(tmp_path / 'bad\0path'))
     value = {'__output_roots__': dict.fromkeys(invalid_paths, {'fingerprint': [1]})}
     base.write_text(json.dumps(value))
-    assert cache_store._migration_records(base, tmp_path / 'output', tmp_path) == {}
+    assert cache_store._migration_records(base, tmp_path) == {}
 
 
 @pytest.mark.parametrize('fault', ['hardlink', 'wrong-root', 'not-string', 'missing'])

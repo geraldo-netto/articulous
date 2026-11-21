@@ -35,9 +35,9 @@ _cache_lock = threading.Lock()
 
 
 class TrackedCache(dict):
-    def __init__(self, *args, dirty: bool = False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.dirty = dirty
+    def __init__(self, entries=()):
+        super().__init__(entries)
+        self.dirty = False
 
     def mark_clean(self) -> None:
         self.dirty = False

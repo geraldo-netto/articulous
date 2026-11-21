@@ -67,7 +67,7 @@ from .models import (
     section_pattern,
 )
 from .migrations import OutputMigrations
-from .output_cache import CACHE_ROOTS_KEY, refresh_output_cache
+from .output_cache import refresh_output_cache
 from .runtime import (
     TrackedCache,
     WeightedTask,
@@ -2045,10 +2045,9 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
 def _load_build_cache(cache_path: Path, output_dir: Path, partitioned=False) -> tuple[TrackedCache, dict]:
     stored = load_cache(cache_path)
     root = str(output_dir.resolve())
-    legacy = not partitioned and CACHE_ROOTS_KEY not in stored
-    roots = {root: stored} if legacy else selected_roots(stored, root, partitioned)
+    roots = selected_roots(stored, root, partitioned)
     data = roots.get(root, {})
-    cache = TrackedCache(data if isinstance(data, dict) else {}, dirty=legacy)
+    cache = TrackedCache(data if isinstance(data, dict) else {})
     return cache, roots
 
 
@@ -2112,7 +2111,7 @@ def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifes
         logging.debug("Cache unchanged — skipping save")
     save_ownership(ctx.output_dir, next_manifest, routes=routes, generation=cache['__generation__'],
                    translations=_published_translations(ownership, cache, next_manifest, current_manifest))
-    finish_cache_update(selected, ctx.output_dir, ctx.cache_retention_days, ctx.partition_cache)
+    finish_cache_update(selected, ctx.cache_retention_days, ctx.partition_cache)
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:

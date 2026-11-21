@@ -96,33 +96,31 @@ def _current_digest(path):
         return None
 
 
-def _root_entries(data, active):
+def _root_entries(data):
     if not isinstance(data, dict):
         raise ValueError('Invalid shared cache during publication recovery')
-    if CACHE_ROOTS_KEY not in data:
-        return {active: data}
     return output_cache_roots(data)
 
 
-def _read_roots(path, active):
+def _read_roots(path):
     with open_regular_file(path) as source:
         _single_link(source)
-        return _root_entries(json.load(source), active)
+        return _root_entries(json.load(source))
 
 
-def _saved_roots(path, claim, active):
+def _saved_roots(path, claim):
     if claim is None:
         return {}
     with _snapshot_source(path, claim) as source:
         data = source.read()
     if hashlib.sha256(data).hexdigest() != claim[2]:
         raise ValueError('Publication snapshot bytes changed')
-    return _root_entries(json.loads(data), active)
+    return _root_entries(json.loads(data))
 
 
 def _restore_active_cache(path, saved, claim, active):
-    current = _read_roots(path, active)
-    previous = _saved_roots(saved, claim, active)
+    current = _read_roots(path)
+    previous = _saved_roots(saved, claim)
     if active in previous:
         if active in current and current[active] == previous[active]:
             return

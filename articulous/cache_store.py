@@ -135,22 +135,20 @@ def _admitted_root(root: str, project: Path) -> bool:
     return True
 
 
-def _migration_records(base, destination, project):
+def _migration_records(base, project):
     stored = load_cache(base)
-    if CACHE_ROOTS_KEY not in stored:
-        return {str(destination): stored} if stored else {}
     return {
         root: record for root, record in output_cache_roots(stored).items()
         if isinstance(record, dict) and _admitted_root(root, project)
     }
 
 
-def _activate_namespace(base: Path, destination: Path, project: Path) -> None:
+def _activate_namespace(base: Path, project: Path) -> None:
     if _has_pending_journal(base, project):
         logging.warning('Fingerprint cache partitioning pending recovery of publication journals in %s', project)
         return
     with private_directory(base.parent) as staging:
-        for root, record in _migration_records(base, destination, project).items():
+        for root, record in _migration_records(base, project).items():
             target = _root_path(staging, root)
             write_text_atomic(target, json.dumps(partitioned_payload({root: record}), indent=2))
         (staging / _LAYOUT_MARKER).touch(exist_ok=False)
@@ -243,13 +241,12 @@ def _expire_partitions(active: Path, retention_days: int, project: Path) -> None
     save_usage_index(index, current, _partition_entries(active, current, cutoff, project))
 
 
-def finish_cache_update(selected: CacheSelection, destination: Path, retention_days: int,
-                        partition: bool) -> None:
+def finish_cache_update(selected: CacheSelection, retention_days: int, partition: bool) -> None:
     project = selected.project or selected.base.parent
     try:
         if selected.partitioned:
             _expire_partitions(selected.path, retention_days, project)
         elif partition:
-            _activate_namespace(selected.base, destination, project)
+            _activate_namespace(selected.base, project)
     except (OSError, ValueError, RecursionError) as error:
         logging.warning('Fingerprint cache maintenance failed: %s', error)

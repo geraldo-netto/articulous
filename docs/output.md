@@ -101,7 +101,8 @@ for extra pages, validator hooks, capability checks and recovery instructions.
 
 The build cache (`.build-cache.json` by default) lives at the project
 root. Only the filename component of `build.cache_file` is used. Entries
-live under `__output_roots__`, keyed by resolved output directory.
+live under `__output_roots__`, keyed by resolved output directory. An unscoped
+cache triggers a rebuild of selected pages in either storage layout.
 
 With `build.partition_cache: true`, the first successful cache update
 imports existing entries into a sibling directory, named
@@ -140,8 +141,7 @@ changes that require rebuilding peers. For older ownership records, rebuild the
 article section across all languages and slugs once before filtering articles.
 
 Legacy cache manifests migrate automatically when no ownership file
-exists. Flat caches bind to the output used for the first upgraded build;
-target the existing output before changing directories. A populated output
+exists. A populated output
 tree without ownership history, or an invalid ownership file, stops the
 build. Restore ownership from backup or choose an empty output tree.
 Use `--force` for a rebuild that keeps ownership history.

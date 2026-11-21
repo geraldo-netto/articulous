@@ -1992,17 +1992,21 @@ def test_shared_cache_preserves_each_output_manifest(site_root):
     assert set(roots) == {str(site_root / "output"), str(site_root / "other-output")}
 
 
-def test_legacy_cache_migration_keeps_pruning_ownership(site_root):
+def test_compat01_flat_cache_rebuilds_pages_using_current_ownership(site_root):
     config = _site_config(site_root)
     run_build(_CLI(), config, site_root)
     path = site_root / ".build-cache.json"
-    legacy = json.loads(path.read_text())["__output_roots__"][str(site_root / "output")]
-    path.write_text(json.dumps(legacy))
-    ownership_path(site_root / "output").unlink()
+    root = site_root / "output"
+    flat = json.loads(path.read_text())["__output_roots__"][str(root)]
+    path.write_text(json.dumps(flat))
+    retained = root / "en/articles/second-post/index.html"
+    expected = retained.read_bytes()
+    retained.write_text("stale page")
     _set_publication(site_root / "content/en/first-post.xml", "private")
     run_build(_CLI(), config, site_root)
-    assert not (site_root / "output/en/articles/first-post/index.html").exists()
-    assert "__output_roots__" in json.loads(path.read_text())
+    assert retained.read_bytes() == expected
+    assert not (root / "en/articles/first-post/index.html").exists()
+    assert set(json.loads(path.read_text())["__output_roots__"]) == {str(root)}
 
 
 @pytest.mark.parametrize("loss", ["removed", "corrupt", "invalid-roots", "changed-name"])

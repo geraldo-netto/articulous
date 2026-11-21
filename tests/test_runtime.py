@@ -204,7 +204,9 @@ def test_load_cache_missing_returns_empty(tmp_path):
 @pytest.mark.parametrize("tracked", [False, True])
 def test_load_cache_round_trip(tmp_path, tracked):
     p = tmp_path / "c.json"
-    cache = TrackedCache({"k": [1, 2]}, dirty=True) if tracked else {"k": [1, 2]}
+    cache = TrackedCache() if tracked else {}
+    cache["k"] = [1, 2]
+    assert cache_changed(cache)
     save_cache(p, cache)
     assert load_cache(p) == {"k": [1, 2]}
     assert cache_changed(cache) is not tracked

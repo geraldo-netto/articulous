@@ -88,5 +88,5 @@ def _publish_current(checked, backend):
     else:
         publish(publication_input(checked))
     owner.published(native._revision)
-    finish_cache_update(owner.cache_selection, owner.destination, owner.context.cache_retention_days,
+    finish_cache_update(owner.cache_selection, owner.context.cache_retention_days,
                         owner.context.partition_cache)

@@ -434,11 +434,22 @@ def _materialize_parameter(root, name: str, value: str) -> None:
     node.set("select", "'" + value.replace("'", "''") + "'")
 
 
+def _saxon_parameter_name(root, name: str) -> str:
+    prefix, separator, local = name.partition(":")
+    if not separator:
+        return name
+    namespace = "http://www.w3.org/XML/1998/namespace" if prefix == "xml" else root.nsmap.get(prefix)
+    if namespace is None:
+        raise ValueError(f"Undeclared transform parameter namespace prefix: {prefix}")
+    return f"{{{namespace}}}{local}"
+
+
 def _saxon_parameters(root, parameters) -> dict[str, str]:
     command_parameters = {}
     for name, value in (parameters or {}).items():
-        if len((name + value).encode("utf-8")) < 32768:
-            command_parameters[name] = value
+        expanded = _saxon_parameter_name(root, name)
+        if "=" not in expanded and len((expanded + value).encode("utf-8")) < 32768:
+            command_parameters[expanded] = value
         else:
             _materialize_parameter(root, name, value)
     return command_parameters

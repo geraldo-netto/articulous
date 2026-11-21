@@ -234,3 +234,19 @@ def test_review29_03_captured_document_preserves_outer_nodes(tmp_path, saxonc_en
     result = etree.parse(str(target))
     assert result.xpath('/out/n/text()') == ['one', 'two', 'three', 'four']
     assert result.findtext('base') == (tmp_path / 'media').as_uri() + '/'
+
+
+@pytest.mark.parametrize(('namespace', 'size'), [('urn:test', 5), ('urn:test', 32768), ('urn:test?a=b', 5)])
+def test_review28_33_saxonc_binds_prefixed_parameter_as_literal(tmp_path, saxonc_engine, namespace, size):
+    stylesheet = tmp_path / 'qualified.xsl'
+    stylesheet.write_text(
+        f'<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:t="{namespace}">'
+        '<xsl:output method="text"/><xsl:param name="t:label">default</xsl:param>'
+        '<xsl:template match="/"><xsl:value-of select="$t:label"/></xsl:template></xsl:stylesheet>')
+    value = "'=?" * size
+    output = tmp_path / 'out.txt'
+    saxonc_engine.run(b'<root/>', stylesheet, output, parameters={'t:label': value})
+    assert output.read_text() == value
+    with pytest.raises(TransformFailure, match='namespace prefix'):
+        saxonc_engine.run(b'<root/>', stylesheet, output, parameters={'missing:label': 'text'})
+    assert output.read_text() == value

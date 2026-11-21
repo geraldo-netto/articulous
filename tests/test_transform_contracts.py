@@ -135,3 +135,24 @@ def test_api002_prepare_errors_use_contract_channel(tmp_path):
     with pytest.raises(TransformFailure) as failure:
         LxmlEngine().prepare_stylesheet(tmp_path / 'missing.xsl')
     assert failure.value.operation == 'prepare_stylesheet'
+
+
+@pytest.mark.parametrize('prefix', ['+', '-', '?', '0', '.', ':', '\u0301'])
+def test_review28_33_invalid_names_reject_before_backend_dispatch(tmp_path, prefix):
+    from articulous.engines import SaxonCEngine
+    from articulous.transform_contracts import TransformFailure
+    engine = SaxonCEngine(tmp_path / 'unused')
+    for suffix in ('p', 'meta:tag', 'a.b-0'):
+        with pytest.raises(TransformFailure, match='parameters'):
+            engine.run(b'<root/>', tmp_path / 'unused.xsl', tmp_path / 'out',
+                       dry_run=True, parameters={prefix + suffix: 'literal'})
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_review28_33_xml_parameter_name_boundaries():
+    from articulous.transform_contracts import require_parameters
+    for name in ('_a', 'é.名', 'a:b-2', 'a\u0301', '\U00010000x', '\U000effff'):
+        require_parameters({name: '? + - = literal'})
+    for name in ('a:', 'a::b', 'a:b:c', 'a=b', 'a b', 'a\0', 'a\n', '\U000f0000'):
+        with pytest.raises(ValueError, match='parameters'):
+            require_parameters({name: ''})

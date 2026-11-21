@@ -361,7 +361,8 @@ Concrete adapters use the shared `engines.XsltEngine` implementation. Their publ
 preparation/render boundary reports `TransformFailure(operation, detail,
 returncode=None)` rather than requiring callers to catch lxml/subprocess types;
 original exceptions remain chained for adapter diagnostics. Invalid parameter
-types and capture states reject explicitly. Inputs and parameter mappings are
+types and capture states reject explicitly. Parameter names must be lexical XML
+QNames, such as `title` or `theme:title`. Bind a parameter prefix on the stylesheet root. Inputs and parameter mappings are
 stable caller borrows until synchronous return or failure; retained stylesheet
 snapshots belong to the engine's containing build context. Existing atomic-output
 scopes preserve prior output on failure.

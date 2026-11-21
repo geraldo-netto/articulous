@@ -97,3 +97,13 @@ def test_api010_normalization_errors_leave_inputs_and_output_untouched(site_root
         check_build(BuildRequest(), value, site_root)
     assert value == before
     assert not (site_root / 'output').exists()
+
+
+@pytest.mark.parametrize('base', ['', '/HTTP:Archive/News', 'https://Host.test/UP%2f', 'hTtPs://Host.test/UP%2f'])
+def test_review28_45_admission_preserves_url_resource_and_input(base):
+    value = deepcopy(config.DEFAULT_CONFIG)
+    value['site']['base_url'] = base
+    admitted = config.admit_configuration(value)
+    expected = base.replace('hTtPs:', 'https:', 1)
+    assert admitted['site']['base_url'] == expected
+    assert value['site']['base_url'] == base

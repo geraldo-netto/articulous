@@ -4897,22 +4897,22 @@
             "projection_sha256": "f9ebaf35fab5c300e41444aad27bd33fb741546c5674cc7e50aeb41dd821483d"
           },
           {
-            "body_sha256": "a556ff24abdea1279103f58734b44a14526c69580e75027feab21128960a3e43",
+            "body_sha256": "ac6ba0211f6eb3f6a32553fc9bc1029498a14e839b8414977e418900b049a33d",
             "column": 0,
-            "complexity": 2,
-            "end_column": 41,
-            "end_line": 310,
+            "complexity": 4,
+            "end_column": 19,
+            "end_line": 316,
             "line": 305,
             "name": "admit_configuration",
-            "projection_sha256": "d29adcd907a25bc031348982d61efcecb4116fe3f875ef5f4371222cd2717be4"
+            "projection_sha256": "d36459bbc40b39bdb05a6718e2fdd25a79703f280c58be4547c1b1d91812ab43"
           },
           {
             "body_sha256": "f270f4d77e0767a8b432b9eb4dff7a6c98f35fbcdec04a166e9a956a5413f6b0",
             "column": 0,
             "complexity": 3,
             "end_column": 17,
-            "end_line": 319,
-            "line": 313,
+            "end_line": 325,
+            "line": 319,
             "name": "_config_object",
             "projection_sha256": "9700911731c4e6282e24800ca304ef8d6098de66671281783ab2e8586fc7c61e"
           },
@@ -4921,8 +4921,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 35,
-            "end_line": 347,
-            "line": 322,
+            "end_line": 353,
+            "line": 328,
             "name": "load_or_create_config",
             "projection_sha256": "ee261611ccf3951aeeb19c03a09598564d947d6ae9d1e46fdfce5574d7a77063"
           },
@@ -4931,8 +4931,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 55,
-            "end_line": 353,
-            "line": 350,
+            "end_line": 359,
+            "line": 356,
             "name": "validate_output_layout",
             "projection_sha256": "fadb61b5a25e08f2fcf985aa72806da2f7b3c7dd803c2b206fcc66eb49766d36"
           },
@@ -4941,8 +4941,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 5,
-            "end_line": 359,
-            "line": 356,
+            "end_line": 365,
+            "line": 362,
             "name": "_paths_alias",
             "projection_sha256": "03d8c4f2aa67c9f80538112a5aed933bc1f0adee7af16c914daa5355915d7bfd"
           },
@@ -4951,8 +4951,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 86,
-            "end_line": 372,
-            "line": 362,
+            "end_line": 378,
+            "line": 368,
             "name": "_validate_state_path",
             "projection_sha256": "38179448b84b64d3ac8dbaaaf4234ad0c2408fe1a8a68b2ef89514e00c6bc976"
           },
@@ -4961,8 +4961,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 56,
-            "end_line": 382,
-            "line": 375,
+            "end_line": 388,
+            "line": 381,
             "name": "_validate_cache_namespace",
             "projection_sha256": "18d4576ef05b571a26c1101bfb0fbe838f4524f2ff42c973c48d97c77eba47a7"
           },
@@ -4971,8 +4971,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 59,
-            "end_line": 388,
-            "line": 385,
+            "end_line": 394,
+            "line": 391,
             "name": "_validate_partition_paths",
             "projection_sha256": "504b71eae26511def07ccb290698a05ca7836c79abb7a2854e183c5cee39353b"
           },
@@ -4981,8 +4981,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 84,
-            "end_line": 408,
-            "line": 391,
+            "end_line": 414,
+            "line": 397,
             "name": "validate_state_paths",
             "projection_sha256": "63cb27bd511eeefed1b294a08745d29c63cf21322b8d38d9478d80bb6cb37046"
           },
@@ -4991,8 +4991,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 51,
-            "end_line": 443,
-            "line": 411,
+            "end_line": 449,
+            "line": 417,
             "name": "apply_cli_overrides",
             "projection_sha256": "5acb517847b27e7e2184fd0a11a6e518aa6029841e8e8db483fab98d6ffae2b2"
           },
@@ -5001,15 +5001,15 @@
             "column": 0,
             "complexity": 4,
             "end_column": 55,
-            "end_line": 457,
-            "line": 446,
+            "end_line": 463,
+            "line": 452,
             "name": "normalize_configuration",
             "projection_sha256": "fe439f15ade479864d2262080867022d07bc632cc4e376a9235a0c6f8a73bb1f"
           }
         ],
         "language": "python",
         "path": "articulous/config.py",
-        "sha256": "df2fc4964bc278a2c7667449937d0b5205cdb2b66046fe011f92db4b708dbed2"
+        "sha256": "1aa96310bcf48b63156f3c3f8f66d6405064bf2fcbca29841d19188219711c7a"
       },
       {
         "functions": [
@@ -18516,11 +18516,21 @@
             "line": 93,
             "name": "test_api010_normalization_errors_leave_inputs_and_output_untouched",
             "projection_sha256": "15fa8d5d5efd2aea29f1d8be3d6c8b487308232d80cd2e957aefe2bee73f1ebc"
+          },
+          {
+            "body_sha256": "9ff0598f65c61ad823e995ed33ff9940b0224a5788ecfb28335c92635796aeee",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 44,
+            "end_line": 109,
+            "line": 103,
+            "name": "test_review28_45_admission_preserves_url_resource_and_input",
+            "projection_sha256": "c2ef988626dff8325ae9f682304611243823191d1c4991966bbf9e6df1646838"
           }
         ],
         "language": "python",
         "path": "tests/test_configuration_contracts.py",
-        "sha256": "d45d131e80eb69d71b898a9d15bbc2ffeca05411473be3200db8425ce2b8db67"
+        "sha256": "bb7518a64b879ab20301e50b5886fe26bb03b26ad7fbdcdb5f3b635ce4ef0fe3"
       },
       {
         "functions": [
@@ -30839,11 +30849,21 @@
             "line": 231,
             "name": "test_review28_21_unpublished_twin_cannot_replace_a_translated_page",
             "projection_sha256": "b493359357d1fa9029b32b3b28be488f0b080d0b6812eef08b997581a2c03ac3"
+          },
+          {
+            "body_sha256": "bf4d4978b475ce3fe12f31e3f3e5a4c3b340ed7740b35ec4e341e47420588c16",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 40,
+            "end_line": 271,
+            "line": 252,
+            "name": "test_review28_45_mixed_case_scheme_preserves_generated_metadata",
+            "projection_sha256": "5fa3bb8ac093be6ef18114a9ad786b720f1e5988a09d125eebb213e2269ee483"
           }
         ],
         "language": "python",
         "path": "tests/test_seo_translations.py",
-        "sha256": "c859d51c0c506021b0760fb4ca354f8c6eaa5484990e1e73804b139dc05b6f7e"
+        "sha256": "71cd8e770e94eed92bacf0dd0fdf7a4d21f88bbf36141affc316850f06d69f96"
       },
       {
         "functions": [

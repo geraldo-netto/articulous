@@ -307,7 +307,13 @@ def admit_configuration(value: ConfigurationInput) -> SiteConfiguration:
         raise ConfigurationError('Configuration must be an object')
     value = dict(value)
     validate_config(value)
-    return cast(SiteConfiguration, value)
+    admitted = cast(SiteConfiguration, value)
+    site = admitted['site']
+    base = site['base_url']
+    scheme, _, resource = base.partition(':')
+    if scheme.lower() in ('http', 'https') and scheme != scheme.lower():
+        admitted['site'] = {**site, 'base_url': scheme.lower() + ':' + resource}
+    return admitted
 
 
 def _config_object(pairs):

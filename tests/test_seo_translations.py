@@ -246,3 +246,26 @@ def test_review28_21_unpublished_twin_cannot_replace_a_translated_page(site_root
         'en': 'https://example.test/en/articles/first-post/',
         'fr': 'https://example.test/fr/articles/premier-article/',
     }
+
+
+@pytest.mark.parametrize('scheme', ['HTTPS', 'hTtPs', 'Http'])
+def test_review28_45_mixed_case_scheme_preserves_generated_metadata(site_root, seo_config, scheme):
+    import json
+    cli, config = seo_config
+    _translation_pair(site_root)
+    first = site_root / 'content/en/first-post.xml'
+    first.write_text(first.read_text().replace('</article>', '<structured-data>Article</structured-data></article>'))
+    base = scheme + '://Example.test/Blog'
+    config['site']['base_url'] = base
+    run_build(cli, config, site_root)
+    page = site_root / 'output/en/articles/first-post/index.html'
+    rendered = page.read_bytes()
+    canonical = scheme.lower() + '://Example.test/Blog/en/articles/first-post/'
+    assert _alternates(page)['en'] == canonical
+    scripts = etree.HTML(rendered).xpath('//script[@type="application/ld+json"]/text()')
+    assert json.loads(scripts[0])['mainEntityOfPage'] == canonical
+    assert config['site']['base_url'] == base
+    config['site']['base_url'] = scheme.lower() + '://Example.test/Blog'
+    cli.force_full_build = True
+    run_build(cli, config, site_root)
+    assert page.read_bytes() == rendered

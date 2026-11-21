@@ -73,7 +73,8 @@ segments.
 
 Configuration loading validates `site.base_url` for every backend. Supported
 forms are an absolute HTTP(S) URL, an empty string, or a root-relative prefix
-such as `/blog`. A value such as `not-a-url`, a protocol-relative host such as
+such as `/blog`. Absolute URL schemes are normalized to lowercase. The host
+and path retain their original spelling. A value such as `not-a-url`, a protocol-relative host such as
 `//example.com`, invalid ports/escapes, and query or fragment delimiters are
 rejected with a `site.base_url` error. Base paths must be URI-encoded and
 cannot contain dot segments, repeated internal separators, or credentials.

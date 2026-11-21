@@ -55,7 +55,7 @@ class TranslationStore:
                 pass
 
     def add(self, article, selected: bool) -> None:
-        if not article.translation:
+        if not article.translation or not article.policy.page:
             return
         locale = hreflang(article.lang)
         eligible = article.indexable and article.url.startswith(("https://", "http://"))

@@ -225,3 +225,24 @@ def test_review003_stream_close_settles_retained_discovery(site_root, seo_config
         assert settled == [True]
     finally:
         retained.close()
+
+
+@pytest.mark.parametrize('state', ['draft', 'private', 'scheduled'])
+def test_review28_21_unpublished_twin_cannot_replace_a_translated_page(site_root, seo_config, state):
+    cli, config = seo_config
+    _translation_pair(site_root)
+    source = site_root / 'content/en/first-post.xml'
+    unpublished = f'<status>{state}</status>'
+    if state == 'scheduled':
+        unpublished += '<publish-at>2999-01-01T00:00:00Z</publish-at>'
+    twin = source.with_name('duplicate.xml')
+    twin.write_text(source.read_text().replace('</article>', unpublished + '</article>'))
+    run_build(cli, config, site_root)
+    cli.only_langs = ['en']
+    run_build(cli, config, site_root)
+    en = site_root / 'output/en/articles/first-post/index.html'
+    fr = site_root / 'output/fr/articles/premier-article/index.html'
+    assert _alternates(en) == _alternates(fr) == {
+        'en': 'https://example.test/en/articles/first-post/',
+        'fr': 'https://example.test/fr/articles/premier-article/',
+    }

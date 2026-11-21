@@ -12483,14 +12483,14 @@
             "projection_sha256": "da7be4da5ebaf8161bd25ddfec1bc82d547cb5b16bb6f076cafe2df593504d17"
           },
           {
-            "body_sha256": "cd2d7c916b270223813bca1ff2529043bdc2acf0ebc7d13a07d8eaa471a2a718",
+            "body_sha256": "2becb256e29a0720f62043277e760ad9baefba0d3f883295b7349984555998d7",
             "column": 4,
-            "complexity": 4,
+            "complexity": 5,
             "end_column": 115,
             "end_line": 67,
             "line": 57,
             "name": "TranslationStore.add",
-            "projection_sha256": "8f8e702b5732db5a03dd22269a7e33f96217e18b3caa99e14e0aca3a495d0d6e"
+            "projection_sha256": "9e763e414b1872a571c6c66b891172a1848dd75a5d737072d383045db025ed6f"
           },
           {
             "body_sha256": "f4ba9cd6e4a8d5ddc11e8e945128566d1ed828ef56d1a9366b45092067c10afb",
@@ -12545,7 +12545,7 @@
         ],
         "language": "python",
         "path": "articulous/translations.py",
-        "sha256": "a30e8b795acc42d04c31fb922f1d7454d45cbe6155ad111394f68386c96c2fd6"
+        "sha256": "8473d76027547e23a1fedd7a2fea0b7b16616998e80904fd872e0037da3e78fd"
       },
       {
         "functions": [
@@ -30495,11 +30495,21 @@
             "line": 220,
             "name": "test_review003_stream_close_settles_retained_discovery.<lambda>@220:51",
             "projection_sha256": "baf7eadee952946982aadf06316a2ee948a3d6c4ef67396c81aa280fe80c0b20"
+          },
+          {
+            "body_sha256": "c5ece13d37285d30e49bb3efe3baa975430ec71d9a34ee491a817676588d9076",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 5,
+            "end_line": 248,
+            "line": 231,
+            "name": "test_review28_21_unpublished_twin_cannot_replace_a_translated_page",
+            "projection_sha256": "b493359357d1fa9029b32b3b28be488f0b080d0b6812eef08b997581a2c03ac3"
           }
         ],
         "language": "python",
         "path": "tests/test_seo_translations.py",
-        "sha256": "cd1b2e0156767225d2d9ce16eb5d7e0d51682301e3a686603a7511ea1d483865"
+        "sha256": "c859d51c0c506021b0760fb4ca354f8c6eaa5484990e1e73804b139dc05b6f7e"
       },
       {
         "functions": [

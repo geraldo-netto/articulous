@@ -98,6 +98,8 @@ from .sitemaps import (
 )
 from .tree_entries import tree_entries
 from .source_files import SOURCE_STAGE_PREFIX
+from .projection_routes import projection_route_check
+from .slugs import normalize_slug
 from .translations import TranslationStore, translation_history
 from .structured_data import article_jsonld
 
@@ -1573,6 +1575,7 @@ def _stream_projections(
     workspace: TempWorkspace | None = None,
     *,
     cache=None,
+    check_route=None,
     collect_cross: bool = True,
     collect_articles: bool = False,
 ) -> StreamProjection:
@@ -1598,7 +1601,7 @@ def _stream_projections(
         translations=TranslationStore() if "articles" in sections else None,
     )
     try:
-        _fill_projection(projection, stream_factory, cli, ctx)
+        _fill_projection(projection, stream_factory, cli, ctx, check_route)
     except BaseException:
         _cleanup_stream_projection(projection)
         raise
@@ -1664,8 +1667,10 @@ def build_artifacts_section(artifacts, ctx, cache, manifest):
     return tasks
 
 
-def _observed_listings(pages, projection):
+def _observed_listings(pages, projection, check_route):
     for page in pages:
+        if check_route is not None:
+            check_route(page.url)
         projection.sitemap_urls.append_url(page.url)
         yield page
 
@@ -1676,16 +1681,16 @@ def _has_language_work(projection, lang, listings, ctx):
     return bool(count or listings or ctx.index_options.include_empty)
 
 
-def _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want):
+def _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want, check_route):
     records = _ListingRecords()
-    indexes = _observed_listings(build_index_models(listings, lang, ctx), projection)
+    indexes = _observed_listings(build_index_models(listings, lang, ctx), projection, check_route)
     if selected and want("index"):
         build_index_section(listings, lang, ctx, cache, records,
                             _tasks_for(plan, "index", ctx, cache), pages=indexes)
     else:
         for _ in indexes:
             pass
-    tags = _observed_listings(_iter_tag_pages(listings, lang, ctx, paginate=ctx.paginate_tags), projection)
+    tags = _observed_listings(_iter_tag_pages(listings, lang, ctx, paginate=ctx.paginate_tags), projection, check_route)
     if selected and want("tags"):
         build_tags_section(listings, lang, ctx, cache, records,
                            _tasks_for(plan, "tags", ctx, cache), pages=tags)
@@ -1695,7 +1700,7 @@ def _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, 
     return records
 
 
-def _prepare_shared_listings(plan, projection, cli, ctx, cache, want):
+def _prepare_shared_listings(plan, projection, cli, ctx, cache, want, check_route):
     if not projection.sitemap_listings:
         return None
     pending = {}
@@ -1706,7 +1711,7 @@ def _prepare_shared_listings(plan, projection, cli, ctx, cache, want):
         listings = projection.listing_batch(lang, articles)
         selected = not cli.only_langs or lang in cli.only_langs
         selected = selected and _has_language_work(projection, lang, listings, ctx)
-        records = _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want)
+        records = _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want, check_route)
         if selected:
             pending[lang] = (records, articles)
         if projection.listings_by_lang is not None:
@@ -1714,7 +1719,7 @@ def _prepare_shared_listings(plan, projection, cli, ctx, cache, want):
     return pending
 
 
-def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
+def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx, check_route) -> None:
     seq = 0  # monotonic tie-breaker for the heap
     for art in stream_factory():
         if projection.translations is not None:
@@ -1723,15 +1728,43 @@ def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> 
             if _passes_cli_filters(art, cli):
                 _record_skipped_publication(projection, art)
             continue
+        if check_route is not None:
+            _check_projected_article(projection, art, cli, ctx, check_route)
         art = _record_projection_article(projection, art, cli)
         if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
-            entry = (art.datetime, seq, art)
+            _add_rss_article(projection, ctx, (art.datetime, seq, art))
             seq += 1
-            if rss_is_per_lang(ctx):
-                heap = projection.rss_by_lang.setdefault(art.lang, [])
-            else:
-                heap = projection.rss_heap
-            _push_rss_entry(heap, entry, ctx.rss_items)
+
+
+def _add_rss_article(projection, ctx, entry):
+    if rss_is_per_lang(ctx):
+        heap = projection.rss_by_lang.setdefault(entry[2].lang, [])
+    else:
+        heap = projection.rss_heap
+    _push_rss_entry(heap, entry, ctx.rss_items)
+
+
+def _cross_uses_article(sections, policy, rss_items):
+    return (("sitemap" in sections and policy.sitemap)
+            or ("search" in sections and policy.search)
+            or ("rss" in sections and rss_items > 0 and policy.rss))
+
+
+def _check_projected_article(projection, art, cli, ctx, check_route):
+    if _cross_uses_article(projection.sections, art.policy, ctx.rss_items):
+        check_route(art.url)
+    elif projection.articles_by_lang is not None and _passes_cli_filters(art, cli):
+        check_route(art.url)
+    elif _listing_uses_article(projection, art, cli):
+        check_route(art.url)
+
+
+def _listing_uses_article(projection, art, cli):
+    if not art.policy.listing or (cli.only_langs and art.lang not in cli.only_langs):
+        return False
+    if "index" in projection.sections:
+        return True
+    return "tags" in projection.sections and any(map(normalize_slug, art.tags))
 
 
 def _record_skipped_publication(projection: StreamProjection, art) -> None:
@@ -1912,11 +1945,13 @@ def _collect_tasks(
     Returns a dict-like plan ready for parallel execution.
     """
     workspace, manifest = _planning_inputs(workspace, manifest)
-    wanted = set(cli.only_sections) if cli.only_sections else None
+    sections = frozenset(cli.only_sections or SECTION_NAMES)
+    with projection_route_check(cli, sections, ctx.sitemap_listings) as check_route:
+        return _plan_sections(stream_factory, cli, ctx, cache, workspace, manifest, sections, check_route)
 
-    def want(section: str) -> bool:
-        return wanted is None or section in wanted
 
+def _plan_sections(stream_factory, cli, ctx, cache, workspace, manifest, sections, check_route):
+    want = sections.__contains__
     plan: dict = {}
     need_cross = any(want(s) for s in CROSS_LANG_SECTIONS)
     need_per_lang = any(want(s) for s in PER_LANG_SECTIONS)
@@ -1925,12 +1960,12 @@ def _collect_tasks(
         cli,
         ctx,
         workspace,
-        cache=cache, collect_cross=need_cross,
+        cache=cache, check_route=check_route, collect_cross=need_cross,
         collect_articles=need_per_lang,
     )
     try:
         ctx = _translation_context(projection, cli, ctx)
-        prepared = _prepare_shared_listings(plan, projection, cli, ctx, cache, want)
+        prepared = _prepare_shared_listings(plan, projection, cli, ctx, cache, want, check_route)
         _append_extra_sitemap(projection, ctx)
         if need_cross:
             _collect_cross_lang_plan(plan, projection, ctx, cache, want, workspace, manifest)

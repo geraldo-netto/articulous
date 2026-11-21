@@ -42,6 +42,7 @@
   "build": {
     "cache_file": ".build-cache.json",
     "cache_retention_days": 3,
+    "partition_cache": false,
     "parallelism": "auto",
     "force_full_build": false
   },

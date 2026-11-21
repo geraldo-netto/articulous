@@ -74,3 +74,25 @@ denial and preservation of prior output after compilation failure.
 against the PE 12.9 archive. CI's pinned archive/version test and all security
 assertions remain unchanged. These historical PE results are supplemental;
 the HE 12.10 run above supplies the required acceptance evidence.
+
+## Per-page startup and reuse
+
+On 2026-11-21, four Linux builds of a 27-article fixture used pinned
+SaxonC-HE 12.10 and produced identical output digests. Two builds at one
+worker took 0.626–0.633 s. Two at four workers took 0.345–0.350 s.
+At one worker, the 27 transforms spent 0.581–0.584 s in the engine.
+Process creation used 9.7 ms of that time, group scans used 200–206 ms
+inside communication, and final session settlement used 3.4–3.7 ms.
+Preparing and writing private inputs outside the CLI adapter took about
+12 ms across the 27 transforms.
+
+For a smaller repeated stylesheet/input pair, 27 separate CLI calls took
+0.287 s. Saxon tracing attributed 1.26 ms to the first stylesheet compile,
+0.86 ms to first execution and 0.41 ms to an average warm execution.
+A C++ API prototype compiled once and wrote 27 matching files in 0.028 s.
+It reported malformed XML and produced matching bytes on the next request.
+Both supervised executables denied a local synthetic file URI under
+`allowedProtocols=#none`. The API run used a fixed batch of input/output
+paths. Per-request descriptor release, cancellation settlement and a
+full-build gain remain unverified for reuse. The supported engine uses one
+supervised CLI session per page.

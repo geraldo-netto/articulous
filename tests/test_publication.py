@@ -36,7 +36,7 @@ def test_arch005_publish_replace_and_incremental_compatibility(site_root, seo_co
     assert not list(site_root.glob('.output.articulous-transaction'))
 
 
-@pytest.mark.parametrize('operation', [1, 2, 3])
+@pytest.mark.parametrize('operation', [1, 2, 3, 4])
 def test_arch005_rename_failures_roll_back(site_root, seo_config, monkeypatch, operation):
     cli, config = seo_config
     build_site(cli, config, site_root)
@@ -339,6 +339,42 @@ def test_arch005_failed_journal_creation_leaves_previous_generation(site_root, s
         build_site(cli, config, site_root, backend=backend)
     assert published(site_root) == previous
     assert not (site_root / '.output.articulous-transaction').exists()
+
+
+def test_rel42_process_death_during_snapshot_recovers_previous_generation(site_root, seo_config):
+    cli, config = seo_config
+    build_site(cli, config, site_root)
+    previous = published(site_root)
+    script = '''
+import os, sys
+from pathlib import Path
+from articulous.backends import publication_snapshots
+from articulous.configuration_contracts import BuildRequest
+from articulous.publication import build_site
+original = publication_snapshots.snapshot
+def interrupt(source, target):
+    original(source, target)
+    os._exit(92)
+publication_snapshots.snapshot = interrupt
+build_site(BuildRequest(), {}, Path(sys.argv[1]))
+'''
+    result = subprocess.run([sys.executable, '-c', script, str(site_root)],
+                            cwd=Path(__file__).resolve().parents[1], capture_output=True)
+    assert result.returncode == 92, result.stderr.decode()
+    assert published(site_root) == previous
+    recover_publication(site_root / 'output', site_root / '.build-cache.json')
+    assert published(site_root) == previous
+    assert not list(site_root.glob('.articulous-stage-*'))
+    assert not (site_root / '.output.articulous-transaction').exists()
+
+
+@pytest.mark.parametrize('version,snapshot_claim', [(1, None), (2, [0, 1, 'a' * 64])])
+def test_rel42_rejects_inconsistent_capture_intent(version, snapshot_claim):
+    from articulous.backends.posix import _validate_phase
+
+    with pytest.raises(ValueError, match='Invalid snapshot capture phase'):
+        _validate_phase({'phase': 'capturing', 'version': version,
+                         'cache_before': snapshot_claim, 'ownership_before': None})
 
 
 def test_arch005_rename_never_overwrites_unexpected_destination(tmp_path):

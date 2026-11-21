@@ -492,7 +492,9 @@ valid. The reservation prevents a cache write from replacing the journal
 directory or rollback from treating that directory as a cache file.
 Version 2 journals keep cache and ownership backups in private files. Phase
 records carry the backup identities and digests. Recovery checks both before
-using a backup. It also accepts version 1 journals. If another output updated
+using a backup. If a process stops while capturing these backups, recovery
+keeps the live generation and removes the abandoned stage. Recovery also
+accepts version 1 journals. If another output updated
 the shared cache while recovery was pending, version 2 restores only the
 recovering output's cache record and preserves the other records.
 Before the `committed` marker, recovery restores the previous generation (or
@@ -512,6 +514,15 @@ recover_publication(
     root / Path(config["build"]["cache_file"]).name,
 )
 ```
+
+Pass the configured cache filename to `recover_publication` for either cache
+layout. For a partitioned cache, the publication adapter gives custom backends
+the active cache file as `PublicationInput.cache_path`. The associated
+`cache_text` keeps the same JSON envelope and contains the active output's
+record. Backends use the paths they receive for locking, publication and recovery.
+Custom backends sharing the partitioned store coordinate cache and output
+locks with the incremental builder. Retention attempts each inactive cache
+lock without waiting and leaves busy entries for a later build.
 
 `build_site` performs this recovery automatically. Recover before resuming the
 incremental CLI after interrupted whole-site publication; `run_build` retains its

@@ -2,20 +2,23 @@
 import json
 from types import MappingProxyType
 
+from .cache_store import cache_payload, finish_cache_update, selected_roots
 from .publication_contracts import PublicationBackend, PublicationInput
 from .build_contracts import ValidatedBuild
 from .builds import _owned_validated
-from .output_cache import CACHE_ROOTS_KEY, output_cache_roots, refresh_output_cache
+from .output_cache import refresh_output_cache
 from .runtime import load_cache
 
 
 def publication_cache(prepared):
-    roots = output_cache_roots(load_cache(prepared.cache_path))
+    selected = prepared.cache_selection
+    root = str(prepared.destination)
+    roots = selected_roots(load_cache(selected.path), root, selected.partitioned)
     cache = dict(prepared.cache)
     cache['__outputs__'] = dict(sorted(prepared.manifest.items()))
     cache['__routes__'] = prepared.manifest.route_metadata
-    refresh_output_cache(roots, str(prepared.destination), cache, prepared.context.cache_retention_days)
-    return json.dumps({CACHE_ROOTS_KEY: roots}, indent=2)
+    refresh_output_cache(roots, root, cache, prepared.context.cache_retention_days)
+    return json.dumps(cache_payload(selected, roots), indent=2)
 
 
 def publication_input(checked: ValidatedBuild) -> PublicationInput:
@@ -39,3 +42,5 @@ def publish_generation(checked: ValidatedBuild, backend: PublicationBackend) -> 
     publication = publication_input(checked)
     backend.publish(publication)
     owner.published(native._revision)
+    finish_cache_update(owner.cache_selection, owner.destination, owner.context.cache_retention_days,
+                        owner.context.partition_cache)

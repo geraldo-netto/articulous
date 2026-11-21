@@ -103,6 +103,15 @@ The build cache (`.build-cache.json` by default) lives at the project
 root. Only the filename component of `build.cache_file` is used. Entries
 live under `__output_roots__`, keyed by resolved output directory.
 
+With `build.partition_cache: true`, the first successful cache update
+imports existing entries into a sibling directory, named
+`.build-cache.json.articulous-roots` by default. Migration holds the shared
+cache lock and waits for pending publication recovery. The shared file
+is cleared after the import. Later builds using the same cache filename read and
+write one fingerprint file for their output. Setting `partition_cache` back
+to false leaves the migrated directory active. Choose another cache filename
+to use a separate store.
+
 Incremental builds and whole-site publication record the current output's
 last cache use in UTC seconds. A cache update removes other dated entries
 whose inactivity reaches the updating build's `build.cache_retention_days`
@@ -111,6 +120,9 @@ the clock advances. Incremental dry runs and validation-only builds leave the
 cache untouched. Older cache entries with no valid activity timestamp stay
 available until that output is used again, preserving any legacy ownership
 manifest during migration.
+With partitioned storage, retention reads a bounded header per inactive file
+and skips outputs with a live cache lock or pending publication. A later
+successful cache update checks them again.
 
 Ownership is also stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.
@@ -129,8 +141,10 @@ Use `--force` for a rebuild that keeps ownership history.
 
 Builds targeting the same output directory share a lock beside it
 (`.output.articulous.lock` by default), independent of cache filename.
-Builds sharing a cache also share a cache lock
-(`..build-cache.json.articulous.lock` by default). A conflicting build
+Builds using the shared layout also share a cache lock
+(`..build-cache.json.articulous.lock` by default). Partitioned builds lock
+only their own cache file, allowing disjoint outputs to build concurrently.
+A conflicting build
 fails immediately rather than waiting. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
 Cache, log, lock and ownership paths must stay separate from configuration, source

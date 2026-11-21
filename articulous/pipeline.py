@@ -24,7 +24,7 @@ from struct import Struct
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
-from contextlib import closing
+from contextlib import closing, contextmanager
 from functools import partial
 from itertools import chain
 from pathlib import Path
@@ -34,6 +34,7 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .backends.cpu_capacity import available_cpus
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
+from .cache_store import cache_payload, finish_cache_update, lock_selected_cache, selected_roots
 from .config import admit_configuration, normalize_configuration, validate_output_layout
 from .configuration_contracts import BuildOptions, ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS
 from .composition import route_from_output, validate_page_url
@@ -64,7 +65,7 @@ from .models import (
     section_pattern,
 )
 from .migrations import OutputMigrations
-from .output_cache import CACHE_ROOTS_KEY, output_cache_roots, refresh_output_cache
+from .output_cache import CACHE_ROOTS_KEY, refresh_output_cache
 from .runtime import (
     TrackedCache,
     WeightedTask,
@@ -153,6 +154,7 @@ class BuildCtx:
     stylesheet_capture: StylesheetCapture | None = None
     model_projection: ModelProjection | None = None
     cache_retention_days: int = DEFAULT_CACHE_RETENTION_DAYS
+    partition_cache: bool = False
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -188,6 +190,7 @@ def build_ctx_from_config(config: ConfigurationInput, dry_run: bool) -> BuildCtx
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
         cache_retention_days=config["build"]["cache_retention_days"],
+        partition_cache=config["build"]["partition_cache"],
         engines=engines,
         saxonc_bin=saxonc_bin,
         site_name=config["site"]["site_name"],
@@ -1916,11 +1919,11 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
         logging.info(f"Article scan: {count} {state} article(s) skipped")
 
 
-def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache, dict]:
+def _load_build_cache(cache_path: Path, output_dir: Path, partitioned=False) -> tuple[TrackedCache, dict]:
     stored = load_cache(cache_path)
     root = str(output_dir.resolve())
-    legacy = CACHE_ROOTS_KEY not in stored
-    roots = {root: stored} if legacy else output_cache_roots(stored)
+    legacy = not partitioned and CACHE_ROOTS_KEY not in stored
+    roots = {root: stored} if legacy else selected_roots(stored, root, partitioned)
     data = roots.get(root, {})
     cache = TrackedCache(data if isinstance(data, dict) else {}, dirty=legacy)
     return cache, roots
@@ -1955,17 +1958,18 @@ def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     return {**retained, **{path: key for key, path in current_manifest.items()}}
 
 
-def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_manifest, cache_path) -> None:
+def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_manifest, selected) -> None:
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     cache['__routes__'] = current_manifest.route_metadata
     if refresh_output_cache(roots, str(ctx.output_dir.resolve()), cache, ctx.cache_retention_days):
-        if not save_cache(cache_path, {CACHE_ROOTS_KEY: roots}):
+        if not save_cache(selected.path, cache_payload(selected, roots)):
             logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
             return
     else:
         logging.debug("Cache unchanged — skipping save")
     save_ownership(ctx.output_dir, next_manifest, routes=current_manifest.route_values())
+    finish_cache_update(selected, ctx.output_dir, ctx.cache_retention_days, ctx.partition_cache)
 
 
 def _cache_path_for(ctx: BuildCtx, project_root: Path) -> Path:
@@ -1980,6 +1984,12 @@ def _lock_path_for(ctx: BuildCtx, project_root: Path) -> Path:
     if _cache_path_for(ctx, project_root).resolve() == lock:
         raise ValueError("Cache file must not alias the output build lock")
     return lock
+
+
+@contextmanager
+def _cache_build_lock(cache, output_lock):
+    with lock_file(cache_lock_path(cache)), lock_file(output_lock):
+        yield
 
 
 def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
@@ -2194,12 +2204,13 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
     ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages),
                   extra_artifacts=artifact_values(extra_artifacts))
     cache_path = _cache_path_for(ctx, project_root)
-    with lock_file(cache_lock_path(cache_path)), lock_file(_lock_path_for(ctx, project_root)):
+    locked = partial(_cache_build_lock, output_lock=_lock_path_for(ctx, project_root))
+    with lock_selected_cache(cache_path, ctx.output_dir, locked) as selected:
         with TempWorkspace() as workspace:
             projection = None
             plan: dict = {}
             try:
-                cache, roots = _load_build_cache(cache_path, ctx.output_dir)
+                cache, roots = _load_build_cache(selected.path, ctx.output_dir, selected.partitioned)
                 ownership = load_ownership(
                     ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY), allow_pending=_can_prune_outputs(cli),
                 )
@@ -2224,7 +2235,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
                     _finalize_cache(
-                        ctx, cache, roots, old_manifest, next_paths, current_manifest, cache_path,
+                        ctx, cache, roots, old_manifest, next_paths, current_manifest, selected,
                     )
             finally:
                 _close_task_queues(plan)

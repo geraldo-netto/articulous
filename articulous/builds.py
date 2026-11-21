@@ -4,12 +4,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 from contextlib import ExitStack, closing, contextmanager
 from dataclasses import dataclass, field, replace
+from functools import partial
 from pathlib import Path
 from typing import BinaryIO
 import os
 import shutil
 
 from .articles import ArticleStats
+from .cache_store import CacheSelection, lock_selected_cache
 from .composition import RouteCatalog
 from .composition_contracts import ExtraArtifact, ExtraPage, RouteReader, artifact_values
 from .build_contracts import (
@@ -23,11 +25,11 @@ from .extensions import BuildComposition, TemplateInput
 from .config import normalize_configuration
 from .configuration_contracts import BuildOptions, ConfigurationInput
 from .filesystem import (
-    TempWorkspace, cache_lock_path, lock_file, open_regular_file, private_directory,
+    TempWorkspace, open_regular_file, private_directory,
     tree_fingerprint, validate_output_path,
 )
 from .pipeline import (
-    BuildCtx, BuildPlan, OutputManifest, _article_stream_factory, _cache_path_for,
+    BuildCtx, BuildPlan, OutputManifest, _article_stream_factory, _cache_build_lock, _cache_path_for,
     _cleanup_stream_projection, _close_task_queues, _collect_tasks, _lock_path_for,
     _run_plan, build_artifacts_section, build_ctx_from_config, copy_assets,
 )
@@ -38,7 +40,7 @@ from .capture_adapter import Snapshot
 class _BuildState:
     context: BuildCtx
     destination: Path
-    cache_path: Path
+    cache_selection: CacheSelection
     routes: RouteCatalog
     manifest: OutputManifest
     plan: BuildPlan
@@ -47,6 +49,10 @@ class _BuildState:
     state: str = 'prepared'
     validation_revision: int = 0
     readers: set[_ArtifactReader] = field(default_factory=set)
+
+    @property
+    def cache_path(self) -> Path:
+        return self.cache_selection.path
 
     def require_live(self):
         if self.state == 'closed':
@@ -308,7 +314,7 @@ def _finish_artifacts(context, snapshot, composition, routes, manifest, plan, ca
     plan.setdefault('artifacts', []).extend(tasks)
 
 
-def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=()):
+def _prepare_locked(stack, cli, original, selected, pages, composer=None, artifacts=()):
     cache = {}
     context = _capture_context(stack, original, pages, cache, artifacts)
     context, snapshot, composition = _composition_context(stack, context, composer, original)
@@ -320,7 +326,7 @@ def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=
                           cache, workspace, manifest)
     stack.callback(_cleanup_stream_projection, plan.projection)
     stack.callback(_close_task_queues, plan)
-    owner = _BuildState(context, original.output_dir, _cache_path_for(original, root),
+    owner = _BuildState(context, original.output_dir, selected,
                         routes, manifest, plan, cache, workspace)
     stack.callback(owner.close)
     view = _RouteView(owner)
@@ -333,12 +339,13 @@ def _prepare_locked(stack, cli, original, root, pages, composer=None, artifacts=
 def _preparation_lock(original, root, backend):
     cache = _cache_path_for(original, root)
     if backend is not None:
-        with backend.locked(original.output_dir, cache):
-            backend.recover(original.output_dir, cache)
-            yield
+        locked = partial(backend.locked, original.output_dir)
     else:
-        with lock_file(cache_lock_path(cache)), lock_file(_lock_path_for(original, root)):
-            yield
+        locked = partial(_cache_build_lock, output_lock=_lock_path_for(original, root))
+    with lock_selected_cache(cache, original.output_dir, locked) as selected:
+        if backend is not None:
+            backend.recover(original.output_dir, selected.path)
+        yield selected
 
 
 @contextmanager
@@ -350,8 +357,8 @@ def prepare_build(cli: BuildOptions, config: ConfigurationInput, project_root: P
     original = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=False)
     validate_output_path(original.output_dir)
     with ExitStack() as stack:
-        stack.enter_context(_preparation_lock(original, project_root, backend))
-        yield _prepare_locked(stack, cli, original, project_root, pages, composer, artifacts)
+        selected = stack.enter_context(_preparation_lock(original, project_root, backend))
+        yield _prepare_locked(stack, cli, original, selected, pages, composer, artifacts)
 
 
 def render_prepared(prepared: PreparedBuild) -> StagedBuild:

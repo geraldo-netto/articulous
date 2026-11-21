@@ -12,13 +12,14 @@ import re
 from pathlib import Path
 from typing import Any, cast
 
+from .cache_store import cache_namespace
 from .configuration_contracts import (
     ConfigurationOptions, CONFIG_BLOCK_KEYS, CONFIG_KEYS, ConfigurationError,
     ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS, SiteConfiguration, validate_engines,
 )
 from .filesystem import (
     assert_disjoint_trees, cache_lock_path, open_regular_file,
-    validate_regular_file, validate_output_path, write_text_atomic,
+    validate_path_length, validate_regular_file, validate_output_path, write_text_atomic,
 )
 from .sections import (
     PER_LANG_SECTIONS,
@@ -67,6 +68,7 @@ DEFAULT_CONFIG = {
     "build": {
         "cache_file": ".build-cache.json",
         "cache_retention_days": DEFAULT_CACHE_RETENTION_DAYS,
+        "partition_cache": False,
         "parallelism": "auto",
         "force_full_build": False,
     },
@@ -222,6 +224,7 @@ def _validate_build(config: dict) -> None:
     if not Path(cache_file).name:
         raise ValueError("config build.cache_file must contain a filename")
     _require_non_negative_int(build["cache_retention_days"], "build.cache_retention_days")
+    _require_bool(build["partition_cache"], "build.partition_cache")
     parallelism = build["parallelism"]
     if parallelism != "auto":
         _require_positive_int(parallelism, "build.parallelism")
@@ -360,6 +363,22 @@ def _validate_state_path(path: Path, root: Path, source: Path, trees) -> None:
         raise ValueError(f"Build state path overlaps a source or output tree: {path}")
 
 
+def _validate_cache_namespace(namespace, destination, paths):
+    validate_output_path(namespace)
+    validate_path_length(cache_lock_path(namespace / ('0' * 64 + '.json')))
+    for path in paths:
+        if namespace.is_relative_to(path.absolute()) or path.absolute().is_relative_to(namespace):
+            raise ValueError(f'Build state path overlaps fingerprint cache directory: {path}')
+        assert_disjoint_trees(namespace, path)
+    validate_publication_paths(destination, [namespace])
+
+
+def _validate_partition_paths(build, cache, output, paths):
+    namespace = cache_namespace(cache)
+    if build["partition_cache"] or namespace.exists() or namespace.is_symlink():
+        _validate_cache_namespace(namespace, output, paths)
+
+
 def validate_state_paths(config: Mapping[str, Any], cli: ConfigurationOptions, project_root: Path) -> None:
     root = project_root.resolve()
     source = root / getattr(cli, "config_path", "config.json")
@@ -373,6 +392,7 @@ def validate_state_paths(config: Mapping[str, Any], cli: ConfigurationOptions, p
     if log_file := config["logging"].get("file"):
         state.append(root / log_file)
     validate_publication_paths(output, [source, *state, *trees])
+    _validate_partition_paths(config["build"], cache.resolve(), output, [source, *state, *trees])
     for index, path in enumerate(state):
         _validate_state_path(path, root, source, trees)
         if any(_paths_alias(path, previous) for previous in state[:index]):

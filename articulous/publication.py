@@ -1,8 +1,10 @@
 """Whole-site publication contracts and shared orchestration."""
 from contextlib import contextmanager
+from functools import partial
 from pathlib import Path
 
 from .publication_contracts import PublicationBackend
+from .cache_store import lock_selected_cache
 from .config import normalize_configuration
 from .configuration_contracts import BuildOptions, ConfigurationInput
 from .publication_adapter import publish_generation
@@ -35,8 +37,8 @@ def publish_validated(checked: ValidatedBuild, *, backend=None,
 
 def recover_publication(destination: Path, cache_path: Path, *, backend=None) -> None:
     selected = _backend(backend, False, False)
-    with selected.locked(destination, cache_path):
-        selected.recover(destination, cache_path)
+    with lock_selected_cache(cache_path, destination, partial(selected.locked, destination)) as cache:
+        selected.recover(destination, cache.path)
 
 
 def build_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), validators=(),
@@ -55,5 +57,6 @@ def lock_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
     from .pipeline import build_ctx_from_config, _cache_path_for
     selected = _backend(backend, False, False)
     context = build_ctx_from_config(normalize_configuration(config, cli, project_root), dry_run=False)
-    with selected.locked(context.output_dir, _cache_path_for(context, project_root)):
+    lock = partial(selected.locked, context.output_dir)
+    with lock_selected_cache(_cache_path_for(context, project_root), context.output_dir, lock):
         yield

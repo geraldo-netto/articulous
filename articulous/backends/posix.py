@@ -10,7 +10,7 @@ import shutil
 
 from ..filesystem import (
     _directory_handle, atomic_output, cache_lock_path, lock_file, open_regular_file,
-    validate_output_path, write_text_atomic,
+    private_directory, validate_output_path, write_text_atomic,
 )
 from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
@@ -42,6 +42,14 @@ def _journal_version(data):
 def _validate_identity_part(part):
     if type(part) is not int or part < 0:
         raise ValueError('Invalid journal file identity')
+
+
+def _validate_phase(data):
+    if data['phase'] == 'capturing':
+        if data['version'] != 2 or any(data[key] is not None for key in ('cache_before', 'ownership_before')):
+            raise ValueError('Invalid snapshot capture phase')
+    elif data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed'):
+        raise ValueError('Invalid journal phase')
 
 
 def _identity(path):
@@ -136,9 +144,12 @@ class PosixPublicationBackend:
             'previous': _identity(destination), 'new': _identity(publication.root),
             'stage': str(stage), 'stage_identity': _identity(stage),
             'cache_after': hashlib.sha256(publication.cache_text.encode()).hexdigest(),
+            'cache_before': None, 'ownership_before': None,
         }
         transaction = self._transaction(destination)
-        transaction.mkdir(mode=0o700)
+        with private_directory(stage) as intent:
+            self._set_phase(intent, data, 'capturing')
+            self._rename(intent, transaction)
         try:
             data['cache_before'] = snapshots.snapshot(cache, transaction / 'cache.before')
             data['ownership_before'] = snapshots.snapshot(ownership_path(destination), transaction / 'ownership.before')
@@ -195,8 +206,7 @@ class PosixPublicationBackend:
 
     def _validate_journal(self, data, destination, cache):
         _validate_journal_header(data, destination, cache)
-        if data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed'):
-            raise ValueError('Invalid journal phase')
+        _validate_phase(data)
         stage = Path(data['stage'])
         if stage.parent != destination.parent or not stage.name.startswith('.articulous-stage-'):
             raise ValueError('Invalid journal staging path')
@@ -248,6 +258,8 @@ class PosixPublicationBackend:
         data = self._read_journal(transaction, destination, cache_path)
         if data['phase'] == 'committed':
             self._expect(destination, data['new'])
+        elif data['phase'] == 'capturing':
+            self._expect(destination, data['previous'])
         else:
             self._rollback(transaction, data, destination, cache_path)
         self._cleanup(transaction, data)

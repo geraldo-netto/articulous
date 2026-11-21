@@ -75,6 +75,7 @@ class UrlConfiguration(TypedDict):
 class BuildConfiguration(TypedDict):
     cache_file: str
     cache_retention_days: int
+    partition_cache: bool
     parallelism: int | Literal['auto']
     force_full_build: bool
 

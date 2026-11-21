@@ -266,17 +266,26 @@ def _asset_cache_entry(manifest: dict) -> dict:
     return {"version": _ASSET_CACHE_VERSION, "manifest": manifest}
 
 
+def _check_asset_component(path: Path) -> None:
+    try:
+        state = path.lstat()
+    except (FileNotFoundError, NotADirectoryError):
+        return
+    if stat.S_ISLNK(state.st_mode):
+        raise ValueError(f"Asset destination contains a symlink: {path}")
+    if stat.S_ISREG(state.st_mode) and state.st_nlink > 1:
+        raise ValueError(f"Asset destination contains a hardlink: {path}")
+
+
 def _asset_target(root: Path, rel: str) -> Path:
     relative = Path(rel)
     if relative.is_absolute() or not relative.parts or ".." in relative.parts:
         raise ValueError(f"Invalid asset output path: {rel}")
-    target = root / relative
-    for part in (relative, *relative.parents):
-        component = root / part
-        if component.is_symlink():
-            raise ValueError(f"Asset destination contains a symlink: {component}")
-        if component.is_file() and component.stat().st_nlink > 1:
-            raise ValueError(f"Asset destination contains a hardlink: {component}")
+    target = root
+    _check_asset_component(target)
+    for part in relative.parts:
+        target /= part
+        _check_asset_component(target)
     return target
 
 

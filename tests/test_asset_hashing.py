@@ -44,3 +44,22 @@ pipeline.copy_assets(ctx, {})
     assert result.returncode != 0
     assert b"must be a regular file" in result.stderr
     assert not (site_root / "output/assets").exists()
+
+
+def test_audit1121_22_asset_target_reads_each_component_once(tmp_path, monkeypatch):
+    from articulous.pipeline import _asset_target
+    folder = tmp_path / 'icons'
+    folder.mkdir()
+    target = folder / 'symbol.png'
+    target.touch()
+    probes = []
+    def count(operation):
+        def observed(path, *args, **kwargs):
+            probes.append(Path(path))
+            return operation(path, *args, **kwargs)
+        return observed
+    with monkeypatch.context() as monitor:
+        monitor.setattr(os, 'stat', count(os.stat))
+        monitor.setattr(os, 'lstat', count(os.lstat))
+        assert _asset_target(tmp_path, 'icons/symbol.png') == target
+    assert sorted(probes) == sorted([tmp_path, folder, target])

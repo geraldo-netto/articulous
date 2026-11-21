@@ -11653,19 +11653,19 @@
       {
         "functions": [
           {
-            "body_sha256": "94dce23bf2692d0a06c4934fe9f6daef2ba8d641d67eed6a450a274c9779ee69",
+            "body_sha256": "c629171f70201720f7fc98837d1b9b39f3e904c0d1f62e25373303d6789aab75",
             "column": 0,
             "complexity": 1,
             "end_column": 26,
-            "end_line": 10,
+            "end_line": 9,
             "line": 5,
             "name": "normalize_slug",
-            "projection_sha256": "c202ca9700821396b73dca5d741fd8bb51e472b985fbc4949fa6f552c94c5739"
+            "projection_sha256": "1ab8904a5ef28004ca297ae5dafeee7579187281b6b7163367e1a9113ea9ec4d"
           }
         ],
         "language": "python",
         "path": "articulous/slugs.py",
-        "sha256": "f2d631712a195a35ec26b6b34a281d9143fef64c4b13b9f67110701bafb07caf"
+        "sha256": "e78069ee2aac9da3ede114d42d6f323ea66402e7225637e6e34aac1707742ac8"
       },
       {
         "functions": [
@@ -36560,14 +36560,14 @@
       {
         "functions": [
           {
-            "body_sha256": "38902505140cf7fe0eff120af8fed1cabc67cecbb501092a32a2bee194d53dcf",
+            "body_sha256": "24d159ab48caba27f751fe98c2ac82f89cf49e7c48ad6f990b53692709a45cc9",
             "column": 27,
             "complexity": 1,
             "end_column": 1,
             "end_line": 172,
             "line": 2,
             "name": "Arrow function",
-            "projection_sha256": "38902505140cf7fe0eff120af8fed1cabc67cecbb501092a32a2bee194d53dcf"
+            "projection_sha256": "24d159ab48caba27f751fe98c2ac82f89cf49e7c48ad6f990b53692709a45cc9"
           },
           {
             "body_sha256": "3b2b5706037d10eb9c73557ce2ca33e0c14290fdacf707495962e2d0e98c11c0",
@@ -36640,14 +36640,14 @@
             "projection_sha256": "7de021ff1ed9bdb871234920d11ed386dd71eb1b06feb20580b3efda0bbce2fe"
           },
           {
-            "body_sha256": "dd596e8e6d137aed034bd13b104e7dff45468521c134af5c6ee99c1cfdc5cbbb",
+            "body_sha256": "89bf7d939b06f43ab1275681a56d564c04105f0a4033b795962608e02f61992d",
             "column": 2,
             "complexity": 1,
             "end_column": 3,
             "end_line": 42,
             "line": 40,
             "name": "Function 'normalizeSlug'",
-            "projection_sha256": "dd596e8e6d137aed034bd13b104e7dff45468521c134af5c6ee99c1cfdc5cbbb"
+            "projection_sha256": "89bf7d939b06f43ab1275681a56d564c04105f0a4033b795962608e02f61992d"
           },
           {
             "body_sha256": "2a608c02256c8eaca25361bec4b60cb8fd30f91ce5443efaaa429463aa9c3a7b",
@@ -36872,7 +36872,7 @@
         ],
         "language": "javascript",
         "path": "articulous/theme_assets/assets/js/search-client.js",
-        "sha256": "13ac97c3cc4c4ad112592128fefed85600784ed5350e40adbb3a66b9cb2f378d"
+        "sha256": "8fb7449d7ee06d16dbb496b3b22be8c1bc3c6424c2ce33f6865c09d8795a3646"
       },
       {
         "functions": [

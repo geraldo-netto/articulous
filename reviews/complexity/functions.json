@@ -19441,8 +19441,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 87,
-            "end_line": 24,
-            "line": 23,
+            "end_line": 26,
+            "line": 25,
             "name": "command",
             "projection_sha256": "0d05c12b0386419830e3525b5c086947e44bce9c1e531aab08b9488409e49e63"
           },
@@ -19451,8 +19451,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 97,
-            "end_line": 30,
-            "line": 27,
+            "end_line": 32,
+            "line": 29,
             "name": "package_inventory",
             "projection_sha256": "272cfd6d76f33ff694c8e9be3501e96636abeb9eb707b412196f2da383c159c8"
           },
@@ -19461,28 +19461,28 @@
             "column": 0,
             "complexity": 1,
             "end_column": 38,
-            "end_line": 38,
-            "line": 33,
+            "end_line": 40,
+            "line": 35,
             "name": "build_distribution",
             "projection_sha256": "96007df73862a235903944dfa5db5d7f482e46d58e97b7f2aa63258c8eb43744"
           },
           {
-            "body_sha256": "2ef0c51453e139aefc13a49e697d45477ac3121034bd4770f71452587c1843b0",
+            "body_sha256": "c6501263066e6b9ad34c4747f2cea113b76396a94afce660dcae09357fd776ef",
             "column": 0,
-            "complexity": 3,
+            "complexity": 4,
             "end_column": 38,
-            "end_line": 48,
-            "line": 41,
+            "end_line": 53,
+            "line": 43,
             "name": "unpack_source",
-            "projection_sha256": "5568da426af6f64ef1bc629094a0dabe0f1e95cfe89a742b7f63a4f54f284810"
+            "projection_sha256": "eef6c1a0be6fb9344166b3cac219a8ab21479bda4060242254ed901ff798b3b0"
           },
           {
             "body_sha256": "12869cb73539d01570e4799e9b1e95e4d03c40bfe1f98c91e599839a0f9279ee",
             "column": 0,
             "complexity": 2,
             "end_column": 25,
-            "end_line": 65,
-            "line": 52,
+            "end_line": 70,
+            "line": 57,
             "name": "distributions",
             "projection_sha256": "36859b069401c8824b674d5ad04f1560bba4db0931db7cd3085a2adf63195538"
           },
@@ -19491,8 +19491,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 100,
-            "end_line": 72,
-            "line": 68,
+            "end_line": 77,
+            "line": 73,
             "name": "require_wheel_inventory",
             "projection_sha256": "966dc9b18fefb633d752d3aa1286c003433d22c4c0bb6101a95fbcafbf15b00b"
           },
@@ -19501,8 +19501,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 17,
-            "end_line": 87,
-            "line": 75,
+            "end_line": 92,
+            "line": 80,
             "name": "install_wheel",
             "projection_sha256": "10ea4dd0e5c8898a094e64d4682ba13d21de0689055173c38728ff95357f707b"
           },
@@ -19511,8 +19511,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 99,
-            "line": 90,
+            "end_line": 104,
+            "line": 95,
             "name": "require_installed_resources",
             "projection_sha256": "d768059ff3c3169c4f5814a422f3fad3b6489f853646c9ca73e51a7efa858a48"
           },
@@ -19521,8 +19521,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 62,
-            "end_line": 115,
-            "line": 102,
+            "end_line": 120,
+            "line": 107,
             "name": "require_installed_build",
             "projection_sha256": "c3e74c4763702bf6fa3bf44803998e5f9d089c2078b3cf7a34848cef5100c1c5"
           },
@@ -19531,8 +19531,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 45,
-            "end_line": 127,
-            "line": 119,
+            "end_line": 132,
+            "line": 124,
             "name": "test_review023_installed_distribution",
             "projection_sha256": "fc3fec22c2f74b69e1c8b5f85a55e332238e939a329c001d0c728f14336c1641"
           },
@@ -19541,8 +19541,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 59,
-            "end_line": 134,
-            "line": 130,
+            "end_line": 139,
+            "line": 135,
             "name": "test_review023_missing_resource_control",
             "projection_sha256": "6e5286ba2825317d686ea29a2966548d242677275a9e0353f1ba736b00254391"
           },
@@ -19551,15 +19551,15 @@
             "column": 0,
             "complexity": 5,
             "end_column": 41,
-            "end_line": 147,
-            "line": 137,
+            "end_line": 152,
+            "line": 142,
             "name": "test_review29_12_wheel_requires_native_function_positions",
             "projection_sha256": "108851177da66ce939a307c9fb29511276624fd9e3452c1c7a338ce2040d741d"
           }
         ],
         "language": "python",
         "path": "tests/test_distributions.py",
-        "sha256": "bde9aeac3d81173219c85239517251faf42c30e27cb94417464a2c8e38d64fb0"
+        "sha256": "7abcd4e21001b4050797e45fcae91c00ce0035499a5babcdb9ba5e89e91cbc46"
       },
       {
         "functions": [

@@ -16,6 +16,8 @@ import pytest
 from articulous.browser_process import run_owned
 
 
+pytestmark = pytest.mark.filterwarnings("error:.*filter extracted tar archives:DeprecationWarning")
+
 ROOT = Path(__file__).resolve().parents[1]
 BUILD_PYTHON = os.environ.get('ARTICULOUS_BUILD_PYTHON', sys.executable)
 
@@ -44,7 +46,10 @@ def unpack_source(archive, destination):
         for member in source.getmembers():
             assert member.isfile() or member.isdir()
             assert (destination / member.name).resolve().is_relative_to(destination.resolve())
-        source.extractall(destination)
+        if hasattr(tarfile, "data_filter"):
+            source.extractall(destination, filter="data")
+        else:
+            source.extractall(destination)
     return next(destination.iterdir())
 
 

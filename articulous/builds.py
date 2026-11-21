@@ -406,6 +406,13 @@ def _render_validated(prepared, validators):
     return _validate_stage(render_prepared(prepared), validators, fresh=True)
 
 
+def _raise_validator_errors(diagnostics):
+    errors = [f'{item.path}: {item.message}' if item.path else item.message
+              for item in diagnostics if item.severity == 'error']
+    if errors:
+        raise BuildError('\n'.join(errors), diagnostics=tuple(diagnostics))
+
+
 def _validate_stage(handle, validators, *, fresh):
     owner = handle._owner
     owner.require_state('rendered', 'validated')
@@ -417,9 +424,7 @@ def _validate_stage(handle, validators, *, fresh):
     diagnostics = []
     for validator in validators:
         diagnostics.extend(_validator_diagnostics(validator, handle))
-    errors = [item.message for item in diagnostics if item.severity == 'error']
-    if errors:
-        raise BuildError('\n'.join(errors))
+    _raise_validator_errors(diagnostics)
     if type(validators) is not tuple or validators:
         handle.assert_unchanged()
     owner.state = 'validated'

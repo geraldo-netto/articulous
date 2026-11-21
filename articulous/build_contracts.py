@@ -12,7 +12,9 @@ from .publication_contracts import PublicationBackend
 
 
 class BuildError(ValueError):
-    pass
+    def __init__(self, *args, diagnostics: tuple['Diagnostic', ...] = ()):
+        super().__init__(*args)
+        self.diagnostics = diagnostics
 
 
 @dataclass(frozen=True)

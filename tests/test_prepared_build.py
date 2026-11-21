@@ -213,3 +213,24 @@ def test_review29_06_failed_fingerprint_leaves_failed_render(site_root, seo_conf
         with pytest.raises(OSError, match='unreadable staged file'):
             render_prepared(prepared)
         assert prepared.state == 'failed'
+
+
+def test_review28_37_rejected_validation_preserves_all_diagnostics(site_root, seo_config):
+    from articulous.build_contracts import BuildError
+    cli, config = seo_config
+    diagnostics = (
+        Diagnostic('missing canonical', path='en/a.html'),
+        Diagnostic('missing alt text', 'warning', 'images/b.html'),
+        Diagnostic('missing canonical', path='fr/c.html'),
+        Diagnostic('site-wide error'),
+    )
+    with pytest.raises(BuildError) as rejected:
+        check_build(cli, config, site_root, validators=[
+            lambda _: iter(diagnostics[:2]), lambda _: iter(diagnostics[2:]),
+        ])
+    assert rejected.value.diagnostics == diagnostics
+    assert str(rejected.value).splitlines() == [
+        'en/a.html: missing canonical', 'fr/c.html: missing canonical', 'site-wide error',
+    ]
+    assert BuildError('ordinary failure').diagnostics == ()
+    assert not (site_root / 'output').exists()

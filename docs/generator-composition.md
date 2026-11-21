@@ -336,8 +336,8 @@ targets. With the default empty validator tuple, that single fingerprint check
 suffices. When given validators or a custom iterable, it also checks the
 fingerprint after consuming them and before accepting the stage. A validator
 returns an iterable of `Diagnostic` values or `None`; severity `error` rejects
-the build, while `warning` is retained
-in the report. Exceptions and staged mutations also prevent publication.
+the build. On rejection, `BuildError.diagnostics` contains every returned error
+and warning in validator order, including paths. Successful reports retain warnings. Exceptions and staged mutations also prevent publication.
 Every revalidation retires earlier validation handles before checking artifacts
 or invoking callbacks. Rejection leaves the generation rendered and requires a
 fresh successful validation. Earlier handles stay invalid after a later success;

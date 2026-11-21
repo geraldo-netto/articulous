@@ -3,6 +3,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 import json
+import os
+import stat
 import re
 
 import lxml.etree as etree
@@ -24,6 +26,10 @@ def _same_publication_origin(parsed, origin):
     return parsed.scheme in ('http', 'https') and url_origin(parsed) == url_origin(origin)
 
 
+def _physical_path(path):
+    return Path(os.path.realpath(path))
+
+
 def local_path(output, value, base):
     parsed = urlsplit(urljoin(base.rstrip('/') + '/', value))
     origin = urlsplit(base)
@@ -35,7 +41,7 @@ def local_path(output, value, base):
         decoded += '/'
     if not decoded.startswith(prefix):
         return None
-    target = (output / decoded[len(prefix):]).resolve()
+    target = _physical_path(output / decoded[len(prefix):])
     if not target.is_relative_to(output.resolve()):
         raise ValueError(f'Local URL escapes output: {value}')
     if parsed.path.endswith('/') or target.is_dir():
@@ -53,24 +59,32 @@ def resolved_path(output, value, base, resolved_paths):
     return resolved_paths[key]
 
 
-def read_pages(output, failures, html_errors=None):
-    pages = {}
+def _html_candidate(entry):
+    return entry.name.endswith('.html') and (entry.is_symlink() or entry.is_file(follow_symlinks=False))
+
+
+def _html_sources(output, failures):
     root = output.resolve()
-
-    def html_page(entry):
-        if not entry.name.endswith('.html'):
-            return False
-        if entry.is_symlink():
-            target = Path(entry.path).resolve()
-            return not target.is_relative_to(root) or target.is_file()
-        return entry.is_file(follow_symlinks=False)
-
-    for path in sorted(tree_entries(output, include=html_page)):
-        resolved = path.resolve()
+    for path in sorted(tree_entries(output, include=_html_candidate)):
+        resolved = _physical_path(path)
         if not resolved.is_relative_to(root):
             failures.append(f'{path.relative_to(output)}: HTML page escapes output')
             continue
-        source = resolved.read_bytes()
+        try:
+            if path.is_symlink() and not stat.S_ISREG(path.stat().st_mode):
+                continue
+            source = resolved.read_bytes()
+        except FileNotFoundError:
+            continue
+        except OSError as error:
+            failures.append(f'{path.relative_to(output)}: cannot read HTML page: {error}')
+            continue
+        yield path, resolved, source
+
+
+def read_pages(output, failures, html_errors=None):
+    pages = {}
+    for path, resolved, source in _html_sources(output, failures):
         errors = html_errors(source) if html_errors is not None else ()
         if errors:
             failures.append(f'{path.relative_to(output)}: HTML parse errors: {errors}')
@@ -272,7 +286,7 @@ def document_base(page_url, href):
 def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
     redirects = _RedirectResolver(output, base, plan.redirects, resolved_paths)
     for filename in plan.page_urls:
-        if (output / filename).resolve() not in pages:
+        if _physical_path(output / filename) not in pages:
             failures.append(f'{filename}: expected HTML page missing')
     try:
         for path, references in pages.items():
@@ -352,7 +366,7 @@ def sitemap_index_targets(output, base, values, failures, resolved_paths=None):
 
 
 def sitemap_locations(output, base, path, failures, resolved_paths=None):
-    pending, seen, urls = [path.resolve()], set(), []
+    pending, seen, urls = [_physical_path(path)], set(), []
     while pending:
         current = pending.pop()
         if current in seen:
@@ -377,7 +391,7 @@ def validate_sitemap(output, base, plan, failures, resolved_paths=None):
         failures.append('Duplicate sitemap URLs')
     if set(urls) != plan.sitemap_urls:
         failures.append('Sitemap URL set does not match publication plan')
-    canonicals = {(output / name).resolve(): url for name, url in plan.page_urls.items()}
+    canonicals = {_physical_path(output / name): url for name, url in plan.page_urls.items()}
     for url in urls:
         target = _sitemap_target(output, url, base, resolved_paths)
         if target not in canonicals or canonicals[target] != url:

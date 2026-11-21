@@ -252,3 +252,18 @@ def test_audit1121_10_validates_unlinked_redirects(publication, end, problem):
     else:
         with pytest.raises(ValueError, match=problem):
             validate_site(root, base, plan)
+
+
+@pytest.mark.parametrize('length', [1, 2, 5])
+def test_audit1121_11_symlink_loops_preserve_other_diagnostics(publication, length):
+    root, base, plan = publication
+    names = [f'loop-{index}.html' for index in range(length)]
+    for index, name in enumerate(names):
+        (root / name).symlink_to(names[(index + 1) % length])
+    plan.page_urls[names[0]] = base + '/' + names[0]
+    (root / 'index.html').write_text(html_page(base + '/', f'<a href="{names[0]}">loop</a><img src="absent.png">'))
+    with pytest.raises(ValueError) as failure:
+        validate_site(root, base, plan)
+    for name in names:
+        assert f'{name}: cannot read HTML page' in str(failure.value)
+    assert 'missing absent.png' in str(failure.value)

@@ -238,3 +238,35 @@ def test_review29_13_capture_rejects_special_files_before_blocking_open(tmp_path
                 transaction.capture(source.name)
         assert not transaction.expected
     assert source.exists()
+
+
+@pytest.mark.parametrize('existing', [False, True])
+def test_review28_58_uncaptured_stage_file_rejects_entire_batch(tmp_path, existing):
+    root = tmp_path / 'content'
+    root.mkdir()
+    target = root / 'manifest.json'
+    if existing:
+        target.write_bytes(b'owner')
+    with pytest.raises(ValueError, match=r'capture.*manifest\.json'):
+        with source_transaction(root) as transaction:
+            transaction.write('other', b'captured')
+            (transaction.stage / target.name).write_bytes(b'candidate')
+    assert not (root / 'other').exists()
+    assert target.exists() is existing
+    if existing:
+        assert target.read_bytes() == b'owner'
+    assert not list(tmp_path.glob(".articulous-edit-*"))
+
+
+def test_review28_58_captured_direct_stage_preserves_initial_generation(tmp_path):
+    target = tmp_path / 'entry'
+    with source_transaction(tmp_path) as transaction:
+        transaction.capture(target.name)
+        (transaction.stage / target.name).write_bytes(b'first')
+    assert target.read_bytes() == b'first'
+    with pytest.raises(ValueError, match='destination changed during staging'):
+        with source_transaction(tmp_path) as transaction:
+            transaction.capture(target.name)
+            (transaction.stage / target.name).write_bytes(b'staged')
+            target.write_bytes(b'concurrent')
+    assert target.read_bytes() == b'concurrent'

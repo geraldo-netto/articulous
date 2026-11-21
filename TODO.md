@@ -100,7 +100,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-58 | open | low | small | Docs/contract: a file placed in the documented transaction `stage` path without `capture()` aborts commit with a bare `KeyError`. | `source_transactions.py:116`; `docs/generator-composition.md:603-604` exposes `stage`. Reproduced: writing `manifest.json` into `tx.stage` raises `KeyError(PosixPath('manifest.json'))`; nothing is published. Next: capture on demand in `changes()` or raise a named error. |
 
 
 ## Translation authoring

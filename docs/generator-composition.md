@@ -616,7 +616,9 @@ local estimates, not measurements of HTTP encoding or transfers.
 Source maintenance uses `articulous.source_files.replace_file(path, writer)`
 and `articulous.source_transactions.source_transaction(root)`, independently
 of generated-output publication. A transaction exposes `capture(relative)`,
-`write(relative, bytes, force=False)` and its staged `stage` path. Supply
+`write(relative, bytes, force=False)` and its staged `stage` path. Before writing
+a file directly under `stage`, call `capture(relative)` to record the original
+destination. An uncaptured staged file rejects the whole batch. Supply
 `final_paths=("manifest.json",)` when a caller's metadata must publish last;
 the engine has no knowledge of an import manifest's schema or location.
 `prefix` optionally selects the caller's temporary-directory label.

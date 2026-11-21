@@ -113,6 +113,8 @@ class SourceTransaction:
             if not source.is_file():
                 continue
             relative = source.relative_to(self.stage)
+            if relative not in self.expected:
+                raise ValueError(f'Call capture() before writing a staged file directly: {relative}')
             if fingerprint(source) != self.expected[relative]:
                 changes.append(relative)
         def publication_order(path):

@@ -11493,22 +11493,22 @@
             "projection_sha256": "0d73776c93095d7439c82963568825ec1268321ff230b58160a65eb6d942b909"
           },
           {
-            "body_sha256": "b1528dfacf858aabddd8677dc6969fc27877b258b00a164fe207bdccda7f91d9",
+            "body_sha256": "c1a7de1f3fea839b117fec90547d97477e292d4d88b46dc80aaa992b31e994b8",
             "column": 4,
-            "complexity": 6,
+            "complexity": 7,
             "end_column": 53,
-            "end_line": 120,
+            "end_line": 122,
             "line": 106,
             "name": "SourceTransaction.changes",
-            "projection_sha256": "1b38dff6a3bfbf81a11da402ea82ecd0887fe3f39486ef93f13809757ad36b0d"
+            "projection_sha256": "d8f71daf7e252dabf2668f68008dffe4c39f35bdeb35f9c3c1b0ee0686721c2e"
           },
           {
             "body_sha256": "3a4d62c995266524b3d75d2f37decbb170e7d3fe6f5f2d803331b64490c9ecb0",
             "column": 8,
             "complexity": 1,
             "end_column": 49,
-            "end_line": 119,
-            "line": 118,
+            "end_line": 121,
+            "line": 120,
             "name": "SourceTransaction.changes.publication_order",
             "projection_sha256": "3bc78699c64f368b27ca31d8797e60f756856b3658c86004e2ca01af3b721e73"
           },
@@ -11517,8 +11517,8 @@
             "column": 4,
             "complexity": 6,
             "end_column": 17,
-            "end_line": 143,
-            "line": 122,
+            "end_line": 145,
+            "line": 124,
             "name": "SourceTransaction.publish",
             "projection_sha256": "94efc7f6fe92bdfb9471b957f27f9075f23a85a0bbf02eaf40894aa589665f69"
           },
@@ -11527,8 +11527,8 @@
             "column": 4,
             "complexity": 6,
             "end_column": 38,
-            "end_line": 160,
-            "line": 145,
+            "end_line": 162,
+            "line": 147,
             "name": "SourceTransaction.rollback",
             "projection_sha256": "7a729d8365de6e89e9c7fff0ded89b5843ddba5c78d87bb91c056ff02f2e7b21"
           },
@@ -11537,8 +11537,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 33,
-            "end_line": 170,
-            "line": 163,
+            "end_line": 172,
+            "line": 165,
             "name": "make_parents",
             "projection_sha256": "42e2fbf9042738d49604d391f8d6d791201cd44fd8a0246d1e85ce553a8532f0"
           },
@@ -11547,15 +11547,15 @@
             "column": 0,
             "complexity": 5,
             "end_column": 50,
-            "end_line": 188,
-            "line": 174,
+            "end_line": 190,
+            "line": 176,
             "name": "source_transaction",
             "projection_sha256": "68a9a9aa748255ed1021c913f6a4885bae9a9755989a20a35b094918e4603675"
           }
         ],
         "language": "python",
         "path": "articulous/source_transactions.py",
-        "sha256": "4e21fb926ed7e92b6bbfba465e0158d9be52867fc1cf1ecc5cdb8dc6be5dd9d2"
+        "sha256": "1d914fa53bb75d6f385c40d5e6f7e5118f5ad8f9aa6426060d980ead7c79c027"
       },
       {
         "functions": [
@@ -32194,11 +32194,31 @@
             "line": 228,
             "name": "test_review29_13_capture_rejects_special_files_before_blocking_open",
             "projection_sha256": "5e11baca79fbaf1671a7675f608d82664e3feffb3e6455e9359348bca698e872"
+          },
+          {
+            "body_sha256": "a1288f993cb7b394b985a3250ea4ffb0995905e70be927ad063e2187e0197b3c",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 56,
+            "end_line": 258,
+            "line": 244,
+            "name": "test_review28_58_uncaptured_stage_file_rejects_entire_batch",
+            "projection_sha256": "4ac9bd227397471daf8b441984cdbc8426bf3e2717b629cb9ceb6fa70124df81"
+          },
+          {
+            "body_sha256": "047be4b9f0c372a962bee737bf0ee7cd2f8f42c6e8c7702274ed08beeac3587d",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 47,
+            "end_line": 272,
+            "line": 261,
+            "name": "test_review28_58_captured_direct_stage_preserves_initial_generation",
+            "projection_sha256": "770c84bbca581786ce91a30bfe1aadf0b8b3945799ed4b71e5a36e22a98175e5"
           }
         ],
         "language": "python",
         "path": "tests/test_source_editing.py",
-        "sha256": "4569e9929626ac5accd9320eba0e585e14dfecb1d1dda098e5abc71b96e0514e"
+        "sha256": "888e4e7cc8d0ef1d255ed19035d13b39feb907a6aa52830baf7412f9a64876c9"
       },
       {
         "functions": [

@@ -52,7 +52,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
 | REVIEW28-31 | open | low | small | Correctness: the ImageMagick adapter passes raw file names that ImageMagick reinterprets. | `backends/imagemagick.py:15,23-27`, `image_optimization.py:55`. Reproduced: `50%discount.jpg` aborts the whole batch (`%d` is read as a scene format); with root `.` a name starting with `-` is taken as an option. Fails loudly; nothing is wrongly replaced. `engines.py:493-504` guards the same class for Saxon. Next: use absolute paths and a fixed sanitised scratch name; fuzz file names with valid boundary names kept working. |
-| REVIEW28-32 | open | low | small | Inconsistency: a failed recovery handoff raises `NativeCleanupError` with a token for native workspaces but a plain `RuntimeError` for the ImageMagick workspace. | `backends/imagemagick.py:36-42` versus `native_workspace.py:26-33`. Reproduced: `except NativeCleanupError as e: recover_session(e.token)` misses the image path while the session reservation stays in `_RETAINED`. `tests/test_converter_cancellation.py:82-99` pins only the message. Next: add the note and re-raise the same exception as `native_workspace` does. |
 
 
 ## Prepared builds and publication

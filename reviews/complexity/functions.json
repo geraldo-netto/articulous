@@ -697,19 +697,19 @@
             "projection_sha256": "b7035eadb2bd4784307712517732b43e88e8e84468b7b53d0b2e40e99a6f9dfa"
           },
           {
-            "body_sha256": "c316202de24c81819da3ef4ca7d43fcf54a75fd1909a1d7efe55b06dc32fbfc8",
+            "body_sha256": "eb5b91d1dfca7211bc626af9c78a9179de78a3b76bfb336267b14fb9d1d61a74",
             "column": 4,
             "complexity": 5,
             "end_column": 54,
-            "end_line": 45,
+            "end_line": 46,
             "line": 30,
             "name": "ImageMagick.workspace",
-            "projection_sha256": "22c67b5a02cd336ecb636e7bbb164f9b46e4c7e973a64d67511a4d0efe83232f"
+            "projection_sha256": "88559589d82edb6da02ebb2a550c165d83568c14841232bc30d95599478d7faa"
           }
         ],
         "language": "python",
         "path": "articulous/backends/imagemagick.py",
-        "sha256": "8abaf54b588b574ebce560bae87ec83a6c52ad550ac97b88070179ab28e0573a"
+        "sha256": "86ad2ca76a3f95d0bdf2d2a7af01723e67e8179157d8e932c64b32d0526e8e78"
       },
       {
         "functions": [
@@ -18585,19 +18585,19 @@
             "projection_sha256": "c59813de9e9cd18e79e158c14154d6bb3671a04ce74719397685044a45b80115"
           },
           {
-            "body_sha256": "35516c1b59ff6d854c336005ad991488e7a2d9b3d7432d662188bb5c12b5583f",
+            "body_sha256": "5d127a426ba9a2c399e92512912086b9cfb98a7f539432551b89774c235d0c8d",
             "column": 0,
             "complexity": 6,
             "end_column": 50,
-            "end_line": 104,
+            "end_line": 111,
             "line": 82,
-            "name": "test_life004_failed_workspace_handoff_preserves_manual_recovery",
-            "projection_sha256": "6f982a968abb6e2b02bbf4f9fabb20d2feb81e6f5ebf67cf1f86023e7d1549d4"
+            "name": "test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace",
+            "projection_sha256": "7c9ae8342ff9a4435c3e6481f98b69cb1b599f8ae2f63a4b0ce466770255c02b"
           }
         ],
         "language": "python",
         "path": "tests/test_converter_cancellation.py",
-        "sha256": "eb28c7391062eeb65303080d6a3f3180fa65f08979290135587c2e7d03fc6aa8"
+        "sha256": "1ad8f46e1b40ee0750aec8154daa36bdca2957539872ab77e81675312bde5306"
       },
       {
         "functions": [

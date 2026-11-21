@@ -79,7 +79,8 @@ def test_life004_unknown_converter_fence_retains_borrowed_workspace(tmp_path):
             processes.recover_session(token)
 
 
-def test_life004_failed_workspace_handoff_preserves_manual_recovery(tmp_path):
+def test_review28_32_life004_failed_handoff_keeps_token_and_manual_workspace(tmp_path):
+    from articulous.process_contracts import NativeCleanupError
     from articulous.backends import processes
     from articulous.backends import imagemagick
     from articulous.source_files import cleanup_workspace, workspace_identity
@@ -92,11 +93,17 @@ def test_life004_failed_workspace_handoff_preserves_manual_recovery(tmp_path):
         with patch.dict(os.environ, PATH=str(tmp_path) + os.pathsep + os.environ['PATH']):
             with patch.object(processes, 'await_group_exit', side_effect=TimeoutError('missing fence')):
                 with patch.object(imagemagick, 'defer_workspace_cleanup', side_effect=OSError('handoff')):
-                    with pytest.raises(RuntimeError, match='manual recovery'):
+                    with pytest.raises(NativeCleanupError, match='manual recovery') as retained:
                         with ImageMagick().workspace() as workspace:
                             identity = workspace_identity(workspace)
                             ImageMagick().shrink(tmp_path / 'source.jpg', workspace / 'target.jpg', 4, 82)
         assert workspace is not None and workspace.exists()
+        assert retained.value.token in processes._RETAINED
+        assert retained.value.__notes__ == [f'Image workspace requires manual recovery: {workspace}']
+        assert isinstance(retained.value.__cause__, OSError)
+        processes.recover_session(retained.value.token)
+        assert retained.value.token not in processes._RETAINED
+        assert workspace_identity(workspace) == identity
     finally:
         for token in set(processes._RETAINED) - before:
             processes.recover_session(token)

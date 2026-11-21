@@ -38,7 +38,8 @@ class ImageMagick:
             try:
                 defer_workspace_cleanup(error.token, workspace, identity)
             except BaseException as transfer_error:
-                raise RuntimeError(f'Image workspace requires manual recovery: {workspace}') from transfer_error
+                error.add_note(f'Image workspace requires manual recovery: {workspace}')
+                raise error from transfer_error
             raise
         finally:
             if not deferred:

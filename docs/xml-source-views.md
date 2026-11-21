@@ -1,5 +1,7 @@
 # Caller-owned XML source views (BUILD-038)
 
+[Documentation](../README.md#documentation)
+
 `xml_sources.read_source(Path)` captures a regular file through the existing
 safe XML parser and closes its reader before returning. `XmlSource`, defined
 independently in `xml_contracts`, owns original bytes, their base URI, a matching

@@ -141,5 +141,4 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-71 | open | low | small | Docs: two guides are unreachable from the documentation index. | `docs/model-projections.md` and `docs/xml-source-views.md` are absent from the `README.md:14-26` table and linked from no file under `docs/`; they also lack the back-link the other guides carry. Next: link them from the README table or the Python integration guide. |
 | REVIEW28-72 | open | low | small | Contradictions: `TODO.md` does not fully follow its own legend or AGENTS.md. | The legend says effort `—` marks a retained `wont_fix`, yet REDOS-001 and REDOS-002 are `wont_fix` with efforts S and M; AGENTS.md requires a review category in each description or notes, and the eleven older `wont_fix` rows carry none. Does not reopen any decision. Next: label the rows and align the legend. |

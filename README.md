@@ -23,6 +23,8 @@ Start with [getting started](docs/getting-started.md), then use
 | [Search discovery and feeds](docs/search-discovery.md) | Configure robots.txt, sitemaps and RSS feeds. |
 | [Output and ownership](docs/output.md) | Understand generated files, asset mirroring, caches, locks and publication. |
 | [Development and verification](docs/development.md) | Run tests, coverage, complexity and offline acceptance checks. |
+| [Captured model projections](docs/model-projections.md) | Customize the XML models passed to transforms. |
+| [XML source views](docs/xml-source-views.md) | Read and edit captured article XML through the Python API. |
 | [Python integration](docs/generator-composition.md) | Compose custom pages, discover routes and validate or publish staged builds. |
 
 ## Capabilities

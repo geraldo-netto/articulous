@@ -1,5 +1,7 @@
 # Captured model projections (PERF-018 / PERF-023)
 
+[Documentation](../README.md#documentation)
+
 `BuildComposition.project_model` optionally accepts a `ModelInput` and returns
 XML bytes for the existing transform. `ModelInput` is independent of parser and
 engine implementations: captured bytes, a canonical relative output path and a

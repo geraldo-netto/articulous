@@ -136,3 +136,17 @@ def test_review28_62_unreadable_404_route_uses_plain_fallback(tmp_path, monkeypa
     monkeypatch.setattr(Path, 'is_file', probe)
     with running(tmp_path, not_found='/404.html') as server:
         assert request(server, 'GET', '/missing') == (404, b'Not found\n', 'no-store')
+
+
+def test_review28_63_preview_distinguishes_directory_and_file_urls(tmp_path):
+    (tmp_path / 'page.html').write_bytes(b'page')
+    (tmp_path / '404.html').write_bytes(b'missing')
+    (tmp_path / 'alias').symlink_to('page.html')
+    (tmp_path / 'dir').mkdir()
+    (tmp_path / 'dir/index.html').write_bytes(b'index')
+    with running(tmp_path, not_found='/404.html') as server:
+        for route in ('/page.html/', '/page.html///?v=1', '/alias/?v=2'):
+            assert request(server, 'GET', route) == (404, b'missing', 'no-store')
+            assert request(server, 'HEAD', route) == (404, b'', 'no-store')
+        assert request(server, 'GET', '/dir/?v=1') == (200, b'index', 'no-store')
+        assert request(server, 'GET', '/page.html?q=/') == (200, b'page', 'no-store')

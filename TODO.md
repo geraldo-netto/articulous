@@ -115,7 +115,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-63 | open | low | small | Incongruence: preview serves a file for a trailing-slash URL that site validation and static hosts treat as missing. | `preview.py:73-77,91-95` versus `site_validation.py:44-45`. Reproduced: `GET /page.html/` returns 200 with the file while `local_path` maps the same URL to `page.html/index.html`. Next: return not found when the route ends with `/` and the target is not a directory. |
 
 
 ## Verification tooling

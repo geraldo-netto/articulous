@@ -98,8 +98,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def _file_target(self, route, *, directory_index=False):
         target = preview_path(self.root, route, self.internal)
         try:
-            if directory_index and target is not None and target.is_dir():
+            if target is None:
+                return None
+            if directory_index and target.is_dir():
                 target = _visible_target(self.root, target / 'index.html', self.internal)
+            elif urlsplit(route).path.endswith('/'):
+                return None
             return target if target is not None and target.is_file() else None
         except OSError:
             return None

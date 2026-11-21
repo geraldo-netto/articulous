@@ -127,7 +127,7 @@ It verifies each eligible file's header again under that output's cache lock
 and skips outputs with a live lock or pending publication. Deleting or
 corrupting the index triggers a scan of the authoritative headers.
 
-Ownership is also stored beside each output tree in
+Ownership is stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.
 Deleting, corrupting or switching the fingerprint cache preserves this
 ownership history, so deleted/private pages can still be pruned.
@@ -137,13 +137,11 @@ it cannot override the ownership record. Both publication paths pair the cache
 and sidecar with a generation identifier. An older or independently restored cache
 triggers rendering of the selected pages. The sidecar also records published
 translation groups and their reciprocal links so filtered builds can detect
-changes that require rebuilding peers. For older ownership records, rebuild the
-article section across all languages and slugs once before filtering articles.
+changes that require rebuilding peers.
 
-Legacy cache manifests migrate automatically when no ownership file
-exists. A populated output
-tree without ownership history, or an invalid ownership file, stops the
-build. Restore ownership from backup or choose an empty output tree.
+A populated output tree with a missing, obsolete or incomplete committed sidecar
+stops the build. Restore the matching current sidecar from backup or build into
+a new, empty output directory. A full build can recover a current interrupted build.
 Use `--force` for a rebuild that keeps ownership history.
 
 Builds targeting the same output directory share a lock beside it

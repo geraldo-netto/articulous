@@ -58,6 +58,6 @@ def test_review015_unknown_retained_page_cannot_silently_leave_sitemap(site_root
     (site_root / '.build-cache.json').unlink()
     before = (site_root / 'output/sitemap.xml').read_bytes(), state.read_bytes()
     cli.only_sections = ['sitemap']
-    with pytest.raises(ValueError, match='route metadata unavailable'):
+    with pytest.raises(ValueError, match='route metadata.*restore'):
         run_build(cli, config, site_root)
     assert ((site_root / 'output/sitemap.xml').read_bytes(), state.read_bytes()) == before

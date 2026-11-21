@@ -155,7 +155,7 @@ class BuildCtx:
     sitemap_listings: bool = False
     robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
-    previous_translations: dict | None = field(default_factory=dict)
+    previous_translations: dict = field(default_factory=dict)
     translations: Optional[TranslationStore] = None
     extra_pages: tuple[ExtraPage, ...] = ()
     extra_artifacts: tuple[ExtraArtifact, ...] = ()
@@ -1915,8 +1915,6 @@ def _translation_context(projection, cli, ctx):
         return ctx
     ctx = replace(ctx, translations=projection.translations)
     if cli.only_langs or cli.only_slugs:
-        if ctx.previous_translations is None:
-            raise ValueError('A full build is required to establish reciprocal translation links')
         def selected(key):
             return _selected_output_key(key, cli)
         projection.translations.validate_filters(ctx.previous_translations, selected)
@@ -2076,17 +2074,10 @@ def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     return {**retained, **{path: key for key, path in current_manifest.items()}}
 
 
-def _retains_articles(paths, planned):
-    return any(key.startswith('article:') and key not in planned for key in paths.values())
-
-
-def _published_translations(ownership, cache, paths, planned):
-    previous = ownership.translations
-    if previous is not None and cache['__generation__'] == ownership.generation:
-        return previous
-    if previous is None and _retains_articles(paths, planned):
-        return None
-    history = {key: pair for key, pair in (previous or {}).items()
+def _published_translations(ownership, cache, planned):
+    if cache['__generation__'] == ownership.generation:
+        return ownership.translations
+    history = {key: pair for key, pair in ownership.translations.items()
                if key not in planned and key in cache[_OUTPUT_MANIFEST_KEY]}
     history.update(translation_history(cache, planned))
     return history
@@ -2104,7 +2095,7 @@ def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifes
     else:
         logging.debug("Cache unchanged — skipping save")
     save_ownership(ctx.output_dir, next_manifest, routes=routes, generation=cache['__generation__'],
-                   translations=_published_translations(ownership, cache, next_manifest, current_manifest))
+                   translations=_published_translations(ownership, cache, current_manifest))
     finish_cache_update(selected, ctx.cache_retention_days, ctx.partition_cache)
 
 
@@ -2236,7 +2227,7 @@ def _remove_stale_paths(root: Path, stale_paths: list[str], current_paths: set[P
         try:
             target = _manifest_target(root, relpath)
         except ValueError as e:
-            logging.warning(f"Skipping invalid cached output manifest entry: {e}")
+            logging.warning(f"Skipping invalid output ownership entry: {e}")
         else:
             if _can_delete_stale_target(target, root, protected, current_paths):
                 _delete_output_file(target, root)
@@ -2303,54 +2294,22 @@ def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) 
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
 
-def _cached_retained_route(cache, key):
-    stored = cache.get('__routes__', {})
-    if not isinstance(stored, dict) or key not in stored:
-        return None
-    try:
-        return Route(**stored[key])
-    except (TypeError, ValueError) as error:
-        raise ValueError('Invalid retained route metadata') from error
-
-
-def _retained_route(path, key, routes, cache):
-    route = routes.get(key)
-    if route is None:
-        route = _cached_retained_route(cache, key)
-    if route is not None and (route.key != key or route.output_path != path):
-        raise ValueError('Retained route metadata does not match ownership')
-    return route
-
-
-def _retained_page_routes(cli, ctx, ownership, cache):
+def _retained_page_routes(cli, ctx, ownership):
     if 'sitemap' not in (cli.only_sections or SECTION_NAMES):
         return ()
-    result = []
-    for path, key in _retained_outputs(cli, ownership.paths, _extra_output_keys(ctx)).items():
-        if not key.startswith('page:'):
-            continue
-        route = _retained_route(path, key, ownership.routes, cache)
-        if route is None:
-            raise ValueError('Retained route metadata unavailable; run a full build for sitemap planning')
-        result.append(route)
-    return tuple(result)
+    retained = _retained_outputs(cli, ownership.paths, _extra_output_keys(ctx))
+    return tuple(ownership.routes[key] for key in retained.values() if key.startswith('page:'))
 
 
-def _record_retained_routes(cli, ctx, cache, old_manifest, routes, manifest):
-    for path, key in _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)).items():
-        route = _retained_route(path, key, routes, cache)
-        if route is None:
-            if manifest.catalog is not None:
-                raise ValueError('Retained route metadata unavailable; run a full build for discovery')
-            continue
-        manifest.record_route(route)
+def _record_retained_routes(cli, ctx, ownership, manifest):
+    for key in _retained_outputs(cli, ownership.paths, _extra_output_keys(ctx)).values():
+        manifest.record_route(ownership.routes[key])
 
 
 def _incremental_state(cli, ctx, selected):
     cache, roots = _load_build_cache(selected.path, ctx.output_dir, selected.partitioned)
-    ownership = load_ownership(ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY), allow_pending=_can_prune_outputs(cli))
+    ownership = load_ownership(ctx.output_dir, allow_pending=_can_prune_outputs(cli))
     if not ownership.generation or cache.get('__generation__') != ownership.generation:
-        cache.pop('__routes__', None)
         for key in list(cache):
             if not key.startswith('__'):
                 cache.pop(key)
@@ -2379,7 +2338,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 ctx = replace(ctx, force=ctx.force or ownership.pending, previous_translations=ownership.translations)
                 ctx = replace(ctx, output_migrations=OutputMigrations(
                     ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)),
-                ), retained_page_routes=_retained_page_routes(cli, ctx, ownership, cache))
+                ), retained_page_routes=_retained_page_routes(cli, ctx, ownership))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest(ctx, route_catalog)
@@ -2388,7 +2347,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 )
                 projection = plan.projection
                 checked_parents = _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
-                _record_retained_routes(cli, ctx, cache, old_manifest, ownership.routes, current_manifest)
+                _record_retained_routes(cli, ctx, ownership, current_manifest)
                 next_paths = _next_output_paths(cli, ctx, old_manifest, current_manifest)
                 _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
                 _run_plan(plan, ctx)

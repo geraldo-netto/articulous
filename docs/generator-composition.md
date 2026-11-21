@@ -139,10 +139,9 @@ Supply extra pages on each build that should generate them. They use the shared
 collision checks, stylesheet/model fingerprints and output ownership machinery.
 Route metadata is persisted with ownership independently of fingerprint caches,
 so partial discovery preserves exact canonical URLs, languages and sitemap
-eligibility after cache loss or replacement. Legacy ownership can recover known
-metadata from its cache once. If both sources lack a retained route's semantics,
-discovery requires a full build rather than inventing metadata. A partial build
-without discovery can retain those files while leaving their metadata unknown.
+eligibility after cache loss or replacement. Each committed sidecar must contain
+metadata for every owned route. Restore the matching current sidecar or choose
+a new, empty output directory if a populated tree has lost that record.
 
 Index and tag routes preserve the model's exact canonical URL, including its
 choice of a trailing slash, first-index override and paginated tag URL. Discovery
@@ -161,17 +160,15 @@ owners still block colliding destinations.
 
 A partial sitemap rebuild includes retained extra pages using their saved
 category and `sitemap` flag. This works after fingerprint-cache loss and applies
-equally to native and XSLT sitemap writers. If a retained page's route metadata
-is unavailable, sitemap planning requires a full build with the site's current
-page declarations, even when no route catalog was requested. Resupplied page
+equally to native and XSLT sitemap writers. Resupplied page
 declarations replace the retained key's inclusion policy; a full build omitting
 that declaration removes the old page.
 
-Ownership decoding admits exact integer versions 1 and 2. Version-2 publication
+Ownership decoding requires the current version (integer 2), the pending flag,
+publication identities, routes, generation and translation metadata. Publication
 identities are absent (`None`) or two nonnegative, non-boolean integers.
-Malformed versions or identities reject before ownership can authorize output
-replacement or pruning. Do not use a disposable cache to repair invalid
-authoritative ownership data.
+Pending journals may contain incomplete routes and null generation and
+translation metadata. Full recovery rebuilds those records before committing.
 
 `build_tag_index_model(articles, lang, ctx)` returns a `TagIndex` containing
 `TagSummary(tag, slug, count, url)` entries and a `to_xml()` method. Pass the same

@@ -144,15 +144,16 @@ def test_perf31_undated_records_remain_available_after_migration(site_root, cach
     pipeline.run_build(REQUEST, _config(enable=False), site_root)
     raw = json.loads(_base(site_root).read_text())
     raw['__output_roots__'][str(site_root / 'output')].pop('__last_used__')
-    ownership_path(site_root / 'output').unlink()
+    owner = ownership_path(site_root / 'output').read_bytes()
     _base(site_root).write_text(json.dumps(raw))
     cache_clock[0] += 4 * DAY
     pipeline.run_build(REQUEST, _config('second', days=0), site_root)
     assert '__last_used__' not in _record(site_root, 'output')
     pipeline.run_build(REQUEST, _config('third', days=0), site_root)
     assert _selected(site_root, 'output').path.is_file()
+    assert ownership_path(site_root / 'output').read_bytes() == owner
     pipeline.run_build(REQUEST, _config(), site_root)
-    assert ownership_path(site_root / 'output').is_file()
+    assert json.loads(ownership_path(site_root / 'output').read_bytes())["paths"] == json.loads(owner)["paths"]
 
 
 def test_rel43_losing_partitions_cannot_reuse_retired_shared_fingerprints(site_root):

@@ -72,9 +72,8 @@ special files are skipped with an error. Each article has this shape:
   uses its capture timestamp. No background scheduler runs the generator.
 - Targeted builds remove retired article pages within their selected
   sections, languages, and slugs using the persistent ownership sidecar.
-  Legacy cache ownership is used only to initialize a missing sidecar;
-  deleting the fingerprint cache does not disable pruning. Unselected
-  pages remain untouched.
+  Pruning survives deletion of the fingerprint cache. A populated output
+  tree requires its current ownership sidecar. Unselected pages remain untouched.
 - Language and slug filters limit article pages. Selected RSS, sitemap
   and search sections use all articles eligible for those sections;
   selected index and tag sections use complete listings for each selected

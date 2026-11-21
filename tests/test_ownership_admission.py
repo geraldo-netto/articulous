@@ -44,6 +44,6 @@ def test_review021_invalid_identity_components_preserve_files(tmp_path, pending,
 def test_review021_valid_identity_boundaries(tmp_path, identity):
     output = tmp_path / 'output'
     data = {'version': 2, 'output_dir': str(output), 'paths': {'x.html': 'page:x'},
-            'pending': True, 'existing': {'x.html': identity}}
+            'pending': True, 'existing': {'x.html': identity}, 'routes': {}, 'translations': None, 'generation': None}
     ownership_path(output).write_text(json.dumps(data))
     assert load_ownership(output).paths == {'x.html': 'page:x'}

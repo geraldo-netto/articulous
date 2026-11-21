@@ -56,7 +56,7 @@ def test_api006_old_unknown_routes_require_full_discovery(site_root, seo_config)
     cli.only_sections = ['rss']
     before = snapshot(site_root / 'output'), state.read_bytes()
     with RouteCatalog() as routes:
-        with pytest.raises(ValueError, match='route metadata unavailable'):
+        with pytest.raises(ValueError, match='route metadata.*restore'):
             run_build(cli, config, site_root, route_catalog=routes)
     assert (snapshot(site_root / 'output'), state.read_bytes()) == before
 
@@ -95,12 +95,8 @@ def test_api006_legacy_metadata_admission(site_root, seo_config, defect):
     cache.write_text(json.dumps(data))
     cli.only_sections = ['rss']
     with RouteCatalog() as routes:
-        if defect == 'none':
+        with pytest.raises(ValueError, match='route metadata.*restore'):
             run_build(cli, config, site_root, route_catalog=routes)
-            assert next(route for route in routes if route.key == 'page:about') == page(config).route
-        else:
-            with pytest.raises(ValueError, match='route metadata'):
-                run_build(cli, config, site_root, route_catalog=routes)
 
 
 def api006_damage_metadata(metadata, defect):
@@ -125,9 +121,10 @@ def test_api006_unknown_metadata_never_invents_routes_without_discovery(site_roo
     (site_root / '.build-cache.json').unlink()
     cli.only_sections = ['rss']
     before = (site_root / 'output/about/index.html').read_bytes()
-    run_build(cli, config, site_root)
+    with pytest.raises(ValueError, match='route metadata.*restore'):
+        run_build(cli, config, site_root)
     assert (site_root / 'output/about/index.html').read_bytes() == before
-    assert 'page:about' not in json.loads(state.read_text())['routes']
+    assert 'routes' not in json.loads(state.read_text())
 
 
 def test_api006_disposable_metadata_cannot_override_owner(site_root, seo_config):

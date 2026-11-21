@@ -3,16 +3,24 @@ import json
 
 import pytest
 
+from articulous.composition_contracts import Route
 from articulous.ownership import load_ownership, ownership_path, save_ownership
 
 
+def current_manifest(output):
+    return {"version": 2, "output_dir": str(output), "generation": "a" * 32,
+            "existing": {}, "paths": {}, "pending": False, "routes": {}, "translations": {}}
+
+
 @pytest.mark.parametrize("entries", [
-    [], {1: "rss.xml"}, {"rss": None}, {"rss": ""}, {"rss": "."},
-    {"rss": "../manual.txt"}, {"rss": "/manual.txt"}, {"rss": "assets/style.css"},
+    [], {"rss.xml": None}, {"": "rss"}, {".": "rss"}, {"../manual.txt": "rss"},
+    {"/manual.txt": "rss"}, {"assets/style.css": "rss"},
 ])
-def test_invalid_legacy_ownership_is_rejected(tmp_path, entries):
+def test_invalid_current_ownership_is_rejected(tmp_path, entries):
+    output = tmp_path / "output"
+    ownership_path(output).write_text(json.dumps({**current_manifest(output), "paths": entries}))
     with pytest.raises(ValueError, match="Invalid output ownership entries"):
-        load_ownership(tmp_path / "output", entries)
+        load_ownership(output)
 
 
 @pytest.mark.parametrize("content", [b"{", b"\xff", b"[]", b'{"version": 2}'])
@@ -20,22 +28,22 @@ def test_invalid_ownership_file_requires_recovery(tmp_path, content):
     output = tmp_path / "output"
     ownership_path(output).write_bytes(content)
     with pytest.raises(ValueError, match="Invalid output ownership"):
-        load_ownership(output, {"rss": "rss.xml"})
+        load_ownership(output)
 
 
 @pytest.mark.parametrize("override", [
-    {"output_dir": "/another-output"}, {"outputs": None},
+    {"output_dir": "/another-output"}, {"paths": None},
 ])
 def test_ownership_identity_and_entries_are_validated(tmp_path, override):
     output = tmp_path / "output"
-    data = {"version": 1, "output_dir": str(output), "outputs": {}}
+    data = current_manifest(output)
     data.update(override)
     ownership_path(output).write_text(json.dumps(data))
     with pytest.raises(ValueError, match="Invalid output ownership"):
         load_ownership(output)
 
 
-def test_empty_output_needs_no_legacy_ownership(tmp_path):
+def test_empty_output_needs_no_ownership(tmp_path):
     output = tmp_path / "output"
     output.mkdir()
     assert load_ownership(output).paths == {}
@@ -54,22 +62,22 @@ def test_ownership_requires_recovery_for_unknown_existing_output(tmp_path):
 def test_ownership_save_does_not_rewrite_unchanged_state(tmp_path):
     output = tmp_path / "output"
     entries = {"rss.xml": "rss"}
-    save_ownership(output, entries)
+    routes = {"rss": Route("rss", "rss", "https://example.org/rss.xml", "rss.xml")}
+    save_ownership(output, entries, routes=routes, generation="a" * 32, translations={})
     path = ownership_path(output)
     before = path.stat().st_mtime_ns
-    save_ownership(output, entries)
+    save_ownership(output, entries, routes=routes, generation="a" * 32, translations={})
     assert path.stat().st_mtime_ns == before
     assert load_ownership(output).paths == entries
 
 
-def test_version_one_ownership_migrates_without_losing_paths(tmp_path):
+def test_version_one_ownership_requires_recovery(tmp_path):
     output = tmp_path / "output"
     ownership_path(output).write_text(json.dumps({
         "version": 1, "output_dir": str(output), "outputs": {"rss": "rss.xml"},
     }))
-    state = load_ownership(output)
-    assert state.paths == {"rss.xml": "rss"}
-    assert not state.pending
+    with pytest.raises(ValueError, match="version.*restore"):
+        load_ownership(output)
 
 
 @pytest.mark.parametrize("override", [
@@ -104,14 +112,15 @@ def test_matrix02_invalid_root_shape_names_recovery_action(tmp_path, value):
     payload = json.dumps(value).encode()
     sidecar.write_bytes(payload)
     with pytest.raises(ValueError, match='Invalid output ownership.*restore') as failure:
-        load_ownership(output, {'rss': 'rss.xml'})
+        load_ownership(output)
     assert str(sidecar) in str(failure.value)
     assert sidecar.read_bytes() == payload
 
 
-@pytest.mark.parametrize('version,field,mapping', [(1, 'outputs', {'rss': 'rss.xml'}), (2, 'paths', {'rss.xml': 'rss'})])
-def test_matrix02_valid_object_versions_preserve_ownership(tmp_path, version, field, mapping):
+def test_matrix02_valid_current_object_preserves_ownership(tmp_path):
     output = tmp_path / 'output'
-    sidecar = ownership_path(output)
-    sidecar.write_text(json.dumps({'version': version, 'output_dir': str(output), field: mapping}))
+    state = current_manifest(output)
+    state.update(paths={'rss.xml': 'rss'}, routes={'rss': {
+        'key': 'rss', 'output_path': 'rss.xml', 'url': '/rss.xml', 'section': 'rss'}})
+    ownership_path(output).write_text(json.dumps(state))
     assert load_ownership(output).paths == {'rss.xml': 'rss'}

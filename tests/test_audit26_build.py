@@ -236,7 +236,7 @@ def test_audit26_23_partial_cleanup_preserves_retry(site_root, seo_config, monke
     assert snapshot(site_root / 'output') == before
 
 
-def test_audit26_08_old_ownership_requires_full_translation_baseline(site_root, seo_config):
+def test_audit26_08_old_ownership_requires_current_translation_baseline(site_root, seo_config):
     cli, config = seo_config
     _translation_pair(site_root)
     pipeline.run_build(cli, config, site_root)
@@ -244,16 +244,11 @@ def test_audit26_08_old_ownership_requires_full_translation_baseline(site_root, 
     legacy = json.loads(state.read_text())
     del legacy['generation'], legacy['translations']
     state.write_text(json.dumps(legacy))
+    before = snapshot(site_root / 'output'), state.read_bytes()
     cli.only_sections = ['rss']
-    pipeline.run_build(cli, config, site_root)
-    assert load_ownership(site_root / 'output').translations is None
-    cli.only_sections = None
-    cli.only_langs = ['en']
-    with pytest.raises(ValueError, match='full build.*translation'):
+    with pytest.raises(ValueError, match='generation.*restore'):
         pipeline.run_build(cli, config, site_root)
-    cli.only_langs = None
-    pipeline.run_build(cli, config, site_root)
-    assert len(load_ownership(site_root / 'output').translations or {}) == 2
+    assert (snapshot(site_root / 'output'), state.read_bytes()) == before
 
 
 @pytest.mark.parametrize('invalid', [[], {'rss': 'bad'}, {'article:en:x': ['g', '']}, {'article:en:first-post': [1, '']},
@@ -349,7 +344,8 @@ def test_audit26_23_preparation_error_after_journal_replace(site_root, seo_confi
 @pytest.mark.parametrize('invalid', [True, 1, {}, [], 'z' * 32, '0' * 31, '1' * 33])
 def test_audit26_01_invalid_ownership_generation(tmp_path, invalid):
     output = tmp_path / 'output'
-    state = {'version': 2, 'output_dir': str(output), 'paths': {}, 'generation': invalid}
+    state = {'version': 2, 'output_dir': str(output), 'paths': {}, 'generation': invalid,
+             'pending': False, 'existing': {}, 'routes': {}, 'translations': {}}
     ownership_path(output).write_text(json.dumps(state))
     with pytest.raises(ValueError, match='generation'):
         load_ownership(output)

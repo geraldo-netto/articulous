@@ -1717,7 +1717,7 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
         _prune_stale_outputs(ctx, cache, {path: key for key, path in old.items()}, {})
     assert not root_file.exists()
     assert cache == {}
-    assert any("invalid cached output manifest" in r.message for r in caplog.records)
+    assert any("invalid output ownership" in r.message for r in caplog.records)
 
 
 @pytest.mark.parametrize("nonempty", [False, True])

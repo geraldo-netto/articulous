@@ -93,19 +93,20 @@ def test_dg01_seeded_config_boundaries(site_root, seed):
         assert config['build']['cache_retention_days'] == value
 
 
-def test_dg01_legacy_root_without_activity_preserves_ownership_fallback(site_root, cache_clock):
+def test_dg01_undated_output_retains_fingerprints_until_next_use(site_root, cache_clock):
     first = _output_config(site_root, 'output')
     run_build(BuildRequest(), first, site_root)
     output = site_root / 'output'
     roots = _roots(site_root)
     roots[str(output)].pop('__last_used__')
     _cache(site_root).write_text(json.dumps({'__output_roots__': roots}))
-    ownership_path(output).unlink()
+    owner = ownership_path(output).read_bytes()
     cache_clock[0] += 4 * DAY
     run_build(BuildRequest(), _output_config(site_root, 'second'), site_root)
     assert str(output) in _roots(site_root)
+    assert ownership_path(output).read_bytes() == owner
     run_build(BuildRequest(), first, site_root)
-    assert ownership_path(output).is_file()
+    assert json.loads(ownership_path(output).read_bytes())["paths"] == json.loads(owner)["paths"]
 
 
 def test_dg01_publication_rollback_restores_marker_and_expired_root(site_root, cache_clock, monkeypatch):

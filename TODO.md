@@ -1,6 +1,7 @@
 # TODO
 
-Effort `—` means no change is planned for a retained `wont_fix` decision.
+For retained `wont_fix` decisions, `—` means no implementation effort was estimated.
+Existing estimates describe the declined work.
 
 ## Build planning and rendering
 
@@ -11,21 +12,21 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 | REVIEW28-16 | open | low | small | Unused: `engines.stylesheet_hash` has no production caller. | `engines.py:140-141`, exported in `__all__` (`:52`); only `tests/test_pipeline.py` and `tests/test_engines.py` use it, production uses `engine.prepare_stylesheet`. Recommendation: delete and move the two tests to `prepare_stylesheet`, unless the owner keeps it as a documented public helper. Next: owner keep or delete decision. |
 | REVIEW28-17 | open | low | small | Wiring gap: `TempWorkspace.add` and the `dry_run` argument of `ensure_parent_dir` are used only by tests. | `filesystem.py:371-373` (only `tests/test_runtime.py:471`) and `filesystem.py:23-26` (production callers at `:242`, `:324` never pass it; only `tests/test_runtime.py:73`). Recommendation: delete both with their tests. Next: owner keep or delete decision. |
 | REVIEW28-19 | blocked | low | medium | Wiring gap/docs: transform engines are listed as a site extension point but no public entry point accepts one. | `docs/architecture.md:182-183` and `docs/generator-composition.md:354-355` versus the signatures of `run_build`, `prepare_build`, `check_build` and `build_site`; engines come only from `make_engine` (`pipeline.py:181-184,1595-1599`) and configured names. The only test with an independent engine replaces `BuildCtx.engines` and calls private helpers (`tests/test_transform_contracts.py:52-70`). Blocked on an owner decision: add a public admission route or reword both docs to call the protocol an internal seam. |
-| PERF-01 | wont_fix | low | — | XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
-| PERF-02 | wont_fix | low | — | In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
-| DUP-01 | wont_fix | low | — | Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
-| UNUSED-02 | wont_fix | low | — | `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) are dispatched through `_add_per_lang_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
-| DOC-03 | wont_fix | low | — | private helpers `_passes_cli_filters` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
-| DUP-02 | wont_fix | low | — | `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |
+| PERF-01 | wont_fix | low | — | Performance: XSL hashed per-section, not per-item | Intentional amortisation; per-item hash would re-read XSL N times. |
+| PERF-02 | wont_fix | low | — | Performance: In-memory XML model hashed directly, not via temp file | Intentional optimisation; documented at use site. |
+| DUP-01 | wont_fix | low | — | Code duplication: Section builders share a planning structure | Model construction differs by section; task creation already uses common XSLT/native helpers. |
+| UNUSED-02 | wont_fix | low | — | Unused functions: `build_articles_section` / `build_index_section` / `build_tags_section` (pipeline.py) are dispatched through `_add_per_lang_tasks` | Intentional test seams covered by `tests/test_pipeline.py`; keep. |
+| DOC-03 | wont_fix | low | — | Documentation: private helpers `_passes_cli_filters` / `_add_per_lang_tasks` (pipeline.py) carry no docstrings | Per AGENTS.md "default to no comments"; helpers are short and self-named. Skip. |
+| DUP-02 | wont_fix | low | — | Code duplication: `_collect_cross_lang_plan` body repeats `if want(...): plan[...] = build_X_section(...)` | Each branch's call signature differs (rss_articles vs sitemap_urls vs search_items); table-driving would obscure not clarify. Same rationale as DUP-01. |
 
 
 ## Article discovery and models
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| SCAL-01 | wont_fix | low | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
-| CC-01 | wont_fix | low | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
-| REL-02 | wont_fix | low | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
+| SCAL-01 | wont_fix | low | — | Scalability: Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
+| CC-01 | wont_fix | low | — | Code complexity: `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
+| REL-02 | wont_fix | low | — | Reliability/correctness: `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |
 
 
 ## Cache persistence
@@ -34,7 +35,7 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 |----|--------|----------|--------|-------------|-------|
 | REVIEW28-26 | blocked | medium | small | Contradictions: legacy route-metadata recovery from the cache no longer works for any real legacy ownership sidecar. | `docs/generator-composition.md:142-143` says legacy ownership can recover known metadata from its cache once; `pipeline.py:2240-2241` discards `__routes__` whenever the sidecar has no generation, and every sidecar old enough to lack `routes` also lacks `generation` (added in 5a3f0b2). Reproduced: pre-generation and version-1 sidecars fail with `Retained route metadata unavailable; run a full build`; the 7dfd2c7 tree recovered them. `tests/test_durable_routes.py:84-103` passes only because it keeps `generation`, a state no released writer produced. Fails safe. Blocked on an owner decision: keep `__routes__` as a one-time fallback when the sidecar has no generation, or delete the sentence and the dead fallback. |
 | REVIEW28-27 | blocked | medium | medium | Performance/scalability: all fingerprint state is rewritten in full on every build, including a no-op, once the clock advances a second. | `output_cache.py:44`, `runtime.py:113`, `pipeline.py:2001-2002`, `ownership.py:160-177`. Measured: no-op rewrites 1.3 MB at 1,000 articles and 5.1 MB at 4,000 (0 with the clock frozen); the default shared layout rewrites all four roots (5.2 MB); a one-article edit at 4,000 writes 5.11 MB of cache plus 2.92 MB of ownership. 39% of the cache is the full article-parameter JSON per fingerprint (`pipeline.py:1068`) and 22% is `__routes__`, duplicated in ownership. Contradictions review: `docs/output.md:116-119` documents the timestamp refresh. Blocked on an owner decision on timestamp granularity or location; then store a parameter digest plus the two fields `translation_history` reads and stop duplicating routes. Keep retention expiry including `cache_retention_days: 0`. |
-| REL-01 | wont_fix | low | — | `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
+| REL-01 | wont_fix | low | — | Reliability/correctness: `save_cache` swallows `TypeError` | Intentional: a broken cache write must never crash the build. |
 
 
 ## Asset mirroring
@@ -72,7 +73,7 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| UNUSED-01 | wont_fix | low | — | Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
+| UNUSED-01 | wont_fix | low | — | Unused functions: Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
 
 
 ## Taxonomy authoring
@@ -131,4 +132,3 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-72 | open | low | small | Contradictions: `TODO.md` does not fully follow its own legend or AGENTS.md. | The legend says effort `—` marks a retained `wont_fix`, yet REDOS-001 and REDOS-002 are `wont_fix` with efforts S and M; AGENTS.md requires a review category in each description or notes, and the eleven older `wont_fix` rows carry none. Does not reopen any decision. Next: label the rows and align the legend. |

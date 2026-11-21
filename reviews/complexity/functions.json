@@ -3484,8 +3484,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 11,
-            "end_line": 15,
-            "line": 14,
+            "end_line": 16,
+            "line": 15,
             "name": "TaggedRecord.lang",
             "projection_sha256": "6182a1eb7964167f657f23f532b8020f241833604bc788d94b4251cdb5c7128f"
           },
@@ -3494,8 +3494,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 11,
-            "end_line": 19,
-            "line": 18,
+            "end_line": 20,
+            "line": 19,
             "name": "TaggedRecord.tags",
             "projection_sha256": "22bc6a03aa6833fb7ec4d3506141d1b0c1497c1b7c82400cb9ccb386484ed0a6"
           },
@@ -3504,8 +3504,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 11,
-            "end_line": 23,
-            "line": 22,
+            "end_line": 24,
+            "line": 23,
             "name": "TaggedRecord.policy",
             "projection_sha256": "2b8ab9d9b221c3ff065b447d1f6ec310fd8a289d0fb0917b7910e65619d2398c"
           },
@@ -3514,20 +3514,20 @@
             "column": 0,
             "complexity": 8,
             "end_column": 95,
-            "end_line": 49,
-            "line": 36,
+            "end_line": 50,
+            "line": 37,
             "name": "normalized_tag_counts",
             "projection_sha256": "895d3fba1db0fb65c37ce29fd6421470858d5cd5445a8483d130f64157b88b65"
           },
           {
-            "body_sha256": "27f7759343a7f51d5bb82a4074b6551cdfcdbf2694b925984ac6f5ae5b631d54",
+            "body_sha256": "0251c44bcecbfa6211b3a95ab7665cc0802ee5e7b2b91e103cd0cca15f7b7899",
             "column": 0,
-            "complexity": 7,
+            "complexity": 3,
             "end_column": 20,
             "end_line": 60,
-            "line": 52,
+            "line": 53,
             "name": "_language_codes",
-            "projection_sha256": "3923ba6986114d75253c1659614ed611a0a7fd3e71896dd31b99a117bbaa5f1c"
+            "projection_sha256": "9d130ea981871d584d420c702751edb0052eaa6261b9804e8c1cb2706648736c"
           },
           {
             "body_sha256": "5e24d1281e0a0a7106861dfd31b1642eec74f68947714935ed5b6a2d2a69360b",
@@ -3572,7 +3572,7 @@
         ],
         "language": "python",
         "path": "articulous/catalogue.py",
-        "sha256": "c0234deec4fc5c84b086967809b8255d7735c02843e0986adeee9059597a7352"
+        "sha256": "e7332485596a5af42556556422e179c3c3a05d6d9346eed2d864204e86d23e12"
       },
       {
         "functions": [
@@ -16715,11 +16715,21 @@
             "line": 40,
             "name": "test_arch008_invalid_article_collections",
             "projection_sha256": "520a76351164a4b07539d4b499ce68d98524c67c1e716ce386b18b2b60500001"
+          },
+          {
+            "body_sha256": "8e44ec3726bd01b7f442e8af74bcd253f2027c2af41b3d1b9a1665ed1512c548",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 78,
+            "end_line": 51,
+            "line": 46,
+            "name": "test_audit1121_13_catalogue_uses_shared_language_identity",
+            "projection_sha256": "690bcb5a05c507549f5d7445f4bef046e2df5530a3454e7c6ef5051da316ec2e"
           }
         ],
         "language": "python",
         "path": "tests/test_catalogue.py",
-        "sha256": "f3ca864dbea85b1652613ba740a64e74815db0dd26618b9e9699e1275ebb64e9"
+        "sha256": "0e0a331cb74bb5bbe549acae1d9d6dd641150a46283d25c4f496519b1638db68"
       },
       {
         "functions": [

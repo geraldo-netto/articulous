@@ -40,3 +40,12 @@ def test_arch008_invalid_language_collections(languages):
 def test_arch008_invalid_article_collections(articles):
     with pytest.raises(ValueError):
         PublicationCatalogue(articles, ['en'])
+
+
+@pytest.mark.parametrize('codes', [('en', 'EN'), ('pt-BR', 'pt-br'), ('a/b',), ('en us',), ('日本語',)])
+def test_audit1121_13_catalogue_uses_shared_language_identity(codes):
+    with pytest.raises(ValueError, match='Catalogue languages'):
+        PublicationCatalogue([], iter(codes))
+    valid = ('en', 'PT-br', 'x_CA', 'a1')
+    catalogue = PublicationCatalogue([], iter(valid))
+    assert [catalogue.tag_counts(code) for code in valid] == [()] * len(valid)

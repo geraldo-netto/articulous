@@ -6,6 +6,7 @@ from types import MappingProxyType
 from typing import Generic, Protocol, TypeVar
 
 from .article_contracts import PublicationPolicy
+from .languages import validate_languages
 from .slugs import normalize_slug
 
 
@@ -53,10 +54,9 @@ def _language_codes(values: Iterable[str]) -> tuple[str, ...]:
     if isinstance(values, (str, bytes)):
         raise ValueError('Catalogue languages must be a collection')
     languages = tuple(values)
-    if not languages or any(not isinstance(value, str) or not value.strip() for value in languages):
-        raise ValueError('Catalogue language codes must be nonempty strings')
-    if len(languages) != len(set(languages)):
-        raise ValueError('Catalogue language codes must be unique')
+    if not languages:
+        raise ValueError('Catalogue languages must not be empty')
+    validate_languages(languages, label='Catalogue languages')
     return languages
 
 

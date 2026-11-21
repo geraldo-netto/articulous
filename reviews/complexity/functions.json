@@ -33477,11 +33477,21 @@
             "line": 100,
             "name": "test_review29_24_code_toolbar_keeps_configured_labels",
             "projection_sha256": "85984f77d3cc38cba494770e990708e07f0c7e7b22b8f6b453de9c2ba48e9c44"
+          },
+          {
+            "body_sha256": "88d9125182300aa757e435e7be0b636c1f45feec2d98653f1732077355987199",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 95,
+            "end_line": 128,
+            "line": 119,
+            "name": "test_review28_55_stock_prism_files_have_upstream_provenance",
+            "projection_sha256": "d1eadb5e0434e2096b81246922277ecbc9486969e54f5bc5b08d9c98e2d59231"
           }
         ],
         "language": "python",
         "path": "tests/test_theme_resources.py",
-        "sha256": "4d9f226899986abece65a059634ce8f5b515ccb8b23840462373e1e31bc8baed"
+        "sha256": "76fc32ff02a0f62217dabc5a0a734a4b8f574513701f7b50f9cff82ce77fd5db"
       },
       {
         "functions": [

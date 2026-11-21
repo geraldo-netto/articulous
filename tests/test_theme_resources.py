@@ -114,3 +114,15 @@ def test_review29_24_code_toolbar_keeps_configured_labels(tmp_path, upper):
     actual = html.parse(str(output)).xpath('//pre')[0].attrib
     assert {name: actual[name] for name in expected} == expected
     assert (actual['id'], actual['class'], actual['data-topic']) == ('sample', 'example', 'demo')
+
+
+def test_review28_55_stock_prism_files_have_upstream_provenance():
+    manifest = prism_provenance()
+    maintained = manifest['maintained_plugin']['path']
+    expected = {k: v for k, v in manifest['files'].items() if k != maintained}
+    assert manifest['upstream_unmodified'] == expected
+    assert set(manifest['upstream_sources']) == set(expected)
+    assert manifest['upstream_sources']['assets/vendor/prism/LICENSE'] == 'LICENSE'
+    for asset, upstream in [('light', 'themes/prism.css'), ('dark', 'themes/prism-tomorrow.css'),
+                            ('toolbar', 'plugins/toolbar/prism-toolbar.css')]:
+        assert manifest['upstream_sources'][f'assets/css/vendor/prism/{asset}.css'] == upstream

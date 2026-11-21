@@ -89,7 +89,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-55 | open | low | small | Data governance: the Prism manifest has no provenance for the three shipped CSS files. | `third_party/prism/manifest.json:27-29`: `light.css`, `dark.css` and `toolbar.css` are under `files` but not `upstream_unmodified` or `upstream_sources`; `LICENSE` also lacks a source entry. They are byte-identical to prismjs 1.30.0 `themes/prism.css`, `themes/prism-tomorrow.css` and `plugins/toolbar/prism-toolbar.css`. Next: add them to both lists. |
 | REDOS-002 | wont_fix | medium | M | Optional synchronous Prism highlighting has content-sensitive quadratic paths. | Security/performance review; code-blocks.js:30 calls highlightElement without a worker or admission bound. Packaged markup tag, Bash function and batch set-variable patterns show roughly 4x cost per doubled input in completed 1k–8k local text-only cases; no snippet was executed. Owner instruction 2026-10-24 declines further post-content/highlighting analysis and hardening. Keep disposition unless owner explicitly resumes. Future work must retain normal highlighting/copy behavior and permanent malformed-input/valid-boundary regressions, with owned cancellation if isolation is selected. Limited evidence and intentionally stopped vendor review: reviews/regex/README.md. |
 
 

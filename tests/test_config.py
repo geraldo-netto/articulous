@@ -23,6 +23,14 @@ class FakeCLI:
         self.config_path = Path("config.json")
 
 
+def test_compat09_required_configuration_input_cannot_be_guessed(tmp_path):
+    cli = FakeCLI()
+    del cli.config_path
+    with pytest.raises(AttributeError, match="config_path"):
+        apply_cli_overrides(copy.deepcopy(DEFAULT_CONFIG), cli, tmp_path)
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_log_cannot_alias_cache_lock(tmp_path):
     config = copy.deepcopy(DEFAULT_CONFIG)
     config["logging"]["file"] = "..build-cache.json.articulous.lock"

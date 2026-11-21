@@ -29,6 +29,7 @@ from articulous.articles import (
     normalize_slug,
     parse_article_xml,
 )
+from articulous.cli import CliOptions, parse_cli_args
 from articulous.engines import LxmlEngine, safe_xml_parser
 from articulous.transform_contracts import TransformFailure
 from articulous.config import apply_cli_overrides, load_or_create_config
@@ -161,8 +162,7 @@ def test_oversize_title_parses_but_build_rejects_before_writes(site_root):
     assert a is not None
     assert len(a.slug) == 400
     config = load_or_create_config(site_root / "config.json")
-    cli = _no_filter_cli()
-    cli.dry_run = cli.force_full_build = cli.verbose = False
+    cli = CliOptions(parse_cli_args([]))
     apply_cli_overrides(config, cli, site_root)
     with pytest.raises(ValueError, match="output component exceeds filesystem limit"):
         run_build(cli, config, site_root)

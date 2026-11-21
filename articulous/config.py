@@ -389,7 +389,7 @@ def _validate_partition_paths(build, cache, output, paths):
 
 def validate_state_paths(config: Mapping[str, Any], cli: ConfigurationOptions, project_root: Path) -> None:
     root = project_root.resolve()
-    source = root / getattr(cli, "config_path", "config.json")
+    source = root / cli.config_path
     trees = [(root / path).resolve() for path in config["paths"].values()]
     output = (root / config["paths"]["output_dir"]).resolve()
     if any(path.is_relative_to(output) for path in (source.parent.resolve() / source.name, source.resolve())):

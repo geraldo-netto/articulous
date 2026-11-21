@@ -5097,14 +5097,14 @@
             "projection_sha256": "504b71eae26511def07ccb290698a05ca7836c79abb7a2854e183c5cee39353b"
           },
           {
-            "body_sha256": "dfc93d69e5b41e4b1bf4979247a31c598769885ff1f58aa3698935782bcf62cf",
+            "body_sha256": "b1b28b66695797022a75df8eb539c0182a89e1179dfd813988d782de04749363",
             "column": 0,
             "complexity": 8,
             "end_column": 84,
             "end_line": 407,
             "line": 390,
             "name": "validate_state_paths",
-            "projection_sha256": "63cb27bd511eeefed1b294a08745d29c63cf21322b8d38d9478d80bb6cb37046"
+            "projection_sha256": "273d66031f444d5ddc2ab3d8f5e7ad2b01bf8d2b66266a002c07e75d1ca61f5f"
           },
           {
             "body_sha256": "e2af1cb217385d7fbd78689d70b240ff68f98a7e28d70d6b8fca044dc15dedad",
@@ -5129,7 +5129,7 @@
         ],
         "language": "python",
         "path": "articulous/config.py",
-        "sha256": "8c3576bfc12130d5ad856218d20e1ed9903050843b63bd007e4759745ba09aad"
+        "sha256": "717056dc8e8f214a098ac7e617f0281969236bec95763e8d4dcd0d5cfcae27b4"
       },
       {
         "functions": [
@@ -18489,12 +18489,22 @@
             "projection_sha256": "51df049267e0cf05ffe086bd3b5d793062a2fa0d3728fb65bc8f0fde93c7c960"
           },
           {
+            "body_sha256": "875067b08adf1462c1fee00578e9c52d3e3886a9e92e9d942c253b7502874d86",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 41,
+            "end_line": 31,
+            "line": 26,
+            "name": "test_compat09_required_configuration_input_cannot_be_guessed",
+            "projection_sha256": "d952f9fd4465d2b94de695d87755cf7a6f587db9eae9a59a427eab0ca10d2f0c"
+          },
+          {
             "body_sha256": "f2abd9f33f116d17712ee8936d0b54cc01612bd95e50956e16372f358f59d502",
             "column": 0,
             "complexity": 1,
             "end_column": 56,
-            "end_line": 30,
-            "line": 26,
+            "end_line": 38,
+            "line": 34,
             "name": "test_log_cannot_alias_cache_lock",
             "projection_sha256": "60ee8be783d93bc40e71be548de633d3356882d5f7c9e0d207be8ec09b8593f5"
           },
@@ -18503,8 +18513,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 56,
-            "end_line": 38,
-            "line": 34,
+            "end_line": 46,
+            "line": 42,
             "name": "test_state_cannot_alias_output_ownership",
             "projection_sha256": "ca006f6343628c2692deb2daf3f6fd1412a4843c6fec231d7e32673525b2920c"
           },
@@ -18513,8 +18523,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 43,
-            "end_line": 46,
-            "line": 43,
+            "end_line": 54,
+            "line": 51,
             "name": "test_deep_merge_shallow",
             "projection_sha256": "c4a615b05cf6323cdeb47017240b7c4fba8fddc102d2726d8c65fa459f762902"
           },
@@ -18523,8 +18533,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 51,
-            "end_line": 52,
-            "line": 49,
+            "end_line": 60,
+            "line": 57,
             "name": "test_deep_merge_recurses_into_nested_dicts",
             "projection_sha256": "795bc2ae65dee20699f07732408027a1e55b8d891a9e1008888770d5c6e71694"
           },
@@ -18533,8 +18543,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 43,
-            "end_line": 59,
-            "line": 55,
+            "end_line": 67,
+            "line": 63,
             "name": "test_deep_merge_returns_base",
             "projection_sha256": "7fdc3dd4473ceeaeb049be7c4f6c62bdd61741af27cbc09a5da6d7a0c4cd1c03"
           },
@@ -18543,8 +18553,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 34,
-            "end_line": 65,
-            "line": 62,
+            "end_line": 73,
+            "line": 70,
             "name": "test_deep_merge_override_non_dict_into_dict",
             "projection_sha256": "68586ae3ac0f3e37019972dc87e46e4a121a9e8478f3cc5a243b7678a430c0f1"
           },
@@ -18553,8 +18563,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 57,
-            "end_line": 75,
-            "line": 70,
+            "end_line": 83,
+            "line": 78,
             "name": "test_load_or_create_config_missing_path_uses_default",
             "projection_sha256": "f1a9188f8c37731ecaf8a35eaab616e0b00b9a36230e92c94e156228559d6730"
           },
@@ -18563,8 +18573,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 82,
-            "line": 78,
+            "end_line": 90,
+            "line": 86,
             "name": "test_load_or_create_config_invalid_json_fails_fast",
             "projection_sha256": "2504ed9cfb39eaa5d4098fc1ed9898a56ff3367f48583388eb0e6c61973ea188"
           },
@@ -18573,8 +18583,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 89,
-            "line": 85,
+            "end_line": 97,
+            "line": 93,
             "name": "test_load_or_create_config_non_dict_fails_fast",
             "projection_sha256": "8038191ed8a18f7bf640b508ded27b5400d0c2070c24a08cd58c15ef50b12800"
           },
@@ -18583,8 +18593,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 96,
-            "line": 92,
+            "end_line": 104,
+            "line": 100,
             "name": "test_load_or_create_config_scalar_fails_fast",
             "projection_sha256": "54cb68908df78671d93679cd7f29a8dc102efc271a1b5aa2819132fcb0b29312"
           },
@@ -18593,8 +18603,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 72,
-            "end_line": 105,
-            "line": 99,
+            "end_line": 113,
+            "line": 107,
             "name": "test_load_or_create_config_merges_user_overrides",
             "projection_sha256": "a8ce280a337a3b9d0c4ed406a5b4e1f1a094affd14b7a3f87906b2c5c8164298"
           },
@@ -18603,8 +18613,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 112,
-            "line": 108,
+            "end_line": 120,
+            "line": 116,
             "name": "test_load_or_create_config_rejects_invalid_schema",
             "projection_sha256": "6c02ee8bf79ca85e6365e59f734b6e3792928b57403b176d7b353cb520dabe70"
           },
@@ -18613,8 +18623,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 28,
-            "end_line": 119,
-            "line": 115,
+            "end_line": 127,
+            "line": 123,
             "name": "_set_nested",
             "projection_sha256": "ab72124480e537a85cf235a28fc51fd2a800af783ad1b038b003e8e58921204f"
           },
@@ -18623,8 +18633,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 28,
-            "end_line": 144,
-            "line": 140,
+            "end_line": 152,
+            "line": 148,
             "name": "test_validate_config_rejects_invalid_fields",
             "projection_sha256": "47b0cdf5fcbc1e3a596b4ee04e09575d3d177da638bb887dced6c8050408cf8a"
           },
@@ -18633,8 +18643,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 150,
-            "line": 147,
+            "end_line": 158,
+            "line": 155,
             "name": "test_validate_config_rejects_non_object_root",
             "projection_sha256": "ca95ec84f48679ca7c266e0431ccc371021a751d32eb53114cd2a12624df206e"
           },
@@ -18643,8 +18653,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 28,
-            "end_line": 157,
-            "line": 153,
+            "end_line": 165,
+            "line": 161,
             "name": "test_validate_config_rejects_unknown_root_key",
             "projection_sha256": "c12dae2edfa7dec7713d3d5b496bf003fc2c4128a67406f0264711de7e0ce055"
           },
@@ -18653,8 +18663,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 24,
-            "end_line": 165,
-            "line": 160,
+            "end_line": 173,
+            "line": 168,
             "name": "test_validate_config_accepts_optional_strings",
             "projection_sha256": "03af6ea07b34e4f91302aad92e50ae461b8e15bda953b675a18056b91c1592e4"
           },
@@ -18663,8 +18673,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 174,
-            "line": 169,
+            "end_line": 182,
+            "line": 177,
             "name": "test_base_url_syntax_is_validated_for_custom_backends",
             "projection_sha256": "92b59f33d5e6b4b40e1a76aadc2b8946796a614b01d38b44b0a6c77de3d88c21"
           },
@@ -18673,8 +18683,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 27,
-            "end_line": 181,
-            "line": 178,
+            "end_line": 189,
+            "line": 186,
             "name": "test_valid_base_url_forms_remain_supported",
             "projection_sha256": "34359a87cd1aaf2886b716b4d72875c775ee208df62ffd401b31c7ca3292a5dd"
           },
@@ -18683,8 +18693,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 192,
-            "line": 188,
+            "end_line": 200,
+            "line": 196,
             "name": "test_validate_config_rejects_unsafe_language_segments",
             "projection_sha256": "75cc67168f8f5f53361d0d83a157a93ce983a31f3bbd7295fd32c7ec92670e9a"
           },
@@ -18693,8 +18703,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 27,
-            "end_line": 199,
-            "line": 196,
+            "end_line": 207,
+            "line": 204,
             "name": "test_validate_config_accepts_safe_language_segments",
             "projection_sha256": "c2c8371bb70bc2ee7116d87e7abf943970842d50c1e3b6ca3c64287e05bedd66"
           },
@@ -18703,8 +18713,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 211,
-            "line": 207,
+            "end_line": 219,
+            "line": 215,
             "name": "test_url_pattern_rejects_non_file_url_components",
             "projection_sha256": "d6202f1efc1897e218c2d5e5d0dd42c2083594b07fb4aae5cfdead93bb5291da"
           },
@@ -18713,8 +18723,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 220,
-            "line": 216,
+            "end_line": 228,
+            "line": 224,
             "name": "test_file_url_pattern_rejects_trailing_slashes",
             "projection_sha256": "fcb74977d2b5a96bf775eda919bb7100d400b841f22f0e3c4d80258405b899f7"
           },
@@ -18723,8 +18733,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 45,
-            "end_line": 231,
-            "line": 225,
+            "end_line": 239,
+            "line": 233,
             "name": "test_apply_cli_overrides_force_and_verbose",
             "projection_sha256": "06460df261052ecac9d21a5b14d0ef85427abefb8a169b27bc85e5bb49663c51"
           },
@@ -18733,8 +18743,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 79,
-            "end_line": 239,
-            "line": 234,
+            "end_line": 247,
+            "line": 242,
             "name": "test_apply_cli_overrides_resolves_paths",
             "projection_sha256": "d4597672aac9b74cbd61fd8c8ae13336688d9816855bfc74cda0192e58991253"
           },
@@ -18743,8 +18753,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 247,
-            "line": 242,
+            "end_line": 255,
+            "line": 250,
             "name": "test_apply_cli_overrides_rejects_traversal",
             "projection_sha256": "e529636c6a967998a39e4a7575391d0f75406319f3552c40bcc98008a8713ecd"
           },
@@ -18753,8 +18763,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 257,
-            "line": 252,
+            "end_line": 265,
+            "line": 260,
             "name": "test_output_layout_rejects_source_overlap",
             "projection_sha256": "f98d78c12dd6453fa38bf79bd9795daf9aa1ccc59f5721ca84e73f47cd523634"
           },
@@ -18763,8 +18773,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 265,
-            "line": 260,
+            "end_line": 273,
+            "line": 268,
             "name": "test_apply_cli_overrides_rejects_absolute_outside_root",
             "projection_sha256": "be5054a9b9117ce0525662e523b6fcca7ca8a2b78fbf013cce97e6952be5ceda"
           },
@@ -18773,8 +18783,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 64,
-            "end_line": 276,
-            "line": 268,
+            "end_line": 284,
+            "line": 276,
             "name": "test_apply_cli_overrides_accepts_absolute_inside_root",
             "projection_sha256": "cfe8e6d78d04099dadb08733f4507515007ffaa41459b058c7bbf34cec033cfb"
           },
@@ -18783,8 +18793,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 48,
-            "end_line": 292,
-            "line": 280,
+            "end_line": 300,
+            "line": 288,
             "name": "test_cache_cannot_alias_active_configuration",
             "projection_sha256": "a6164738a8aa95b0309ceca7d3fdc43ac9783eec645c2d4747f8deed3957cc95"
           },
@@ -18793,9 +18803,9 @@
             "column": 23,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 283,
-            "line": 283,
-            "name": "test_cache_cannot_alias_active_configuration.<lambda>@283:23",
+            "end_line": 291,
+            "line": 291,
+            "name": "test_cache_cannot_alias_active_configuration.<lambda>@291:23",
             "projection_sha256": "434fcc990b6968532db2f4267c989d072083f5e5da9546d95e8f91a161570d60"
           },
           {
@@ -18803,9 +18813,9 @@
             "column": 48,
             "complexity": 1,
             "end_column": 100,
-            "end_line": 283,
-            "line": 283,
-            "name": "test_cache_cannot_alias_active_configuration.<lambda>@283:48",
+            "end_line": 291,
+            "line": 291,
+            "name": "test_cache_cannot_alias_active_configuration.<lambda>@291:48",
             "projection_sha256": "d2951198c808b6d44240644b2eae4268d94a07c9ea391d521b1f81f6e657a820"
           },
           {
@@ -18813,9 +18823,9 @@
             "column": 27,
             "complexity": 1,
             "end_column": 75,
-            "end_line": 284,
-            "line": 284,
-            "name": "test_cache_cannot_alias_active_configuration.<lambda>@284:27",
+            "end_line": 292,
+            "line": 292,
+            "name": "test_cache_cannot_alias_active_configuration.<lambda>@292:27",
             "projection_sha256": "8a800131c447b8c5de6d66cf50372af4d8fac92dbe30ce1c0d091cdd47930466"
           },
           {
@@ -18823,8 +18833,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 48,
-            "end_line": 309,
-            "line": 296,
+            "end_line": 317,
+            "line": 304,
             "name": "test_configuration_must_stay_outside_output",
             "projection_sha256": "6b23b73a94d8cc51f94e6627e6cc26a406de6331b64ede644570e1341dec1229"
           },
@@ -18833,8 +18843,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 56,
-            "end_line": 320,
-            "line": 316,
+            "end_line": 328,
+            "line": 324,
             "name": "test_build_state_paths_are_disjoint",
             "projection_sha256": "fee6d6895f18a17670508548b45fabac035e79da930e93a55845105861f9262e"
           },
@@ -18843,8 +18853,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 45,
-            "end_line": 333,
-            "line": 324,
+            "end_line": 341,
+            "line": 332,
             "name": "test_state_hardlinks_cannot_alias_source_inputs",
             "projection_sha256": "2f23ab86a999b646dc9a85920c78a1ae9091fa32533fcbd940edc896839f3273"
           },
@@ -18853,8 +18863,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 349,
-            "line": 341,
+            "end_line": 357,
+            "line": 349,
             "name": "test_review29_17_reject_duplicate_json_members",
             "projection_sha256": "2d0441dacf83210674b92e59562c1beede9369c34d7bd90357c7b30e3acee617"
           },
@@ -18863,15 +18873,15 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 357,
-            "line": 352,
+            "end_line": 365,
+            "line": 360,
             "name": "test_review29_17_distinct_objects_can_repeat_a_key",
             "projection_sha256": "4dcf5e3c7506c3d67ca0e30a2820ad3f838a01ca2e9d5bdb5fb3c66c0b053dc7"
           }
         ],
         "language": "python",
         "path": "tests/test_config.py",
-        "sha256": "6a2a1e8a57b0f8cc4f6c4441f6ff737d24ca30bcb3c72487569c38f3dea7d246"
+        "sha256": "a3aa1ff92366da5fe33f395cdef8363b93e6c5c9f70e377fa9cdc1efd31f0b93"
       },
       {
         "functions": [
@@ -20969,8 +20979,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 54,
-            "end_line": 83,
-            "line": 72,
+            "end_line": 84,
+            "line": 73,
             "name": "_model_ctx",
             "projection_sha256": "00f52d67fe2f43e39e8a408d9e3842f244bfd6a69462ab400875ceab42bc2564"
           },
@@ -20979,8 +20989,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 26,
-            "end_line": 94,
-            "line": 86,
+            "end_line": 95,
+            "line": 87,
             "name": "_art",
             "projection_sha256": "65e129bfd5e2750579098bbbeb76c06b29b1384d5b8a2be1d1e71828932b1c2f"
           },
@@ -20989,8 +20999,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 5,
-            "end_line": 101,
-            "line": 97,
+            "end_line": 102,
+            "line": 98,
             "name": "_no_filter_cli",
             "projection_sha256": "a737f317aa72a0e1b4f5abacfd73ca91eaf6e313b6d52b30beed06c2cbec4b6e"
           },
@@ -20999,8 +21009,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 31,
-            "end_line": 127,
-            "line": 117,
+            "end_line": 128,
+            "line": 118,
             "name": "test_empty_title_falls_back_to_path_stem",
             "projection_sha256": "5ff3333618036a90cb9d658759c3e73668dd0f90a6d9ffb49add7f7121345a0a"
           },
@@ -21009,9 +21019,9 @@
             "column": 42,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 124,
-            "line": 124,
-            "name": "test_empty_title_falls_back_to_path_stem.<lambda>@124:42",
+            "end_line": 125,
+            "line": 125,
+            "name": "test_empty_title_falls_back_to_path_stem.<lambda>@125:42",
             "projection_sha256": "0a1627a04cf927c213901a2d6bd8b38b8feb429b0c9f645dfac4cd5c839f79de"
           },
           {
@@ -21019,8 +21029,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 138,
-            "line": 130,
+            "end_line": 139,
+            "line": 131,
             "name": "test_empty_description_field",
             "projection_sha256": "da34b18656544a5620da9428aa8cca7b9cf15aef00f40dabffb79915d7547095"
           },
@@ -21029,20 +21039,20 @@
             "column": 0,
             "complexity": 1,
             "end_column": 40,
-            "end_line": 150,
-            "line": 141,
+            "end_line": 151,
+            "line": 142,
             "name": "test_oversize_description",
             "projection_sha256": "96005fab1e49c8946b1e19abcb3320b16cc9f7d97263862920032223dfb77eae"
           },
           {
-            "body_sha256": "24a09e81300a9ae61172b26a966a2bbd76b0cb43d3de1c8b8b3bea92349526d5",
+            "body_sha256": "da1d05569106ddbdd7a9a43354e209aea140b6c5897bdec88e32e554f6695183",
             "column": 0,
             "complexity": 1,
             "end_column": 57,
             "end_line": 170,
-            "line": 153,
+            "line": 154,
             "name": "test_oversize_title_parses_but_build_rejects_before_writes",
-            "projection_sha256": "d4c809c36e4666bffa71b76cd08a514e1a5d4ea49eb5dc1d20bd32497860752f"
+            "projection_sha256": "72557a020a8cf0d34fde06cf3590af1f0d803061a17ed79a90d6c5e5fb50d722"
           },
           {
             "body_sha256": "8fa741ae730b4998368c955141ecd42d845175c038f2ad79e1000a6bdb1e46f7",
@@ -21257,7 +21267,7 @@
         ],
         "language": "python",
         "path": "tests/test_fuzz_edges.py",
-        "sha256": "427d3af75e07bf057e5775d039e22624a611d1c58dca1d41d1f075bbd1e11644"
+        "sha256": "b8ede937cbc670b662c63524e1a592beeb6e180c6219d1b52a44d5fa900871c0"
       },
       {
         "functions": [

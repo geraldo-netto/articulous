@@ -2,11 +2,18 @@
 from contextlib import ExitStack
 from datetime import datetime, timezone
 from heapq import merge
-from operator import attrgetter
+from os import fsencode
 
 from .articles import ArticleStats
 from .extensions import CapturedArticle
 from .pipeline import ArticleStore, _article_input, _article_stream_factory
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def _capture_order(article):
+    return _EPOCH - article.datetime, fsencode(article.source_path)
 
 
 class Snapshot:
@@ -62,7 +69,7 @@ class Snapshot:
                 reader = iter(self._sorted_batch(lang))
                 cleanup.callback(reader.close)
                 batches.append(reader)
-            yield from merge(*batches, key=attrgetter('datetime'), reverse=True)
+            yield from merge(*batches, key=_capture_order)
 
     def original_articles(self, language=None):
         self._require_open()

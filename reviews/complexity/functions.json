@@ -3126,12 +3126,22 @@
       {
         "functions": [
           {
+            "body_sha256": "e107b6a652348ec857f4228356a73815cb405965955d43c7f878346c218beee8",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 67,
+            "end_line": 16,
+            "line": 15,
+            "name": "_capture_order",
+            "projection_sha256": "a3a12750fc529cb36ad04877bef8360bf801645e8f882c529e6a4eca9121fa39"
+          },
+          {
             "body_sha256": "188910897326e1fa298a8f43442c4ac147c65178861ff5db2e3a79f082d3420b",
             "column": 4,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 21,
-            "line": 13,
+            "end_line": 28,
+            "line": 20,
             "name": "Snapshot.__init__",
             "projection_sha256": "9366ac7f2c1540b5eda47ecc20c647cf48a933f12d30c89cf7c0d4f5f178edb5"
           },
@@ -3140,8 +3150,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 25,
-            "line": 24,
+            "end_line": 32,
+            "line": 31,
             "name": "Snapshot.languages",
             "projection_sha256": "aae91ac5790b8c0e04cd22ec88564e603f22dfb8810202dbf754eeb2da1c446a"
           },
@@ -3150,8 +3160,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 29,
-            "line": 28,
+            "end_line": 36,
+            "line": 35,
             "name": "Snapshot.captured_at",
             "projection_sha256": "17d5b23d9c33eb43e88497febcfc939f3e08446e0892b1d5232fc77015eab09a"
           },
@@ -3160,8 +3170,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 37,
-            "end_line": 33,
-            "line": 32,
+            "end_line": 40,
+            "line": 39,
             "name": "Snapshot.invalid_articles",
             "projection_sha256": "c0e5e3fe4e427b652cb17d6927558776a2cf907d7372abcb5d0ce4f83b916fae"
           },
@@ -3170,8 +3180,8 @@
             "column": 4,
             "complexity": 3,
             "end_column": 17,
-            "end_line": 43,
-            "line": 35,
+            "end_line": 50,
+            "line": 42,
             "name": "Snapshot._capture",
             "projection_sha256": "67929f2c4c4c9170ec758ecefc76783ef5c1cb8536793ef13dfd9e7a3656a16f"
           },
@@ -3180,8 +3190,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 55,
-            "end_line": 47,
-            "line": 45,
+            "end_line": 54,
+            "line": 52,
             "name": "Snapshot._require_open",
             "projection_sha256": "73d23282713cbc3dd74e60f87d0c5c6650d931c6c99676eaa37820115b1121d0"
           },
@@ -3190,28 +3200,28 @@
             "column": 4,
             "complexity": 2,
             "end_column": 38,
-            "end_line": 52,
-            "line": 49,
+            "end_line": 59,
+            "line": 56,
             "name": "Snapshot._sorted_batch",
             "projection_sha256": "5ab4755860f2e6008c2cd684cd0017f9eadec61211f629ea5dd7c01430eedffd"
           },
           {
-            "body_sha256": "0d0875f2194c7cbc52226f8a9a3a1a6b0916a21f3b1ec679d49c31f93dc33724",
+            "body_sha256": "fff903deab48d8e3d0ba2ae57907a4a9747037a39ab4225d1ab9fd1a13662b3c",
             "column": 4,
             "complexity": 5,
-            "end_column": 80,
-            "end_line": 65,
-            "line": 54,
+            "end_column": 58,
+            "end_line": 72,
+            "line": 61,
             "name": "Snapshot._read_original",
-            "projection_sha256": "9ca049f3a0cb407ea70004927457f0dae08a3bedcc5797206dfbd309553b58d9"
+            "projection_sha256": "ba4432443752ea908e20264774d3b1309c976a6a441fa3b37fd34c23c18fffcd"
           },
           {
             "body_sha256": "31badea5c03368e050e2ff443fc46cc0b34a5866b035cfe7c1199a2a388e7dff",
             "column": 4,
             "complexity": 4,
             "end_column": 26,
-            "end_line": 81,
-            "line": 67,
+            "end_line": 88,
+            "line": 74,
             "name": "Snapshot.original_articles",
             "projection_sha256": "8f974b46074156dc3af17fbbe6ef455ec9ec86afce1bb71cf127f5685d8954ca"
           },
@@ -3220,8 +3230,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 13,
-            "end_line": 90,
-            "line": 83,
+            "end_line": 97,
+            "line": 90,
             "name": "Snapshot.articles",
             "projection_sha256": "a2535b214035482d5977e20775296ad50d32ecb8804fb306868084d88fc65daf"
           },
@@ -3230,15 +3240,15 @@
             "column": 4,
             "complexity": 2,
             "end_column": 46,
-            "end_line": 99,
-            "line": 92,
+            "end_line": 106,
+            "line": 99,
             "name": "Snapshot.close",
             "projection_sha256": "f0abb555058523ed3f52387ba47faced2f48cb2d3470844f5ddcb53c53fa1876"
           }
         ],
         "language": "python",
         "path": "articulous/capture_adapter.py",
-        "sha256": "244162db168c0053e59a715b4155e26113cb75b47a97eb3ab36bd3742715e3b4"
+        "sha256": "504dd4ca09a6b891e49470fcb69c96da6c76e32502e62c9cfd695c7b1df5abfb"
       },
       {
         "functions": [
@@ -15792,11 +15802,21 @@
             "line": 136,
             "name": "test_review011_sort_failure_settles_owned_files_on_context_exit.fail",
             "projection_sha256": "d84a5c9bd35439a86584e5e984c3e9514fb14e79ebfa0b9fbd651feeaed2e9d0"
+          },
+          {
+            "body_sha256": "da2520af8d2b50130f2258bedf1b32cd7a9f89605aabfa9b3d55783e5bd5f1af",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 101,
+            "end_line": 166,
+            "line": 152,
+            "name": "test_review28_38_global_capture_ties_follow_source_path_order",
+            "projection_sha256": "7bfa65604d13e70edaf9e74f60019a235f5826a74ee14d9f55fb7d5620f1c62e"
           }
         ],
         "language": "python",
         "path": "tests/test_capture_lifetime.py",
-        "sha256": "c45dffadd567c570f6d6dc9c4169ef14a35059590d889e5115e29e6cd589bee5"
+        "sha256": "a73fe60ad22bba1b1cae94e1446deb551e257761d49b56c97fdc83b94a247857"
       },
       {
         "functions": [

@@ -147,3 +147,20 @@ def test_review011_sort_failure_settles_owned_files_on_context_exit(site_root, s
     assert snapshot._active == set()
     assert paths
     assert all(not path.exists() for path in paths)
+
+
+def test_review28_38_global_capture_ties_follow_source_path_order(site_root, seo_config):
+    import lxml.etree as etree
+
+    content = site_root / 'content'
+    french = content / 'fr/premier.xml'
+    french.rename(content / 'a.xml')
+    for article in content.rglob('*.xml'):
+        tree = etree.parse(str(article))
+        tree.find('date').text = '2024-01-01'
+        tree.write(str(article))
+    cli, config = seo_config
+    with capture_site(cli, config, site_root) as captured:
+        assert [article.slug for article in captured.articles()] == [
+            'premier-article', 'first-post', 'second-post']
+        assert [article.slug for article in captured.articles('en')] == ['first-post', 'second-post']

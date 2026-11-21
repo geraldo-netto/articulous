@@ -32,7 +32,7 @@ from articulous.pipeline import (
     _sitemap_url_xml,
     _xml_doc,
 )
-from articulous.engines import LxmlEngine, stylesheet_hash
+from articulous.engines import LxmlEngine
 
 
 # --- normalize_slug fuzz ---
@@ -137,7 +137,8 @@ MINIMAL_XSLT = (
 def test_make_xslt_task_random_xml_hashes_consistently(tmp_path):
     xsl = tmp_path / "x.xsl"
     xsl.write_bytes(MINIMAL_XSLT)
-    xsl_hash = stylesheet_hash(xsl)
+    engine = LxmlEngine()
+    xsl_hash = engine.prepare_stylesheet(xsl)
     ctx = BuildCtx(
         content_dir=tmp_path, xsl_dir=tmp_path,
         output_dir=tmp_path, assets_dir=tmp_path,
@@ -150,7 +151,7 @@ def test_make_xslt_task_random_xml_hashes_consistently(tmp_path):
             xml_input=payload, xsl_path=xsl, xsl_hash=xsl_hash,
             output_path=tmp_path / f"o{i}.html",
             cache=cache, cache_key=f"k{i}",
-            engine=LxmlEngine(), ctx=ctx,
+            engine=engine, ctx=ctx,
         )
         assert task is not None
         task()

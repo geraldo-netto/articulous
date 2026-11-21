@@ -18,7 +18,7 @@ import pytest
 
 from articulous.articles import Article, ArticleStats
 from articulous.config import DEFAULT_CONFIG, validate_config
-from articulous.engines import LxmlEngine, SaxonCEngine, stylesheet_hash
+from articulous.engines import LxmlEngine, SaxonCEngine
 from articulous.transform_contracts import TransformFailure
 from articulous.filesystem import TempWorkspace, cache_lock_path, lock_file
 from articulous.pipeline import (
@@ -790,19 +790,20 @@ def test_site_name_escaped_in_attrs():
 def test_make_xslt_task_bytes_hashes_in_memory(tmp_path):
     ctx = _ctx_for(tmp_path)
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
+    engine = LxmlEngine()
     cache = {}
     task = _make_xslt_task(
         xml_input=b"<root/>",
-        xsl_path=xsl, xsl_hash=stylesheet_hash(xsl),
+        xsl_path=xsl, xsl_hash=engine.prepare_stylesheet(xsl),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
-        engine=LxmlEngine(), ctx=ctx,
+        engine=engine, ctx=ctx,
     )
     assert task is not None
     task()
     import hashlib
     expected = hashlib.sha256(b"<root/>").hexdigest()
-    assert cache["k"] == [expected, stylesheet_hash(xsl), LxmlEngine().cache_identity, "out.html"]
+    assert cache["k"] == [expected, engine.prepare_stylesheet(xsl), engine.cache_identity, "out.html"]
 
 
 def test_make_xslt_task_path_hashes_file(tmp_path):
@@ -810,16 +811,17 @@ def test_make_xslt_task_path_hashes_file(tmp_path):
     xml = tmp_path / "in.xml"
     xml.write_bytes(b"<root/>")
     xsl = tmp_path / "xsl" / "pages" / "rss.xsl"
+    engine = LxmlEngine()
     cache = {}
     task = _make_xslt_task(
-        xml_input=xml, xsl_path=xsl, xsl_hash=stylesheet_hash(xsl),
+        xml_input=xml, xsl_path=xsl, xsl_hash=engine.prepare_stylesheet(xsl),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="k",
-        engine=LxmlEngine(), ctx=ctx,
+        engine=engine, ctx=ctx,
     )
     assert task is not None
     task()
-    assert cache["k"][1] == stylesheet_hash(xsl)
+    assert cache["k"][1] == engine.prepare_stylesheet(xsl)
 
 
 def test_make_xslt_task_cached_returns_none(tmp_path):
@@ -876,12 +878,13 @@ def test_make_xslt_task_cache_not_committed_on_failure(tmp_path):
     # broken xsl content → XSLTParseError
     broken = tmp_path / "broken.xsl"
     broken.write_bytes(b"<not-a-stylesheet/>")
+    engine = LxmlEngine()
     cache = {}
     task = _make_xslt_task(
-        xml_input=b"<root/>", xsl_path=broken, xsl_hash=stylesheet_hash(broken),
+        xml_input=b"<root/>", xsl_path=broken, xsl_hash=engine.prepare_stylesheet(broken),
         output_path=tmp_path / "output" / "out.html",
         cache=cache, cache_key="bad",
-        engine=LxmlEngine(), ctx=ctx,
+        engine=engine, ctx=ctx,
     )
     assert task is not None
     with pytest.raises(TransformFailure):

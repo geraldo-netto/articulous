@@ -49,7 +49,6 @@ __all__ = [
     "make_engine",
     "safe_xml_parser",
     "safe_xslt_access_control",
-    "stylesheet_hash",
 ]
 
 _XSL_NAMESPACE = {"xsl": "http://www.w3.org/1999/XSL/Transform"}
@@ -141,10 +140,6 @@ def _snapshot_stylesheet(path: Path) -> _StylesheetSnapshot:
             digest.update(len(data).to_bytes(8, "big"))
             digest.update(data)
     return _StylesheetSnapshot(next(iter(documents)), tuple(documents.items()), digest.hexdigest())
-
-
-def stylesheet_hash(path: Path) -> str:
-    return _snapshot_stylesheet(path).fingerprint
 
 
 class _SnapshotResolver(etree.Resolver):

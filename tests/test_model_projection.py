@@ -96,7 +96,7 @@ def test_perf018_invalid_model_inputs_reject(source, path, parameters):
 
 
 def test_perf018_projected_bytes_own_cache_identity(tmp_path):
-    from articulous.engines import LxmlEngine, stylesheet_hash
+    from articulous.engines import LxmlEngine
     from articulous.pipeline import BuildCtx, _make_xslt_task
     output = tmp_path / 'output'
     output.mkdir()
@@ -110,7 +110,7 @@ def test_perf018_projected_bytes_own_cache_identity(tmp_path):
     def project(model):
         return projected[0]
     context = BuildCtx(tmp_path, tmp_path, output, tmp_path / 'assets', model_projection=project)
-    style_hash = stylesheet_hash(style)
+    style_hash = engine.prepare_stylesheet(style)
     cache = {'page': [hashlib.sha256(original).hexdigest(), style_hash, engine.cache_identity, 'index.html']}
     for value in (b'<extra value="first"/>', b'<extra value="second"/>'):
         projected[0] = value
@@ -135,7 +135,7 @@ def test_perf018_projection_cancellation_cleans_owned_preparation(site_root, seo
 
 
 def test_perf018_streamed_artifacts_bypass_presentation_projection(tmp_path):
-    from articulous.engines import LxmlEngine, stylesheet_hash
+    from articulous.engines import LxmlEngine
     from articulous.pipeline import BuildCtx, _make_xslt_task
     style = tmp_path / 'page.xsl'
     style.write_bytes(STYLE)
@@ -146,7 +146,8 @@ def test_perf018_streamed_artifacts_bypass_presentation_projection(tmp_path):
     def project(model):
         pytest.fail('Streamed artifact must retain its native file input')
     context = BuildCtx(tmp_path, tmp_path, output, tmp_path / 'assets', model_projection=project)
-    task = _make_xslt_task(xml_input=source, xsl_path=style, xsl_hash=stylesheet_hash(style),
+    engine = LxmlEngine()
+    task = _make_xslt_task(xml_input=source, xsl_path=style, xsl_hash=engine.prepare_stylesheet(style),
                            output_path=output / 'index.html', cache={}, cache_key='stream',
                            engine=LxmlEngine(), ctx=context)
     assert task is not None

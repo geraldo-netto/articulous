@@ -27,7 +27,6 @@ from articulous.engines import (
     make_engine,
     safe_xslt_access_control,
     safe_xml_parser,
-    stylesheet_hash,
 )
 from articulous.filesystem import TempWorkspace
 from articulous.configuration_contracts import validate_engines
@@ -52,7 +51,13 @@ def test_valid_engines_set():
     assert VALID_ENGINES == {"saxonc", "lxml", "native"}
 
 
-def test_stylesheet_hash_tracks_transitive_includes(tmp_path):
+def test_review28_16_engine_owns_stylesheet_preparation():
+    from articulous import engines
+    assert "stylesheet_hash" not in vars(engines)
+    assert "stylesheet_hash" not in engines.__all__
+
+
+def test_prepare_stylesheet_tracks_transitive_includes(tmp_path):
     included = tmp_path / "included.xsl"
     included.write_text(MINIMAL_XSLT)
     main = tmp_path / "main.xsl"
@@ -63,12 +68,13 @@ def test_stylesheet_hash_tracks_transitive_includes(tmp_path):
             1,
         )
     )
-    first = stylesheet_hash(main)
+    engine = LxmlEngine()
+    first = engine.prepare_stylesheet(main)
     included.write_text(MINIMAL_XSLT.replace("<out/>", "<changed/>"))
-    assert stylesheet_hash(main) != first
+    assert engine.prepare_stylesheet(main) != first
 
 
-def test_stylesheet_hash_handles_repeated_dependency(tmp_path):
+def test_prepare_stylesheet_handles_repeated_dependency(tmp_path):
     included = tmp_path / "included.xsl"
     included.write_text(MINIMAL_XSLT)
     main = tmp_path / "main.xsl"
@@ -81,11 +87,11 @@ def test_stylesheet_hash_handles_repeated_dependency(tmp_path):
             1,
         )
     )
-    assert len(stylesheet_hash(main)) == 64
+    assert len(LxmlEngine().prepare_stylesheet(main)) == 64
 
 
 @pytest.mark.parametrize("kind", ["fifo", "device"])
-def test_stylesheet_hash_rejects_special_dependencies(tmp_path, kind):
+def test_prepare_stylesheet_rejects_special_dependencies(tmp_path, kind):
     dependency = tmp_path / "included.xsl"
     if kind == "fifo":
         os.mkfifo(dependency)
@@ -97,7 +103,7 @@ def test_stylesheet_hash_rejects_special_dependencies(tmp_path, kind):
     ))
     result = subprocess.run(
         [sys.executable, "-c", "from pathlib import Path; import sys; "
-         "from articulous.engines import stylesheet_hash; stylesheet_hash(Path(sys.argv[1]))",
+         "from articulous.engines import LxmlEngine; LxmlEngine().prepare_stylesheet(Path(sys.argv[1]))",
          str(main)],
         cwd=Path(__file__).resolve().parents[1], capture_output=True, timeout=5,
     )
@@ -105,7 +111,7 @@ def test_stylesheet_hash_rejects_special_dependencies(tmp_path, kind):
     assert b"Path must be a regular file" in result.stderr
 
 
-def test_stylesheet_hash_rejects_dependency_swapped_during_open(tmp_path, monkeypatch):
+def test_prepare_stylesheet_rejects_dependency_swapped_during_open(tmp_path, monkeypatch):
     dependency = tmp_path / "included.xsl"
     dependency.write_text(MINIMAL_XSLT)
     main = tmp_path / "main.xsl"
@@ -122,7 +128,7 @@ def test_stylesheet_hash_rejects_dependency_swapped_during_open(tmp_path, monkey
 
     monkeypatch.setattr(os, "open", swap_before_open)
     with pytest.raises(ValueError, match="Opened path must be a regular file"):
-        stylesheet_hash(main)
+        LxmlEngine().prepare_stylesheet(main)
 
 
 def test_engine_cache_identities_include_runtime(tmp_path):
@@ -186,7 +192,7 @@ def test_stylesheet_symlinks_keep_logical_dependency_bases(tmp_path, xml_base):
     engine.run(b"<root/>", main, output, stylesheet_fingerprint=first)
     assert etree.parse(str(output)).getroot().tag == "out"
     logical.write_text(MINIMAL_XSLT.replace("<out/>", "<logical/>"))
-    assert stylesheet_hash(main) != first
+    assert engine.prepare_stylesheet(main) != first
     engine.run(b"<root/>", main, output)
     assert etree.parse(str(output)).getroot().tag == "logical"
 
@@ -225,7 +231,7 @@ def test_stylesheet_alias_cycle_is_rejected(tmp_path):
     main.write_text(_including_stylesheet("nested/main.xsl"))
     (tmp_path / "nested").symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ValueError, match="Circular stylesheet dependency"):
-        stylesheet_hash(main)
+        LxmlEngine().prepare_stylesheet(main)
 
 
 def test_engine_rejects_uncaptured_mismatched_fingerprint(tmp_path):
@@ -250,7 +256,7 @@ def test_stylesheet_dependency_policy_rejects_unsupported_uris(tmp_path, href):
         f'<xsl:include href="{href}"/></xsl:stylesheet>'
     )
     with pytest.raises(ValueError, match="Stylesheet dependenc"):
-        stylesheet_hash(path)
+        LxmlEngine().prepare_stylesheet(path)
 
 
 def test_safe_xml_parser_is_xxe_safe(tmp_path):

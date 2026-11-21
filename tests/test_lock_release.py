@@ -41,12 +41,12 @@ def test_metadata_cleanup_failure_releases_os_lock(tmp_path, monkeypatch):
     with pytest.raises(OSError, match="cleanup failed"):
         with monkeypatch.context() as patch:
             with lock_file(path):
-                patch.setattr(os, "fsync", _fail_sync)
+                patch.setattr(os, "ftruncate", _fail_truncate)
     with lock_file(path):
         assert path.exists()
 
 
-def _fail_sync(_fd):
+def _fail_truncate(_fd, _length):
     raise OSError("cleanup failed")
 
 
@@ -73,3 +73,17 @@ def test_review001_unlock_failure_closes_descriptor(tmp_path, body_failure):
                 os.close(descriptor)
     with lock_file(path):
         pass
+
+
+@pytest.mark.parametrize('publish', [False, True], ids=['incremental', 'publication'])
+def test_review28_11_existing_build_needs_no_durable_sync(site_root, seo_config, publish):
+    from unittest.mock import patch
+    from articulous.pipeline import run_build
+    from articulous.publication import build_site
+
+    cli, config = seo_config
+    run_build(cli, config, site_root)
+    operation = build_site if publish else run_build
+    with patch.object(os, 'fsync', wraps=os.fsync) as sync:
+        operation(cli, config, site_root)
+    assert sync.call_count == 0

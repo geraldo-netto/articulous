@@ -340,7 +340,6 @@ def _write_lock(fd: int) -> None:
     os.lseek(fd, 0, os.SEEK_SET)
     os.ftruncate(fd, 0)
     os.write(fd, _lock_payload().encode("utf-8"))
-    os.fsync(fd)
 
 
 def _acquire_lock(path: Path, stale_after: float) -> int:
@@ -370,7 +369,6 @@ def lock_file(path: Path, stale_after: float = 3600):
     try:
         yield
         os.ftruncate(fd, 0)
-        os.fsync(fd)
     finally:
         try:
             fcntl.flock(fd, fcntl.LOCK_UN)

@@ -35,8 +35,6 @@ def snapshot(path, target):
         _single_link(source)
         with target.open('xb') as out:
             digest = _transfer(source, out)
-            out.flush()
-            os.fsync(out.fileno())
             return [*_single_link(out), digest]
 
 

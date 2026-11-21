@@ -1556,22 +1556,22 @@
             "projection_sha256": "a0ca48ef8a116b0dc17775c809fbfeadcb5eb7d46615f0675c79de7c2f2cab2a"
           },
           {
-            "body_sha256": "099275d40ca94c506184da5f6897d8c2ae998999b7529fad5788b6f20e1e62e5",
+            "body_sha256": "00d791515b099b4abe4e7c13685d5c24dde11e732eeb56d44b33f5c6c1ab63ba",
             "column": 0,
             "complexity": 2,
             "end_column": 47,
-            "end_line": 40,
+            "end_line": 38,
             "line": 28,
             "name": "snapshot",
-            "projection_sha256": "e364b79ff841fefc28fcd66f47e0a5d0cc743a6efb7353ced696a478d32bb7f3"
+            "projection_sha256": "0aaf45d75e30ed0b643ce57e9ab615a35588c69c804115bc8d4c118b5cd0b605"
           },
           {
             "body_sha256": "b7de03a840152b51648856024f46d1e834dd5a602cf27e4e343f8ffc4b8e9530",
             "column": 0,
             "complexity": 3,
             "end_column": 54,
-            "end_line": 45,
-            "line": 43,
+            "end_line": 43,
+            "line": 41,
             "name": "require_digest",
             "projection_sha256": "230c0f7334e104afcc14150ea9c5a6c6b8e2d1c29fd35d280fbc34d2185fa54a"
           },
@@ -1580,8 +1580,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 28,
-            "end_line": 55,
-            "line": 48,
+            "end_line": 53,
+            "line": 46,
             "name": "validate_claim",
             "projection_sha256": "31d314424d8a14c5b586b004edc9decfe0a586a6485fd724202fc3cf9348e0bb"
           },
@@ -1590,8 +1590,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 20,
-            "end_line": 63,
-            "line": 59,
+            "end_line": 61,
+            "line": 57,
             "name": "_snapshot_source",
             "projection_sha256": "b19eb9914719fdba62af7650010c45ae9f257fe847d9121cdbdb23e6fb781998"
           },
@@ -1600,8 +1600,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 66,
-            "end_line": 71,
-            "line": 66,
+            "end_line": 69,
+            "line": 64,
             "name": "verify_snapshot",
             "projection_sha256": "db0bb0edb3762432ac0760da71eee4dc948a61be0374400b3de02b89afd8feec"
           },
@@ -1610,8 +1610,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 70,
-            "end_line": 82,
-            "line": 74,
+            "end_line": 80,
+            "line": 72,
             "name": "restore_snapshot",
             "projection_sha256": "d42bdd04eecb9ecef6d024b282ac51be06ef951e26cf86ee8a93f47c68675363"
           },
@@ -1620,8 +1620,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 19,
-            "end_line": 91,
-            "line": 85,
+            "end_line": 89,
+            "line": 83,
             "name": "_current_digest",
             "projection_sha256": "ce0d266e587300759314ace850e898a9988c07aab4f9affa45a6d5f7f35e0bf2"
           },
@@ -1630,8 +1630,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 35,
-            "end_line": 99,
-            "line": 94,
+            "end_line": 97,
+            "line": 92,
             "name": "_root_entries",
             "projection_sha256": "9ce117d6babaea2281cc8c80de43f3aa0d6ab666b19ad765adf8fdb0a6f94333"
           },
@@ -1640,8 +1640,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 55,
-            "end_line": 105,
-            "line": 102,
+            "end_line": 103,
+            "line": 100,
             "name": "_read_roots",
             "projection_sha256": "3246bb817e241d2cbb7f70833066f3caeeec42ce579425543c057f431754bf63"
           },
@@ -1650,8 +1650,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 50,
-            "end_line": 115,
-            "line": 108,
+            "end_line": 113,
+            "line": 106,
             "name": "_saved_roots",
             "projection_sha256": "a47cc6c6fc88a61d9e175618b6a7428b8d04f1a1f42e96069ecc421e238367d1"
           },
@@ -1660,8 +1660,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 77,
-            "end_line": 129,
-            "line": 118,
+            "end_line": 127,
+            "line": 116,
             "name": "_restore_active_cache",
             "projection_sha256": "44990e5767e3e7f9afa63b96915d9c665d32562095f43afad51ea9ba89c61fd0"
           },
@@ -1670,15 +1670,15 @@
             "column": 0,
             "complexity": 4,
             "end_column": 58,
-            "end_line": 138,
-            "line": 132,
+            "end_line": 136,
+            "line": 130,
             "name": "restore_cache",
             "projection_sha256": "8a514f8aa5f5cdf1d5d51a4ef47741ed8571b2fa8f587e4666fd35a6adb18b56"
           }
         ],
         "language": "python",
         "path": "articulous/backends/publication_snapshots.py",
-        "sha256": "ed1311d4c5d6500372e3a8becd002ed10227b04439c133186ed7dc64aa4d06d2"
+        "sha256": "c6f7d36ef350cc4242d5a69ba5069794646059652d6852daf7c7604fc0a20607"
       },
       {
         "functions": [
@@ -6192,42 +6192,42 @@
             "projection_sha256": "40f91d8b57ef735d850c181ab09d33eb10c0e2a833549de8a279d1a14de405f0"
           },
           {
-            "body_sha256": "f338a87059a650bcf6f1f8523532d93f3b64fbde06c560c6a39393c9bc67a460",
+            "body_sha256": "037b0dca31758ab2ebda79b9228d959e94c83d88b82b89ce83a48bedf2dae265",
             "column": 0,
             "complexity": 1,
-            "end_column": 16,
-            "end_line": 343,
+            "end_column": 49,
+            "end_line": 342,
             "line": 339,
             "name": "_write_lock",
-            "projection_sha256": "f0ed26c01f607306e8ae798bde8c857d62d6dccf1dd6265fbdf0c91dba0d1b24"
+            "projection_sha256": "2ee12802fba28f24aaab26703751d0b6c3ef231daa6c1a12024e09c61c77d5ca"
           },
           {
             "body_sha256": "d9a04b210fcb7a4fbec5100f3a018a092568a641d544503256e8dcfe14b22690",
             "column": 0,
             "complexity": 6,
             "end_column": 13,
-            "end_line": 364,
-            "line": 346,
+            "end_line": 363,
+            "line": 345,
             "name": "_acquire_lock",
             "projection_sha256": "a64d9fbf8d1641c59eddce827baeff654e3262164ee1f4a7e85aa5f27a632259"
           },
           {
-            "body_sha256": "0afc89af292f465a500d25c93dd1363bc1e79dc26609f61173d4cc861403bb68",
+            "body_sha256": "5ba086497668cc5d22e1e11f0cd8657cb204558d6fdeb23d9323aebbbad73d0b",
             "column": 0,
             "complexity": 3,
             "end_column": 24,
-            "end_line": 378,
-            "line": 368,
+            "end_line": 376,
+            "line": 367,
             "name": "lock_file",
-            "projection_sha256": "59d05cb767a73611f953674a7eaf5509da23f52a87c447520f9ac43c3bd4e493"
+            "projection_sha256": "7e851e1eab4a02bdb56352936d53ec656c26fd2b65730fe8fad27898b9c8d142"
           },
           {
             "body_sha256": "28793cd02fcf85404adb7beb22ff1bb86c3cfb00545cf38090426875f01d894f",
             "column": 4,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 384,
-            "line": 382,
+            "end_line": 382,
+            "line": 380,
             "name": "TempWorkspace.__init__",
             "projection_sha256": "ce0edba00ab8511525aa4308de3eeff6431de069609a9b122a0efccb1a3d8f38"
           },
@@ -6236,8 +6236,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 16,
-            "end_line": 392,
-            "line": 386,
+            "end_line": 390,
+            "line": 384,
             "name": "TempWorkspace.named_file",
             "projection_sha256": "0e7e660aa1bb9dae2ecc42d360bd300e910f880d4df534561f35f88bd77b44ad"
           },
@@ -6246,8 +6246,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 396,
-            "line": 394,
+            "end_line": 394,
+            "line": 392,
             "name": "TempWorkspace.add",
             "projection_sha256": "bb438e667fc0236c7396dc944f33ef41ab2d3e7582566e0deab2404c5250f977"
           },
@@ -6256,8 +6256,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 27,
-            "end_line": 401,
-            "line": 398,
+            "end_line": 399,
+            "line": 396,
             "name": "TempWorkspace.cleanup",
             "projection_sha256": "2aad399f89984d5cbf247d3f6e41071f13048880db7edd05df582b5a23de859b"
           },
@@ -6266,8 +6266,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 404,
-            "line": 403,
+            "end_line": 402,
+            "line": 401,
             "name": "TempWorkspace.__enter__",
             "projection_sha256": "55dd338420b48fdcea10cd65be0331bbbff351597f94a7d1f80a1aa9d2bfd03b"
           },
@@ -6276,15 +6276,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 22,
-            "end_line": 407,
-            "line": 406,
+            "end_line": 405,
+            "line": 404,
             "name": "TempWorkspace.__exit__",
             "projection_sha256": "c5fb70d6713e9ea85ee3283f03b44d50a3d7fbc0947beebb2f1ef52519527657"
           }
         ],
         "language": "python",
         "path": "articulous/filesystem.py",
-        "sha256": "db12162ba3c8a45abe5939f5d3747829986a7319346c57caada8a39eb4e5e83f"
+        "sha256": "f5ee3994b39eaadade732bbbe494e1b933b4d03ce74951a2138d3230dd02151e"
       },
       {
         "functions": [
@@ -21771,23 +21771,23 @@
             "projection_sha256": "3363f306591c482da7b6050208f6ba65dec588ee7791eefc4c99e6c4db08ee39"
           },
           {
-            "body_sha256": "73c6b571301a36c95bee305cfbdefdcca946e104d010aa890dbb685cadad5e54",
+            "body_sha256": "48b06bfbf75bc8d730c54074842080c00fdd660d420ed01cf1af98c4fa3c700d",
             "column": 0,
             "complexity": 1,
             "end_column": 28,
             "end_line": 46,
             "line": 39,
             "name": "test_metadata_cleanup_failure_releases_os_lock",
-            "projection_sha256": "6e3d765409ef42ec49a7ab0c8db52e05bc72a607ead6667d02665d99b57f9bf8"
+            "projection_sha256": "0d7474feb5c9a5c54f84a2807379f4cd94264295fedf7a6e3924488d35f1bc30"
           },
           {
-            "body_sha256": "1ed3c751fefe0e093e512f280cca33514e03b2e3cdb44caa5179309f8c7a932a",
+            "body_sha256": "ae0ad5d21d5dfbda726487b13e498349fcf6a55d8f32c556f6c0598c1a62d8a3",
             "column": 0,
             "complexity": 1,
             "end_column": 35,
             "end_line": 50,
             "line": 49,
-            "name": "_fail_sync",
+            "name": "_fail_truncate",
             "projection_sha256": "bd03de202a53a192b42766d2bc33384f768cd702fdabc930efdcf881c414d8a1"
           },
           {
@@ -21799,11 +21799,21 @@
             "line": 54,
             "name": "test_review001_unlock_failure_closes_descriptor",
             "projection_sha256": "6c212ba6908e0598e13fcd9ddde111db0935740c7751d4d24a6e7d28ec26cfc3"
+          },
+          {
+            "body_sha256": "fe3b561c14abd8402aef048ff00362b00b90a074beb8f4aae0049547f043dfcb",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 31,
+            "end_line": 89,
+            "line": 79,
+            "name": "test_review28_11_existing_build_needs_no_durable_sync",
+            "projection_sha256": "76e92f0dcb2c066ffff6bfc983033e0ce878ad508f08e8c4a6d747a4cf97bb61"
           }
         ],
         "language": "python",
         "path": "tests/test_lock_release.py",
-        "sha256": "f3a351685d9317e1587c808c7d2f8268adc7bc647ba1357cc694fd07b82dea30"
+        "sha256": "9c3efb55a79de1749107a7b52fbbac7b7c55972ef5706bbb55f8e0db063605ed"
       },
       {
         "functions": [

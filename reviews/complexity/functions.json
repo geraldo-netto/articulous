@@ -11560,39 +11560,79 @@
             "projection_sha256": "a215c7e69409489422e6eff5c6c15979cecf8041776ff0b7bf7083aa52a952d0"
           },
           {
-            "body_sha256": "19db51313070de046de4d78ef4ded452ff8f85e1e7c90fe2c85cd3309edc9d28",
+            "body_sha256": "6c324edb987c77093469433f4d0ac96f86aa171c036203f99e8ebd5725975500",
             "column": 0,
+            "complexity": 3,
+            "end_column": 61,
+            "end_line": 43,
+            "line": 42,
+            "name": "_assigned_tags",
+            "projection_sha256": "0433ac88499abc12ca273d9764632125a6f70acb3595927b08a5f8f45dc33812"
+          },
+          {
+            "body_sha256": "77d67b8789d408c00095ac9bd5f3130fc573a3a872e8eecdf50818ad643db989",
+            "column": 4,
+            "complexity": 4,
+            "end_column": 54,
+            "end_line": 54,
+            "line": 47,
+            "name": "_PatternIndex.__init__",
+            "projection_sha256": "04231213c9b589615a241fcd2f92a56df12e3721f22e96877e9c24ab9de1236c"
+          },
+          {
+            "body_sha256": "dce31b3dbd7b7ded245861a11f34325f33f1f5317a91ba9b86483d6ce0f3bb1f",
+            "column": 4,
             "complexity": 6,
+            "end_column": 44,
+            "end_line": 66,
+            "line": 56,
+            "name": "_PatternIndex.candidates",
+            "projection_sha256": "16505cc45297b1ba63091c3392df57a5e2c286abfd2e74d6b50fb88f65370d32"
+          },
+          {
+            "body_sha256": "98706464a08306e78f2ada7feaa87fc21db7b4a408f4dcc73c63b6a8734a90b9",
+            "column": 4,
+            "complexity": 8,
+            "end_column": 23,
+            "end_line": 77,
+            "line": 68,
+            "name": "_PatternIndex.required",
+            "projection_sha256": "f31f8ba837f6e6031857c71985af930a9b817d9793198d7efb9fed149adc0ee7"
+          },
+          {
+            "body_sha256": "ca0c53522b83475ffd69aa7f7d83e6204db723deeaf07a4ff0bf2083eb03f8f7",
+            "column": 0,
+            "complexity": 5,
             "end_column": 19,
-            "end_line": 44,
-            "line": 37,
+            "end_line": 85,
+            "line": 80,
             "name": "required_tags",
-            "projection_sha256": "b0a7df5f9df7d699955437c495f9d1d661ac0f615775791e5e87e9274a808150"
+            "projection_sha256": "37939b65b1814ed166cbd4964b43a57153ff26e6f60e52b552695bb375e2cd7c"
           },
           {
             "body_sha256": "80758252fd33bb34d7517fa9263142bd65f614842f5113b94958e2a2ab71cee7",
             "column": 0,
             "complexity": 6,
             "end_column": 17,
-            "end_line": 59,
-            "line": 47,
+            "end_line": 100,
+            "line": 88,
             "name": "summary_groups",
             "projection_sha256": "a4532d254b7fa63f831e2c9a3553b8418308f82304409d4b41ce5d7938cc3354"
           },
           {
-            "body_sha256": "06921aedaa3ee7a277fb246ed45024995ae3bf35cdb6cafc0f072f5830f7b7ed",
+            "body_sha256": "8e1ab5f2887a0a60eb107894359a8141cba790d2b24846394639ee00de289139",
             "column": 0,
-            "complexity": 8,
+            "complexity": 7,
             "end_column": 18,
-            "end_line": 73,
-            "line": 62,
+            "end_line": 114,
+            "line": 103,
             "name": "missing_tags",
-            "projection_sha256": "ab6872831beb117e58f56998139eb39730eca9e24e34558b85c974401dc03a56"
+            "projection_sha256": "dce3caae6f82a678ce534ad69b6d1b73dc6d786083368cd2a8e21e23fb6be0c1"
           }
         ],
         "language": "python",
         "path": "articulous/taxonomy_completeness.py",
-        "sha256": "5bbbc2abcfa6ae7fa3c2094adba05455e6b4f50578429ed9ca6062719e0de909"
+        "sha256": "24b80e97414b5276debfc21572cc60ec711abc824c9a033e3b618d8d7378859e"
       },
       {
         "functions": [],
@@ -32512,11 +32552,91 @@
             "line": 83,
             "name": "TagCompleteness.test_tag007_bounded_word_boundaries_do_not_match_embedded_tokens",
             "projection_sha256": "a202953db8e5bc29d8c0f961095d5a760127cb7182a84c3a45465b010d759aec"
+          },
+          {
+            "body_sha256": "7d754e6c0266bf4ceff40810f0c716e2520781c1300afc505490725dfeb971c9",
+            "column": 0,
+            "complexity": 6,
+            "end_column": 17,
+            "end_line": 111,
+            "line": 101,
+            "name": "_full_scan_missing",
+            "projection_sha256": "22497d3e7ecde94c11ec9b61585e917597da2586f05e1abfc9bccc521637a887"
+          },
+          {
+            "body_sha256": "21f2cd1b4a43b44802d27c0d4c82c52e6f95afc8d119bdf9ba9b08769f0b9a97",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 31,
+            "end_line": 137,
+            "line": 114,
+            "name": "test_review28_52_sparse_vocabulary_checks_only_matching_anchors",
+            "projection_sha256": "d87bd8fdfa647ce30394b0c1565ab8c9f441e5562ee30e1c7632c1c6e912c2db"
+          },
+          {
+            "body_sha256": "da55fe3db25997d8a66cccd2b4333de5b522eaba71829bd2f9936f1c570bc70f",
+            "column": 8,
+            "complexity": 1,
+            "end_column": 48,
+            "end_line": 128,
+            "line": 127,
+            "name": "test_review28_52_sparse_vocabulary_checks_only_matching_anchors.CountedPattern.__init__",
+            "projection_sha256": "fcfeb6744afdd11efe3539e5ac7ace39d3040f76a60974a7b812c84ae94131af"
+          },
+          {
+            "body_sha256": "f04d9f8e8cd85a188a7d1d831ef6f945f53da0ea49b95ca301a593a5f8b7702f",
+            "column": 8,
+            "complexity": 1,
+            "end_column": 44,
+            "end_line": 133,
+            "line": 130,
+            "name": "test_review28_52_sparse_vocabulary_checks_only_matching_anchors.CountedPattern.search",
+            "projection_sha256": "b73a346c73bdc69c34654e23908f1abb0702e317fb76f8a91378422cda95b9a8"
+          },
+          {
+            "body_sha256": "96b6d197b8c5a6a946e79a5daff09cc99b0d2321667b58893a1dd615659e622e",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 69,
+            "end_line": 155,
+            "line": 140,
+            "name": "test_review28_52_unicode_and_punctuation_match_full_scan",
+            "projection_sha256": "49c33732f0d978f72a66309f52649d224887581e02bd429bab84d050a9150f7b"
+          },
+          {
+            "body_sha256": "5da72b0b73c66592e8074a7bbbaf30cfe214fe84a3614dcfe0f0dd105b8410b5",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 85,
+            "end_line": 170,
+            "line": 158,
+            "name": "test_review28_52_every_unicode_codepoint_matching_an_ascii_word_character",
+            "projection_sha256": "cc412bd7f0901db8375becc04912875a6ddc772dd203127471d979a5cd662a57"
+          },
+          {
+            "body_sha256": "6f18c1351ddf7c9ef6ddd6704906fe20f85a8af5cdba8f8609833bd30bc18285",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 5,
+            "end_line": 180,
+            "line": 173,
+            "name": "test_review28_52_custom_patterns_remain_independent_of_tag_spelling",
+            "projection_sha256": "6d81948ec55335308fe8bd6c72309d929229098e5e05fa4fb31f09c9d16437b0"
+          },
+          {
+            "body_sha256": "d21d6d7ab1eeac13570fe6fe0a6144554a82bdcf3b007d81d7607f169cb48ebe",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 66,
+            "end_line": 189,
+            "line": 183,
+            "name": "test_review28_52_unindexed_vocabulary_and_empty_vocabulary",
+            "projection_sha256": "69f84fcbd77cfa08a714f0b82b9a3b75b45aecd1a0bf9f969411e8b252cd3895"
           }
         ],
         "language": "python",
         "path": "tests/test_taxonomy_completeness.py",
-        "sha256": "4a086bb8418966d63295c0a28975c3db1b597ce33e534501c5498b6fc769c7d4"
+        "sha256": "d7e4a37d06433a29a7e1582d8730d13dcc2e00660735f4ad3dd27fa1ad9d5709"
       },
       {
         "functions": [

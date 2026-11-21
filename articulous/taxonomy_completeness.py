@@ -34,10 +34,51 @@ def tag_pattern(name: str) -> re.Pattern:
     return re.compile(r'(?<!\w)' + phrase + r'(?!\w)', re.IGNORECASE)
 
 
+_WORD = re.compile(r'\w+')
+# Python's IGNORECASE includes both Turkish I variants for the ASCII letter i.
+_ASCII_I = str.maketrans({'İ': 'i', 'ı': 'i'})
+
+
+def _assigned_tags(group):
+    return {tag for summary in group for tag in summary.tags}
+
+
+class _PatternIndex:
+    def __init__(self, vocabulary):
+        self.size = len(vocabulary)
+        self.by_word = {}
+        self.fallback = []
+        for name in vocabulary:
+            anchor = _WORD.search(name) if name.isascii() else None
+            patterns = self.by_word.setdefault(anchor[0].lower(), []) if anchor else self.fallback
+            patterns.append((name, tag_pattern(name)))
+
+    def candidates(self, text):
+        yield from self.fallback
+        if not self.by_word:
+            return
+        seen = set()
+        for word in _WORD.finditer(text):
+            token = word[0]
+            key = token.lower() if token.isascii() else token.translate(_ASCII_I).casefold()
+            if key in self.by_word and key not in seen:
+                seen.add(key)
+                yield from self.by_word[key]
+
+    def required(self, group):
+        required = _assigned_tags(group)
+        if len(required) == self.size:
+            return required
+        for row in group:
+            for text in (row.title, row.description):
+                if text:
+                    required.update(name for name, pattern in self.candidates(text)
+                                    if name not in required and pattern.search(text))
+        return required
+
+
 def required_tags(group: Sequence[TagSummary], patterns: Mapping[str, re.Pattern]) -> set[str]:
-    required = set()
-    for summary in group:
-        required.update(summary.tags)
+    required = _assigned_tags(group)
     for name, pattern in patterns.items():
         if any(pattern.search(row.title) or pattern.search(row.description) for row in group):
             required.add(name)
@@ -62,10 +103,10 @@ def summary_groups(summaries: object) -> dict[str, list[TagSummary]]:
 def missing_tags(summaries: object) -> dict[str, tuple[str, ...]]:
     groups = summary_groups(summaries)
     vocabulary = {name for group in groups.values() for row in group for name in row.tags}
-    patterns = {name: tag_pattern(name) for name in sorted(vocabulary)}
+    index = _PatternIndex(vocabulary)
     missing = {}
     for group in groups.values():
-        required = required_tags(group, patterns)
+        required = index.required(group)
         for summary in group:
             names = tuple(sorted(required - set(summary.tags)))
             if names:

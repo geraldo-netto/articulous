@@ -148,6 +148,8 @@ def _score_candidates(names, normalized, index, positions, threshold):
 
 
 def duplicate_candidates(names: list[str], threshold: float = 0.8):
+    """Score pairs in ascending original-name order, independent of the input order."""
+    names = sorted(names)
     normalized = [fold(name) for name in names]
     if len(normalized) < 2:
         return

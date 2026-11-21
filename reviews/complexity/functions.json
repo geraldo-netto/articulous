@@ -12054,22 +12054,22 @@
             "projection_sha256": "1664cb3edf65c3f511d195c15d833b04055ed126a8e8362870103bb0c43243d3"
           },
           {
-            "body_sha256": "05bb0669cb8253359d3f9e1d380fc142e44f1cb03ff114965b39ec34c8f0dc9c",
+            "body_sha256": "2730ccdd8662a9c68fa0fe4772008a16a0b897cec3670df81156140e156cbff0",
             "column": 0,
             "complexity": 4,
             "end_column": 82,
-            "end_line": 156,
+            "end_line": 158,
             "line": 150,
             "name": "duplicate_candidates",
-            "projection_sha256": "237be94c1e89f82f979aa16e06c2ef5cf5dec7f287d923849f916d1f3874e98c"
+            "projection_sha256": "304b2c25170a9236637d22fa0a73f033366163ee89920b0253647576027ec98c"
           },
           {
             "body_sha256": "b192a059ed86c3ca87772434e38d8ab9d90d5dcc3d93ddc5cc99b2b6a778912e",
             "column": 0,
             "complexity": 1,
             "end_column": 71,
-            "end_line": 161,
-            "line": 160,
+            "end_line": 163,
+            "line": 162,
             "name": "near_duplicates",
             "projection_sha256": "dd1c7bf6de3e3bf1dd8f1db89fc41806806cde014c0b54c565ba923af5494aad"
           },
@@ -12078,15 +12078,15 @@
             "column": 0,
             "complexity": 6,
             "end_column": 44,
-            "end_line": 175,
-            "line": 164,
+            "end_line": 177,
+            "line": 166,
             "name": "duplicate_summary",
             "projection_sha256": "5055f13b4f70bf9de696a792e7d12ea215b3dc0591caf46267506c3adc76fb5b"
           }
         ],
         "language": "python",
         "path": "articulous/taxonomy_reports.py",
-        "sha256": "b5ed882fbd9617aea9cb0f70b677b94633456e563315c314b446c13d993b019e"
+        "sha256": "90a7ed3a92c4ee96ad25cbcd554c21395f5ecf9d146e56d1e9080739abf37673"
       },
       {
         "functions": [
@@ -33152,22 +33152,22 @@
       {
         "functions": [
           {
-            "body_sha256": "48700c1ae58c3f9e64bda081a979f8a99918a7662d43b1d09bf81d56e42aef30",
+            "body_sha256": "6905a8176de120540b6090be89d923cea8363917a4b6bddeaf16fe9bcbc1582a",
             "column": 4,
             "complexity": 7,
             "end_column": 56,
-            "end_line": 45,
+            "end_line": 46,
             "line": 13,
             "name": "DuplicateReportCost.test_rev102_reuses_normalized_names_without_losing_pairs",
-            "projection_sha256": "96eddca30d4bbc2f1af9af6238ef230ae6bac08ae5bde80eb3a2af1ac3469bab"
+            "projection_sha256": "01ec01106a8702b7c9d84b38742cddaacd1f57cf6d6495463f83d7a6cfcb5847"
           },
           {
             "body_sha256": "0ae4a8f88df7f08fe160fb3d2ffa2072428748ecc9d3ffa2e18480f7b0e5614b",
             "column": 0,
             "complexity": 1,
             "end_column": 53,
-            "end_line": 55,
-            "line": 48,
+            "end_line": 56,
+            "line": 49,
             "name": "test_edit002_groups_plurals_and_normalization",
             "projection_sha256": "6eab4a55987874aac860dde867327696121d97b71a172e0825bd5a2e033fed92"
           },
@@ -33176,28 +33176,28 @@
             "column": 0,
             "complexity": 1,
             "end_column": 41,
-            "end_line": 63,
-            "line": 62,
+            "end_line": 64,
+            "line": 63,
             "name": "test_review28_49_preserves_unicode_letters_and_spacing_marks",
             "projection_sha256": "4bdd94245030fed43c5f84aa96aa29d1be54d5bd4d6d7c09e8038f3ba9734da9"
           },
           {
-            "body_sha256": "92d148336d553f5f2fc71c2ad6b069d756d8cda0d70ea3fbbef490fd4abd43b0",
+            "body_sha256": "3cb7c153af750e49f8ff18c2e9736691a19b14a6834e03fc868870e5fc43075a",
             "column": 0,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 68,
-            "line": 66,
+            "end_line": 69,
+            "line": 67,
             "name": "test_review28_49_distinct_scripts_do_not_fill_the_exact_duplicate_sample",
-            "projection_sha256": "5a3321de97c92b37cf6dbd6ac863908ce6d039fb5af6d3c088797cc05ed4b5f3"
+            "projection_sha256": "57663bff980e18dba1064138bb18f8cc96d9b7fdd2de00872d9930d67cc946f6"
           },
           {
             "body_sha256": "dbc3da877fd62413a0f431be07f3bd51983e1b2a8e6412d80490b3108804db5a",
             "column": 0,
             "complexity": 2,
             "end_column": 36,
-            "end_line": 82,
-            "line": 71,
+            "end_line": 83,
+            "line": 72,
             "name": "test_review28_53_equal_length_tags_skip_unrelated_pairs",
             "projection_sha256": "082ea06427dfc5f424cc7c8d4916c4aae0b7f24599a756254c0c8f47172f272f"
           },
@@ -33206,28 +33206,28 @@
             "column": 4,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 78,
-            "line": 76,
+            "end_line": 79,
+            "line": 77,
             "name": "test_review28_53_equal_length_tags_skip_unrelated_pairs.count",
             "projection_sha256": "05c963458f2bd7d0204f178a2f6bf3866fc4bd38f282e7764b34a3bcd1aaf16c"
           },
           {
-            "body_sha256": "1bf81a54f6ec5f957b4a28cf3618d6e74d335b77c60bbe79fffad30026c19298",
+            "body_sha256": "9e87324c0566bf5cd56284f82c0d3d727d07bfbe32fde49a7e87f3981ef906d6",
             "column": 0,
             "complexity": 6,
             "end_column": 62,
-            "end_line": 94,
-            "line": 85,
+            "end_line": 96,
+            "line": 86,
             "name": "_direct_candidates",
-            "projection_sha256": "78fff3d9bd8133617468d90d085375c401d2308f361e91822e1ede02b428cb98"
+            "projection_sha256": "8d53f055d698ea759e3b6ce51edadf6ecf8812e6fdabcadc9c14776e6fad63e5"
           },
           {
             "body_sha256": "e970629cbbe00551b4fcff922151ed5f71842ad51f07449efb3b7eed29fd6116",
             "column": 0,
             "complexity": 3,
             "end_column": 79,
-            "end_line": 109,
-            "line": 98,
+            "end_line": 111,
+            "line": 100,
             "name": "test_review28_53_order_bounds_and_sample_match_all_pairs",
             "projection_sha256": "c213520bdd5eab693f6aa49e834f4f548d13b9ac893d268f26e19c2cdffbabe5"
           },
@@ -33236,8 +33236,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 47,
-            "end_line": 115,
-            "line": 113,
+            "end_line": 117,
+            "line": 115,
             "name": "test_edit002_invalid_sample_capacity",
             "projection_sha256": "575f5bf0d3201aff6862e831f65356724fe5f0e9bd01a85434309cef09795950"
           },
@@ -33246,8 +33246,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 60,
-            "end_line": 133,
-            "line": 118,
+            "end_line": 135,
+            "line": 120,
             "name": "test_rev136_complete_dense_totals_with_bounded_storage",
             "projection_sha256": "5ecadf7a304f3ab7e16a952b3c104489e727530cbb8b712ba8d81c9d343fc410"
           },
@@ -33256,15 +33256,25 @@
             "column": 0,
             "complexity": 1,
             "end_column": 17,
-            "end_line": 137,
-            "line": 136,
+            "end_line": 139,
+            "line": 138,
             "name": "same_name",
             "projection_sha256": "bc84a68ddd0cddf1120dc8dac34111783f09be84441f4b541b258d75796df1f0"
+          },
+          {
+            "body_sha256": "148a28b3677380606b4de878be18f1042b3def8e9de0746f221eb558db7de7a3",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 74,
+            "end_line": 151,
+            "line": 142,
+            "name": "test_review28_51_permuting_tags_preserves_scores_pairs_and_top_k",
+            "projection_sha256": "77f78237697d42a95c1e046f587439d4abc18f79854d244eb70f3a6d79048690"
           }
         ],
         "language": "python",
         "path": "tests/test_taxonomy_reports.py",
-        "sha256": "d41c21238ca88c314b6049047d0462b7baa3c43f4a660e386bdaa85d2de57ab9"
+        "sha256": "3f3169b29271ff412acb1528bb3d1d56027b72294c8917809907be0b5b5b9373"
       },
       {
         "functions": [

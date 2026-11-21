@@ -21,10 +21,11 @@ class DuplicateReportCost(unittest.TestCase):
         names += [
             "".join(randomizer.choices("abc-é ", k=size)) for size in range(1, 25)
         ]
+        ordered = sorted(names)
         for threshold in (0, 0.5, 0.8, 1, 1.1, -1, float("nan")):
             expected = []
-            for index, first in enumerate(names):
-                for second in names[index + 1 :]:
+            for index, first in enumerate(ordered):
+                for second in ordered[index + 1 :]:
                     left, right = report.fold(first), report.fold(second)
                     if left == right:
                         expected.append((1.0, first, second))
@@ -65,7 +66,7 @@ def test_review28_49_preserves_unicode_letters_and_spacing_marks(name, expected)
 
 def test_review28_49_distinct_scripts_do_not_fill_the_exact_duplicate_sample():
     names = ["Москва", "Київ", "Python入門", "Python基礎", "python", "Straße", "STRASSE", "strae"]
-    assert reports.near_duplicates(names, 1.0) == [(1.0, "Straße", "STRASSE")]
+    assert reports.near_duplicates(names, 1.0) == [(1.0, "STRASSE", "Straße")]
 
 
 def test_review28_53_equal_length_tags_skip_unrelated_pairs(monkeypatch):
@@ -83,6 +84,7 @@ def test_review28_53_equal_length_tags_skip_unrelated_pairs(monkeypatch):
 
 
 def _direct_candidates(names, threshold):
+    names = sorted(names)
     values = [reports.fold(name) for name in names]
     for right, second in enumerate(names):
         for left in range(right):
@@ -135,3 +137,15 @@ def test_rev136_complete_dense_totals_with_bounded_storage(monkeypatch):
 
 def same_name(value):
     return "same"
+
+
+def test_review28_51_permuting_tags_preserves_scores_pairs_and_top_k():
+    from itertools import permutations
+
+    names = ['amaterasu', 'amateurs', 'A', 'a']
+    pairs = [(1.0, 'A', 'a'), (0.82, 'amaterasu', 'amateurs')]
+    assert reports.near_duplicates(['amateurs', 'amaterasu']) == pairs[1:]
+    for order in permutations(names):
+        assert reports.near_duplicates(list(order)) == pairs
+        assert list(reports.duplicate_candidates(list(order))) == pairs
+        assert reports.duplicate_summary(list(order), 1) == (2, pairs[:1])

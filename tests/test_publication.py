@@ -261,7 +261,7 @@ def test_arch005_native_locks_cover_shared_resources_and_release(tmp_path, share
 
 
 @pytest.mark.parametrize('changes', [
-    {'version': 2}, {'destination': '/wrong'}, {'cache': '/wrong'}, {'phase': 'unknown'},
+    {'version': 3}, {'destination': '/wrong'}, {'cache': '/wrong'}, {'phase': 'unknown'},
     {'stage': '/wrong'}, {'new': [1]}, {'previous': 'bad'}, {'stage_identity': [1, True]},
     {'cache_before': 'not base64'}, {'ownership_before': 42},
 ])
@@ -377,3 +377,149 @@ def test_arch005_owned_path_type_changes_are_preserved(site_root, seo_config, re
     with pytest.raises(ValueError, match='unowned|regular file'):
         build_site(cli, config, site_root)
     assert path.is_dir() == directory
+
+
+def test_rel40_delayed_rollback_preserves_other_root_activity(site_root, seo_config, cache_clock):
+    cli, config = seo_config
+    run_build(cli, config, site_root)
+    script = '''
+import os, sys
+from pathlib import Path
+from articulous.backends.posix import PosixPublicationBackend
+from articulous.configuration_contracts import BuildRequest
+from articulous.publication import build_site
+class Interrupted(PosixPublicationBackend):
+    def _set_phase(self, path, data, phase):
+        super()._set_phase(path, data, phase)
+        if phase == "installed":
+            os._exit(91)
+build_site(BuildRequest(), {"paths":{"output_dir":"other"}}, Path(sys.argv[1]),
+           backend=Interrupted())
+'''
+    result = subprocess.run([sys.executable, '-c', script, str(site_root)],
+                            cwd=Path(__file__).resolve().parents[1], capture_output=True)
+    assert result.returncode == 91, result.stderr.decode()
+    cache_clock[0] += 100
+    run_build(cli, config, site_root)
+    cache = site_root / '.build-cache.json'
+    before = cache.read_bytes()
+    recover_publication(site_root / 'other', cache)
+    assert cache.read_bytes() == before
+    assert not (site_root / 'other').exists()
+
+
+@pytest.mark.parametrize('existing', [False, True])
+def test_perf17_version_one_journal_still_rolls_back_byte_exactly(site_root, seo_config, existing):
+    import base64
+
+    cli, config = seo_config
+    backend = PosixPublicationBackend()
+    if existing:
+        build_site(cli, config, site_root)
+    before = published(site_root) if existing else (None, None, None)
+    with prepare_build(cli, config, site_root) as prepared:
+        checked = validate_generated(render_prepared(prepared))
+        publication = publication_input(checked)
+        transaction, data = backend._begin(publication)
+        data['version'] = 1
+        data.pop('cache_after')
+        for key, value in zip(('cache_before', 'ownership_before'), before[1:]):
+            data[key] = base64.b64encode(value).decode() if value is not None else None
+        backend._set_phase(transaction, data, 'prepared')
+        backend.recover(publication.destination, publication.cache_path)
+    if existing:
+        assert published(site_root) == before
+    else:
+        assert not any((site_root / name).exists() for name in (
+            'output', '.build-cache.json', '.output.articulous-ownership.json',
+        ))
+
+
+@pytest.mark.parametrize('mutation', ['bytes', 'identity', 'hardlink'])
+def test_perf17_reject_damaged_snapshots_before_rollback(site_root, seo_config, mutation):
+    cli, config = seo_config
+    backend = PosixPublicationBackend()
+    build_site(cli, config, site_root)
+    with prepare_build(cli, config, site_root) as prepared:
+        publication = publication_input(validate_generated(render_prepared(prepared)))
+        transaction, _ = backend._begin(publication)
+        saved = transaction / 'cache.before'
+        if mutation == 'bytes':
+            saved.write_bytes(b'changed')
+        elif mutation == 'identity':
+            other = transaction / 'other'
+            other.write_bytes(saved.read_bytes())
+            other.replace(saved)
+        else:
+            os.link(saved, transaction / 'other')
+        before = published(site_root)
+        with pytest.raises(ValueError, match='Invalid publication journal'):
+            backend.recover(publication.destination, publication.cache_path)
+        assert published(site_root) == before
+        assert transaction.is_dir()
+
+
+@pytest.mark.parametrize('changes', [{'version': 2, 'surplus': None}, []])
+def test_perf17_reject_invalid_journal_shape(tmp_path, changes):
+    from articulous.backends.posix import _validate_journal_header
+
+    with pytest.raises(ValueError, match='Invalid journal fields'):
+        _validate_journal_header(changes, tmp_path / 'output', tmp_path / 'cache')
+
+
+@pytest.mark.parametrize('claim', [[0, 1], [-1, 2, 'a' * 64], [1, True, 'a' * 64], [1, 2, 'bad']])
+def test_perf17_reject_invalid_snapshot_claims(claim):
+    from articulous.backends.publication_snapshots import validate_claim
+
+    with pytest.raises(ValueError, match='Invalid publication'):
+        validate_claim(claim)
+
+
+@pytest.mark.parametrize('during_merge', [False, True])
+def test_perf17_changed_bytes_cannot_overwrite_current_state(tmp_path, during_merge):
+    from articulous.backends import publication_snapshots as state
+
+    cache, backup = tmp_path / 'cache', tmp_path / 'backup'
+    cache.write_text('{"one":1}')
+    claim = state.snapshot(cache, backup)
+    backup.write_text('{"bad":1}')
+    cache.write_text('{"one":2}')
+    with pytest.raises(ValueError, match='snapshot bytes changed'):
+        if during_merge:
+            state.restore_cache(cache, backup, claim, 'x', 'active')
+        else:
+            state.restore_snapshot(cache, backup, claim)
+    assert cache.read_text() == '{"one":2}'
+
+
+@pytest.mark.parametrize('prior,current,merged', [
+    ({'active': 1}, {'active': 2}, {'active': 1, 'other': 2}),
+    ({'active': 1}, {'active': 1}, {'active': 1, 'other': 2}),
+    ({'active': 1}, {}, {'active': 1, 'other': 2}),
+    (None, {'active': 2}, {'other': 2}),
+    (None, {}, {'other': 2}),
+])
+def test_rel40_merge_only_restores_the_recovering_root(tmp_path, prior, current, merged):
+    from articulous.backends import publication_snapshots as state
+
+    cache, backup = tmp_path / 'cache', tmp_path / 'backup'
+    if prior is not None:
+        cache.write_text(json.dumps({'__output_roots__': prior}))
+    claim = state.snapshot(cache, backup)
+    cache.write_text(json.dumps({'__output_roots__': {'other': 2, **current}}))
+    state.restore_cache(cache, backup, claim, 'x', 'active')
+    assert json.loads(cache.read_text()) == {'__output_roots__': merged}
+
+
+def test_rel40_recovery_with_missing_or_invalid_cache(tmp_path):
+    from articulous.backends import publication_snapshots as state
+
+    cache, backup = tmp_path / 'cache', tmp_path / 'backup'
+    cache.write_text('{"one":1}')
+    claim = state.snapshot(cache, backup)
+    cache.unlink()
+    state.restore_cache(cache, backup, claim, 'x', 'active')
+    assert cache.read_text() == '{"one":1}'
+    cache.write_text('[]')
+    with pytest.raises(ValueError, match='Invalid shared cache'):
+        state.restore_cache(cache, backup, claim, 'x', 'active')

@@ -20,13 +20,15 @@ import pickle
 import shutil
 import stat
 import tempfile
+from struct import Struct
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from contextlib import closing
+from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Optional, Protocol
 from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
@@ -51,6 +53,7 @@ from .filesystem import (
 )
 from .models import (
     IndexOptions,
+    Sitemap,
     build_index_models,
     build_output_path_from_pattern,
     build_rss_model,
@@ -64,6 +67,7 @@ from .migrations import OutputMigrations
 from .output_cache import CACHE_ROOTS_KEY, output_cache_roots, refresh_output_cache
 from .runtime import (
     TrackedCache,
+    WeightedTask,
     WorkerCount,
     file_hash,
     load_cache,
@@ -98,6 +102,8 @@ _SORT_CHUNK_SIZE = 1024
 _SORT_MERGE_FAN_IN = 32
 _SITEMAP_MAX_URLS = 50_000
 _SITEMAP_MAX_BYTES = 52_428_800
+_RENDER_INPUT_BUDGET = 64 * 1024 * 1024
+_TASK_FRAME = Struct(">QQ")
 
 
 # ================================================================
@@ -675,6 +681,24 @@ class ArticleStore:
             self._sources.close()
 
 
+class _OutputRecorder(Protocol):
+    def record(self, cache_key: str, relpath: str, route: Route | None = None) -> None:
+        ...
+
+
+class _ListingRecords:
+    def __init__(self):
+        self.records: list[tuple[str, str, Route | None]] = []
+
+    def record(self, cache_key: str, relpath: str, route: Route | None = None) -> None:
+        self.records.append((cache_key, relpath, route))
+
+    def replay(self, manifest: _OutputRecorder | None) -> None:
+        if manifest is not None:
+            for record in self.records:
+                manifest.record(*record)
+
+
 class OutputManifest(dict):
     def __init__(self, ctx=None, catalog: RouteWriter | None = None):
         super().__init__()
@@ -861,36 +885,102 @@ class _XsltTask:
         return source, hashlib.sha256(source).hexdigest()
 
 
+def _input_bytes(source):
+    if isinstance(source, ArticleSnapshot):
+        return source.size
+    if isinstance(source, bytes):
+        return len(source)
+    return source.stat().st_size
+
+
 class _TaskQueue:
-    def __init__(self, ctx: BuildCtx, cache: dict, engine: TransformEngine):
+    def __init__(self, ctx: BuildCtx, cache: dict):
         self._ctx = ctx
         self._cache = cache
-        self._engine = engine
+        self._engines: dict[int, TransformEngine] = {}
         self._file = tempfile.TemporaryFile(mode="w+b")
         self._count = 0
 
     def append(self, task: _XsltTask) -> None:
-        pickle.dump(task.spec, self._file)
+        key = id(task.engine)
+        self._engines[key] = task.engine
+        start = self._file.tell()
+        self._file.write(_TASK_FRAME.pack(0, 0))
+        pickle.dump((key, task.spec), self._file)
+        end = self._file.tell()
+        length = end - start - _TASK_FRAME.size
+        self._file.seek(start)
+        self._file.write(_TASK_FRAME.pack(length, length + _input_bytes(task.spec.xml_input)))
+        self._file.seek(end)
         self._count += 1
+
+    def extend(self, tasks) -> None:
+        for task in tasks:
+            self.append(task)
 
     def __len__(self) -> int:
         return self._count
+
+    def _entry(self, stored):
+        key, spec = stored
+        return _XsltTask(spec, self._engines[key], self._ctx, self._cache)
 
     def __iter__(self):
         try:
             self._file.seek(0)
             for _ in range(self._count):
-                spec = pickle.load(self._file)
-                yield _XsltTask(spec, self._engine, self._ctx, self._cache)
+                self._file.read(_TASK_FRAME.size)
+                yield self._entry(pickle.load(self._file))
         finally:
             self.close()
+
+    def _run_at(self, offset, length):
+        descriptor = self._file.fileno()
+        payload = os.pread(descriptor, length, offset)
+        if len(payload) != length:
+            payload = _complete_task_payload(descriptor, payload, offset, length)
+        self._entry(pickle.loads(payload))()
+
+    def admitted(self):
+        self._file.seek(0)
+        for _ in range(self._count):
+            length, weight = _TASK_FRAME.unpack(self._file.read(_TASK_FRAME.size))
+            offset = self._file.tell()
+            self._file.seek(length, os.SEEK_CUR)
+            yield WeightedTask(weight, partial(self._run_at, offset, length))
 
     def close(self) -> None:
         self._file.close()
 
 
+def _complete_task_payload(descriptor, initial, offset, length):
+    result = bytearray(initial)
+    while len(result) < length:
+        chunk = os.pread(descriptor, length - len(result), offset + len(result))
+        if not chunk:
+            raise ValueError("Task spool truncated")
+        result.extend(chunk)
+    return result
+
+
+def _admitted_tasks(plan):
+    for tasks in plan.values():
+        if isinstance(tasks, _TaskQueue):
+            yield from tasks.admitted()
+        else:
+            yield from _weighted_direct_tasks(tasks)
+
+
+def _weighted_direct_tasks(tasks):
+    for task in tasks:
+        if isinstance(task, _XsltTask):
+            yield WeightedTask(_input_bytes(task.spec.xml_input), task)
+        else:
+            yield task
+
+
 def _record_planned_output(
-    manifest: Optional[OutputManifest],
+    manifest: Optional[_OutputRecorder],
     ctx: BuildCtx,
     cache_key: str,
     output_path: Path | _AdmittedOutput,
@@ -930,7 +1020,7 @@ def _make_xslt_task(
     cache_key: str,
     engine: TransformEngine,
     ctx: BuildCtx,
-    manifest: Optional[OutputManifest] = None,
+    manifest: Optional[_OutputRecorder] = None,
     xml_base_uri: Optional[str] = None,
     parameters: Optional[dict[str, str]] = None,
     route: Route | None = None,
@@ -975,7 +1065,7 @@ def _make_native_task(
     engine: NativeEngine,
     writer: Callable,
     ctx: BuildCtx,
-    manifest: Optional[OutputManifest] = None,
+    manifest: Optional[_OutputRecorder] = None,
     route: Route | None = None,
 ) -> Optional[Callable]:
     output_path, relpath = _record_planned_output(
@@ -991,7 +1081,8 @@ def _make_native_task(
                 writer(staged, source)
         update_cache(cache, cache_key, fingerprint)
 
-    return timed(cache_key, task)
+    invoke = timed(cache_key, task)
+    return WeightedTask(len(source), invoke) if isinstance(source, bytes) else invoke
 
 
 # ================================================================
@@ -1057,7 +1148,7 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
     """
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "articles")
     if tasks is None:
-        tasks = _TaskQueue(ctx, cache, engine)
+        tasks = _TaskQueue(ctx, cache)
 
     for art in lang_articles:
         relative_path = build_output_path_from_pattern(
@@ -1085,13 +1176,15 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
     return tasks
 
 
-def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None):
+def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None, *, pages=None):
     """Build paginated index pages for one language."""
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "index")
     if tasks is None:
-        tasks = _TaskQueue(ctx, cache, engine)
+        tasks = _TaskQueue(ctx, cache)
 
-    for page in build_index_models(lang_articles, lang, ctx):
+    if pages is None:
+        pages = build_index_models(lang_articles, lang, ctx)
+    for page in pages:
         xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
         output = _admit_output(ctx, ctx.output_dir / page.output_path)
         cache_key = f"index:{page.lang}:{page.page}"
@@ -1117,13 +1210,15 @@ def _tag_cache_key(page) -> str:
     return key if page.page == 1 else f"{key}/page/{page.page}"
 
 
-def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None):
+def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=None, tasks=None, *, pages=None):
     """Build tag pages for one language."""
     xsl_path, xsl_hash, engine = _section_runtime(ctx, "tags")
     if tasks is None:
-        tasks = _TaskQueue(ctx, cache, engine)
+        tasks = _TaskQueue(ctx, cache)
 
-    for page in build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags):
+    if pages is None:
+        pages = build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags)
+    for page in pages:
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
         output = _admit_output(ctx, ctx.output_dir / page.output_path)
         cache_key = _tag_cache_key(page)
@@ -1152,16 +1247,18 @@ def rss_is_per_lang(ctx: BuildCtx) -> bool:
     return section_is_per_lang("rss", ctx.url_patterns["rss"])
 
 
-def build_rss_section(rss_articles, ctx: BuildCtx, cache, manifest=None):
+def build_rss_section(rss_articles, ctx: BuildCtx, cache, manifest=None, tasks=None):
     """
     Build the RSS feed. ``rss_articles`` is the already-selected top-N
     list (newest first) produced by :func:`_stream_projections`, or a
     mapping of language to such a list when the site publishes one feed
     per language.
     """
+    if tasks is None:
+        tasks = []
     if not rss_is_per_lang(ctx):
-        return _build_rss_feed(rss_articles, ctx, cache, manifest)
-    tasks = []
+        tasks.extend(_build_rss_feed(rss_articles, ctx, cache, manifest))
+        return tasks
     # Every enabled language gets a feed, so a reader can subscribe before the
     # first article in that language exists.
     for lang in ctx.languages:
@@ -1278,6 +1375,22 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
     )
 
 
+@dataclass(frozen=True)
+class _SitemapIndex:
+    sitemap: Sitemap
+    shards: tuple[SitemapSlice, ...]
+
+    def entry(self, index, shard):
+        stem = self.sitemap.output_path.stem[:40]
+        filename = f"{stem}-{index:05d}-{shard.fingerprint}.xml"
+        prefix = self.sitemap.url.rsplit("/", 1)[0] + "/"
+        return filename, prefix + quote(filename, safe="")
+
+    def __iter__(self):
+        for index, shard in enumerate(self.shards, 1):
+            yield self.entry(index, shard)[1]
+
+
 def _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest):
     shards = partition_sitemap(workspace, source, _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES)
     if len(shards) == 1:
@@ -1285,12 +1398,11 @@ def _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest)
             "sitemap", shards[0], ctx.output_dir / sitemap.output_path,
             _write_native_sitemap, ctx, cache, manifest,
         )
-    tasks, urls = [], []
+    tasks = []
+    index_source = _SitemapIndex(sitemap, tuple(shards))
     for index, shard in enumerate(shards, start=1):
-        filename = f"{sitemap.output_path.stem[:40]}-{index:05d}-{shard.fingerprint}.xml"
-        url = sitemap.url.rsplit("/", 1)[0] + "/" + quote(filename, safe="")
+        filename, url = index_source.entry(index, shard)
         validate_sitemap_location(url)
-        urls.append(url)
         task = _make_native_task(
             source=shard, output_path=ctx.output_dir / sitemap.output_path.parent / filename,
             cache=cache, cache_key=f"sitemap:shard:{index}", engine=ctx.engine_for("sitemap"),
@@ -1299,7 +1411,7 @@ def _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest)
         if task is not None:
             tasks.append(task)
     tasks.extend(_single_native_section(
-        "sitemap", urls, ctx.output_dir / sitemap.output_path, write_index, ctx, cache, manifest,
+        "sitemap", index_source, ctx.output_dir / sitemap.output_path, write_index, ctx, cache, manifest,
     ))
     return [_sequential_tasks(tasks)] if tasks else []
 
@@ -1421,8 +1533,6 @@ def _stream_projections(
     )
     try:
         _fill_projection(projection, stream_factory, cli, ctx)
-        _append_sitemap_listings(projection, ctx)
-        _append_extra_sitemap(projection, ctx)
     except BaseException:
         _cleanup_stream_projection(projection)
         raise
@@ -1441,8 +1551,7 @@ def _append_extra_sitemap(projection, ctx):
             projection.sitemap_urls.append_url(route.url)
 
 
-def _collect_extra_plan(ctx, cache, manifest):
-    tasks = []
+def _collect_extra_plan(ctx, cache, manifest, tasks):
     engines: dict[str, TransformEngine] = {}
     fingerprints: dict[tuple[str, Path], str] = {}
     for page in ctx.extra_pages:
@@ -1489,17 +1598,49 @@ def build_artifacts_section(artifacts, ctx, cache, manifest):
     return tasks
 
 
-def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> None:
+def _observed_listings(pages, projection):
+    for page in pages:
+        projection.sitemap_urls.append_url(page.url)
+        yield page
+
+
+def _has_language_work(projection, lang, listings, ctx):
+    articles = projection.articles_by_lang
+    count = articles.counts.get(lang, 0) if articles is not None else 0
+    return bool(count or listings or ctx.index_options.include_empty)
+
+
+def _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want):
+    records = _ListingRecords()
+    indexes = _observed_listings(build_index_models(listings, lang, ctx), projection)
+    if selected and want("index"):
+        build_index_section(listings, lang, ctx, cache, records,
+                            _tasks_for(plan, "index", ctx, cache), pages=indexes)
+    else:
+        for _ in indexes:
+            pass
+    tags = _observed_listings(build_tags_models(listings, lang, ctx, paginate=ctx.paginate_tags), projection)
+    if selected and want("tags"):
+        build_tags_section(listings, lang, ctx, cache, records,
+                           _tasks_for(plan, "tags", ctx, cache), pages=tags)
+    else:
+        for _ in tags:
+            pass
+    return records
+
+
+def _prepare_shared_listings(plan, projection, cli, ctx, cache, want):
     if not projection.sitemap_listings:
-        return
+        return None
+    pending = {}
     for lang in ctx.languages:
-        articles = projection.listing_batch(lang)
-        pages = chain(
-            build_index_models(articles, lang, ctx),
-            build_tags_models(articles, lang, ctx, paginate=ctx.paginate_tags),
+        listings = projection.listing_batch(lang)
+        selected = not cli.only_langs or lang in cli.only_langs
+        pending[lang] = _shared_listings_for_language(
+            plan, ctx, cache, projection, lang, listings,
+            selected and _has_language_work(projection, lang, listings, ctx), want,
         )
-        for page in pages:
-            projection.sitemap_urls.append_url(page.url)
+    return pending
 
 
 def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx) -> None:
@@ -1577,13 +1718,13 @@ def _rss_selection(projection: StreamProjection, ctx: BuildCtx):
 
 
 def _collect_cross_lang_plan(
-    projection: StreamProjection, ctx, cache, want, workspace, manifest,
-) -> dict:
+    plan, projection: StreamProjection, ctx, cache, want, workspace, manifest,
+) -> None:
     """Plan cross-language sections from the completed projections."""
     logging.info(f"Discovered {projection.total} article(s) after filters")
-    plan: dict = {}
     if want("rss"):
-        plan["rss"] = build_rss_section(_rss_selection(projection, ctx), ctx, cache, manifest)
+        queue = _tasks_for(plan, "rss", ctx, cache)
+        build_rss_section(_rss_selection(projection, ctx), ctx, cache, manifest, tasks=queue)
     if want("sitemap"):
         plan["sitemap"] = build_sitemap_section(
             projection.sitemap_urls, ctx, cache, workspace, manifest,
@@ -1593,7 +1734,6 @@ def _collect_cross_lang_plan(
         plan["search"] = build_search_section(
             projection.search_items, ctx, cache, workspace, manifest,
         )
-    return plan
 
 
 def _sorted_store_articles(store: ArticleStore | None, lang: str):
@@ -1604,18 +1744,20 @@ def _sorted_store_articles(store: ArticleStore | None, lang: str):
 
 def _tasks_for(plan: dict, section: str, ctx: BuildCtx, cache) -> _TaskQueue:
     if section not in plan:
-        engine = require_transform(ctx.engine_for(section))
-        plan[section] = _TaskQueue(ctx, cache, engine)
+        plan[section] = _TaskQueue(ctx, cache)
     return plan[section]
 
 
 def _add_per_lang_tasks(
-    plan: dict, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
+    plan: dict, lang_articles, listing_articles, lang, ctx, cache, want, manifest, prepared=None,
 ) -> None:
     if want("articles"):
         build_articles_section(
             lang_articles, ctx, cache, manifest, _tasks_for(plan, "articles", ctx, cache),
         )
+    if prepared is not None:
+        prepared.replay(manifest)
+        return
     if want("index"):
         build_index_section(
             listing_articles, lang, ctx, cache, manifest, _tasks_for(plan, "index", ctx, cache),
@@ -1627,7 +1769,7 @@ def _add_per_lang_tasks(
 
 
 def _collect_per_lang_plan(
-    plan: dict, projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest,
+    plan: dict, projection: StreamProjection, cli, ctx: BuildCtx, cache, want, manifest, prepared,
 ) -> None:
     """Plan per-language sections from the spooled article/listing stores."""
     for lang in ctx.languages:
@@ -1639,6 +1781,7 @@ def _collect_per_lang_plan(
             continue
         _add_per_lang_tasks(
             plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
+            prepared.pop(lang) if prepared is not None else None,
         )
 
 
@@ -1660,6 +1803,13 @@ def _planning_inputs(workspace, manifest):
         workspace = TempWorkspace()
     assert isinstance(workspace, TempWorkspace)
     return workspace, manifest
+
+
+def _collect_explicit_outputs(plan, ctx, cache, manifest):
+    if ctx.extra_pages:
+        _collect_extra_plan(ctx, cache, manifest, _tasks_for(plan, 'pages', ctx, cache))
+    if ctx.extra_artifacts:
+        plan['artifacts'] = build_artifacts_section(ctx.extra_artifacts, ctx, cache, manifest)
 
 
 def _collect_tasks(
@@ -1689,23 +1839,21 @@ def _collect_tasks(
     )
     try:
         ctx = _translation_context(projection, cli, ctx, cache)
+        prepared = _prepare_shared_listings(plan, projection, cli, ctx, cache, want)
+        _append_extra_sitemap(projection, ctx)
         if need_cross:
-            plan.update(
-                _collect_cross_lang_plan(projection, ctx, cache, want, workspace, manifest)
-            )
+            _collect_cross_lang_plan(plan, projection, ctx, cache, want, workspace, manifest)
         if need_per_lang:
             _collect_per_lang_plan(
-                plan, projection, cli, ctx, cache, want, manifest,
+                plan, projection, cli, ctx, cache, want, manifest, prepared,
             )
-        if ctx.extra_pages:
-            plan['pages'] = _collect_extra_plan(ctx, cache, manifest)
-        if ctx.extra_artifacts:
-            plan['artifacts'] = build_artifacts_section(ctx.extra_artifacts, ctx, cache, manifest)
+        _collect_explicit_outputs(plan, ctx, cache, manifest)
     except BaseException:
         _close_task_queues(plan)
         _cleanup_stream_projection(projection)
         raise
-    return BuildPlan(plan, projection)
+    sections = (*CROSS_LANG_SECTIONS, *PER_LANG_SECTIONS, "pages", "artifacts")
+    return BuildPlan({section: plan[section] for section in sections if section in plan}, projection)
 
 
 def _article_stream_factory(ctx: BuildCtx, stats: ArticleStats, evaluated_at=None):
@@ -1751,7 +1899,8 @@ def _execute_plan(plan: dict, ctx: BuildCtx) -> None:
         logging.info(f"  {section}: {len(tasks)} task(s)")
     t0 = time.perf_counter()
     run_parallel_tasks(
-        chain.from_iterable(plan.values()), _resolve_parallelism(ctx), collect_results=False,
+        _admitted_tasks(plan), _resolve_parallelism(ctx), collect_results=False,
+        max_inflight_bytes=_RENDER_INPUT_BUDGET,
     )
     elapsed = time.perf_counter() - t0
     rate = f" ({total / elapsed:.1f} task/s)" if elapsed > 0 else ""

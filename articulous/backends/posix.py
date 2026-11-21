@@ -1,5 +1,6 @@
 """Linux-validated directory publication with rollback and a recovery journal."""
 import base64
+import hashlib
 from contextlib import contextmanager
 import json
 import logging
@@ -13,6 +14,7 @@ from ..filesystem import (
 )
 from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
+from . import publication_snapshots as snapshots
 from ..publication_contracts import PublicationInput
 from ..publication_paths import transaction_path, validate_publication_paths
 
@@ -20,12 +22,21 @@ from ..publication_paths import transaction_path, validate_publication_paths
 def _validate_journal_header(data, destination, cache):
     fields = {'version', 'destination', 'cache', 'phase', 'previous', 'new',
               'stage', 'stage_identity', 'cache_before', 'ownership_before'}
-    if not isinstance(data, dict) or set(data) != fields:
+    if _journal_version(data) == 2:
+        fields.add('cache_after')
+    if set(data) != fields:
         raise ValueError('Invalid journal fields')
-    if type(data['version']) is not int or data['version'] != 1:
-        raise ValueError('Wrong journal version')
     if data['destination'] != str(destination) or data['cache'] != str(cache):
         raise ValueError('Wrong journal identity')
+
+
+def _journal_version(data):
+    if not isinstance(data, dict):
+        raise ValueError('Invalid journal fields')
+    version = data.get('version')
+    if type(version) is not int or version not in (1, 2):
+        raise ValueError('Wrong journal version')
+    return version
 
 
 def _validate_identity_part(part):
@@ -39,17 +50,6 @@ def _identity(path):
         return None
     metadata = path.stat()
     return [metadata.st_dev, metadata.st_ino]
-
-
-def _saved_file(path):
-    validate_output_path(path)
-    try:
-        with open_regular_file(path) as source:
-            if os.fstat(source.fileno()).st_nlink != 1:
-                raise ValueError('Publication state must have one hardlink')
-            return base64.b64encode(source.read()).decode('ascii')
-    except FileNotFoundError:
-        return None
 
 
 def _restore_file(path, saved):
@@ -67,6 +67,34 @@ def _remove_tree(path):
     validate_output_path(path)
     with _directory_handle(path.parent) as parent:
         shutil.rmtree(path.name, dir_fd=parent)
+
+
+def _validate_saved_state(data):
+    if data['version'] == 2:
+        snapshots.require_digest(data['cache_after'])
+        snapshots.validate_claim(data['cache_before'])
+        snapshots.validate_claim(data['ownership_before'])
+    else:
+        for key in ('cache_before', 'ownership_before'):
+            if data[key] is not None:
+                base64.b64decode(data[key], validate=True)
+
+
+def _verify_saved_state(transaction, data):
+    if data['version'] == 2 and data['phase'] != 'committed':
+        snapshots.verify_snapshot(transaction / 'cache.before', data['cache_before'])
+        snapshots.verify_snapshot(transaction / 'ownership.before', data['ownership_before'])
+
+
+def _restore_saved_state(transaction, data, destination, cache):
+    owners = ownership_path(destination)
+    if data['version'] == 1:
+        _restore_file(cache, data['cache_before'])
+        _restore_file(owners, data['ownership_before'])
+    else:
+        snapshots.restore_cache(cache, transaction / 'cache.before', data['cache_before'],
+                                data['cache_after'], str(destination))
+        snapshots.restore_snapshot(owners, transaction / 'ownership.before', data['ownership_before'])
 
 
 class PosixPublicationBackend:
@@ -104,14 +132,16 @@ class PosixPublicationBackend:
         destination, cache = publication.destination, publication.cache_path
         stage = publication.root.parent
         data = {
-            'version': 1, 'destination': str(destination), 'cache': str(cache),
+            'version': 2, 'destination': str(destination), 'cache': str(cache),
             'previous': _identity(destination), 'new': _identity(publication.root),
             'stage': str(stage), 'stage_identity': _identity(stage),
-            'cache_before': _saved_file(cache), 'ownership_before': _saved_file(ownership_path(destination)),
+            'cache_after': hashlib.sha256(publication.cache_text.encode()).hexdigest(),
         }
         transaction = self._transaction(destination)
         transaction.mkdir(mode=0o700)
         try:
+            data['cache_before'] = snapshots.snapshot(cache, transaction / 'cache.before')
+            data['ownership_before'] = snapshots.snapshot(ownership_path(destination), transaction / 'ownership.before')
             self._set_phase(transaction, data, 'prepared')
         except BaseException:
             _remove_tree(transaction)
@@ -158,6 +188,7 @@ class PosixPublicationBackend:
             with open_regular_file(transaction / 'journal.json') as source:
                 data = json.load(source)
             self._validate_journal(data, destination, cache)
+            _verify_saved_state(transaction, data)
         except (OSError, ValueError, TypeError, KeyError) as error:
             raise ValueError(f'Invalid publication journal at {transaction}; preserve it for recovery') from error
         return data
@@ -172,9 +203,7 @@ class PosixPublicationBackend:
         self._validate_identity(data['previous'], optional=True)
         for key in ('new', 'stage_identity'):
             self._validate_identity(data[key])
-        for key in ('cache_before', 'ownership_before'):
-            if data[key] is not None:
-                base64.b64decode(data[key], validate=True)
+        _validate_saved_state(data)
 
     def _validate_identity(self, value, *, optional=False):
         if value is None and optional:
@@ -200,8 +229,7 @@ class PosixPublicationBackend:
             self._expect(destination, data['new'])
             self._rename(destination, transaction / 'discard')
         self._expect(destination, data['previous'])
-        _restore_file(cache, data['cache_before'])
-        _restore_file(ownership_path(destination), data['ownership_before'])
+        _restore_saved_state(transaction, data, destination, cache)
 
     def _cleanup(self, transaction, data):
         stage = Path(data['stage'])

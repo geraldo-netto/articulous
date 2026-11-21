@@ -120,8 +120,13 @@ Article discovery feeds the requested projections in a shared scan. Full article
 XML is spooled to disk for article rendering; shared listings keep metadata.
 Sorting uses temporary chunks. Sitemap/search sinks are disk-backed, RSS keeps
 a bounded newest-item heap (or one per language), and translation-link lookup
-uses SQLite. These choices reduce repeated discovery and body retention; they
-do not make every cost constant-memory. Tag groups, route inventories,
+uses SQLite. Listing pages share one pagination pass with sitemap planning when
+listing URLs are enabled. Transform descriptors are written to private files
+and decoded only after worker admission. The thread pool admits up to 64 MiB
+of charged input at once, with one task admitted alone when its charge exceeds
+that budget. The charge includes the descriptor and source bytes, while
+caller-owned data, projected model bytes, native transformations and generated
+output follow their own lifetimes. Tag groups, route inventories,
 fingerprint maps and some model collections still grow with admitted content.
 
 | Resource or state | Owner and lifetime |

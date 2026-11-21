@@ -173,3 +173,63 @@ def test_perf13_missing_asset_tree_journals_before_prune(site_root, monkeypatch)
     monkeypatch.setattr(pipeline, '_delete_asset_entry', check_pending)
     pipeline.run_build(BuildRequest(), config, site_root)
     assert not (site_root / 'output/assets').exists()
+
+
+def test_perf33_models_are_shared_with_sitemap_and_routes_keep_section_order(site_root, seo_config, monkeypatch):
+    from articulous.composition import RouteCatalog
+
+    cli, config = seo_config
+    config['sitemap']['include_listings'] = True
+    counts = Counter()
+    indexes, tags = pipeline.build_index_models, pipeline.build_tags_models
+
+    def index(rows, lang, ctx):
+        counts['index', lang] += 1
+        return indexes(rows, lang, ctx)
+
+    def tag(rows, lang, ctx, **options):
+        counts['tags', lang] += 1
+        return tags(rows, lang, ctx, **options)
+
+    monkeypatch.setattr(pipeline, 'build_index_models', index)
+    monkeypatch.setattr(pipeline, 'build_tags_models', tag)
+    with RouteCatalog() as catalog:
+        pipeline.run_build(cli, config, site_root, route_catalog=catalog)
+        routes = list(catalog)
+    assert counts == dict.fromkeys(((section, lang) for section in ('index','tags')
+                                   for lang in config['site']['languages']),1)
+    assert [route.section for route in routes[:3]] == ['rss','sitemap','search']
+
+
+def test_perf21_short_pread_completes_a_queued_payload(site_root, monkeypatch):
+    import os
+
+    read = os.pread
+
+    def limited(fd, size, offset):
+        return read(fd, min(size, 200), offset)
+    monkeypatch.setattr(os, 'pread', limited)
+    config = load_or_create_config(site_root / 'config.json')
+    pipeline.run_build(BuildRequest(), config, site_root)
+    assert (site_root / 'output/en/articles/first-post/index.html').is_file()
+
+
+def test_perf21_truncated_payload_fails_before_write(site_root, monkeypatch):
+    import os
+
+    def empty(*_args):
+        return b''
+    monkeypatch.setattr(os, 'pread', empty)
+    config = load_or_create_config(site_root / 'config.json')
+    request = BuildRequest(only_sections=['articles'], only_slugs=['first-post'])
+    with pytest.raises(ValueError, match='Task spool truncated'):
+        pipeline.run_build(request, config, site_root)
+    assert not (site_root / 'output/en/articles/first-post/index.html').exists()
+
+
+def test_perf33_planner_without_manifest_discards_listing_records():
+    from articulous.pipeline import _ListingRecords
+
+    records = _ListingRecords()
+    records.record('index:en:1', 'index.html')
+    records.replay(None)

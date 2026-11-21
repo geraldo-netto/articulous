@@ -15,7 +15,7 @@ import sys
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, CancelledError, ThreadPoolExecutor, wait
-from itertools import islice
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Union
 
@@ -186,29 +186,82 @@ def _raise_if_errors(errors: list) -> None:
         raise ExceptionGroup("parallel task failures", errors)
 
 
-def _fill_pending(pool, pending: set, tasks, limit: int) -> None:
-    for task in islice(tasks, min(limit - len(pending), sys.maxsize)):
-        pending.add(pool.submit(task))
+@dataclass(frozen=True)
+class WeightedTask:
+    charge: int
+    run: Callable
+
+    def __post_init__(self):
+        if type(self.charge) is not int or self.charge < 0:
+            raise ValueError("Task input charge must be a nonnegative integer")
+
+    def __call__(self):
+        return self.run()
 
 
-def _drain_tasks(pool, pending: set, tasks, limit: int, results, errors) -> None:
-    _fill_pending(pool, pending, tasks, limit)
-    while pending:
-        done, _ = wait(pending, return_when=FIRST_COMPLETED)
-        pending.difference_update(done)
+_EXHAUSTED = object()
+
+
+class _TaskAdmission:
+    def __init__(self, tasks, limit, budget):
+        if budget is not None and (type(budget) is not int or budget < 1):
+            raise ValueError("In-flight input budget must be a positive integer")
+        self.tasks = tasks
+        self.limit = limit
+        self.budget = budget
+        self.pending = {}
+        self.cost = 0
+        self.deferred = _EXHAUSTED
+
+    def _next(self):
+        task = self.deferred
+        if task is _EXHAUSTED:
+            return next(self.tasks, _EXHAUSTED)
+        self.deferred = _EXHAUSTED
+        return task
+
+    def _fits(self, charge):
+        return not self.pending or self.budget is None or self.cost + charge <= self.budget
+
+    def fill(self, pool):
+        for _ in range(min(self.limit - len(self.pending), sys.maxsize)):
+            task = self._next()
+            if task is _EXHAUSTED:
+                return
+            charge = task.charge if isinstance(task, WeightedTask) else 0
+            if not self._fits(charge):
+                self.deferred = task
+                return
+            self.pending[pool.submit(task)] = charge
+            self.cost += charge
+
+    def settle(self, done):
         for future in done:
-            _collect_one(future, results, errors, pending)
+            self.cost -= self.pending.pop(future)
+
+
+def _drain_tasks(pool, admission, results, errors) -> None:
+    admission.tasks = iter(admission.tasks)
+    admission.fill(pool)
+    while admission.pending:
+        done, _ = wait(admission.pending, return_when=FIRST_COMPLETED)
+        admission.settle(done)
+        for future in done:
+            _collect_one(future, results, errors, admission.pending)
         if not errors:
-            _fill_pending(pool, pending, tasks, limit)
+            admission.fill(pool)
 
 
 def run_parallel_tasks(
     tasks, max_workers: WorkerCount = "auto", *, collect_results: bool = True,
+    max_inflight_bytes: int | None = None,
 ) -> list:
     """
     Consume callables with at most twice the worker count in flight.
 
     Set ``collect_results=False`` for tasks whose return values are unused.
+    A positive byte budget limits admitted weighted tasks. A task larger than
+    the budget is admitted by itself.
 
     ``max_workers`` accepts either a positive ``int`` or the sentinel
     string ``"auto"`` (uses the effective CPU count).
@@ -223,17 +276,16 @@ def run_parallel_tasks(
 
     results: list = []
     errors: list = []
+    admission = _TaskAdmission(tasks, 2 * workers, max_inflight_bytes)
     pool = ThreadPoolExecutor(max_workers=workers)
-    pending: set = set()
     try:
         _drain_tasks(
-            pool, pending, iter(tasks), 2 * workers,
-            results if collect_results else None, errors,
+            pool, admission, results if collect_results else None, errors,
         )
     except BaseException as error:
-        _cancel_pending(pending)
-        for future in pending:
-            _collect_one(future, results if collect_results else None, errors, pending)
+        _cancel_pending(admission.pending)
+        for future in admission.pending:
+            _collect_one(future, results if collect_results else None, errors, admission.pending)
         if isinstance(error, Exception):
             errors.insert(0, error)
             _raise_if_errors(errors)

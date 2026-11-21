@@ -490,6 +490,11 @@ native lock/recovery/publication entry points also reject overlapping cache
 paths before effects. Nearby filenames with a different path component remain
 valid. The reservation prevents a cache write from replacing the journal
 directory or rollback from treating that directory as a cache file.
+Version 2 journals keep cache and ownership backups in private files. Phase
+records carry the backup identities and digests. Recovery checks both before
+using a backup. It also accepts version 1 journals. If another output updated
+the shared cache while recovery was pending, version 2 restores only the
+recovering output's cache record and preserves the other records.
 Before the `committed` marker, recovery restores the previous generation (or
 absence for an initial build); after it, recovery keeps the new generation and
 finishes cleanup. Rename/state failures attempt rollback immediately. Failed

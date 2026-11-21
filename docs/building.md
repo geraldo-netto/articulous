@@ -73,7 +73,8 @@ articulous --slug hello-world
 ```
 
 Section names are `articles`, `index`, `tags`, `rss`, `sitemap` and `search`.
-`--lang` limits article and listing languages. `--slug` limits article pages;
+`--lang` selects a configured language by its exact identifier. Repeat the flag
+for multiple languages. Unknown identifiers stop the build before output changes. `--slug` limits article pages;
 listings and selected feeds still use complete eligible inputs. Selected
 cross-language outputs remain complete. Assets are mirrored on every non-dry
 build. `--force` keeps any filters you supplied.

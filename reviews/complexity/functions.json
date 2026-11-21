@@ -4987,29 +4987,29 @@
             "projection_sha256": "63cb27bd511eeefed1b294a08745d29c63cf21322b8d38d9478d80bb6cb37046"
           },
           {
-            "body_sha256": "ae7c029effca068ee0c23c6a25d1f06e40f10e26075b241ab85fd22bce10fc17",
+            "body_sha256": "e2af1cb217385d7fbd78689d70b240ff68f98a7e28d70d6b8fca044dc15dedad",
             "column": 0,
-            "complexity": 5,
+            "complexity": 7,
             "end_column": 51,
-            "end_line": 437,
+            "end_line": 443,
             "line": 411,
             "name": "apply_cli_overrides",
-            "projection_sha256": "d5ab02a0eb07d27481a9b3c7f0c38402e1c4b4b037f044bac2beb0a2b0ff3590"
+            "projection_sha256": "5acb517847b27e7e2184fd0a11a6e518aa6029841e8e8db483fab98d6ffae2b2"
           },
           {
             "body_sha256": "b5ab5bfb6b4fb34620bf6515b3b22e6af1056fa2c151dd5b9b8bdccc54eebeac",
             "column": 0,
             "complexity": 4,
             "end_column": 55,
-            "end_line": 451,
-            "line": 440,
+            "end_line": 457,
+            "line": 446,
             "name": "normalize_configuration",
             "projection_sha256": "fe439f15ade479864d2262080867022d07bc632cc4e376a9235a0c6f8a73bb1f"
           }
         ],
         "language": "python",
         "path": "articulous/config.py",
-        "sha256": "895f76d154b1cdfc28968f7b4681e8a224e362f7952a7db22aee63ebccf7b1d5"
+        "sha256": "df2fc4964bc278a2c7667449937d0b5205cdb2b66046fe011f92db4b708dbed2"
       },
       {
         "functions": [
@@ -16220,11 +16220,31 @@
             "line": 183,
             "name": "test_main_invokes_run_build.fake_run_build",
             "projection_sha256": "aa110669fa25f49371958041c0fd862ce451a060d8842ffe82dda8762fa4baaf"
+          },
+          {
+            "body_sha256": "fc05726cc69dc5ce931e1a575faffac219e44ba4550bf0b2f1409d716425c7b8",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 56,
+            "end_line": 202,
+            "line": 196,
+            "name": "test_review28_44_unknown_language_fails_before_building",
+            "projection_sha256": "759a2c45c64dbae7273fbf1300d9f90c0732d0cfa7efc7e5424c1481d9ee4b05"
+          },
+          {
+            "body_sha256": "1efc6bee679a846c795986def43ee7f89ed7f4f79d8c0daf512f7cc5847f29b6",
+            "column": 0,
+            "complexity": 4,
+            "end_column": 107,
+            "end_line": 220,
+            "line": 205,
+            "name": "test_review28_44_language_selection_uses_the_configured_vocabulary",
+            "projection_sha256": "a981128163b45e257f609efee95c6e5808f9354d7fe7b2e51567a6f60f5c7a73"
           }
         ],
         "language": "python",
         "path": "tests/test_cli.py",
-        "sha256": "3a17ea4f01e16bc2074aa3d8d749e92ef98fe4a1c305186d1a34c8a228740aa5"
+        "sha256": "d11c6116422c8a9e3b9a61c6a110c303de6d2f13b54e524e3c8d824283623079"
       },
       {
         "functions": [

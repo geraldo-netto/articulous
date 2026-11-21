@@ -190,3 +190,31 @@ def test_main_invokes_run_build(monkeypatch, site_root):
     main(["--force"])
     assert called["cli"].force_full_build is True
     assert called["root"] == site_root.resolve()
+
+
+@pytest.mark.parametrize('arguments', [['--lang', 'zz'], ['--lang', 'en,fr'], ['--lang', 'en', '--lang', 'FR']])
+def test_review28_44_unknown_language_fails_before_building(site_root, run_sitegen, arguments):
+    result = run_sitegen(arguments, check=False)
+    assert result.returncode != 0
+    assert b'Unknown language' in result.stderr
+    assert arguments[-1].encode() in result.stderr
+    assert not (site_root / 'output').exists()
+    assert not list(site_root.glob('*.articulous.lock'))
+
+
+def test_review28_44_language_selection_uses_the_configured_vocabulary(tmp_path):
+    from random import Random
+    from articulous.config import normalize_configuration
+    from articulous.configuration_contracts import BuildRequest, ConfigurationError
+
+    languages = ['en', 'fr', 'pt_BR', 'es-419']
+    config = {'site': {'languages': languages}}
+    rng = Random(44)
+    for name in languages:
+        for suffix in ['', str(rng.randrange(100)), '.', ' ']:
+            request = BuildRequest(only_langs=['en', name + suffix])
+            if suffix:
+                with pytest.raises(ConfigurationError, match='Unknown language'):
+                    normalize_configuration(config, request, tmp_path)
+            else:
+                assert normalize_configuration(config, request, tmp_path)['site']['languages'] == languages

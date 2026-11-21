@@ -417,6 +417,12 @@ def apply_cli_overrides(config: SiteConfiguration | dict, cli: ConfigurationOpti
     ``content_dir: "../../etc"`` will be rejected with ValueError
     instead of silently resolving outside the project tree.
     """
+    selected = getattr(cli, 'only_langs', None)
+    if selected:
+        languages = config['site']['languages']
+        unknown = sorted(set(selected).difference(languages))
+        if unknown:
+            raise ConfigurationError(f'Unknown language(s) in --lang: {unknown}. Configured languages: {languages}')
     validate_output_path(project_root / config['paths']['output_dir'])
     if cli.force_full_build:
         config["build"]["force_full_build"] = True

@@ -221,3 +221,22 @@ def test_review28_41_directory_with_html_suffix_preserves_page_validation(public
         'outside.html: HTML page escapes output',
         'a-folder.html/child.html: missing absent.html',
     ]
+
+
+@pytest.mark.parametrize('search', [None, '{', '[]]', '{}', '[null]'])
+def test_audit1121_02_collects_independent_artifact_failures(publication, search):
+    root, base, plan = publication
+    (root / 'index.html').write_text(html_page(base + '/', '<a href="missing.html">broken</a>'))
+    lookup = root / plan.search_path
+    if search is None:
+        lookup.unlink()
+    else:
+        lookup.write_text(search)
+    (root / plan.sitemap_path).write_text('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f'<sitemap><loc>{base}/one.xml</loc></sitemap><sitemap><loc>{base}/two.xml</loc></sitemap></sitemapindex>')
+    (root / 'one.xml').write_text('<broken')
+    (root / 'two.xml').write_text('<unexpected/>')
+    with pytest.raises(ValueError) as error:
+        validate_site(root, base, plan)
+    for name in ('missing.html', 'lookup.json', 'one.xml', 'two.xml'):
+        assert name in str(error.value)

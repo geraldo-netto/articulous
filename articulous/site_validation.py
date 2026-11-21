@@ -273,8 +273,8 @@ def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
         redirects.links.clear()
 
 
-def validate_search(output, plan, failures):
-    search = json.loads((output / plan.search_path).read_text())
+def _search_urls(path):
+    search = json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(search, list):
         raise ValueError('Search index must be an array')
     urls = []
@@ -282,9 +282,18 @@ def validate_search(output, plan, failures):
         if not isinstance(row, dict) or not isinstance(row.get('url'), str):
             raise ValueError('Search entry must have a string URL')
         urls.append(row['url'])
+    return urls
+
+
+def validate_search(output, plan, failures):
+    try:
+        urls = _search_urls(output / plan.search_path)
+    except (OSError, ValueError, RecursionError) as error:
+        failures.append(f'{plan.search_path}: {error}')
+        return 0
     if len(urls) != len(plan.search_urls) or set(urls) != plan.search_urls:
         failures.append('Search article set does not match publication policies')
-    return len(search)
+    return len(urls)
 
 
 def sitemap_document(path):
@@ -334,7 +343,11 @@ def sitemap_locations(output, base, path, failures, resolved_paths=None):
             failures.append(f'Duplicate or cyclic sitemap index target: {current}')
             continue
         seen.add(current)
-        kind, values = sitemap_document(current)
+        try:
+            kind, values = sitemap_document(current)
+        except (OSError, ValueError, etree.XMLSyntaxError) as error:
+            failures.append(f'{current}: {error}')
+            continue
         if kind == 'sitemapindex':
             pending.extend(sitemap_index_targets(output, base, values, failures, resolved_paths))
         else:

@@ -153,11 +153,13 @@ def update_cache(cache: dict, key: str, new_hashes: tuple) -> None:
 def timed(label: str, fn: Callable) -> Callable:
     """Wrap ``fn`` so every invocation logs its wall-clock duration at DEBUG."""
     def wrapped():
+        if not logging.getLogger().isEnabledFor(logging.DEBUG):
+            return fn()
         t0 = time.perf_counter()
         try:
             return fn()
         finally:
-            logging.debug(f"task {label} took {time.perf_counter() - t0:.3f}s")
+            logging.debug("task %s took %.3fs", label, time.perf_counter() - t0)
     return wrapped
 
 

@@ -6,6 +6,7 @@ import os
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
+from unittest.mock import Mock
 
 import pytest
 
@@ -474,6 +475,21 @@ def test_update_cache_thread_safe():
 
 
 # --- timed ---
+
+def test_timed_samples_clock_only_while_debug_is_enabled(caplog, monkeypatch):
+    """AUDIT1121-09: task logging follows the level at invocation."""
+    clock = Mock()
+    clock.perf_counter.side_effect = (2.0, 2.125)
+    monkeypatch.setattr("articulous.runtime.time", clock)
+    task = timed("sample", lambda: 42)
+    with caplog.at_level(logging.INFO):
+        assert task() == 42
+        clock.perf_counter.assert_not_called()
+    with caplog.at_level(logging.DEBUG):
+        assert task() == 42
+    assert clock.perf_counter.call_count == 2
+    assert caplog.messages == ["task sample took 0.125s"]
+
 
 def test_timed_logs_duration(caplog):
     with caplog.at_level(logging.DEBUG):

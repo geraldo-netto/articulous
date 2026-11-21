@@ -3510,42 +3510,72 @@
             "projection_sha256": "2b8ab9d9b221c3ff065b447d1f6ec310fd8a289d0fb0917b7910e65619d2398c"
           },
           {
-            "body_sha256": "4503fed89de2bb8e8fe30598818c5021c6f537428ca857c5b55228f7e3aae5a7",
+            "body_sha256": "7ce1d9ae96a420402c7a1fcdc29c2329bc403ebafef0d4814b8861c45dc1a04d",
+            "column": 4,
+            "complexity": 1,
+            "end_column": 24,
+            "end_line": 40,
+            "line": 38,
+            "name": "_TagCounts.__init__",
+            "projection_sha256": "4d57ed1e7abbc97025e5ed79f08f3ddcee4b55f73787c53959e8f7472bd74e95"
+          },
+          {
+            "body_sha256": "aa4dc42e023b3891150fe0f3f7ca5b9cea0c75e9111e0b858dc9ccf860b6c47e",
+            "column": 4,
+            "complexity": 5,
+            "end_column": 49,
+            "end_line": 51,
+            "line": 42,
+            "name": "_TagCounts.add",
+            "projection_sha256": "4a7c0df1a9a2219f6f7e860234d5d3046fc35b1a7ccd87ded4591719e6c01080"
+          },
+          {
+            "body_sha256": "c91179dc742b6c7e76b553aedcfb62d7d7a38fa0309469dffd20298c9cf0eda9",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 109,
+            "end_line": 54,
+            "line": 53,
+            "name": "_TagCounts.freeze",
+            "projection_sha256": "ab0e7751bf01be956ca6c3eafc78dca153332171e73d4c70492e1ebc0c8aba7b"
+          },
+          {
+            "body_sha256": "05fbb9fd0befdea0d9817eadc4b9cd52ef8b8c4f8219c6e71ef316ed1e270c3a",
             "column": 0,
-            "complexity": 8,
-            "end_column": 95,
-            "end_line": 50,
-            "line": 37,
+            "complexity": 3,
+            "end_column": 26,
+            "end_line": 62,
+            "line": 57,
             "name": "normalized_tag_counts",
-            "projection_sha256": "895d3fba1db0fb65c37ce29fd6421470858d5cd5445a8483d130f64157b88b65"
+            "projection_sha256": "fd60bdbd000318f4230425f6160d19fee52216d116dea644aa5d503dfbd37ef2"
           },
           {
             "body_sha256": "0251c44bcecbfa6211b3a95ab7665cc0802ee5e7b2b91e103cd0cca15f7b7899",
             "column": 0,
             "complexity": 3,
             "end_column": 20,
-            "end_line": 60,
-            "line": 53,
+            "end_line": 72,
+            "line": 65,
             "name": "_language_codes",
             "projection_sha256": "9d130ea981871d584d420c702751edb0052eaa6261b9804e8c1cb2706648736c"
           },
           {
-            "body_sha256": "5e24d1281e0a0a7106861dfd31b1642eec74f68947714935ed5b6a2d2a69360b",
+            "body_sha256": "b115208ee27d42c015e9d5f21a87273847ea0693cc447d9160adead0d0e592b5",
             "column": 0,
             "complexity": 5,
-            "end_column": 68,
-            "end_line": 71,
-            "line": 63,
+            "end_column": 93,
+            "end_line": 82,
+            "line": 75,
             "name": "_counts_by_language",
-            "projection_sha256": "0dbb01d4957022e5ad25063c06052822bba16f26e18a6b6c8128e757bfbad832"
+            "projection_sha256": "de351529c638af2f919cde945326cbda106d4403f890598cbb2955d74a64f695"
           },
           {
             "body_sha256": "745ec569d5c9b336ae289aeced27595633674473d823fc71d0fc30a78bc259be",
             "column": 4,
             "complexity": 2,
             "end_column": 75,
-            "end_line": 80,
-            "line": 75,
+            "end_line": 91,
+            "line": 86,
             "name": "PublicationCatalogue.__init__",
             "projection_sha256": "9c34ae0f9274ae125da5f96f8132dece523a0635e13869aab9cc746f8736a410"
           },
@@ -3554,8 +3584,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 84,
-            "line": 83,
+            "end_line": 95,
+            "line": 94,
             "name": "PublicationCatalogue.articles",
             "projection_sha256": "0358d2c4619f511b354366451ce044391ec5af04a87bfcbff8e64854ba7c465d"
           },
@@ -3564,15 +3594,15 @@
             "column": 4,
             "complexity": 2,
             "end_column": 37,
-            "end_line": 89,
-            "line": 86,
+            "end_line": 100,
+            "line": 97,
             "name": "PublicationCatalogue.tag_counts",
             "projection_sha256": "45d82bff10bc7bd8ba0e0efba3521459c2273fce856718f9aacd854df4e494e0"
           }
         ],
         "language": "python",
         "path": "articulous/catalogue.py",
-        "sha256": "e7332485596a5af42556556422e179c3c3a05d6d9346eed2d864204e86d23e12"
+        "sha256": "0655d1ca60480e34168f44cd4c107d781eb0206e2abf40f6ee6345ba7155234b"
       },
       {
         "functions": [
@@ -16735,11 +16765,31 @@
             "line": 46,
             "name": "test_audit1121_13_catalogue_uses_shared_language_identity",
             "projection_sha256": "690bcb5a05c507549f5d7445f4bef046e2df5530a3454e7c6ef5051da316ec2e"
+          },
+          {
+            "body_sha256": "70769bdb809007ce2076d8c5e48f9e03d2aa154f82fe26583cbba17832b0677b",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 119,
+            "end_line": 71,
+            "line": 54,
+            "name": "test_audit1121_16_counts_each_record_in_one_language_pass",
+            "projection_sha256": "4d07737dfb1a9a11284c076c3ebb186776df8a0497a5dad8452e20702dc7c200"
+          },
+          {
+            "body_sha256": "8c33934c2cfcdb844b82a4cad68013aa4f430a4ebd63ade28a4429d1b85c2806",
+            "column": 8,
+            "complexity": 1,
+            "end_column": 23,
+            "end_line": 63,
+            "line": 61,
+            "name": "test_audit1121_16_counts_each_record_in_one_language_pass.Observed.lang",
+            "projection_sha256": "7a14b7de0640e3c3358b24d2bb8f340e876c56761360281e59510000d4a58e77"
           }
         ],
         "language": "python",
         "path": "tests/test_catalogue.py",
-        "sha256": "0e0a331cb74bb5bbe549acae1d9d6dd641150a46283d25c4f496519b1638db68"
+        "sha256": "dd23157f2b07c64a332fd75cd4ed9ba97c535cc058025180b9c33e4d55be13f9"
       },
       {
         "functions": [

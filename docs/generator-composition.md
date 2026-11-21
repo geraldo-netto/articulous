@@ -183,8 +183,8 @@ it; the engine does not automatically choose a tag-index route or template.
 Display labels, sidebar limits and sorting remain theme choices.
 
 `catalogue.PublicationCatalogue(records, languages)` supplies a stable article
-tuple and cached `tag_counts(language)` projections. It groups records by
-language once, counts only listing-eligible records and returns immutable
+tuple and cached `tag_counts(language)` projections. It counts listing-eligible records
+directly into per-language totals in one pass and returns immutable
 `TagCount(slug, count, label)` values sorted by slug. Repeated normalized tags
 count once per record; the first written label is retained. This metadata
 contract preserves Morpha's C++/C# normalized-membership counts and does not

@@ -34,20 +34,32 @@ class TagCount:
     label: str
 
 
-def normalized_tag_counts(articles: Iterable[TaggedRecord], language: str) -> tuple[TagCount, ...]:
-    counts = Counter()
-    labels = {}
-    for article in articles:
-        if article.lang != language or not article.policy.listing:
-            continue
+class _TagCounts:
+    def __init__(self):
+        self.counts = Counter()
+        self.labels = {}
+
+    def add(self, article):
+        if not article.policy.listing:
+            return
         membership = set()
         for tag in dict.fromkeys(article.tags):
             slug = normalize_slug(tag)
             if slug and slug not in membership:
                 membership.add(slug)
-                counts[slug] += 1
-                labels.setdefault(slug, tag)
-    return tuple(TagCount(slug, count, labels[slug]) for slug, count in sorted(counts.items()))
+                self.counts[slug] += 1
+                self.labels.setdefault(slug, tag)
+
+    def freeze(self):
+        return tuple(TagCount(slug, count, self.labels[slug]) for slug, count in sorted(self.counts.items()))
+
+
+def normalized_tag_counts(articles: Iterable[TaggedRecord], language: str) -> tuple[TagCount, ...]:
+    counts = _TagCounts()
+    for article in articles:
+        if article.lang == language:
+            counts.add(article)
+    return counts.freeze()
 
 
 def _language_codes(values: Iterable[str]) -> tuple[str, ...]:
@@ -61,14 +73,13 @@ def _language_codes(values: Iterable[str]) -> tuple[str, ...]:
 
 
 def _counts_by_language(articles, languages):
-    groups = {language: [] for language in languages}
+    groups = {language: _TagCounts() for language in languages}
     for article in articles:
         language = getattr(article, 'lang', None)
         if language not in groups:
             raise ValueError('Catalogue article language is disabled')
-        groups[language].append(article)
-    return MappingProxyType({language: normalized_tag_counts(group, language)
-                             for language, group in groups.items()})
+        groups[language].add(article)
+    return MappingProxyType({language: group.freeze() for language, group in groups.items()})
 
 
 class PublicationCatalogue(Generic[Record]):

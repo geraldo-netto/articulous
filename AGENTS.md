@@ -8,6 +8,16 @@ Primary source for agent conduct, edit norms, response expectations — follow b
 - Standard guidelines for agent interactions.
 - Consistent behavior when using AI tooling in workspace.
 
+## Compatibility policy
+
+Owner decision 2026-11-21: Articulous has no backward-compatibility requirement.
+APIs, CLI entry points, configuration, on-disk formats and generated interfaces
+may change. Remove wrappers, aliases, readers and migrations that exist solely
+to preserve earlier Articulous behavior. Update current callers, documentation
+and permanent regression tests together. Treat obsolete ownership and recovery
+state as untrusted and preserve existing user files when rejecting it.
+Current interoperability contracts and explicitly retained site behavior still apply.
+
 ## General Agent Behavior
 
 - Prefer short, actionable responses. Terse fine; fragments OK.

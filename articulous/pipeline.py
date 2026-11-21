@@ -30,6 +30,7 @@ from typing import Any, Callable, NamedTuple, Optional
 from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
+from .backends.cpu_capacity import available_cpus
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import admit_configuration, normalize_configuration, validate_output_layout
 from .configuration_contracts import BuildOptions, ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS
@@ -72,7 +73,7 @@ from .runtime import (
     timed,
     update_cache,
 )
-from .ownership import journal_ownership, load_ownership, save_ownership
+from .ownership import Ownership, journal_ownership, load_ownership, ownership_path, save_ownership
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
@@ -353,18 +354,20 @@ def _copy_asset_delta(
             copy_asset_file(src / rel, target)
 
 
-def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict]) -> None:
+def _prune_missing_assets(ctx: BuildCtx, dest: Path, cache: Optional[dict], before_mutation) -> None:
     if ctx.dry_run:
         logging.debug(f"[DRY RUN] Would remove stale assets output: {dest}")
         return
     if dest.exists():
+        if before_mutation is not None:
+            before_mutation()
         _delete_asset_entry(dest, ctx.output_dir.resolve())
         logging.info(f"Removed stale assets output: {dest}")
     if cache is not None:
         cache.pop(_ASSET_CACHE_KEY, None)
 
 
-def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
+def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None, *, before_mutation=None) -> None:
     """
     Mirror ``ctx.assets_dir`` into ``<output_dir>/assets``.
     If the source is missing, remove stale copied assets; honours dry-run.
@@ -373,9 +376,12 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     destination_paths = _asset_destination_paths(dest)
     if not ctx.assets_dir.exists():
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
-        _prune_missing_assets(ctx, dest, cache)
+        _prune_missing_assets(ctx, dest, cache, before_mutation)
         return
+    _mirror_existing_assets(ctx, cache, dest, destination_paths, before_mutation)
 
+
+def _mirror_existing_assets(ctx, cache, dest, destination_paths, before_mutation):
     assert_disjoint_trees(ctx.assets_dir, dest)
     manifest = _asset_manifest(ctx.assets_dir)
     old_manifest = _cached_asset_manifest(cache)
@@ -392,6 +398,8 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         logging.debug("Skipping unchanged assets")
         return
 
+    if before_mutation is not None:
+        before_mutation()
     _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, mismatches, stale)
     if cache is not None:
         cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
@@ -739,7 +747,7 @@ def _write_search_model_file(
 
 
 def _source_values(source):
-    if isinstance(source, (_JsonLinesSink, SitemapSlice)):
+    if isinstance(source, _JsonLinesSink):
         return source.values()
     return iter(source)
 
@@ -763,6 +771,9 @@ def _source_hash(source) -> str:
 
 
 def _write_native_sitemap(output_path: Path | StagedOutput, source) -> None:
+    if isinstance(source, SitemapSlice):
+        source.write(output_path)
+        return
     write_document(
         output_path, _source_values(source), "urlset", _native_sitemap_entry,
         _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES,
@@ -1225,7 +1236,7 @@ def _single_native_section(
     return [task]
 
 
-def _validate_sitemap_source(base_url: str, sitemap_url: str, source) -> None:
+def _validated_sitemap_source(base_url: str, sitemap_url: str, source):
     validate_sitemap_location(base_url)
     validate_sitemap_location(sitemap_url)
     prefix = sitemap_url.rsplit("/", 1)[0] + "/"
@@ -1234,6 +1245,7 @@ def _validate_sitemap_source(base_url: str, sitemap_url: str, source) -> None:
         validate_sitemap_location(url)
         if not url.startswith(prefix):
             raise ValueError(f"Sitemap URL is outside its host or directory scope: {url}")
+        yield value
 
 
 def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=None):
@@ -1244,9 +1256,11 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
     sitemap = build_sitemap_model([], ctx)
     if isinstance(ctx.engine_for("sitemap"), NativeEngine):
         source = urls if isinstance(urls, SitemapSink) else list(urls)
-        _validate_sitemap_source(ctx.base_url, sitemap.url, source)
-        if isinstance(workspace, TempWorkspace):
-            return _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest)
+        with closing(_validated_sitemap_source(ctx.base_url, sitemap.url, source)) as validated:
+            if isinstance(workspace, TempWorkspace):
+                return _build_partitioned_sitemap(validated, sitemap, ctx, cache, workspace, manifest)
+            for _ in validated:
+                pass
         return _single_native_section(
             "sitemap", source, ctx.output_dir / sitemap.output_path,
             _write_native_sitemap, ctx, cache, manifest,
@@ -1265,7 +1279,7 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
 
 
 def _build_partitioned_sitemap(source, sitemap, ctx, cache, workspace, manifest):
-    shards = partition_sitemap(workspace, _source_values(source), _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES)
+    shards = partition_sitemap(workspace, source, _SITEMAP_MAX_URLS, _SITEMAP_MAX_BYTES)
     if len(shards) == 1:
         return _single_native_section(
             "sitemap", shards[0], ctx.output_dir / sitemap.output_path,
@@ -1787,9 +1801,12 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
         owners.record(str(len(owners)), path.relative_to(root).as_posix())
 
 
-def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
+def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     retained = _retained_outputs(cli, old_manifest, _extra_output_keys(ctx))
-    next_manifest = {**retained, **{path: key for key, path in current_manifest.items()}}
+    return {**retained, **{path: key for key, path in current_manifest.items()}}
+
+
+def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_manifest, cache_path) -> None:
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     cache['__routes__'] = current_manifest.route_metadata
@@ -1817,21 +1834,7 @@ def _lock_path_for(ctx: BuildCtx, project_root: Path) -> Path:
 
 
 def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
-    """
-    Pick a sensible ``max_workers`` for ``run_parallel_tasks``.
-
-    In-process engines use ``max(4, cpu_count or 4)`` for ``"auto"``.
-    An engine reporting external-process execution uses ``cpu_count or 4``.
-    Capture wrappers preserve the underlying execution capability.
-
-    Explicit integer/string values in ``ctx.parallelism`` pass through
-    unchanged.
-    """
-    if ctx.parallelism != "auto":
-        return ctx.parallelism
-    cpu = os.cpu_count() or 4
-    external = any(e.capabilities.external_process for e in ctx.engines.values())
-    return cpu if external else max(4, cpu)
+    return available_cpus() if ctx.parallelism == "auto" else ctx.parallelism
 
 
 def _can_prune_outputs(cli) -> bool:
@@ -1955,20 +1958,38 @@ def _cleanup_stream_projection(projection: Optional[StreamProjection]) -> None:
 # Top-level build pipeline
 # ================================================================
 
-def _remove_output_obstructions(ctx: BuildCtx) -> None:
+def _remove_output_obstructions(ctx: BuildCtx, before_mutation) -> None:
     assert ctx.output_migrations is not None
     for path in ctx.output_migrations.removals():
         logging.info(f"{'Would remove' if ctx.dry_run else 'Removing'} obsolete route obstruction: {path}")
         if not ctx.dry_run:
+            before_mutation()
             _delete_output_file(path, ctx.output_dir.resolve())
 
 
-def _prepare_outputs(ctx: BuildCtx, cache: dict, old_manifest: dict, current_manifest: OutputManifest) -> None:
-    if not ctx.dry_run:
-        planned_paths = {path: key for key, path in current_manifest.items()}
-        journal_ownership(ctx.output_dir, old_manifest, planned_paths, routes=current_manifest.route_values())
-    _remove_output_obstructions(ctx)
-    copy_assets(ctx, cache)
+def _ownership_will_change(ctx, ownership: Ownership, next_paths, routes, plan) -> bool:
+    return (
+        ownership.pending or any(plan.values()) or ownership.paths != next_paths
+        or ownership.routes != routes or not ownership_path(ctx.output_dir).is_file()
+        or not ctx.output_dir.is_dir()
+    )
+
+
+def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) -> None:
+    pending = False
+    routes = current_manifest.route_values()
+
+    def start_journal():
+        nonlocal pending
+        if not pending:
+            planned_paths = {path: key for key, path in current_manifest.items()}
+            journal_ownership(ctx.output_dir, ownership.paths, planned_paths, routes=routes)
+            pending = True
+
+    if not ctx.dry_run and _ownership_will_change(ctx, ownership, next_paths, routes, plan):
+        start_journal()
+    _remove_output_obstructions(ctx, start_journal)
+    copy_assets(ctx, cache, before_mutation=start_journal)
     if not ctx.dry_run:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -2048,12 +2069,13 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 projection = plan.projection
                 _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
                 _record_retained_routes(cli, ctx, cache, old_manifest, ownership.routes, current_manifest)
-                _prepare_outputs(ctx, cache, old_manifest, current_manifest)
+                next_paths = _next_output_paths(cli, ctx, old_manifest, current_manifest)
+                _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
                     _finalize_cache(
-                        cli, ctx, cache, roots, old_manifest, current_manifest, cache_path,
+                        ctx, cache, roots, old_manifest, next_paths, current_manifest, cache_path,
                     )
             finally:
                 _close_task_queues(plan)

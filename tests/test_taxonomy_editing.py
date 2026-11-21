@@ -289,3 +289,12 @@ def test_review002_cycles_reject_without_publication(provenance_root, links):
         apply_map(tmp_path, {'old': 'new'}, provenance_layout(lambda _: 'current'))
     assert {path: path.read_bytes() for path in before} == before
     assert not list(tmp_path.parent.glob('.articulous-edit-*'))
+
+
+def test_perf25_document_read_is_bound_to_captured_generation(tmp_path):
+    from articulous.taxonomy_editing import _read_document
+
+    path = tmp_path / 'article.xml'
+    path.write_bytes(b'<article><tag>x</tag></article>')
+    with pytest.raises(ValueError, match='destination changed during staging'):
+        _read_document(path, b'older-generation')

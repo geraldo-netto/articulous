@@ -113,11 +113,19 @@ def test_seo08_unshardable_entry_and_empty_envelope_limits(tmp_path):
         sitemaps.write_document(output, [], "urlset", sitemaps.native_entry, 50_000, envelope - 1)
 
 
-@pytest.mark.parametrize("kind", ["truncated", "changed"])
+@pytest.mark.parametrize("kind", ["truncated", "short-entry", "changed", "empty-frame", "oversized-frame"])
 def test_seo08_corrupt_spool_is_rejected(kind):
     with TempWorkspace() as workspace:
         shard = sitemaps.partition_sitemap(workspace, ["https://example.test/a/"], 50_000, sitemaps.MAX_BYTES)[0]
-        content = b"" if kind == "truncated" else shard.path.read_bytes().replace(b"/a/", b"/b/")
+        original = shard.path.read_bytes()
+        controls = {
+            "truncated": b"",
+            "short-entry": original[:-1],
+            "changed": original.replace(b"/a/", b"/b/"),
+            "empty-frame": b"\0" * 4 + original[4:],
+            "oversized-frame": b"\xff" * 4 + original[4:],
+        }
+        content = controls[kind]
         shard.path.write_bytes(content)
         with pytest.raises(ValueError, match="Sitemap spool"):
             list(shard.values())
@@ -128,3 +136,28 @@ def test_seo08_index_limits_are_enforced(tmp_path, monkeypatch, limit):
     monkeypatch.setattr(sitemaps, limit, 1)
     with pytest.raises(ValueError, match="50,000 URL|50 MiB"):
         sitemaps.write_index(tmp_path / "index.xml", ["https://example.test/a.xml", "https://example.test/b.xml"])
+
+
+def test_perf38_scope_rejection_precedes_early_shard_size_error(site_root, seo_config, monkeypatch):
+    cli, config = seo_config
+    ctx = pipeline.build_ctx_from_config(config, cli.dry_run)
+    good = ctx.base_url + '/' + 'a' * 120
+    outside = 'https://other.test/outside'
+    monkeypatch.setattr(pipeline, '_SITEMAP_MAX_BYTES', 145)
+    with TempWorkspace() as workspace:
+        with pytest.raises(ValueError, match='outside its host'):
+            pipeline.build_sitemap_section([good, outside], ctx, {}, workspace)
+    assert not (site_root / 'output').exists()
+
+
+def test_perf38_size_rejection_consumes_remaining_valid_entries():
+    visited = []
+
+    def entries():
+        yield 'https://example.test/' + 'a' * 120
+        visited.append('second entry')
+        yield 'https://example.test/'
+    with TempWorkspace() as workspace:
+        with pytest.raises(ValueError, match='Sitemap entry'):
+            sitemaps.partition_sitemap(workspace, entries(), 50000, 145)
+    assert visited == ['second entry']

@@ -26,6 +26,12 @@ globalThis.SearchClient = (() => {
     return Object.freeze(data.map(item => prepareRow(item, origin, prepare)));
   }
 
+  function prepareBatch(data, prepared, start, end, origin, prepare) {
+    for (let index=start;index<end;index++) {
+      if (index in data) prepared[index]=prepareRow(data[index],origin,prepare);
+    }
+  }
+
   function normalizeSlug(name) {
     return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   }
@@ -74,9 +80,21 @@ globalThis.SearchClient = (() => {
       return prepare(item, url);
     }
 
-    function selectedIndex(data) {
+    async function prepareLoaded(data) {
+      if (!Array.isArray(data)) throw new Error('Invalid search index');
+      const prepared=new Array(data.length);
+      const size=200;
+      for (let offset=0;offset<prepared.length;offset+=size) {
+        if (offset) await yieldTask(lifetime.signal);
+        if (closed) throw new Error('Search disposed');
+        prepareBatch(data,prepared,offset,Math.min(offset+size,prepared.length),origin,prepareActive);
+      }
+      return Object.freeze(prepared);
+    }
+
+    async function selectedIndex(data) {
       if (closed) throw new Error('Search disposed');
-      const prepared=prepareIndex(data, origin, prepareActive);
+      const prepared=await prepareLoaded(data);
       if (closed) throw new Error('Search disposed');
       return select(prepared);
     }

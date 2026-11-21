@@ -19,15 +19,32 @@ from ..recovery_contracts import RecoveryRecord
 _RETAINED = {}
 
 
+@contextmanager
+def _proc_stat_paths():
+    with os.scandir('/proc') as entries:
+        yield (f'{entry.path}/stat' for entry in entries
+               if entry.name.isascii() and entry.name.isdecimal())
+
+
+def _read_proc_stat(path: str) -> bytes:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        return os.read(descriptor, 4096)
+    finally:
+        os.close(descriptor)
+
+
+def _live_group_member(path: str, group: int) -> bool:
+    try:
+        fields = _read_proc_stat(path).rpartition(b') ')[2].split(None, 3)
+    except (FileNotFoundError, ProcessLookupError):
+        return False
+    return int(fields[2]) == group and fields[0] != b'Z'
+
+
 def group_running(group: int) -> bool:
-    for entry in Path('/proc').glob('[0-9]*/stat'):
-        try:
-            fields = entry.read_text().rpartition(') ')[2].split()
-        except (FileNotFoundError, ProcessLookupError):
-            continue
-        if int(fields[2]) == group and fields[0] != 'Z':
-            return True
-    return False
+    with _proc_stat_paths() as paths:
+        return any(_live_group_member(path, group) for path in paths)
 
 
 def await_group_exit(group: int) -> None:

@@ -124,3 +124,52 @@ def test_perf22_extra_pages_share_one_stylesheet_capture(site_root, seo_config, 
     pipeline.run_build(cli, config, site_root, extra_pages=pages)
     assert calls == [template]
     assert all((site_root / 'output' / p.route.output_path).is_file() for p in pages)
+
+
+def test_perf13_clean_build_avoids_ownership_replacements(site_root, monkeypatch):
+    from articulous import ownership
+
+    config = load_or_create_config(site_root / 'config.json')
+    pipeline.run_build(BuildRequest(), config, site_root)
+
+    def unexpected(*_args):
+        pytest.fail('settled no-op must not replace durable ownership')
+    monkeypatch.setattr(ownership, 'write_text_atomic', unexpected)
+    pipeline.run_build(BuildRequest(), config, site_root)
+
+
+def test_perf13_asset_delta_journals_before_mutation(site_root, monkeypatch):
+    from articulous.ownership import load_ownership
+
+    config = load_or_create_config(site_root / 'config.json')
+    pipeline.run_build(BuildRequest(), config, site_root)
+    source = site_root / 'assets/style.css'
+    source.write_text('p{color:red}')
+    original = pipeline.copy_asset_file
+    calls = []
+
+    def check_pending(src, destination):
+        assert load_ownership(site_root / 'output').pending
+        calls.append(destination)
+        return original(src, destination)
+    monkeypatch.setattr(pipeline, 'copy_asset_file', check_pending)
+    pipeline.run_build(BuildRequest(), config, site_root)
+    assert calls == [site_root / 'output/assets/style.css']
+    assert not load_ownership(site_root / 'output').pending
+
+
+def test_perf13_missing_asset_tree_journals_before_prune(site_root, monkeypatch):
+    from articulous.ownership import load_ownership
+
+    config = load_or_create_config(site_root / 'config.json')
+    pipeline.run_build(BuildRequest(), config, site_root)
+    (site_root / 'assets/style.css').unlink()
+    (site_root / 'assets').rmdir()
+    before_delete = pipeline._delete_asset_entry
+
+    def check_pending(path, root):
+        assert load_ownership(site_root / 'output').pending
+        before_delete(path, root)
+    monkeypatch.setattr(pipeline, '_delete_asset_entry', check_pending)
+    pipeline.run_build(BuildRequest(), config, site_root)
+    assert not (site_root / 'output/assets').exists()

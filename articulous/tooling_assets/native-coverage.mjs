@@ -65,22 +65,46 @@ function executablePosition(line, outer) {
   return Math.max(outer.startOffset,line.begin+line.text.search(/\S/));
 }
 
-function childOwns(children, outer, position) {
-  return children.some(child=>child.startOffset>outer.startOffset && child.endOffset<=outer.endOffset && child.startOffset<=position && child.endOffset>position);
+function compareRegions(left,right) {
+  return left.startOffset-right.startOffset || right.endOffset-left.endOffset;
 }
 
-function tightestRange(fn, position) {
-  return fn.ranges.filter(range=>range.startOffset<=position && position<range.endOffset)
-    .sort((a,b)=>(a.endOffset-a.startOffset)-(b.endOffset-b.startOffset))[0] || fn.ranges[0];
+function intervalCursor(regions) {
+  const active=[];
+  let next=0;
+  function retire(position) {
+    while (active.length && active.at(-1).endOffset<=position) active.pop();
+  }
+  return position=>{
+    while (next<regions.length && regions[next].startOffset<=position) {
+      const region=regions[next++];
+      retire(region.startOffset);
+      active.push(region);
+    }
+    retire(position);
+    return active.at(-1);
+  };
 }
 
-function measureFunction(measured, fn, lines, children) {
+function lineOwners(lines,children) {
+  const regionAt=intervalCursor(children.toSorted(compareRegions));
+  return lines.map(line=>regionAt(line.begin+line.text.search(/\S/)));
+}
+
+function childOwns(child,outer,position) {
+  return child && child.startOffset>outer.startOffset && child.endOffset<=outer.endOffset
+    && child.startOffset<=position;
+}
+
+function measureFunction(measured,fn,lines,owners) {
   const outer=fn.ranges[0];
   measured.called ||= outer.count>0;
-  for (let index=0;index<lines.length;index++) {
+  const rangeAt=intervalCursor(fn.ranges);
+  const end=sourceLine(lines,outer.endOffset-1);
+  for (let index=sourceLine(lines,outer.startOffset)-1;index<end;index++) {
     const position=executablePosition(lines[index],outer);
-    if (position===null || childOwns(children,outer,position)) continue;
-    const range=tightestRange(fn,position);
+    if (position===null || childOwns(owners[index],outer,position)) continue;
+    const range=rangeAt(position) || outer;
     measured.executable.add(index);
     if (range.count>0) measured.covered.add(index);
   }
@@ -96,11 +120,11 @@ function sourceLine(lines, offset) {
   return low;
 }
 
-function recordFunction(file,fn,functions,lines,children,identity) {
+function recordFunction(file,fn,functions,lines,owners,identity) {
   const outer=fn.ranges[0],key=`${file}:${identity}`;
   if (!functions.has(key)) functions.set(key,{file,function:fn.functionName || '(module/callback)',
     line:sourceLine(lines,outer.startOffset),executable:new Set(),covered:new Set(),called:false});
-  measureFunction(functions.get(key),fn,lines,children);
+  measureFunction(functions.get(key),fn,lines,owners);
 }
 
 function functionRow(fn) {
@@ -114,7 +138,8 @@ export function coverageRows(files) {
     const lines=sourceLines(source);
     const children=sourceFunctions(source);
     const counters=completeCounters(source,runs,children);
-    for (const {fn,identity} of counters) recordFunction(file,fn,functions,lines,children,identity);
+    const owners=lineOwners(lines,children);
+    for (const {fn,identity} of counters) recordFunction(file,fn,functions,lines,owners,identity);
   }
   const coverage=[...functions.values()].map(functionRow);
   for (const fn of coverage) assert.ok(fn.percent>=80,`Per-function coverage below 80%: ${JSON.stringify(fn)}`);

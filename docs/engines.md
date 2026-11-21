@@ -49,9 +49,11 @@ streams those standard formats with bounded memory. Select `lxml` or
 
 ## Workers
 
-With `parallelism="auto"`, the worker count is `max(4, os.cpu_count() or 4)`
-unless a configured engine resolves to SaxonC, in which case it is
-`os.cpu_count() or 4`. An explicit positive integer overrides that choice.
+With `parallelism="auto"`, Articulous starts with the host CPU count and
+respects Linux process affinity and available cgroup v2 CPU bandwidth.
+Fractional CPU bandwidth rounds up to a whole worker. Where a limit cannot
+be read, the other available counts still apply. An explicit positive
+integer overrides automatic sizing.
 
 For settings, see [configuration](configuration.md). Sitemap constraints and
 partitioning are documented in [search discovery](search-discovery.md).

@@ -69,8 +69,8 @@ def test_api002_structural_engine_runs_captured_pipeline(site_root, seo_config, 
     assert output.read_bytes() == b'neutral output'
     assert engine.calls == 1
     assert cache['neutral'][1] == 'independent-stylesheet-v1'
-    monkeypatch.setattr('articulous.pipeline.os.cpu_count', lambda: 2)
-    assert _resolve_parallelism(context) == (2 if external else 4)
+    monkeypatch.setattr('articulous.pipeline.available_cpus', lambda: 2)
+    assert _resolve_parallelism(context) == 2
 
 
 @pytest.mark.parametrize('value', [None, 0, 'engine', {}, object()])

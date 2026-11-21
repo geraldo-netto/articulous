@@ -1,5 +1,6 @@
 """BUILD-009: forced deadlines stop owned descendants and remove owned profiles."""
 
+from contextlib import nullcontext
 import json
 from pathlib import Path
 import shutil
@@ -7,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -18,11 +19,10 @@ from articulous.backends.processes import await_group_exit, group_running, open_
 @pytest.mark.parametrize('missing', [FileNotFoundError, ProcessLookupError])
 @pytest.mark.parametrize('state,expected', [('Z', False), ('S', True)])
 def test_review015_disappearing_task_does_not_hide_live_group_members(missing, state, expected):
-    vanished = Mock()
-    vanished.read_text.side_effect = missing('task disappeared')
-    member = Mock()
-    member.read_text.return_value = f'12 (owned (child)) {state} 1 42 42'
-    with patch('articulous.backends.processes.Path.glob', return_value=[vanished, member]):
+    paths = nullcontext(['/proc/11/stat', '/proc/12/stat'])
+    results = [missing('task disappeared'), f'12 (owned (child)) {state} 1 42 42'.encode()]
+    with patch('articulous.backends.processes._proc_stat_paths', return_value=paths), \
+            patch('articulous.backends.processes._read_proc_stat', side_effect=results):
         assert group_running(42) is expected
 
 
@@ -40,9 +40,9 @@ def test_review015_identity_reads_distinguish_absence_from_unknown(name, error):
 
 
 def test_review015_unknown_group_read_failure_is_not_quiescence():
-    entry = Mock()
-    entry.read_text.side_effect = PermissionError('unavailable evidence')
-    with patch('articulous.backends.processes.Path.glob', return_value=[entry]):
+    paths = nullcontext(['/proc/42/stat'])
+    with patch('articulous.backends.processes._proc_stat_paths', return_value=paths), \
+            patch('articulous.backends.processes._read_proc_stat', side_effect=PermissionError('unavailable evidence')):
         with pytest.raises(PermissionError):
             group_running(42)
 
@@ -196,12 +196,12 @@ class BrowserProcess(unittest.TestCase):
             other.write_text("11 (other) S 1 24 24")
             owned.write_text("12 (owned (child)) Z 1 42 42")
             with patch(
-                "articulous.backends.processes.Path.glob",
-                return_value=[vanished, other, owned],
+                "articulous.backends.processes._proc_stat_paths",
+                return_value=nullcontext([vanished, other, owned]),
             ):
                 self.assertFalse(group_running(42))
             owned.write_text("12 (owned (child)) S 1 42 42")
             with patch(
-                "articulous.backends.processes.Path.glob", return_value=[other, owned]
+                "articulous.backends.processes._proc_stat_paths", return_value=nullcontext([other, owned])
             ):
                 self.assertTrue(group_running(42))

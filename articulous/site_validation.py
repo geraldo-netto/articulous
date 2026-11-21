@@ -1,4 +1,5 @@
 """Check generated artifacts before making a completed build visible."""
+from dataclasses import dataclass, replace
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 import json
 
@@ -86,7 +87,74 @@ def _redirect_url(previous, destination):
     return urlunsplit(urlsplit(destination)._replace(fragment=urlsplit(previous).fragment))
 
 
+@dataclass(frozen=True)
+class _RedirectSuffix:
+    target: object = None
+    url: str = ''
+    error: str = ''
+
+    def after(self, url):
+        if not self.error and '#' not in self.url and '#' in url:
+            return replace(self, url=self.url + '#' + urlsplit(url).fragment)
+        return self
+
+
+class _RedirectResolver:
+    def __init__(self, output, base, redirects, paths):
+        self.output = output
+        self.base = base
+        self.redirects = dict(redirects)
+        self.paths = paths
+        self.suffixes = {}
+
+    def _step(self, route):
+        value = self.redirects[route]
+        url = self.base.rstrip('/') + value
+        target = resolved_path(self.output, url, self.base, self.paths)
+        if target is None:
+            self.suffixes[route] = _RedirectSuffix(error=f'missing redirect target {value}')
+            return None, url
+        following = page_route(self.output, target)
+        if following not in self.redirects:
+            self.suffixes[route] = _RedirectSuffix(target, url)
+            return None, url
+        return following, url
+
+    def _record_loop(self, trail, repeated):
+        routes = tuple(trail)
+        for route in routes[routes.index(repeated):]:
+            self.suffixes[route] = _RedirectSuffix(error=f'redirect loop for {route}')
+
+    def _resolve(self, first):
+        route = first
+        trail = {}
+        while route is not None and route not in self.suffixes:
+            if route in trail:
+                self._record_loop(trail, route)
+                break
+            following, url = self._step(route)
+            trail[route] = following, url
+            route = following
+        for route in reversed(trail):
+            if route not in self.suffixes:
+                following, url = trail[route]
+                self.suffixes[route] = self.suffixes[following].after(url)
+        return self.suffixes[first]
+
+    def follow(self, target, resolved, failures, label):
+        route = page_route(self.output, target)
+        if route not in self.redirects:
+            return target, resolved
+        suffix = self._resolve(route)
+        if suffix.error:
+            failures.append(f'{label}: {suffix.error}')
+            return None, resolved
+        return suffix.target, _redirect_url(resolved, suffix.url)
+
+
 def redirect_target(output, target, resolved, base, redirects, failures, label, resolved_paths=None):
+    if isinstance(redirects, _RedirectResolver):
+        return redirects.follow(target, resolved, failures, label)
     seen = set()
     route = page_route(output, target)
     while route in redirects:
@@ -137,6 +205,7 @@ def document_base(page_url, href):
 
 
 def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
+    redirects = _RedirectResolver(output, base, plan.redirects, resolved_paths)
     for filename in plan.page_urls:
         if (output / filename).resolve() not in pages:
             failures.append(f'{filename}: expected HTML page missing')
@@ -148,7 +217,7 @@ def validate_pages(output, base, plan, pages, failures, resolved_paths=None):
         route = page_route(output, path)
         reference_base = document_base(base + route, references.base_href)
         for value in references.links:
-            check_link(output, value, reference_base, base, plan.redirects, pages, failures, filename, resolved_paths)
+            check_link(output, value, reference_base, base, redirects, pages, failures, filename, resolved_paths)
 
 
 def validate_search(output, plan, failures):

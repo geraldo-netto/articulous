@@ -926,9 +926,10 @@ the tooling performs no dependency download.
 
 `theme_resources.search_resources()` supplies `assets/js/search-client.js`.
 Its `SearchClient` factory takes an explicit origin, loader, metadata preparation,
-selection/matching policy and renderer callbacks. The library validates index
-records/URLs, owns immutable prepared data and one retryable request/cache, and
-renders every match in bounded batches (default 200, configurable). It assumes
+selection/matching policy and renderer callbacks. The controller validates and
+prepares loaded index rows in batches of 200, yielding between batches. It owns
+immutable prepared data and one retryable request/cache, and renders every
+match in bounded batches (default 200, configurable). It assumes
 no language segment, tag destination, search URL, card DOM or localized labels.
 Slug normalization shares the engine contract. Declarations are packaged under
 `theme_assets/contracts/search-client.d.ts`.

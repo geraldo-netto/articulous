@@ -1,9 +1,12 @@
 """Transactional XML tag corrections with caller-defined provenance semantics."""
+from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from graphlib import TopologicalSorter
 import lxml.etree as etree
 
-from .source_transactions import source_transaction
+from .filesystem import open_regular_file
+from .source_transactions import fingerprint, source_transaction
 from .taxonomy_contracts import TaxonomyEdits, TaxonomyLayout
 
 
@@ -20,27 +23,46 @@ def validate_map(mapping):
                 raise ValueError('Tag map contains text invalid in XML') from error
 
 
-def capture_documents(content, transaction, layout):
-    trees = {}
+def _read_document(path, expected):
+    with open_regular_file(path) as source:
+        content = source.read()
+    if sha256(content).digest() != expected:
+        raise ValueError(f'Import destination changed during staging: {path}')
+    parser = etree.XMLParser(resolve_entities=False, no_network=True)
+    return etree.parse(BytesIO(content), parser, base_url=str(path))
+
+
+def _provenance_fields(tree, provenance):
+    if provenance is None:
+        return None, None
+    root = tree.getroot()
+    return root.findtext(provenance.source_element), root.findtext(provenance.hash_element)
+
+
+def _stage_edits(content, transaction, layout, mapping):
+    metadata = {}
+    rewritten = 0
     for path in sorted(content.glob(layout.pattern)):
         relative = path.relative_to(content)
-        transaction.capture(relative)
-        parser = etree.XMLParser(resolve_entities=False, no_network=True)
-        trees[relative] = etree.parse(str(path), parser)
-    return trees
+        expected = transaction.capture(relative)
+        tree = _read_document(path, expected)
+        metadata[relative] = _provenance_fields(tree, layout.provenance)
+        if replace_tags(tree, mapping, layout.tag_element):
+            stage_document(transaction, relative, tree)
+            rewritten += 1
+        del tree
+    return metadata, rewritten
 
 
-def current_provenance(trees, transaction, provenance):
+def _current_provenance(metadata, transaction, provenance):
     current = {}
     if provenance is None:
         return current
-    for relative, tree in trees.items():
-        root = tree.getroot()
-        source = root.findtext(provenance.source_element)
+    for relative, (source, recorded) in metadata.items():
         if source:
             source_relative = provenance.source_reference(relative, source)
-            if (source_relative in trees and root.findtext(provenance.hash_element)
-                    == provenance.hash_fingerprint(transaction.capture(source_relative))):
+            if (source_relative in metadata
+                    and recorded == provenance.hash_fingerprint(transaction.capture(source_relative))):
                 current[relative] = source_relative
     return current
 
@@ -68,26 +90,32 @@ def stage_document(transaction, relative, tree):
     transaction.write(relative, etree.tostring(tree, encoding='utf-8', xml_declaration=True), force=True)
 
 
-def refresh_provenance(trees, current, transaction, provenance):
+def _staged_generation(transaction, relative):
+    staged = transaction.stage / relative
+    digest = fingerprint(staged)
+    if digest is not None:
+        return staged, digest
+    return transaction.destination(relative), transaction.capture(relative)
+
+
+def _refresh_document(transaction, relative, source_relative, provenance):
+    _, source_digest = _staged_generation(transaction, source_relative)
+    fresh = provenance.hash_fingerprint(source_digest)
+    path, expected = _staged_generation(transaction, relative)
+    tree = _read_document(path, expected)
+    node = tree.getroot().find(provenance.hash_element)
+    if node.text == fresh:
+        return False
+    node.text = fresh
+    stage_document(transaction, relative, tree)
+    return True
+
+
+def _refresh_provenance(current, transaction, provenance):
     refreshed = 0
     dependencies = {relative: (source,) for relative, source in current.items()}
     for relative in TopologicalSorter(dependencies).static_order():
-        if relative not in current:
-            continue
-        source_relative = current[relative]
-        tree = trees[relative]
-        node = tree.getroot().find(provenance.hash_element)
-        staged = transaction.stage / source_relative
-        digest = staged.read_bytes() if staged.is_file() else None
-        if digest is not None:
-            from hashlib import sha256
-            fingerprint = sha256(digest).digest()
-        else:
-            fingerprint = transaction.capture(source_relative)
-        fresh = provenance.hash_fingerprint(fingerprint)
-        if node.text != fresh:
-            node.text = fresh
-            stage_document(transaction, relative, tree)
+        if relative in current and _refresh_document(transaction, relative, current[relative], provenance):
             refreshed += 1
     return refreshed
 
@@ -95,13 +123,8 @@ def refresh_provenance(trees, current, transaction, provenance):
 def apply_map(content: Path, mapping, layout: TaxonomyLayout) -> TaxonomyEdits:
     validate_map(mapping)
     etree.Element(layout.tag_element)
-    rewritten = 0
     with source_transaction(content) as transaction:
-        trees = capture_documents(content, transaction, layout)
-        current = current_provenance(trees, transaction, layout.provenance)
-        for relative, tree in trees.items():
-            if replace_tags(tree, mapping, layout.tag_element):
-                stage_document(transaction, relative, tree)
-                rewritten += 1
-        refreshed = refresh_provenance(trees, current, transaction, layout.provenance)
+        metadata, rewritten = _stage_edits(content, transaction, layout, mapping)
+        current = _current_provenance(metadata, transaction, layout.provenance)
+        refreshed = _refresh_provenance(current, transaction, layout.provenance)
     return TaxonomyEdits(rewritten, refreshed)

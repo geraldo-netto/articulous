@@ -137,3 +137,37 @@ console.log('THEME-002 neutral search consumer and lifecycle passed');
  await f.controller.search('title');assert.equal(f.events.failed.length,1);
  fail=false;await f.controller.search('title');assert.equal(f.events.published[0].count,503);f.controller.dispose();
 }
+
+{
+ const native=globalThis.MessageChannel, admitted=deferred();
+ globalThis.MessageChannel=class extends native{
+  constructor(){super();this.port2.postMessage=()=>admitted.resolve();}
+ };
+ try {
+  const f=fixture();
+  const work=f.controller.search('title');
+  await admitted.promise;
+  assert.equal(f.events.prepared,200);
+  assert.equal(f.events.selected,0);
+  f.controller.dispose();
+  await work;
+  assert.equal(f.events.prepared,200);
+  assert.equal(f.events.published.length,0);
+ } finally {
+  globalThis.MessageChannel=native;
+ }
+}
+{
+ const f=fixture({load:async()=>null});
+ await f.controller.search('title');
+ assert.match(f.events.failed[0].message,/Invalid search index/);
+ f.controller.dispose();
+}
+{
+ const sparse=rows.slice(0,2);delete sparse[0];
+ const f=fixture({load:async()=>sparse,match:items=>items.filter(Boolean)});
+ await f.controller.search('title');
+ assert.equal(f.events.prepared,1);
+ assert.equal(f.events.published[0].count,1);
+ f.controller.dispose();
+}

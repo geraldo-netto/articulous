@@ -113,3 +113,16 @@ function checked(body,functions) {
  const parts=['m(){return 1;}','get x(){return 2;}','function(){return 3;}'];
  assert.equal(checked(object,[counter(object,''),...parts.map(text=>counter(object,'method',text))]).length,4);
 }
+
+{
+ const inner='function inner(){ return 1; }';
+ const fragment='function outer(){\r\n '+inner+'\r\n return 2;\r\n}';
+ const body='// 🎨\r\n'+fragment;
+ const mod=counter(body,''), outer=counter(body,'outer',fragment), inside=counter(body,'inner',inner);
+ const statement=body.indexOf('return 2');
+ outer.ranges.push({startOffset:statement,endOffset:statement+9,count:1});
+ const rows=checked(body,[mod,outer,inside]);
+ assert.equal(rows.find(row=>row.function==='outer').line,2);
+ assert.equal(rows.find(row=>row.function==='inner').line,3);
+ assert.ok(rows.every(row=>row.percent===100));
+}

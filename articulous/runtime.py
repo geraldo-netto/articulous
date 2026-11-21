@@ -11,7 +11,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import sys
 import threading
 import time
@@ -20,6 +19,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Callable, Union
 
+from .backends.cpu_capacity import available_cpus
 from .filesystem import (
     open_regular_file, validate_output_path, validate_regular_file, write_text_atomic,
 )
@@ -211,14 +211,14 @@ def run_parallel_tasks(
     Set ``collect_results=False`` for tasks whose return values are unused.
 
     ``max_workers`` accepts either a positive ``int`` or the sentinel
-    string ``"auto"`` (resolves to ``max(4, os.cpu_count() or 4)``).
+    string ``"auto"`` (uses the effective CPU count).
 
     Ordinary task or producer failures cancel pending work and drain
     submitted tasks. Task failures are logged; one error is re-raised
     directly and multiple errors form an :class:`ExceptionGroup`.
     """
     workers: int = (
-        max(4, os.cpu_count() or 4) if max_workers == "auto" else int(max_workers)
+        available_cpus() if max_workers == "auto" else int(max_workers)
     )
 
     results: list = []

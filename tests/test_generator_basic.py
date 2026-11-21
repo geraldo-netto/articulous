@@ -70,3 +70,9 @@ def test_fixture_sitemap_has_namespaced_locations(site_root, run_sitegen, engine
         assert entry.tag == namespace + "url"
         assert [child.tag for child in entry] == [namespace + "loc"]
         _assert_fixture_page_exists(site_root, entry.findtext(namespace + "loc"))
+
+
+def test_compat02_external_site_build_uses_package_entrypoint(site_root, run_sitegen):
+    result = run_sitegen([])
+    assert result.args[1:] == ['-m', 'articulous']
+    assert (site_root / 'output/rss.xml').is_file()

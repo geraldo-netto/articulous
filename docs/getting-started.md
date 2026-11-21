@@ -27,33 +27,22 @@ then run from that site's root using the installed command:
 articulous
 ```
 
-For a site containing the source checkout, the executable shim also works:
+You can also run the installed package as a module:
 
 ```sh
-chmod +x sitegen.py
-./sitegen.py
+python -m articulous
 ```
 
-…or run the package directly:
-
-```sh
-python3 -m articulous
-```
-
-All three entry points use the current working directory as the project
+Both entry points use the current working directory as the project
 root. This repository includes a test site under `tests/fixtures/site/`;
 the repository root itself does not contain production content/templates.
 
 ## Site layout
 
-Installed-command users need the site data and templates; the `articulous/`
-package and `sitegen.py` shim appear here only when the checkout is kept inside
-the site folder. A site with the checkout included looks like this:
+A site directory contains its data and templates:
 
 ```
 your-site/
-├── sitegen.py              # executable shim (ships with this repo)
-├── articulous/             # the Python package (ships with this repo)
 ├── config.json             # site configuration
 ├── content/                # your .xml articles (any sub‑tree layout)
 │   ├── en/

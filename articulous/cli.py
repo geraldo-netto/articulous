@@ -155,7 +155,7 @@ def setup_logging(config, project_root: Path, verbose: bool = False):
 
 
 def main(argv=None) -> None:
-    """Top-level entrypoint used by sitegen.py and python -m articulous."""
+    """Top-level entrypoint used by the console script and python -m articulous."""
     args = parse_cli_args(argv)
     cli = CliOptions(args).as_request()
     project_root = Path.cwd()

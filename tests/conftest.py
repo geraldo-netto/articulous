@@ -8,7 +8,7 @@ Two main fixtures:
   fresh tmpdir, with cwd pointed at it for the duration of the test.
   Tests that need to invoke run_build end-to-end use this.
 
-* ``run_sitegen`` — wrapper around ``./sitegen.py`` for the
+* ``run_sitegen`` — wrapper around ``python -m articulous`` for the
   subprocess-style integration test. It runs from whatever cwd the
   caller set up (typically ``site_root``).
 """
@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -34,7 +35,6 @@ from articulous.filesystem import TempWorkspace
 
 FIXTURE_SITE = Path(__file__).parent / "fixtures" / "site"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SITEGEN = str(PROJECT_ROOT / "sitegen.py")
 
 
 @pytest.fixture
@@ -70,18 +70,20 @@ def site_root(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def run_sitegen():
-    """Invoke ./sitegen.py with the given extra args (cwd-sensitive)."""
+def run_sitegen(monkeypatch):
+    """Run this checkout as a module from the caller's site directory."""
+    monkeypatch.setenv("PYTHONPATH", str(PROJECT_ROOT), prepend=os.pathsep)
 
-    def _run(args, check=True):
+    def _run(args, check=True, *, timeout=None):
         result = subprocess.run(
-            [sys.executable, SITEGEN, *args],
+            [sys.executable, "-m", "articulous", *args],
+            timeout=timeout,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
         if check:
             assert result.returncode == 0, (
-                f"sitegen failed: {' '.join(args)}\n"
+                f"articulous failed: {' '.join(args)}\n"
                 f"stderr:\n{result.stderr.decode()}"
             )
         return result

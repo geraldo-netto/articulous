@@ -33,8 +33,7 @@ flowchart TD
 
 ### Incremental build
 
-The installed `articulous` command, `python -m articulous` and
-[`sitegen.py`](../sitegen.py) enter [`cli.py`](../articulous/cli.py).
+The installed `articulous` command and `python -m articulous` enter [`cli.py`](../articulous/cli.py).
 The CLI parses options into a `BuildRequest`, loads configuration, applies path
 checks and overrides, sets logging, checks dependencies and invokes `run_build`.
 

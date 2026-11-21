@@ -101,8 +101,7 @@ and requires a full build with the site's declarations.
 -v, --verbose        Enable DEBUG-level logging
 ```
 
-The installed command, `python -m articulous` and the checkout shim accept the
-same options. For example:
+The installed command and `python -m articulous` accept the same options.
 
 ```sh
 articulous --only articles

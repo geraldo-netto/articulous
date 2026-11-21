@@ -3,9 +3,6 @@ import json
 import os
 import socket
 import stat
-import subprocess
-import sys
-from pathlib import Path
 
 import pytest
 
@@ -52,7 +49,7 @@ def _make_special(path, kind):
 
 @pytest.mark.parametrize("role", ["config", "cache", "log"])
 @pytest.mark.parametrize("kind", ["fifo", "directory", "socket"])
-def test_cli_rejects_special_state_files_without_blocking(site_root, role, kind):
+def test_cli_rejects_special_state_files_without_blocking(site_root, run_sitegen, role, kind):
     config_path = site_root / "config.json"
     config = json.loads(config_path.read_text())
     config["logging"]["file"] = "build.log"
@@ -62,12 +59,9 @@ def test_cli_rejects_special_state_files_without_blocking(site_root, role, kind)
     path = paths[role]
     path.unlink(missing_ok=True)
     _make_special(path, kind)
-    result = subprocess.run(
-        [sys.executable, str(Path(__file__).resolve().parents[1] / "sitegen.py")],
-        cwd=site_root, capture_output=True, text=True, timeout=5,
-    )
+    result = run_sitegen([], check=False, timeout=5)
     assert result.returncode != 0
-    assert "must be a regular file" in result.stderr
+    assert b"must be a regular file" in result.stderr
     assert not (site_root / "output").exists()
     assert path.exists()
 

@@ -1,6 +1,17 @@
 """Schema-independent translation discovery, provenance selection and job execution."""
+import os
+
 from .languages import validate_languages
 from .source_transactions import fingerprint
+
+
+def _xml_names(directory):
+    try:
+        entries = os.scandir(directory)
+    except FileNotFoundError:
+        return []
+    with entries:
+        return sorted(entry.name for entry in entries if entry.name.endswith('.xml') and entry.is_file())
 
 
 def collect_variants(content, languages):
@@ -8,13 +19,8 @@ def collect_variants(content, languages):
     catalog = {}
     for language in languages:
         directory = content / language
-        try:
-            entries = sorted(directory.iterdir())
-        except FileNotFoundError:
-            continue
-        for path in entries:
-            if path.name.endswith('.xml') and path.is_file():
-                catalog.setdefault(path.name, {})[language] = path
+        for name in _xml_names(directory):
+            catalog.setdefault(name, {})[language] = directory / name
     return catalog
 
 

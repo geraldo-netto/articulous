@@ -388,3 +388,20 @@ def test_audit1121_06_resolves_each_provenance_hop_once(tmp_path, monkeypatch):
         return ('en', paths[1]) if path == paths[0] else ('en', None)
     assert resolve_original(paths[0], tmp_path, origin) == ('en', paths[1])
     assert calls == [tmp_path, *paths]
+
+
+def test_audit1121_14_sorts_only_xml_variants(tmp_path, monkeypatch):
+    from articulous import translation_jobs
+    directory = tmp_path / 'en'
+    directory.mkdir()
+    for name in ('b.xml', 'extra.txt', 'a.xml', 'other.png'):
+        (directory / name).touch()
+    (directory / 'folder.xml').mkdir()
+    ordered_sizes = []
+    def observe(values):
+        ordered = sorted(values)
+        ordered_sizes.append(len(ordered))
+        return ordered
+    monkeypatch.setattr(translation_jobs, 'sorted', observe, raising=False)
+    assert list(collect_variants(tmp_path, ['en'])) == ['a.xml', 'b.xml']
+    assert ordered_sizes == [2]

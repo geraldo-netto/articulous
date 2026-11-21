@@ -105,3 +105,34 @@ def test_review029_decode_boundaries_and_direct_translation_rejection(tmp_path):
     handler.internal = frozenset()
     with pytest.raises(ValueError, match='not public'):
         handler.translate_path('/.private')
+
+
+def test_review28_62_serves_boundary_and_custom_404_over_component_limit(tmp_path):
+    import os
+    limit = os.pathconf(tmp_path, 'PC_NAME_MAX')
+    root = random.Random(62)
+    (tmp_path / '404.html').write_bytes(b'missing')
+    with running(tmp_path, not_found='/404.html') as server:
+        for length in (limit - 1, limit, limit + 1, limit + 2, limit + 16):
+            name = ''.join(root.choices('abcxyz', k=length))
+            if length <= limit:
+                (tmp_path / name).write_bytes(b'public')
+                assert request(server, 'GET', '/' + name) == (200, b'public', 'no-store')
+            else:
+                assert request(server, 'GET', '/' + name) == (404, b'missing', 'no-store')
+                assert request(server, 'HEAD', '/' + name) == (404, b'', 'no-store')
+
+
+def test_review28_62_unreadable_404_route_uses_plain_fallback(tmp_path, monkeypatch):
+    from pathlib import Path
+    (tmp_path / '404.html').write_bytes(b'fallback')
+    is_file = Path.is_file
+
+    def probe(path):
+        if path.name == '404.html':
+            raise OSError('unavailable metadata')
+        return is_file(path)
+
+    monkeypatch.setattr(Path, 'is_file', probe)
+    with running(tmp_path, not_found='/404.html') as server:
+        assert request(server, 'GET', '/missing') == (404, b'Not found\n', 'no-store')

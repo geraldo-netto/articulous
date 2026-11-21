@@ -9815,14 +9815,14 @@
             "projection_sha256": "cad68cdc535e823a5c45dd01299808550adb39cf2a13c7ced4e060f2f6c69ff2"
           },
           {
-            "body_sha256": "c40e27f374042fb7bb83a3667c772e45f162eadfb019e0bf40d14052354eab9d",
+            "body_sha256": "d339f7edc550d7ac92ade71f49b7a774a30c03a2554112ffb64076d980ba4d7a",
             "column": 0,
             "complexity": 4,
             "end_column": 19,
             "end_line": 63,
             "line": 54,
             "name": "_visible_target",
-            "projection_sha256": "70401931d7f707e9ccb1110e7608ae5f07b4787c437f650070d05e638f1dfcad"
+            "projection_sha256": "a46bd19bfd5ddb15bd8908593b6968bcca324837fcad9530a83f5343eb0e7030"
           },
           {
             "body_sha256": "87a4fadbe700743fd37e4ddba2a6dd5906dcb967bd6206c8d23b8f9f4845fc74",
@@ -9865,32 +9865,42 @@
             "projection_sha256": "4330f3e1d43413265af6768e56b415ed256cedf367141b082018fc9e03870cdf"
           },
           {
-            "body_sha256": "47559071718e2442b6269b9574449e4b77d8650e77ee9b1f9e88656c0bdd04ad",
+            "body_sha256": "bed378dfff177626657b04dbc8bf07170c8d99b131b2f5872a14ee9ef6ee9802",
             "column": 4,
-            "complexity": 5,
-            "end_column": 34,
-            "end_line": 106,
+            "complexity": 7,
+            "end_column": 23,
+            "end_line": 105,
             "line": 98,
-            "name": "Handler.send_head",
-            "projection_sha256": "7af3ed8b03d27aebec8ae819f2e37c5fc49c376f4347a33d702abc2ed0ef312a"
+            "name": "Handler._file_target",
+            "projection_sha256": "63a359ac7326286e536f8f8bf812c05d9ec61e003b9cb663800659fc49eb1408"
           },
           {
-            "body_sha256": "be115f06e959e553d8a45e299e5267cb3ca97b0b81592a74b918899a080961d9",
+            "body_sha256": "28d928853d04868da4f0f3225c3a744118a799ed279cc3ec278ea537ebb0383d",
             "column": 4,
-            "complexity": 5,
+            "complexity": 2,
+            "end_column": 34,
+            "end_line": 110,
+            "line": 107,
+            "name": "Handler.send_head",
+            "projection_sha256": "df895b07ad0ac5194f14556d0a479983153cf8d06ad732c4834a80553f5609bc"
+          },
+          {
+            "body_sha256": "fd4998ba7de3e143213592ba9743f93a1699c53a844fc9cddf58863327837eb1",
+            "column": 4,
+            "complexity": 4,
             "end_column": 21,
-            "end_line": 120,
-            "line": 108,
+            "end_line": 124,
+            "line": 112,
             "name": "Handler.not_found",
-            "projection_sha256": "cb6087f973bb33d8f5abe1fe5f4b2312ceb6a668193523c75e5c65348fd6f185"
+            "projection_sha256": "58f54c99e787e033314ec41384b9ccf4343fcc9ff50479015780e168c6b7aa36"
           },
           {
             "body_sha256": "eafbaa4e989b45c4ad746260f622d911f08facd1e3f42e244b56fbc1e6f73cf4",
             "column": 4,
             "complexity": 1,
             "end_column": 26,
-            "end_line": 126,
-            "line": 122,
+            "end_line": 130,
+            "line": 126,
             "name": "Handler._error_headers",
             "projection_sha256": "3bc7b17da58143415089f649076a8358d6af08148245dd56f5f560a0a990e53b"
           },
@@ -9899,8 +9909,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 130,
-            "line": 128,
+            "end_line": 134,
+            "line": 132,
             "name": "Handler.end_headers",
             "projection_sha256": "7e23f245875b702fcc0709c129c486a4e813ddbf38a0db327fa6a06f49858ce0"
           },
@@ -9909,8 +9919,8 @@
             "column": 4,
             "complexity": 4,
             "end_column": 46,
-            "end_line": 134,
-            "line": 132,
+            "end_line": 138,
+            "line": 136,
             "name": "Handler.log_message",
             "projection_sha256": "28f2f6781cdaf911f0907ab29425a8fb8c4cd40f75b322405c66323824dfbb87"
           },
@@ -9919,8 +9929,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 12,
-            "end_line": 153,
-            "line": 137,
+            "end_line": 157,
+            "line": 141,
             "name": "serve",
             "projection_sha256": "f10b30985c143637c05d9599f7c0ecfd6f06d59daedff03a8fcd66a6e21d9dd2"
           },
@@ -9929,15 +9939,15 @@
             "column": 0,
             "complexity": 2,
             "end_column": 112,
-            "end_line": 166,
-            "line": 156,
+            "end_line": 170,
+            "line": 160,
             "name": "main",
             "projection_sha256": "6a44d68dc7b992239ae844f33e54f483b66572f9e2fbb9841ada0dfd5d89dfad"
           }
         ],
         "language": "python",
         "path": "articulous/preview.py",
-        "sha256": "c743100371df75c1839aa3fc74c68197a59a87a74bb903f0043d89f763c7a4d8"
+        "sha256": "b69a2ba692103aa7c321929dfb97461b2e9c4e5f0c79a40304212f7eccae7f2a"
       },
       {
         "functions": [
@@ -26932,11 +26942,41 @@
             "line": 100,
             "name": "test_review029_decode_boundaries_and_direct_translation_rejection",
             "projection_sha256": "6760805c43cb4cddf13f22158c98767b890e5c0b81b7b9ddbd1e334919a919dc"
+          },
+          {
+            "body_sha256": "49707aa00e0405937719495040e8f43706302b2593c0d77bd316888c063426e6",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 84,
+            "end_line": 123,
+            "line": 110,
+            "name": "test_review28_62_serves_boundary_and_custom_404_over_component_limit",
+            "projection_sha256": "e4a66be49e29a1876a407f64024a0d4c63edbd2048060fcd803de866f9720803"
+          },
+          {
+            "body_sha256": "ba61362a52c1967bc157202cd93755304b889f6136e95e442f536b0ec578489d",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 86,
+            "end_line": 138,
+            "line": 126,
+            "name": "test_review28_62_unreadable_404_route_uses_plain_fallback",
+            "projection_sha256": "ca55e73a68e25d1bd859182c1ff33f63174616e1008a9df3e6b0290b4ac2da5a"
+          },
+          {
+            "body_sha256": "2538e9a3ee76ead2fc08eeefcd477a6320622241d278607961135297f11660b2",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 28,
+            "end_line": 134,
+            "line": 131,
+            "name": "test_review28_62_unreadable_404_route_uses_plain_fallback.probe",
+            "projection_sha256": "6d87a63d7b9d6118bb6201bb5e5de686660aca3bd163412709f6dfc45bd4074c"
           }
         ],
         "language": "python",
         "path": "tests/test_preview_aliases.py",
-        "sha256": "59d5e5fa18ecd3fb4f0e35a0b60c27cc7a38f719cb4499036736f8e2d502e6c8"
+        "sha256": "e0ab02765d5b713a29c0e154c059fd87f924aa6bc32eb5b1bcd40be16cbb9d62"
       },
       {
         "functions": [

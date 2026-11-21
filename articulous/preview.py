@@ -59,7 +59,7 @@ def _visible_target(root, target, internal):
         if _protected_parts(resolved.parts, internal):
             return None
         return target
-    except (ValueError, RuntimeError):
+    except (ValueError, RuntimeError, OSError):
         return None
 
 
@@ -95,19 +95,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             raise ValueError('Preview path is not public')
         return str(target)
 
+    def _file_target(self, route, *, directory_index=False):
+        target = preview_path(self.root, route, self.internal)
+        try:
+            if directory_index and target is not None and target.is_dir():
+                target = _visible_target(self.root, target / 'index.html', self.internal)
+            return target if target is not None and target.is_file() else None
+        except OSError:
+            return None
+
     def send_head(self):
-        target = preview_path(self.root, self.path, self.internal)
-        if target is None:
-            return self.not_found()
-        if target.is_dir():
-            target = _visible_target(self.root, target / 'index.html', self.internal)
-        if target is None or not target.is_file():
+        if self._file_target(self.path, directory_index=True) is None:
             return self.not_found()
         return super().send_head()
 
     def not_found(self):
-        target = preview_path(self.root, self.not_found_route, self.internal) if self.not_found_route else None
-        if target is None or not target.is_file():
+        target = self._file_target(self.not_found_route) if self.not_found_route else None
+        if target is None:
             body = b'Not found\n'
             self._error_headers('text/plain', len(body))
             return io.BytesIO(body)

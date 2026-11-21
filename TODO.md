@@ -124,7 +124,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-62 | open | low | small | Reliability: the preview handler drops the connection on an over-long path component instead of returning 404. | `preview.py:53-62,101,103` catch only `ValueError` and `RuntimeError`. Reproduced: a 257-character component raises `OSError: File name too long` in `send_head` and the client sees `RemoteDisconnected`; 256 characters return the custom 404. Next: treat `OSError` from the `is_dir` and `is_file` probes as not found; fuzz lengths around the limit. |
 | REVIEW28-63 | open | low | small | Incongruence: preview serves a file for a trailing-slash URL that site validation and static hosts treat as missing. | `preview.py:73-77,91-95` versus `site_validation.py:44-45`. Reproduced: `GET /page.html/` returns 200 with the file while `local_path` maps the same URL to `page.html/index.html`. Next: return not found when the route ends with `/` and the target is not a directory. |
 
 

@@ -2058,7 +2058,8 @@ def test_journal_write_failure_prevents_publication(site_root, monkeypatch):
 def test_final_ownership_failure_keeps_recovery_journal(site_root, monkeypatch):
     config = _site_config(site_root)
 
-    def fail_finalize(_output, _paths, *, routes):
+    def fail_finalize(_output, _paths, *, routes, generation, translations):
+        assert generation and isinstance(translations, dict)
         assert routes
         raise OSError("final ownership unavailable")
 

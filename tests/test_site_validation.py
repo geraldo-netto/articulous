@@ -26,7 +26,7 @@ def publication(tmp_path):
     (tmp_path / 'index.html').write_text(html_page(base + '/', '<h2 id="café">Target</h2><a name="old">Old</a><template><a href="__url__"><span id="inert">Inert</span></a></template>'))
     (tmp_path / 'old.html').write_text(html_page(base + '/'))
     (tmp_path / 'lookup.json').write_text(json.dumps([{'url': base + '/'}]))
-    (tmp_path / 'map.xml').write_text('<urlset><url><loc>' + base + '/</loc></url></urlset>')
+    (tmp_path / 'map.xml').write_text('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + base + '/</loc></url></urlset>')
     plan = ValidationPlan({'index.html': base + '/', 'old.html': base + '/'},
                           frozenset({base + '/'}), frozenset({base + '/'}),
                           'lookup.json', 'map.xml', {'/old.html': '/'})
@@ -150,7 +150,7 @@ def corrupt_output(root, base, defect):
     else:
         url = base + '/' if defect.startswith('duplicate') else base + '/missing'
         urls = [url, url] if defect.startswith('duplicate') else [url]
-        (root / 'map.xml').write_text('<urlset>' + ''.join('<loc>' + value + '</loc>' for value in urls) + '</urlset>')
+        (root / 'map.xml').write_text('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + ''.join('<url><loc>' + value + '</loc></url>' for value in urls) + '</urlset>')
 
 
 def reported_errors(source):
@@ -168,10 +168,10 @@ def test_valid001_invalid_search_schema(publication, data):
 def test_valid001_sitemap_shards_and_invalid_indexes(publication):
     root, base, plan = publication
     (root / 'shard.xml').write_bytes((root / 'map.xml').read_bytes())
-    (root / 'map.xml').write_text('<sitemapindex><sitemap><loc>' + base + '/shard.xml</loc></sitemap></sitemapindex>')
+    (root / 'map.xml').write_text('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>' + base + '/shard.xml</loc></sitemap></sitemapindex>')
     assert validate_site(root, base, plan).sitemap_urls == 1
     for location in [base + '/missing.xml', 'https://outside.test/sitemap.xml', base + '/map.xml']:
-        (root / 'map.xml').write_text('<sitemapindex><loc>' + location + '</loc></sitemapindex>')
+        (root / 'map.xml').write_text('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>' + location + '</loc></sitemap></sitemapindex>')
         with pytest.raises(ValueError, match='Sitemap|sitemap'):
             validate_site(root, base, plan)
     (root / 'map.xml').write_text('<unexpected/>')

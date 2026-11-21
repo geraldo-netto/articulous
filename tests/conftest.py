@@ -14,15 +14,19 @@ Two main fixtures:
 """
 from __future__ import annotations
 
+from hashlib import sha256
+import json
 import shutil
 import subprocess
 import sys
 import time
 from contextlib import ExitStack
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 
+from articulous.tree_entries import tree_entries
 from articulous.cli import CliOptions, parse_cli_args
 from articulous.config import apply_cli_overrides, load_or_create_config
 from articulous.filesystem import TempWorkspace
@@ -96,3 +100,43 @@ def seo_config(site_root):
     config = load_or_create_config(site_root / "config.json")
     apply_cli_overrides(config, cli, site_root)
     return cli, config
+
+
+def pytest_sessionstart(session):
+    session.config.stash[SOURCE_DIGESTS] = {
+        path: sha256(path.read_bytes()).hexdigest() for path in tree_entries(PROJECT_ROOT / 'articulous')
+        if path.suffix == '.py'
+    }
+
+
+SOURCE_DIGESTS = pytest.StashKey[dict]()
+
+
+def _bind_coverage(report_path, output, sources):
+    report = json.loads(report_path.read_bytes())
+    for name, entry in report['files'].items():
+        path = Path(name).resolve()
+        if path in sources:
+            entry['source_sha256'] = sources[path]
+    report_path.write_text(json.dumps(report))
+    report_path.replace(output)
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtestloop(session):
+    reports = session.config.getoption('cov_report', default={})
+    if 'json' not in reports or session.config.getoption('no_cov', default=False):
+        return (yield)
+    original = reports['json']
+    output = Path(original or 'coverage.json').resolve()
+    output.parent.mkdir(exist_ok=True, parents=True)
+    with TemporaryDirectory(dir=output.parent) as work:
+        measured = Path(work) / 'coverage.json'
+        reports['json'] = str(measured)
+        try:
+            result = yield
+            if measured.exists():
+                _bind_coverage(measured, output, session.config.stash[SOURCE_DIGESTS])
+        finally:
+            reports['json'] = original
+        return result

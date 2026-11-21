@@ -14,7 +14,7 @@ import logging
 import sys
 import threading
 import time
-from concurrent.futures import FIRST_COMPLETED, CancelledError, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Union
@@ -87,11 +87,16 @@ def load_cache(cache_path: Path) -> dict:
         return TrackedCache()
     try:
         with open_regular_file(cache_path.resolve()) as source:
-            data = json.loads(source.read().decode("utf-8"))
+            payload = source.read()
+        try:
+            data = json.loads(payload.decode("utf-8"))
+        except (ValueError, RecursionError) as error:
+            logging.warning("Failed to load cache: %s", error)
+            return TrackedCache()
         if isinstance(data, dict):
             logging.debug("Cache loaded successfully")
             return TrackedCache(data)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+    except OSError as e:
         logging.warning(f"Failed to load cache: {e}")
     logging.debug("Cache invalid — starting fresh")
     return TrackedCache()
@@ -165,14 +170,12 @@ def _cancel_pending(futures) -> None:
 
 
 def _collect_one(fut, results: list | None, errors: list, futures) -> None:
+    if fut.cancelled():
+        return
     try:
         result = fut.result()
         if results is not None:
             results.append(result)
-    except CancelledError:
-        # Cancellations are how we react to a failure; the real
-        # error is already captured. Don't double-count.
-        return
     except Exception as e:
         logging.exception("Task failed")
         errors.append(e)
@@ -252,6 +255,14 @@ def _drain_tasks(pool, admission, results, errors) -> None:
             admission.fill(pool)
 
 
+def _worker_count(value: WorkerCount) -> int:
+    if value == "auto":
+        return available_cpus()
+    if type(value) is not int or value < 1:
+        raise ValueError("max_workers must be a positive integer or auto")
+    return value
+
+
 def run_parallel_tasks(
     tasks, max_workers: WorkerCount = "auto", *, collect_results: bool = True,
     max_inflight_bytes: int | None = None,
@@ -270,9 +281,7 @@ def run_parallel_tasks(
     submitted tasks. Task failures are logged; one error is re-raised
     directly and multiple errors form an :class:`ExceptionGroup`.
     """
-    workers: int = (
-        available_cpus() if max_workers == "auto" else int(max_workers)
-    )
+    workers = _worker_count(max_workers)
 
     results: list = []
     errors: list = []

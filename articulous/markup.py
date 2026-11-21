@@ -150,17 +150,21 @@ def apply_decoded(block, fragment, encoded, policy):
     return True
 
 
+def try_decode(block, translated, encoded, policy):
+    if encoded.root is not block or etree.tostring(block) != encoded.snapshot:
+        return False
+    try:
+        fragment = parse_fragment(translated)
+    except etree.XMLSyntaxError:
+        return False
+    if not valid_slots(fragment, encoded.slots, policy):
+        return False
+    return apply_decoded(block, fragment, encoded, policy)
+
+
 def decode_block(block, translated, encoded, policy=DEFAULT_POLICY):
     try:
-        if encoded.root is not block or etree.tostring(block) != encoded.snapshot:
-            return False
-        try:
-            fragment = parse_fragment(translated)
-        except etree.XMLSyntaxError:
-            return False
-        if not valid_slots(fragment, encoded.slots, policy):
-            return False
-        return apply_decoded(block, fragment, encoded, policy)
+        return try_decode(block, translated, encoded, policy)
     finally:
         encoded.close()
 

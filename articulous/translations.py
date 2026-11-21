@@ -27,6 +27,14 @@ def _cached_metadata(fingerprint) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def translation_history(cache, planned):
+    for key in planned:
+        if key.startswith('article:'):
+            metadata = _cached_metadata(cache.get(key))
+            if group := metadata.get('articulous-translation'):
+                yield key, (group, metadata.get('articulous-alternates', ''))
+
+
 class TranslationStore:
     def __init__(self):
         self._database = sqlite3.connect("")
@@ -62,9 +70,11 @@ class TranslationStore:
         rows = self._database.execute("SELECT locale, url FROM pages WHERE group_id = ? AND eligible = 1 ORDER BY locale", (group,))
         return "".join(f'<link rel="alternate" hreflang="{locale}" href="{escape(url, quote=True)}"/>' for locale, url in rows)
 
-    def validate_filters(self, cache: dict, selected) -> None:
+    def validate_filters(self, history, selected) -> None:
         self._database.execute("CREATE TABLE previous (id TEXT PRIMARY KEY, group_id TEXT, markup TEXT, selected INTEGER)")
-        self._load_previous(cache, selected)
+        self._database.executemany("INSERT INTO previous VALUES (?, ?, ?, ?)", (
+            (key, group, markup, selected(key)) for key, (group, markup) in history.items()
+        ))
         rows = self._database.execute(
             "WITH affected AS (SELECT group_id FROM pages WHERE selected = 1 UNION SELECT group_id FROM previous WHERE selected = 1) "
             "SELECT id FROM pages WHERE selected = 0 AND group_id IN affected "
@@ -73,17 +83,6 @@ class TranslationStore:
         for (key,) in rows:
             if self._current_markup(key) != self._previous_markup(key):
                 raise ValueError("A full build is required to update reciprocal translation links")
-
-    def _load_previous(self, cache: dict, selected) -> None:
-        for key, fingerprint in cache.items():
-            if not key.startswith("article:"):
-                continue
-            metadata = _cached_metadata(fingerprint)
-            group = metadata.get("articulous-translation", "")
-            if group:
-                self._database.execute("INSERT INTO previous VALUES (?, ?, ?, ?)", (
-                    key, group, metadata.get("articulous-alternates", ""), selected(key),
-                ))
 
     def _current_markup(self, key: str) -> str:
         row = self._database.execute("SELECT group_id FROM pages WHERE id = ? AND eligible = 1", (key,)).fetchone()

@@ -16,7 +16,7 @@ from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
 from . import publication_snapshots as snapshots
 from ..publication_contracts import PublicationInput
-from ..publication_paths import transaction_path, validate_publication_paths
+from ..publication_paths import retirement_path, transaction_path, validate_publication_paths
 
 
 def _validate_journal_header(data, destination, cache):
@@ -48,7 +48,7 @@ def _validate_phase(data):
     if data['phase'] == 'capturing':
         if data['version'] != 2 or any(data[key] is not None for key in ('cache_before', 'ownership_before')):
             raise ValueError('Invalid snapshot capture phase')
-    elif data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed'):
+    elif data['phase'] not in ('prepared', 'old_moved', 'installed', 'committed', 'rolled_back'):
         raise ValueError('Invalid journal phase')
 
 
@@ -89,7 +89,7 @@ def _validate_saved_state(data):
 
 
 def _verify_saved_state(transaction, data):
-    if data['version'] == 2 and data['phase'] != 'committed':
+    if data['version'] == 2 and data['phase'] not in ('committed', 'rolled_back'):
         snapshots.verify_snapshot(transaction / 'cache.before', data['cache_before'])
         snapshots.verify_snapshot(transaction / 'ownership.before', data['ownership_before'])
 
@@ -155,13 +155,14 @@ class PosixPublicationBackend:
             data['ownership_before'] = snapshots.snapshot(ownership_path(destination), transaction / 'ownership.before')
             self._set_phase(transaction, data, 'prepared')
         except BaseException:
-            _remove_tree(transaction)
+            self.recover(destination, cache)
             raise
         return transaction, data
 
     def _write_state(self, publication):
         write_text_atomic(publication.cache_path, publication.cache_text)
-        save_ownership(publication.destination, dict(publication.output_owners), routes=publication.output_routes)
+        save_ownership(publication.destination, dict(publication.output_owners), routes=publication.output_routes,
+                       generation=publication.generation, translations=dict(publication.translations))
 
     def _install(self, publication, transaction, data):
         destination = publication.destination
@@ -246,20 +247,45 @@ class PosixPublicationBackend:
         if stage.exists():
             self._expect(stage, data['stage_identity'])
             _remove_tree(stage)
-        _remove_tree(transaction)
+        self._retire_transaction(transaction, data)
+
+    def _retire_transaction(self, transaction, data):
+        for child in transaction.iterdir():
+            if child.name == 'journal.json':
+                continue
+            if child.is_dir():
+                _remove_tree(child)
+            else:
+                child.unlink()
+        retired = retirement_path(transaction)
+        self._rename(transaction, retired)
+        self._finish_retirement(retired, Path(data['destination']), Path(data['cache']))
+
+    def _finish_retirement(self, retired, destination, cache):
+        validate_output_path(retired)
+        if retired.exists():
+            journal = retired / 'journal.json'
+            if any(entry != journal for entry in retired.iterdir()):
+                raise ValueError(f'Unexpected files in publication retirement directory: {retired}')
+            if journal.exists():
+                self._read_journal(retired, destination, cache)
+                journal.unlink()
+            retired.rmdir()
 
     def recover(self, destination, cache_path):
         validate_publication_paths(destination, [cache_path])
         validate_output_path(destination)
         transaction = self._transaction(destination)
         validate_output_path(transaction)
+        self._finish_retirement(retirement_path(transaction), destination, cache_path)
         if not transaction.exists():
             return
         data = self._read_journal(transaction, destination, cache_path)
         if data['phase'] == 'committed':
             self._expect(destination, data['new'])
-        elif data['phase'] == 'capturing':
+        elif data['phase'] in ('capturing', 'rolled_back'):
             self._expect(destination, data['previous'])
         else:
             self._rollback(transaction, data, destination, cache_path)
+            self._set_phase(transaction, data, 'rolled_back')
         self._cleanup(transaction, data)

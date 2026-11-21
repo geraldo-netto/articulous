@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 
+from .tree_entries import tree_entries
 from .filesystem import open_regular_file
 from .source_files import cleanup_workspace, require_workspace, workspace_identity
 
@@ -108,7 +109,7 @@ class SourceTransaction:
         for relative, expected in self.expected.items():
             if fingerprint(self.destination(relative)) != expected:
                 raise ValueError(f'Import destination changed during staging: {relative}')
-        for source in self.stage.rglob('*'):
+        for source in tree_entries(self.stage):
             if not source.is_file():
                 continue
             relative = source.relative_to(self.stage)

@@ -13,7 +13,7 @@ from test_site_validation import html_page
 def test_review017_missing_links_and_valid_local_boundaries(tmp_path, base):
     (tmp_path / 'index.html').write_text(html_page(base + '/', '<a href="missing.html">broken</a>'))
     (tmp_path / 'search.json').write_text('[]')
-    (tmp_path / 'map.xml').write_text('<urlset/>')
+    (tmp_path / 'map.xml').write_text('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>')
     plan = ValidationPlan({'index.html': base + '/'}, frozenset(), frozenset(), 'search.json', 'map.xml', {})
     with pytest.raises(ValueError, match='missing missing.html'):
         validate_site(tmp_path, base, plan)

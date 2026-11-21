@@ -106,9 +106,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def not_found(self):
         target = preview_path(self.root, self.not_found_route, self.internal) if self.not_found_route else None
-        body = target.read_bytes() if target is not None and target.is_file() else b'Not found\n'
+        if target is not None and target.is_file():
+            body, media = target.read_bytes(), 'text/html'
+        else:
+            body, media = b'Not found\n', 'text/plain'
         self.send_response(404)
-        self.send_header('Content-Type', 'text/html; charset=utf-8' if target else 'text/plain; charset=utf-8')
+        self.send_header('Content-Type', media + '; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         return None if self.command == 'HEAD' else io.BytesIO(body)

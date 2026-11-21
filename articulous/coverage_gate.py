@@ -3,10 +3,13 @@ import argparse
 import ast
 import json
 import math
+from hashlib import sha256
 from pathlib import Path
 
 from coverage import Coverage
 from coverage.python import PythonFileReporter
+
+from .tree_entries import tree_entries
 
 
 def inventory(node, prefix=''):
@@ -59,6 +62,11 @@ def check_percent(percent, executed, expected):
         raise ValueError(f'{percent!r}% executable lines; require 80–100%')
 
 
+def _check_source(path, filename, record, names, failures):
+    if names and record.get('source_sha256') != sha256(path.read_bytes()).hexdigest():
+        failures.append(f'{filename}: missing or stale source digest')
+
+
 def check_file(path, root, report):
     filename = path.relative_to(root).as_posix()
     names = inventory(ast.parse(path.read_text()))
@@ -67,7 +75,8 @@ def check_file(path, root, report):
     reporter = PythonFileReporter(str(path), Coverage())
     statements = reporter.lines()
     regions = {region.name: region for region in reporter.code_regions() if region.kind == 'function'}
-    functions = report.get('files', {}).get(filename, {}).get('functions', {})
+    record = report.get('files', {}).get(filename, {})
+    functions = record.get('functions', {})
     failures = []
     for name in names:
         if name not in functions:
@@ -80,6 +89,7 @@ def check_file(path, root, report):
     unexpected = set(functions) - set(names) - {''}
     if unexpected:
         failures.append(f'{filename}: stale function counters: {sorted(unexpected)}')
+    _check_source(path, filename, record, names, failures)
     return len(names), failures
 
 
@@ -88,7 +98,11 @@ def check_report(root: Path, directories, report):
     failures = []
     count = 0
     for directory in directories:
-        for path in sorted((root / directory).rglob('*.py')):
+        source = root / directory
+        if not source.is_dir():
+            failures.append(f'Missing coverage source directory: {directory}')
+            continue
+        for path in sorted(p for p in tree_entries(source) if p.suffix == '.py' and p.is_file()):
             try:
                 measured, errors = check_file(path, root, report)
             except ValueError as error:

@@ -16,6 +16,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from .tree_entries import tree_entries
+
 
 def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
     parent = path.parent
@@ -257,7 +259,7 @@ def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
 def tree_fingerprint(root: Path) -> str:
     validate_output_path(root)
     digest = hashlib.sha256()
-    for path in sorted(root.rglob('*')):
+    for path in sorted(tree_entries(root)):
         validate_output_path(path)
         content = hashlib.sha256()
         kind = 'directory'
@@ -301,7 +303,7 @@ def _stale_lock_reason(text: str, stale_after: float) -> str:
         if not _pid_alive(int(data.get("pid", 0))):
             return "dead process"
         return ""
-    except (OSError, ValueError, TypeError, OverflowError):
+    except (OSError, ValueError, TypeError, OverflowError, RecursionError):
         return "malformed"
 
 

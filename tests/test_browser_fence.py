@@ -49,7 +49,7 @@ def test_test002_real_pidfd_generation_and_exit():
 def test_test002_collect_once_and_reject_unknown_identity():
     handles = {(7, 1): 70}
     members = [(7, (42, 1, 'S')), (8, (42, 2, 'S')), (9, (42, 3, 'S'))]
-    with patch.object(fence.select, 'select', return_value=([], [], [])), patch.object(fence, 'owned_members', return_value=iter(members)), patch.object(fence, 'admit_member', side_effect=[None, 90]), patch.object(fence, 'signal_member') as sent:
+    with patch.object(fence, 'ready_descriptors', return_value=[]), patch.object(fence, 'owned_members', return_value=iter(members)), patch.object(fence, 'admit_member', side_effect=[None, 90]), patch.object(fence, 'signal_member') as sent:
         assert fence.collect_members(42, handles, signal.SIGSTOP)
         assert handles == {(7, 1): 70, (9, 3): 90}
         sent.assert_called_once_with(90, signal.SIGSTOP)
@@ -100,7 +100,7 @@ def test_life003_retired_pidfd_cannot_hide_reused_membership_key():
     handles = {(7, 1): 70}
     with patch.object(fence, 'owned_members', return_value=iter([(7, (42, 1, 'T'))])):
         with patch.object(fence, 'admit_member', return_value=71), patch.object(fence, 'signal_member') as sent:
-            with patch.object(fence.select, 'select', return_value=([70], [], [])), patch.object(fence.os, 'close'):
+            with patch.object(fence, 'ready_descriptors', return_value=[70]), patch.object(fence.os, 'close'):
                 assert fence.collect_members(42, handles, signal.SIGSTOP), 'LIFE-003: a retired descriptor must not conceal a new owned member'
                 assert handles[(7, 1)] == 71
                 sent.assert_called_once_with(71, signal.SIGSTOP)

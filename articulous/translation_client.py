@@ -43,20 +43,20 @@ class Translator:
     def _post(self, system, user):
         return self.provider.post(system, user)
 
-    def _valid(self, value, wanted, markup):
-        return isinstance(value, str) and usable_translation(value, wanted, markup)
+    def _valid(self, value, wanted, markup, accept):
+        return isinstance(value, str) and usable_translation(value, wanted, markup) and (accept is None or accept(value))
 
-    def _cache_hit(self, key, wanted, markup):
+    def _cache_hit(self, key, wanted, markup, accept):
         value = self._cached(key)
         if value is None:
             return None
-        if self._valid(value, wanted, markup):
+        if self._valid(value, wanted, markup, accept):
             self.cache_hits += 1
             return value
         self.cache.delete(key)
         return None
 
-    def _attempt(self, system, text, wanted, markup, attempt):
+    def _attempt(self, system, text, wanted, markup, attempt, accept):
         try:
             self.calls += 1
             candidate = self._post(system, text)
@@ -66,22 +66,22 @@ class Translator:
             return None
         if isinstance(candidate, str):
             candidate = self.normalize(candidate)
-        if self._valid(candidate, wanted, markup):
+        if self._valid(candidate, wanted, markup, accept):
             return candidate
         self.log(f'    ! empty translation or placeholder mismatch; retry {attempt + 1}')
         return None
 
-    def translate(self, text, source, target, keep_placeholders=True):
+    def translate(self, text, source, target, keep_placeholders=True, *, accept=None):
         if not text.strip():
             return text
         system = self._system(source, target, keep_placeholders)
         key = self._key(text, source, target, keep_placeholders, system=system)
         wanted = placeholder_signature(text) if keep_placeholders else []
-        hit = self._cache_hit(key, wanted, keep_placeholders)
+        hit = self._cache_hit(key, wanted, keep_placeholders, accept)
         if hit is not None:
             return hit
         for attempt in range(self.retries + 1):
-            candidate = self._attempt(system, text, wanted, keep_placeholders, attempt)
+            candidate = self._attempt(system, text, wanted, keep_placeholders, attempt, accept)
             if candidate is not None:
                 self._store(key, candidate)
                 return candidate

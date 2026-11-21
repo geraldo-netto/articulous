@@ -98,6 +98,10 @@ build_site(CliOptions(parse_cli_args([])), json.loads((root/'config.json').read_
     assert result.returncode == 91, result.stderr.decode()
     expected = published(site_root) if phase == 'committed' else previous
     assert (expected[0] != previous[0]) == (phase == 'committed')
+    # AUDIT26-14: an incremental writer must preserve journal recovery.
+    from articulous.pipeline import run_build
+    with pytest.raises(ValueError, match='publication.*recovery'):
+        run_build(cli, config, site_root)
     recover_publication(site_root / 'output', site_root / '.build-cache.json')
     assert published(site_root) == expected
     assert not (site_root / '.output.articulous-transaction').exists()

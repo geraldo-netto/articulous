@@ -2,6 +2,7 @@
 import gzip
 from collections import Counter
 from pathlib import Path
+from statistics import median
 from typing import TypedDict
 
 from lxml import html
@@ -70,11 +71,11 @@ def overall(metrics: OutputMetrics) -> None:
     print('  by type:    ' + ', '.join(f'{e}={megabytes(s)}' for e, s in by_extension.most_common(5)))
     print('  by section: ' + ', '.join(f'{d}={megabytes(s)}' for d, s in by_section.most_common(6)))
     raw, estimated_gzip = metrics['raw'], metrics['gzip']
-    sizes = sorted(metrics['sizes'], reverse=True)
+    sizes = metrics['sizes']
     print(f'\n{len(sizes)} pages: {megabytes(raw)} raw, {megabytes(estimated_gzip)} estimated gzip '
           f'({estimated_gzip/raw if raw else 0:.0%} of raw)')
     if sizes:
-        print(f'  median {sizes[len(sizes)//2]/1024:.0f} KB, largest {sizes[0]/1024:.0f} KB')
+        print(f'  median {median(sizes)/1024:.0f} KB, largest {max(sizes)/1024:.0f} KB')
 
 
 def repeated_markup(metrics: OutputMetrics) -> None:

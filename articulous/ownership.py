@@ -1,9 +1,11 @@
 """Persistent output ownership, independent of disposable fingerprints."""
 import json
+import re
 import stat
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from .tree_entries import tree_entries
 from .filesystem import open_regular_file, write_text_atomic, validate_output_path, validate_regular_file
 from .composition_contracts import Route
 
@@ -13,6 +15,8 @@ class Ownership:
     paths: dict[str, str]
     pending: bool = False
     routes: dict[str, Route] = field(default_factory=dict)
+    generation: str | None = None
+    translations: dict | None = None
 
 
 def ownership_path(output_dir: Path) -> Path:
@@ -42,6 +46,11 @@ def _legacy_ownership(output_dir: Path, legacy) -> dict:
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError("Output ownership unavailable; restore ownership or use an empty output tree")
     return {}
+
+
+def _from_legacy_outputs(outputs):
+    paths = {path: key for key, path in outputs.items()}
+    return Ownership(paths, translations=_translation_metadata(None, paths))
 
 
 def _file_identity(path: Path) -> list[int] | None:
@@ -78,7 +87,7 @@ def _decode_ownership(output_dir: Path, data) -> Ownership:
         raise ValueError(f"Invalid output ownership version at {ownership_path(output_dir)}")
     if data.get("version") == 1:
         outputs = _validate_outputs(data.get("outputs"))
-        return Ownership({path: key for key, path in outputs.items()})
+        return _from_legacy_outputs(outputs)
     if not isinstance(data.get("pending", False), bool):
         raise ValueError(f"Invalid output ownership version or recovery flag at {ownership_path(output_dir)}")
     paths = _validate_outputs(data.get("paths"), path_keys=True)
@@ -104,7 +113,30 @@ def _current_ownership(output_dir, data, paths):
     published = _published_paths(output_dir, paths, data.get('existing', {}))
     routes = _decode_routes(data.get('routes', {}), paths)
     retained = {key: route for key, route in routes.items() if route.output_path in published}
-    return Ownership(published, data.get('pending', False), retained)
+    return Ownership(published, data.get('pending', False), retained, _generation(data.get('generation')),
+                     _translation_metadata(data.get('translations'), published))
+
+
+def _generation(value):
+    if value is not None and not (isinstance(value, str) and re.fullmatch('[0-9a-f]{32}', value)):
+        raise ValueError('Invalid output ownership generation')
+    return value
+
+
+def _valid_translation_pair(pair):
+    return isinstance(pair, list) and len(pair) == 2 and all(isinstance(value, str) for value in pair)
+
+
+def _translation_metadata(values, paths):
+    if values is None:
+        return None if any(key.startswith('article:') for key in paths.values()) else {}
+    if not isinstance(values, dict):
+        raise ValueError('Invalid translation ownership metadata')
+    owned = set(paths.values())
+    for key, pair in values.items():
+        if key not in owned or not key.startswith('article:') or not _valid_translation_pair(pair):
+            raise ValueError('Invalid translation ownership metadata')
+    return values
 
 
 def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True) -> Ownership:
@@ -114,7 +146,7 @@ def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True)
             data = json.loads(source.read().decode("utf-8"))
     except FileNotFoundError:
         outputs = _legacy_ownership(output_dir, legacy)
-        return Ownership({path: key for key, path in outputs.items()})
+        return _from_legacy_outputs(outputs)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError(f"Invalid output ownership at {path}; restore it before building") from error
     ownership = _decode_ownership(output_dir, data)
@@ -123,9 +155,10 @@ def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True)
     return ownership
 
 
-def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, existing=None, routes=None) -> None:
+def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, existing=None, routes=None, generation=None, translations=None) -> None:
     path = ownership_path(output_dir)
     text = json.dumps({"version": 2, "output_dir": str(output_dir.resolve()),
+                       "generation": generation, "translations": translations,
                        "paths": paths, "pending": pending, "existing": existing or {},
                        "routes": {key: asdict(route) for key, route in (routes or {}).items()}}, indent=2, sort_keys=True)
     try:
@@ -162,7 +195,7 @@ def validate_owned_output(destination):
     ownership = load_ownership(destination)
     allowed = {Path(path) for path in ownership.paths}
     parents = {parent for path in allowed for parent in path.parents}
-    for path in destination.rglob('*'):
+    for path in tree_entries(destination) if destination.is_dir() else ():
         _validate_owned_entry(path, destination, allowed, parents)
 
     return ownership

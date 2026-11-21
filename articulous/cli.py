@@ -7,7 +7,7 @@ import logging
 import sys
 from pathlib import Path
 
-from .config import apply_cli_overrides, load_or_create_config
+from .config import apply_cli_overrides, load_or_create_config, normalize_configuration
 from .engines import check_dependencies
 from .filesystem import regular_file_opener
 from .pipeline import run_build
@@ -160,6 +160,8 @@ def main(argv=None) -> None:
     cli = CliOptions(args).as_request()
     project_root = Path.cwd()
 
+    if not cli.config_path.exists():
+        normalize_configuration({}, cli, project_root)
     config = load_or_create_config(cli.config_path)
     apply_cli_overrides(config, cli, project_root)
     setup_logging(config, project_root, verbose=cli.verbose)

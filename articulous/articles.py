@@ -7,6 +7,7 @@ receive articles with an empty URL.
 """
 from __future__ import annotations
 
+import errno
 import logging
 import hashlib
 import os
@@ -300,6 +301,7 @@ def parse_article_xml(
     default_lang: str = "en",
     url_builder: Optional[Callable[[str, str], str]] = None,
     allowed_langs: Optional[frozenset] = None,
+    require_source: bool = False,
 ) -> Optional[Article]:
     """
     Parse a single article XML file. Returns the :class:`Article` or
@@ -322,7 +324,16 @@ def parse_article_xml(
     """
     try:
         source = read_source(path)
-    except (etree.XMLSyntaxError, OSError, ValueError):
+    except FileNotFoundError:
+        if require_source:
+            raise
+        return None
+    except OSError as error:
+        if error.errno != errno.ELOOP:
+            raise
+        logging.error(f"Refusing article symlink: {path}")
+        return None
+    except (etree.XMLSyntaxError, ValueError):
         logging.exception(f"Failed to parse XML: {path}")
         return None
 
@@ -447,7 +458,7 @@ def iter_articles(
             path,
             default_lang=default_lang,
             url_builder=url_builder,
-            allowed_langs=allowed,
+            allowed_langs=allowed, require_source=True,
         )
         if art is None:
             stats.skipped += 1

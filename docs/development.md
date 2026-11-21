@@ -25,7 +25,10 @@ Coverage is enforced at
 **100 % line + branch** via `pytest-cov` (`--cov-fail-under=100`).
 The subsequent native per-function gate independently inventories source, rejects
 stale or inconsistent counters, and requires at least 80% executable lines for
-each function. Empty protocol declarations must have genuinely empty native
+each function. The pytest session records the SHA-256 of each maintained Python
+source before collecting tests and binds those digests to its native JSON report.
+Run pytest again after editing measured source. A missing inventory directory or
+source digest fails validation. Empty protocol declarations must have genuinely empty native
 regions; executable functions cannot substitute empty counters.
 Native Python reports key functions by qualified name. The gate rejects repeated
 names, including same-name property getters/setters and conditional redefinitions,

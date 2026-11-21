@@ -1,5 +1,5 @@
 """Native publication capability data, independent of lifecycle implementations."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -28,6 +28,8 @@ class PublicationInput:
     output_owners: Mapping[str, str]
     output_routes: Mapping[str, Route]
     verify: Callable[[], None]
+    generation: str | None = None
+    translations: Mapping = field(default_factory=dict)
 
 
 class PublicationBackend(Protocol):

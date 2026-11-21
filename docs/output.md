@@ -132,7 +132,12 @@ Deleting, corrupting or switching the fingerprint cache preserves this
 ownership history, so deleted/private pages can still be pruned.
 The sidecar also preserves immutable route metadata, including canonical URLs,
 language, category and sitemap eligibility. Cached route metadata is derived;
-it cannot override the ownership record.
+it cannot override the ownership record. Both publication paths pair the cache
+and sidecar with a generation identifier. An older or independently restored cache
+triggers rendering of the selected pages. The sidecar also records published
+translation groups and their reciprocal links so filtered builds can detect
+changes that require rebuilding peers. For older ownership records, rebuild the
+article section across all languages and slugs once before filtering articles.
 
 Legacy cache manifests migrate automatically when no ownership file
 exists. Flat caches bind to the output used for the first upgraded build;

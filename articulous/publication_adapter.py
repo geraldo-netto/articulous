@@ -1,6 +1,7 @@
 """Project validated build state into an implementation-independent publication input."""
 import json
 from types import MappingProxyType
+from uuid import uuid4
 
 from .cache_store import cache_payload, finish_cache_update, selected_roots
 from .publication_contracts import PublicationBackend, PublicationInput
@@ -9,13 +10,15 @@ from .builds import _owned_validated
 from .composition import route_cache_data
 from .output_cache import refresh_output_cache
 from .runtime import load_cache
+from .translations import translation_history
 
 
-def publication_cache(prepared, routes):
+def publication_cache(prepared, routes, generation):
     selected = prepared.cache_selection
     root = str(prepared.destination)
     roots = selected_roots(load_cache(selected.path), root, selected.partitioned)
     cache = dict(prepared.cache)
+    cache['__generation__'] = generation
     cache['__outputs__'] = dict(sorted(prepared.manifest.items()))
     cache['__routes__'] = route_cache_data(routes)
     refresh_output_cache(roots, root, cache, prepared.context.cache_retention_days)
@@ -26,12 +29,14 @@ def publication_input(checked: ValidatedBuild) -> PublicationInput:
     native = _owned_validated(checked)
     prepared = native._staged._owner
     routes = prepared.manifest.route_values()
+    generation = uuid4().hex
     return PublicationInput(
         checked.staged.root, prepared.destination, prepared.cache_path,
-        publication_cache(prepared, routes),
+        publication_cache(prepared, routes, generation),
         MappingProxyType({path: key for key, path in prepared.manifest.items()}),
         routes,
-        checked.assert_unchanged,
+        checked.assert_unchanged, generation,
+        MappingProxyType(dict(translation_history(prepared.cache, prepared.manifest))),
     )
 
 

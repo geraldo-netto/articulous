@@ -1,4 +1,5 @@
 """Linux pidfd fence for a caller's isolated, admission-closed browser process group."""
+import math
 import os
 from pathlib import Path
 import select
@@ -45,12 +46,24 @@ def signal_member(descriptor, number):
         pass
 
 
+def ready_descriptors(handles, remaining):
+    poller = select.poll()
+    for descriptor in handles:
+        poller.register(descriptor, select.POLLIN)
+    ready = []
+    for descriptor, flags in poller.poll(math.ceil(min(remaining, 2_147_483) * 1000)):
+        if not flags & select.POLLIN:
+            raise OSError('Pidfd did not provide native exit evidence')
+        ready.append(descriptor)
+    return ready
+
+
 def collect_members(owner, handles, number):
     observed = False
     for pid, identity in owned_members(owner):
         key = pid, identity[1]
         if key in handles:
-            ready, _, _ = select.select([handles[key]], [], [], 0)
+            ready = ready_descriptors([handles[key]], 0)
             if not ready:
                 continue
             os.close(handles.pop(key))
@@ -86,7 +99,7 @@ def await_members(handles, deadline):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise TimeoutError('Browser pidfds did not report native exit')
-        ready, _, _ = select.select(list(pending), [], [], remaining)
+        ready = ready_descriptors(pending, remaining)
         pending.difference_update(ready)
 
 

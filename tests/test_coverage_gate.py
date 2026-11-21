@@ -1,5 +1,6 @@
 """TEST-001/BUILD-008/REV-108: independent coverage evidence and faulty controls."""
 import ast
+from hashlib import sha256
 from copy import deepcopy
 import json
 
@@ -23,7 +24,7 @@ def evidence(tmp_path):
     record = {'executed_lines': lines, 'missing_lines': [], 'start_line': region.start,
               'summary': {'percent_covered': 100, 'covered_lines': len(lines),
                           'missing_lines': 0, 'num_statements': len(lines)}}
-    report = {'files': {'code/example.py': {'functions': {'work': record}}}}
+    report = {'files': {'code/example.py': {'source_sha256': sha256(SOURCE.encode()).hexdigest(), 'functions': {'work': record}}}}
     return tmp_path, report, record
 
 
@@ -91,7 +92,7 @@ def test_test001_empty_declarations_and_nested_inventory(tmp_path):
     path.write_text('class Contract:\n    def run(self):\n        ...\n')
     record = {'executed_lines': [], 'missing_lines': [], 'start_line': 2,
               'summary': {'covered_lines': 0, 'missing_lines': 0, 'num_statements': 0, 'percent_covered': 100}}
-    assert check_report(tmp_path, ['.'], {'files': {'empty.py': {'functions': {'Contract.run': record}}}}) == (1, [])
+    assert check_report(tmp_path, ['.'], {'files': {'empty.py': {'source_sha256': sha256(path.read_bytes()).hexdigest(), 'functions': {'Contract.run': record}}}}) == (1, [])
     assert inventory(ast.parse('class A:\n def m(self):\n  def nested():\n   pass\n')) == ['A.m', 'A.m.nested']
 
 

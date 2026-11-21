@@ -2,6 +2,7 @@
 from dataclasses import dataclass, replace
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 import json
+import re
 
 import lxml.etree as etree
 import lxml.html as html
@@ -70,10 +71,17 @@ def read_pages(output, failures, html_errors=None):
     return pages
 
 
+def _canonical_links(document):
+    links = '//link[@rel and @href and not(ancestor::template)]'
+    attributes = zip(document.xpath(links + '/@rel'), document.xpath(links + '/@href'), strict=True)
+    return tuple(str(href) for rel, href in attributes
+                 if 'canonical' in re.split(r'[ \t\r\n\f]+', str(rel).lower()))
+
+
 def page_references(document: ReferenceSource) -> PageReferences:
     """Detach plain values; never retain the borrowed document or smart strings."""
     return PageReferences(
-        tuple(map(str, document.xpath('//link[@rel="canonical"]/@href'))),
+        _canonical_links(document),
         tuple(map(str, document.xpath('//@href[not(ancestor::template) and not(parent::base)] | //@src[not(ancestor::template)] | '
                                       '//head/meta[@property="og:image" or @name="twitter:image"]/@content'))),
         frozenset(map(str, document.xpath('//@id[not(ancestor::template)] | //a/@name[not(ancestor::template)]'))),
@@ -237,7 +245,24 @@ def validate_search(output, plan, failures):
 def sitemap_document(path):
     parser = etree.XMLParser(resolve_entities=False, no_network=True)
     document = etree.parse(str(path), parser)
-    return etree.QName(document.getroot()).localname, tuple(map(str, document.xpath('//*[local-name()="loc"]/text()')))
+    namespace = '{http://www.sitemaps.org/schemas/sitemap/0.9}'
+    root = document.getroot()
+    entries = {namespace + 'urlset': 'url', namespace + 'sitemapindex': 'sitemap'}
+    if root.tag not in entries:
+        raise ValueError(f'Unsupported sitemap document: {root.tag}')
+    locations = []
+    for entry in root.iterchildren(tag=etree.Element):
+        if entry.tag != namespace + entries[root.tag]:
+            raise ValueError('Unexpected sitemap entry')
+        locations.append(_sitemap_location(entry, namespace))
+    return etree.QName(root).localname, tuple(locations)
+
+
+def _sitemap_location(entry, namespace):
+    nodes = entry.findall(namespace + 'loc')
+    if len(nodes) != 1 or len(nodes[0]) or not (nodes[0].text or '').strip():
+        raise ValueError('Sitemap entry requires one nonempty loc')
+    return nodes[0].text.strip()
 
 
 def sitemap_index_targets(output, base, values, failures, resolved_paths=None):
@@ -260,10 +285,8 @@ def sitemap_locations(output, base, path, failures, resolved_paths=None):
         kind, values = sitemap_document(current)
         if kind == 'sitemapindex':
             pending.extend(sitemap_index_targets(output, base, values, failures, resolved_paths))
-        elif kind == 'urlset':
-            urls.extend(values)
         else:
-            failures.append(f'Unsupported sitemap document: {kind}')
+            urls.extend(values)
     return urls
 
 

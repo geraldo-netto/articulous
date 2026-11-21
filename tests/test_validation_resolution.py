@@ -20,7 +20,7 @@ class ResolutionScope(unittest.TestCase):
             '<html><head><link rel="canonical" href="https://example.test/target.html"></head>'
             '<body><p id="anchor">Target</p></body></html>')
         (self.output / 'search.json').write_text('[]')
-        (self.output / 'sitemap.xml').write_text('<urlset/>')
+        (self.output / 'sitemap.xml').write_text('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>')
         self.plan = ValidationPlan({'index.html': self.base + '/', 'target.html': self.base + '/target.html'},
                                    frozenset(), frozenset(), 'search.json', 'sitemap.xml', {})
 

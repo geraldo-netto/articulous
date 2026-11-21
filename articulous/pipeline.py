@@ -28,9 +28,11 @@ from contextlib import closing, contextmanager
 from functools import partial
 from itertools import chain
 from pathlib import Path
+
 from types import MappingProxyType
 from typing import Any, Callable, NamedTuple, Optional, Protocol
 from urllib.parse import quote
+from uuid import uuid4
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .backends.cpu_capacity import available_cpus
@@ -79,6 +81,7 @@ from .runtime import (
     timed,
     update_cache,
 )
+from .publication_paths import transaction_path
 from .ownership import Ownership, journal_ownership, load_ownership, ownership_path, save_ownership
 from .sections import (
     CROSS_LANG_SECTIONS,
@@ -92,7 +95,8 @@ from .sitemaps import (
     SitemapSlice, native_entry as _native_sitemap_entry, partition_sitemap,
     sitemap_entry as _sitemap_entry, write_document, write_index,
 )
-from .translations import TranslationStore
+from .tree_entries import tree_entries
+from .translations import TranslationStore, translation_history
 from .structured_data import article_jsonld
 
 
@@ -147,6 +151,7 @@ class BuildCtx:
     sitemap_listings: bool = False
     robots_enabled: bool = False
     output_migrations: Optional[OutputMigrations] = None
+    previous_translations: dict | None = field(default_factory=dict)
     translations: Optional[TranslationStore] = None
     extra_pages: tuple[ExtraPage, ...] = ()
     extra_artifacts: tuple[ExtraArtifact, ...] = ()
@@ -235,13 +240,13 @@ def _asset_manifest(root: Path) -> dict:
     if not root.is_dir():
         raise ValueError(f"Asset source must be a directory: {root}")
     manifest = {}
-    for path in sorted(root.rglob("*")):
+    for path in sorted(tree_entries(root)):
         rel = path.relative_to(root).as_posix()
         metadata = path.lstat()
         if stat.S_ISDIR(metadata.st_mode):
             manifest[rel] = ["d", metadata.st_mtime_ns]
         elif stat.S_ISREG(metadata.st_mode):
-            manifest[rel] = ["f", metadata.st_size, metadata.st_mtime_ns, file_hash(path)]
+            manifest[rel] = ["f", metadata.st_size, metadata.st_mtime_ns, file_hash(path), stat.S_IMODE(metadata.st_mode)]
         else:
             raise ValueError(f"Asset symlinks and special files are not supported: {path}")
     return manifest
@@ -268,7 +273,7 @@ def _asset_target(root: Path, rel: str) -> Path:
 def _valid_asset_metadata(value) -> bool:
     if not isinstance(value, list) or not value or not isinstance(value[0], str):
         return False
-    expected = {"d": (str, int), "f": (str, int, int, str)}.get(value[0], ())
+    expected = {"d": (str, int), "f": (str, int, int, str, int)}.get(value[0], ())
     return len(value) == len(expected) and all(
         type(item) is kind for item, kind in zip(value, expected)
     )
@@ -295,8 +300,9 @@ def _asset_output_matches(path: Path, metadata: list) -> bool:
         return path.is_dir()
     if not path.is_file():
         return False
-    stat = path.stat()
-    return stat.st_size == metadata[1] and file_hash(path) == metadata[3]
+    state = path.stat()
+    return (state.st_size == metadata[1] and stat.S_IMODE(state.st_mode) == metadata[4]
+            and file_hash(path) == metadata[3])
 
 
 def _asset_output_mismatches(dest: Path, manifest: dict) -> set[str]:
@@ -329,7 +335,7 @@ def _cached_asset_manifest(cache: Optional[dict]) -> dict:
 
 def _asset_destination_paths(dest: Path) -> set[str]:
     paths = set()
-    for path in dest.rglob("*"):
+    for path in tree_entries(dest) if dest.is_dir() else ():
         rel = path.relative_to(dest).as_posix()
         _asset_target(dest, rel)
         paths.add(rel)
@@ -1799,14 +1805,16 @@ def _collect_per_lang_plan(
         )
 
 
-def _translation_context(projection, cli, ctx, cache):
+def _translation_context(projection, cli, ctx):
     if projection.translations is None:
         return ctx
     ctx = replace(ctx, translations=projection.translations)
     if cli.only_langs or cli.only_slugs:
+        if ctx.previous_translations is None:
+            raise ValueError('A full build is required to establish reciprocal translation links')
         def selected(key):
             return _selected_output_key(key, cli)
-        projection.translations.validate_filters(cache, selected)
+        projection.translations.validate_filters(ctx.previous_translations, selected)
     return ctx
 
 
@@ -1852,7 +1860,7 @@ def _collect_tasks(
         collect_articles=need_per_lang,
     )
     try:
-        ctx = _translation_context(projection, cli, ctx, cache)
+        ctx = _translation_context(projection, cli, ctx)
         prepared = _prepare_shared_listings(plan, projection, cli, ctx, cache, want)
         _append_extra_sitemap(projection, ctx)
         if need_cross:
@@ -1969,8 +1977,24 @@ def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     return {**retained, **{path: key for key, path in current_manifest.items()}}
 
 
-def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_manifest, selected) -> None:
-    _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
+def _retains_articles(paths, planned):
+    return any(key.startswith('article:') and key not in planned for key in paths.values())
+
+
+def _published_translations(ownership, cache, paths, planned):
+    previous = ownership.translations
+    if previous is not None and cache['__generation__'] == ownership.generation:
+        return previous
+    if previous is None and _retains_articles(paths, planned):
+        return None
+    history = {key: pair for key, pair in (previous or {}).items()
+               if key not in planned and key in cache[_OUTPUT_MANIFEST_KEY]}
+    history.update(translation_history(cache, planned))
+    return history
+
+
+def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifest, selected) -> None:
+    _prune_stale_outputs(ctx, cache, ownership.paths, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     routes = current_manifest.route_values()
     cache['__routes__'] = route_cache_data(routes)
@@ -1980,7 +2004,8 @@ def _finalize_cache(ctx, cache, roots, old_manifest, next_manifest, current_mani
             return
     else:
         logging.debug("Cache unchanged — skipping save")
-    save_ownership(ctx.output_dir, next_manifest, routes=routes)
+    save_ownership(ctx.output_dir, next_manifest, routes=routes, generation=cache['__generation__'],
+                   translations=_published_translations(ownership, cache, next_manifest, current_manifest))
     finish_cache_update(selected, ctx.output_dir, ctx.cache_retention_days, ctx.partition_cache)
 
 
@@ -2159,6 +2184,7 @@ def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) 
 
     if not ctx.dry_run and _ownership_will_change(ctx, ownership, next_paths, routes, plan):
         start_journal()
+        cache['__generation__'] = uuid4().hex
     _remove_output_obstructions(ctx, start_journal)
     copy_assets(ctx, cache, before_mutation=start_journal)
     if not ctx.dry_run:
@@ -2208,6 +2234,18 @@ def _record_retained_routes(cli, ctx, cache, old_manifest, routes, manifest):
         manifest.record_route(route)
 
 
+def _incremental_state(cli, ctx, selected):
+    cache, roots = _load_build_cache(selected.path, ctx.output_dir, selected.partitioned)
+    ownership = load_ownership(ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY), allow_pending=_can_prune_outputs(cli))
+    if not ownership.generation or cache.get('__generation__') != ownership.generation:
+        cache.pop('__routes__', None)
+        for key in list(cache):
+            if not key.startswith('__'):
+                cache.pop(key)
+        cache['__generation__'] = uuid4().hex
+    return cache, roots, ownership
+
+
 def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path, *, extra_pages=(), extra_artifacts=(), route_catalog=None) -> None:
     """Orchestrate the entire build process."""
     logging.info("Starting build...")
@@ -2218,17 +2256,15 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
     cache_path = _cache_path_for(ctx, project_root)
     locked = partial(_cache_build_lock, output_lock=_lock_path_for(ctx, project_root))
     with lock_selected_cache(cache_path, ctx.output_dir, locked) as selected:
+        if os.path.lexists(transaction_path(ctx.output_dir)):
+            raise ValueError("Whole-site publication requires recovery before an incremental build")
         with TempWorkspace() as workspace:
             projection = None
             plan: dict = {}
             try:
-                cache, roots = _load_build_cache(selected.path, ctx.output_dir, selected.partitioned)
-                ownership = load_ownership(
-                    ctx.output_dir, cache.get(_OUTPUT_MANIFEST_KEY), allow_pending=_can_prune_outputs(cli),
-                )
+                cache, roots, ownership = _incremental_state(cli, ctx, selected)
                 old_manifest = ownership.paths
-                if ownership.pending:
-                    ctx = replace(ctx, force=True)
+                ctx = replace(ctx, force=ctx.force or ownership.pending, previous_translations=ownership.translations)
                 ctx = replace(ctx, output_migrations=OutputMigrations(
                     ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)),
                 ), retained_page_routes=_retained_page_routes(cli, ctx, ownership, cache))
@@ -2247,7 +2283,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
                     _finalize_cache(
-                        ctx, cache, roots, old_manifest, next_paths, current_manifest, selected,
+                        ctx, cache, roots, ownership, next_paths, current_manifest, selected,
                     )
             finally:
                 _close_task_queues(plan)

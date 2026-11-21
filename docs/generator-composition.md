@@ -484,7 +484,12 @@ generation. This does not make readers observe all three atomically, and callers
 must keep other writers from modifying the output while a build is running.
 
 The journal lives beside output at `.<output-name>.articulous-transaction/`.
-Shared path admission reserves this tree against configuration, source, cache,
+The sibling directory with suffix `-retired` holds the final journal during
+cleanup. The backend removes backups before retiring the journal, records a
+completed rollback before discarding its backups, and retries interrupted
+directory removal during recovery. Incremental builds refuse to run while the
+active whole-site transaction exists.
+Shared path admission reserves both trees against configuration, source, cache,
 log, lock and ownership paths. It checks both lexical and resolved aliases;
 native lock/recovery/publication entry points also reject overlapping cache
 paths before effects. Nearby filenames with a different path component remain
@@ -519,7 +524,9 @@ Pass the configured cache filename to `recover_publication` for either cache
 layout. For a partitioned cache, the publication adapter gives custom backends
 the active cache file as `PublicationInput.cache_path`. The associated
 `cache_text` keeps the same JSON envelope and contains the active output's
-record. Backends use the paths they receive for locking, publication and recovery.
+record. A backend sharing incremental ownership state persists the supplied
+`generation` and `translations` with the output owners and routes. Backends
+use the paths they receive for locking, publication and recovery.
 Custom backends sharing the partitioned store coordinate cache and output
 locks with the incremental builder. Retention attempts each inactive cache
 lock without waiting and leaves busy entries for a later build.

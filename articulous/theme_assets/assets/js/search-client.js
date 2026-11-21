@@ -106,11 +106,16 @@ globalThis.SearchClient = (() => {
 
     function loadEntries() {
       if (entries !== undefined) return Promise.resolve(entries);
-      request ||= startLoad().then(selectedIndex).then(items => {
+      if (request) return request;
+      let begin;
+      const loaded=new Promise(resolve => {begin=()=>resolve(startLoad());});
+      const pending=loaded.then(selectedIndex).then(items => {
         if (!closed) entries=items;
         return items;
       }).catch(error => { request=null;throw error; });
-      return request;
+      request=pending;
+      begin();
+      return pending;
     }
 
     function matching(items, query) {

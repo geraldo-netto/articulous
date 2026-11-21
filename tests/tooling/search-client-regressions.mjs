@@ -171,3 +171,21 @@ console.log('THEME-002 neutral search consumer and lifecycle passed');
  assert.equal(f.events.published[0].count,1);
  f.controller.dispose();
 }
+
+// AUDIT26-11: a synchronous loader can trigger a second query.
+{
+ let calls=0, nested;
+ const pending=deferred();
+ const f=fixture({load(){
+  if (++calls===1) nested=f.controller.search('description');
+  return pending.promise;
+ }});
+ const first=f.controller.search('title');
+ assert.equal(calls,1);
+ pending.resolve(rows.slice(0,1));
+ await Promise.all([first,nested]);
+ await f.controller.search('title');
+ assert.equal(calls,1);
+ assert.deepEqual(f.events.published.map(result=>result.count),[1,1]);
+ f.controller.dispose();
+}

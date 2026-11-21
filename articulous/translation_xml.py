@@ -1,10 +1,20 @@
 """Optional XML mirror adapter; layouts, prompts and link policy are caller-owned."""
 import io
 import lxml.etree as etree
-from .markup import block_units, encode_block, decode_block, loose_text_nodes, in_skipped
+from .translation_client import Translator
+from .markup import block_units, encode_block, try_decode, loose_text_nodes, in_skipped
 from .source_files import replace_file
 from .source_transactions import fingerprint
 from .translation_contracts import XmlTranslationLayout
+
+
+def _translate_block(block, encoded, translator, source, target, policy):
+    def accept(result):
+        return try_decode(block, result, encoded, policy)
+    if isinstance(translator, Translator):
+        return translator.translate(encoded.text, source, target, accept=accept) is not None
+    result = translator.translate(encoded.text, source, target)
+    return result is not None and accept(result)
 
 
 def translate_blocks(blocks, translator, source, target, stats, policy, log):
@@ -14,9 +24,9 @@ def translate_blocks(blocks, translator, source, target, stats, policy, log):
             encoded.close()
             continue
         try:
-            result = translator.translate(encoded.text, source, target)
+            applied = _translate_block(block, encoded, translator, source, target, policy)
             stats['units'] += 1
-            if result is None or not decode_block(block, result, encoded, policy=policy):
+            if not applied:
                 stats['failed'] += 1
                 log(f'    ! kept source for a <{block.tag}> unit')
         finally:
@@ -118,6 +128,8 @@ def write_translation(tree, source, snapshot, target, expected):
 
 def mirror_xml(source_path, target_path, source_language, target_language, translator, stats,
                layout: XmlTranslationLayout, policy, log, *, rewrite_link=None):
+    if target_path.exists() and source_path.samefile(target_path):
+        raise ValueError('Translation target must be distinct from the original')
     before = stats['failed']
     expected = fingerprint(target_path)
     snapshot = source_path.read_bytes()
@@ -127,9 +139,7 @@ def mirror_xml(source_path, target_path, source_language, target_language, trans
     clear_hash(root, layout.hash_element)
     translate_metadata(root, layout, translator, source_language, target_language, stats)
     if layout.language_element is not None:
-        node = root.find(layout.language_element)
-        if node is not None:
-            node.text = target_language
+        set_field(root, layout.language_element, target_language, False)
     body = root.find(layout.body_element)
     if body is not None:
         translate_body(body, translator, source_language, target_language, stats, policy, log)

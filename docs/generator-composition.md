@@ -419,10 +419,14 @@ imports no build, storage or native adapter implementation. `publish` accepts a
 `PublicationInput`: staged root, destination, cache path, serialized cache text,
 read-only output ownership entries and a `verify()` callback. The boundary adapter
 also supplies immutable route values through read-only `output_routes`; the
-native publisher persists those alongside ownership without interpreting cache
-serialization. The boundary adapter
-serializes shared build metadata; native backends never receive engines, task
-queues, route catalogs or concrete build handles. Native operations live in
+Linux publication operation opts into pre-serialized state files. The adapter
+streams the route catalog into private cache and ownership files, hashes the
+exact UTF-8 bytes and verifies both digests during installation. The preparation
+context removes these files after publication or failure. Reading an existing
+cache for retention still requires memory proportional to that cache. Ordinary
+custom publish operations continue to receive the string and read-only mappings
+in `PublicationInput`, including overrides of the Linux implementation. Native
+backends borrow the serialized data and verification callback. Native operations live in
 [`backends/posix.py`](../articulous/backends/posix.py) and the existing
 [`filesystem.py`](../articulous/filesystem.py) adapter primitives. Configuration,
 route serialization, models and validation hooks remain shared.

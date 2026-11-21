@@ -15,7 +15,7 @@ class RouteCatalog:
         self._readers = set()
         self._closed = False
         try:
-            with closing(self._db.execute('CREATE TABLE routes (key TEXT PRIMARY KEY, data TEXT NOT NULL)')):
+            with closing(self._db.execute('CREATE TABLE routes (key TEXT PRIMARY KEY, path TEXT NOT NULL, data TEXT NOT NULL)')):
                 pass
         except BaseException:
             self._db.close()
@@ -27,12 +27,12 @@ class RouteCatalog:
 
     def record(self, route: contracts.Route) -> None:
         self._require_open()
-        with closing(self._db.execute('INSERT INTO routes VALUES (?, ?)', (route.key, json.dumps(asdict(route))))):
+        with closing(self._db.execute('INSERT INTO routes VALUES (?, ?, ?)', (route.key, route.output_path, json.dumps(asdict(route))))):
             pass
 
-    def _reader(self):
+    def _reader(self, query='SELECT data FROM routes ORDER BY rowid'):
         self._require_open()
-        reader = self._db.execute('SELECT data FROM routes ORDER BY rowid')
+        reader = self._db.execute(query)
         try:
             self._readers.add(reader)
         except BaseException:
@@ -45,17 +45,29 @@ class RouteCatalog:
             reader.close()
             self._readers.remove(reader)
 
-    def __iter__(self):
-        reader = self._reader()
+    def _rows(self, query=None):
+        reader = self._reader() if query is None else self._reader(query)
         try:
             while True:
                 self._require_open()
                 row = reader.fetchone()
                 if row is None:
                     return
-                yield contracts.Route(**json.loads(row[0]))
+                yield row
         finally:
             self._release_reader(reader)
+
+    def __iter__(self):
+        return (contracts.Route(**json.loads(data)) for data, in self._rows())
+
+    def serialized_routes(self, *, sorted_keys=False):
+        order = 'key' if sorted_keys else 'rowid'
+        for key, data in self._rows('SELECT key, data FROM routes ORDER BY ' + order):
+            yield key, json.loads(data)
+
+    def output_paths(self, *, inverse=False):
+        query = 'SELECT path, key FROM routes ORDER BY path' if inverse else 'SELECT key, path FROM routes ORDER BY key'
+        return self._rows(query)
 
     def __len__(self):
         self._require_open()

@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Protocol
+from weakref import ReferenceType, ref
 
 from .composition_contracts import Route
 
@@ -30,6 +31,33 @@ class PublicationInput:
     verify: Callable[[], None]
     generation: str | None = None
     translations: Mapping = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class StagedStateFile:
+    path: Path
+    digest: str
+
+
+@dataclass(frozen=True)
+class StagedPublicationInput:
+    root: Path
+    destination: Path
+    cache_path: Path
+    cache: StagedStateFile
+    ownership: StagedStateFile
+    verify: Callable[[], None]
+
+
+def accepts_staged_publication(operation):
+    """Opt this publish operation into borrowed, pre-serialized state files."""
+    operation.staged_publication_owner = ref(operation)
+    return operation
+
+
+def uses_staged_publication(operation):
+    owner = getattr(operation, 'staged_publication_owner', None)
+    return isinstance(owner, ReferenceType) and owner() is getattr(operation, '__func__', operation)
 
 
 class PublicationBackend(Protocol):

@@ -157,12 +157,18 @@ def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True)
     return ownership
 
 
+def ownership_payload(output_dir, paths, route_data, *, pending=False, existing=None, generation=None, translations=None):
+    return {"version": 2, "output_dir": str(output_dir.resolve()), "generation": generation,
+            "translations": translations, "paths": paths, "pending": pending, "existing": existing or {},
+            "routes": route_data}
+
+
 def save_ownership(output_dir: Path, paths: dict, *, pending: bool = False, existing=None, routes=None, generation=None, translations=None) -> None:
     path = ownership_path(output_dir)
-    text = json.dumps({"version": 2, "output_dir": str(output_dir.resolve()),
-                       "generation": generation, "translations": translations,
-                       "paths": paths, "pending": pending, "existing": existing or {},
-                       "routes": {key: asdict(route) for key, route in (routes or {}).items()}}, indent=2, sort_keys=True)
+    route_data = {key: asdict(route) for key, route in (routes or {}).items()}
+    data = ownership_payload(output_dir, paths, route_data, pending=pending, existing=existing,
+                             generation=generation, translations=translations)
+    text = json.dumps(data, indent=2, sort_keys=True)
     try:
         with open_regular_file(path) as source:
             if source.read() == text.encode("utf-8"):

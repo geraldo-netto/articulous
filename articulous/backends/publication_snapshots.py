@@ -80,6 +80,13 @@ def restore_snapshot(path, saved, claim):
                 raise ValueError('Publication snapshot bytes changed')
 
 
+def install_state(path, state):
+    with open_regular_file(state.path) as source, atomic_output(path) as target:
+        with target.open('wb') as output:
+            if _transfer(source, output) != state.digest:
+                raise ValueError('Staged publication state changed')
+
+
 def _current_digest(path):
     try:
         with open_regular_file(path) as source:

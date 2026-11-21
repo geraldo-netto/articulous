@@ -16,8 +16,14 @@ from ..filesystem import (
 from ..ownership import ownership_path, save_ownership, validate_owned_output
 from . import publication_capabilities
 from . import publication_snapshots as snapshots
-from ..publication_contracts import PublicationInput
+from ..publication_contracts import PublicationInput, StagedPublicationInput, accepts_staged_publication
 from ..publication_paths import retirement_path, transaction_path, validate_publication_paths
+
+
+def _cache_digest(publication):
+    if isinstance(publication, StagedPublicationInput):
+        return publication.cache.digest
+    return hashlib.sha256(publication.cache_text.encode()).hexdigest()
 
 
 def _validate_journal_header(data, destination, cache):
@@ -151,7 +157,7 @@ class PosixPublicationBackend:
             'version': 2, 'phase': 'capturing', 'destination': str(destination), 'cache': str(cache),
             'previous': _identity(destination), 'new': _identity(publication.root),
             'stage': str(stage), 'stage_identity': _identity(stage),
-            'cache_after': hashlib.sha256(publication.cache_text.encode()).hexdigest(),
+            'cache_after': _cache_digest(publication),
             'cache_before': None, 'ownership_before': None,
         }
         self._validate_journal(data, destination, cache)
@@ -169,6 +175,10 @@ class PosixPublicationBackend:
         return transaction, data
 
     def _write_state(self, publication):
+        if isinstance(publication, StagedPublicationInput):
+            snapshots.install_state(publication.cache_path, publication.cache)
+            snapshots.install_state(ownership_path(publication.destination), publication.ownership)
+            return
         write_text_atomic(publication.cache_path, publication.cache_text)
         save_ownership(publication.destination, dict(publication.output_owners), routes=publication.output_routes,
                        generation=publication.generation, translations=dict(publication.translations))
@@ -197,7 +207,8 @@ class PosixPublicationBackend:
         self._write_state(publication)
         self._set_phase(transaction, data, 'committed')
 
-    def publish(self, publication: PublicationInput):
+    @accepts_staged_publication
+    def publish(self, publication: PublicationInput | StagedPublicationInput):
         validate_publication_paths(publication.destination, [publication.cache_path])
         validate_owned_output(publication.destination)
         transaction, data = self._begin(publication)

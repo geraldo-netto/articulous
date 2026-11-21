@@ -644,3 +644,104 @@ def test_review29_01_recheck_staged_bytes_after_journal_preparation(site_root, s
         feed.write_bytes(verified)
         publish_validated(checked, backend=backend)
         assert prepared.state == 'published'
+
+
+def test_review28_39_native_handoff_streams_cache_and_routes(site_root, seo_config, monkeypatch, cache_clock):
+    from uuid import uuid4
+    from articulous.pipeline import OutputManifest
+    from articulous.ownership import ownership_payload
+    from articulous.composition import route_cache_data
+    generation = uuid4()
+    monkeypatch.setattr('articulous.publication_adapter.uuid4', lambda: generation)
+    cli, config = seo_config
+    with prepare_build(cli, config, site_root) as prepared:
+        checked = validate_generated(render_prepared(prepared))
+        expected = publication_input(checked)
+        monkeypatch.setattr(OutputManifest, 'route_values', lambda *_: pytest.fail('materialized all publication routes'))
+        publish_validated(checked)
+        assert expected.cache_path.read_bytes() == expected.cache_text.encode()
+        owners = ownership_payload(expected.destination, dict(expected.output_owners), route_cache_data(expected.output_routes),
+                                   generation=expected.generation, translations=dict(expected.translations))
+        assert (site_root / '.output.articulous-ownership.json').read_bytes() == json.dumps(owners, indent=2, sort_keys=True).encode()
+
+
+def test_review28_39_wrapped_backend_keeps_materialized_contract(site_root, seo_config):
+    from functools import update_wrapper
+    from articulous.publication_contracts import PublicationInput
+    class Recorder(PosixPublicationBackend):
+        def publish(self, publication):
+            assert isinstance(publication, PublicationInput)
+            assert isinstance(publication.cache_text, str)
+            super().publish(publication)
+
+    update_wrapper(Recorder.publish, PosixPublicationBackend.publish)
+    cli, config = seo_config
+    assert build_site(cli, config, site_root, backend=Recorder()).routes > 0
+
+
+@pytest.mark.parametrize('which', ['cache', 'ownership'])
+def test_review28_39_changed_staged_state_rolls_back_exact_bytes(site_root, seo_config, monkeypatch, which):
+    cli, config = seo_config
+    build_site(cli, config, site_root)
+    previous = published(site_root)
+    backend = PosixPublicationBackend()
+    write = backend._write_state
+    def corrupt(publication):
+        getattr(publication, which).path.write_bytes(b'changed')
+        write(publication)
+    monkeypatch.setattr(backend, '_write_state', corrupt)
+    with pytest.raises(ValueError, match='Staged publication state changed'):
+        build_site(cli, config, site_root, backend=backend)
+    assert published(site_root) == previous
+    assert not list(site_root.glob('.articulous-stage-*'))
+
+
+def test_review28_39_failed_json_writes_release_catalog_readers(site_root, seo_config, monkeypatch):
+    from contextlib import contextmanager
+    from articulous import publication_adapter
+    cli, config = seo_config
+    original = Path.open
+    retained = []
+    with prepare_build(cli, config, site_root) as prepared:
+        checked = validate_generated(render_prepared(prepared))
+        routes = publication_adapter._owned_validated(checked)._staged._owner.routes
+
+        @contextmanager
+        def interrupt(path, *args, **kwargs):
+            with original(path, *args, **kwargs) as stream:
+                if path.name == 'cache.json' and args == ('xb',):
+                    write = stream.write
+                    def fail_when_reading(data):
+                        if routes._readers:
+                            raise OSError('interrupted state write')
+                        return write(data)
+                    stream.write = fail_when_reading
+                yield stream
+
+        with monkeypatch.context() as fault:
+            fault.setattr(Path, 'open', interrupt)
+            for _ in range(3):
+                with pytest.raises(OSError, match='interrupted state write') as failure:
+                    publish_validated(checked)
+                retained.append(failure)
+                assert not routes._readers
+        publish_validated(checked)
+        assert not routes._readers
+
+
+@pytest.mark.parametrize('sorted_keys', [False, True])
+def test_review28_39_streamed_json_preserves_serialized_bytes(tmp_path, sorted_keys):
+    from hashlib import sha256
+    from random import Random
+    from articulous.publication_json import stage_json
+    random = Random(39)
+    keys = ['á', '\n', '"', '\\', '日', '']
+    values = [None, 12, False, ['\n', {'⌛': True}], {}, [[], {'x': '\x00'}]]
+    for case in range(24):
+        sample = {key: random.choice(values) for key in random.sample(keys, random.randrange(len(keys) + 1))}
+        expected = json.dumps(sample, indent=2, sort_keys=sorted_keys).encode()
+        staged = stage_json(tmp_path / str(case), sample, sorted_keys=sorted_keys)
+        assert staged.path.read_bytes() == expected
+        assert staged.digest == sha256(expected).hexdigest()
+    with pytest.raises(TypeError, match='keys must be strings'):
+        stage_json(tmp_path / 'invalid', {2: None})

@@ -22,6 +22,7 @@ from articulous.configuration_contracts import BuildRequest, ConfigurationError
 from articulous.filesystem import cache_lock_path, lock_file
 from articulous.ownership import ownership_path
 from articulous.publication import build_site, lock_site, recover_publication
+from articulous.publication_contracts import PublicationInput
 from articulous.publication_paths import transaction_path
 
 DAY = 86_400
@@ -83,6 +84,7 @@ def test_perf31_migrates_shared_roots_and_admits_only_active_records(site_root, 
 def test_perf31_custom_backend_keeps_cache_text_and_active_path_contract(site_root, monkeypatch):
     class Recorder(PosixPublicationBackend):
         def publish(self, publication):
+            assert isinstance(publication, PublicationInput)
             assert isinstance(publication.cache_text, str)
             assert publication.cache_path == _selected(site_root, 'output').path
             roots = json.loads(publication.cache_text)['__output_roots__']

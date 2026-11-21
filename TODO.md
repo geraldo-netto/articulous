@@ -54,7 +54,6 @@ Existing estimates describe the declined work.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-39 | open | low | medium | Scalability: publication materialises every route and the whole cache in memory. | `publication_adapter.py:16-40` (`route_values()` at `:31`, one `json.dumps` string at `:25`, encoded again in `backends/posix.py:154`). tracemalloc around `publish_generation`: 5.5 MB at 1,119 outputs and 21.3 MB at 4,269 (4.8-4.9 KiB per output), about 0.5 GB at 100k. Opt-in. Next: stream the cache JSON to its staged file while hashing and hand backends a route iterator; keep the `PublicationInput` mapping contract and the journal cache digest. |
 
 
 ## Generated-site validation

@@ -6,6 +6,8 @@ import logging
 import os
 import shutil
 import tracemalloc
+import sqlite3
+from contextlib import ExitStack, closing
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -29,6 +31,7 @@ from articulous.pipeline import (
     _article_xml,
     _cache_path_for,
     _cleanup_stream_projection,
+    _close_task_queues,
     _collect_tasks,
     _encode_xml,
     _index_doc,
@@ -1252,11 +1255,56 @@ def test_stream_projections_respects_cli_filters(tmp_path):
     assert articles[1].url in projection.sitemap_urls.path.read_text()
 
 
-def test_stream_projections_can_partition_without_cross_work(tmp_path):
+@pytest.fixture
+def closed_translation_database(monkeypatch):
+    """MATRIX-07: check native closure even while test tracebacks retain the owner."""
+    from articulous.translations import TranslationStore
+    databases = []
+    original = TranslationStore.__init__
+
+    def observe(store):
+        original(store)
+        databases.append(store._database)
+
+    monkeypatch.setattr(TranslationStore, '__init__', observe)
+    yield
+    try:
+        database, = databases
+        with pytest.raises(sqlite3.ProgrammingError, match='closed database'):
+            with closing(database.cursor()):
+                pass
+    finally:
+        for connection in databases:
+            connection.close()
+
+
+@pytest.fixture
+def planning_scope(tmp_path, closed_translation_database):
+    with ExitStack() as cleanup:
+        workspace = cleanup.enter_context(TempWorkspace(tmp_path))
+        yield cleanup, workspace
+
+
+def _inspect_projection(scope, factory, cli, ctx, **options):
+    cleanup, workspace = scope
+    projection = _stream_projections(factory, cli, ctx, workspace, **options)
+    cleanup.callback(_cleanup_stream_projection, projection)
+    return projection
+
+
+def _inspect_plan(scope, factory, cli, ctx):
+    cleanup, workspace = scope
+    plan = _collect_tasks(factory, cli, ctx, {}, workspace)
+    cleanup.callback(_cleanup_stream_projection, plan.projection)
+    cleanup.callback(_close_task_queues, plan)
+    return plan
+
+
+def test_stream_projections_can_partition_without_cross_work(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     articles = [_art("a", lang="en"), _art("b", lang="fr")]
-    projection = _stream_projections(
-        lambda: iter(articles),
+    projection = _inspect_projection(
+        planning_scope, lambda: iter(articles),
         _FakeCLI(),
         ctx,
         collect_cross=False,
@@ -1270,15 +1318,15 @@ def test_stream_projections_can_partition_without_cross_work(tmp_path):
     assert [a.slug for a in projection.articles_by_lang.iter_lang("fr")] == ["b"]
 
 
-def test_stream_projections_respects_publication_policy(tmp_path):
+def test_stream_projections_respects_publication_policy(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     articles = [
         dataclasses.replace(_art("published"), publication="published"),
         dataclasses.replace(_art("unlisted"), publication="unlisted"),
         dataclasses.replace(_art("draft"), publication="draft"),
     ]
-    projection = _stream_projections(
-        lambda: iter(articles), _FakeCLI(), ctx, collect_articles=True,
+    projection = _inspect_projection(
+        planning_scope, lambda: iter(articles), _FakeCLI(), ctx, collect_articles=True,
     )
     assert projection.total == 2
     assert projection.skipped_by_publication == {"draft": 1}
@@ -1311,7 +1359,7 @@ def test_cleanup_stream_projection_accepts_none():
 
 
 @pytest.mark.parametrize("slugs,expected_handles", [(None, 3), (["a"], 4)])
-def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch, slugs, expected_handles):
+def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch, slugs, expected_handles, closed_translation_database):
     ctx = _ctx_for(tmp_path)
     handles = []
     original = TempWorkspace.named_file
@@ -1385,11 +1433,11 @@ def test_rss_only_build_does_not_spool_unused_projections(tmp_path, monkeypatch)
         _cleanup_stream_projection(plan.projection)
 
 
-def test_collect_tasks_all_sections(tmp_path):
+def test_collect_tasks_all_sections(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     # Empty stream keeps the test independent of any on-disk source
     # files; every requested section still runs its builder.
-    plan = _collect_tasks(lambda: iter(()), _FakeCLI(), ctx, {})
+    plan = _inspect_plan(planning_scope, lambda: iter(()), _FakeCLI(), ctx)
     # Cross-lang builders always run when included; per-lang ones only
     # run when at least one matching article exists, so empty stream
     # produces only the cross-lang section entries.
@@ -1404,7 +1452,7 @@ def test_collect_tasks_only_subset(tmp_path):
     assert list(plan.keys()) == ["search"]
 
 
-def test_collect_tasks_per_lang_populated(tmp_path):
+def test_collect_tasks_per_lang_populated(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     art_xml = tmp_path / "content" / "a.xml"
     art_xml.write_text(
@@ -1414,12 +1462,12 @@ def test_collect_tasks_per_lang_populated(tmp_path):
     a = dataclasses.replace(_art("a"), source_path=art_xml)
     cli = _FakeCLI()
     cli.only_sections = ["articles"]
-    plan = _collect_tasks(lambda: iter([a]), cli, ctx, {})
+    plan = _inspect_plan(planning_scope, lambda: iter([a]), cli, ctx)
     assert "articles" in plan
     assert len(plan["articles"]) == 1
 
 
-def test_collect_tasks_only_lang_filter(tmp_path):
+def test_collect_tasks_only_lang_filter(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     art_xml = tmp_path / "content" / "a.xml"
     art_xml.write_text(
@@ -1434,7 +1482,7 @@ def test_collect_tasks_only_lang_filter(tmp_path):
         dataclasses.replace(ctx, languages=["en", "fr"]),
     )
     cli = _FakeCLI(langs=["en"], sections=["articles"])
-    plan = _collect_tasks(lambda: iter([a, b]), cli, ctx_multilang, {})
+    plan = _inspect_plan(planning_scope, lambda: iter([a, b]), cli, ctx_multilang)
     assert len(plan["articles"]) == 1
 
 
@@ -1456,7 +1504,7 @@ def test_collect_tasks_only_sitemap_subset(tmp_path):
     assert list(plan.keys()) == ["sitemap"]
 
 
-def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path):
+def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path, planning_scope):
     ctx = _ctx_for(tmp_path)
     ctx = cast(BuildCtx, dataclasses.replace(ctx, languages=["en", "fr"]))
     art_xml = tmp_path / "content" / "a.xml"
@@ -1475,7 +1523,7 @@ def test_collect_tasks_reads_stream_once_for_all_sections(tmp_path):
         calls += 1
         return iter(articles)
 
-    plan = _collect_tasks(stream_factory, _FakeCLI(), ctx, {})
+    plan = _inspect_plan(planning_scope, stream_factory, _FakeCLI(), ctx)
     assert calls == 1
     assert {"articles", "index", "rss", "sitemap", "search"}.issubset(plan)
 

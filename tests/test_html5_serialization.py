@@ -62,7 +62,7 @@ def test_html5_001_literal_text_comments_and_foreign_elements_survive(tmp_path):
 
 def test_html5_001_implicit_html_method_and_cache_identity(tmp_path):
     assert b'</source>' not in render(tmp_path, '<html><source/></html>', 'encoding="UTF-8"')
-    assert 'serialization=v4' in LxmlEngine().cache_identity
+    assert 'serialization=v5' in LxmlEngine().cache_identity
 
 
 @pytest.mark.parametrize('body', ['<xsl:text>only text</xsl:text>',
@@ -98,7 +98,7 @@ def test_html5_001_serialization_failure_keeps_prior_output(tmp_path, monkeypatc
     def rejected(_source):
         raise ValueError('injected serialization rejection')
 
-    monkeypatch.setattr(lxml_output, 'html5_void_ends', rejected)
+    monkeypatch.setattr(lxml_output, 'void_omissions', rejected)
     with pytest.raises(TransformFailure, match='serialization rejection'):
         render(tmp_path, '<html><source/></html>')
     assert output.read_bytes() == previous
@@ -130,3 +130,46 @@ def test_rel41_quoted_greater_than_ends_with_the_full_token():
     from articulous.html_serialization import html5_void_ends
 
     assert html5_void_ends('<p>before</br a=">">after</p>') == '<p>beforeafter</p>'
+
+
+@pytest.mark.parametrize('void', ['', '<source/>'])
+@pytest.mark.parametrize('encoding', ['EUC-JP', 'windows-874', 'utf-8-sig'])
+def test_review28_02_unmodified_native_bytes_survive(tmp_path, encoding, void):
+    body = f'<html><p>10時～12時</p>{void}</html>'
+    actual = render(tmp_path, body, f'method="html" encoding="{encoding}"')
+    native = bytes(etree.XSLT(etree.parse(str(tmp_path / 'style.xsl')))(etree.XML('<input/>')))
+    assert actual == native.replace(b'</source>', b'')
+
+
+@pytest.mark.parametrize('tag', ['colgroup', 'metadata', 'basefont'])
+def test_review28_03_void_prefix_skips_parser(tag):
+    from articulous.html_serialization import html5_void_ends
+    source = f'<{tag}></{tag}>'
+    assert html5_void_ends(source) is source
+
+
+def test_review28_01_stylesheet_entity_rejected(tmp_path):
+    from articulous.transform_contracts import TransformFailure
+    style = tmp_path / 'style.xsl'
+    style.write_text('<!DOCTYPE xsl:stylesheet [<!ENTITY word "example">]>'
+                     '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">'
+                     '<xsl:template match="/"><p>before &word; after</p></xsl:template></xsl:stylesheet>')
+    with pytest.raises(TransformFailure, match='entity reference'):
+        LxmlEngine().run(b'<root/>', style, tmp_path / 'page')
+
+
+def test_review28_02_unavailable_codec_fails_at_adapter_boundary(tmp_path, monkeypatch):
+    from articulous.backends import lxml_output
+    from articulous.transform_contracts import TransformFailure
+    project = lxml_output._project_html
+    monkeypatch.setattr(lxml_output, '_project_html', lambda content, _: project(content, 'nonexistent-codec'))
+    with pytest.raises(TransformFailure, match='Unsupported HTML output encoding'):
+        render(tmp_path, '<html><source/></html>')
+
+
+def test_review28_02_unaddressable_multichar_boundary_fails_closed():
+    from articulous.backends.lxml_output import _native_spans
+    data = b'+ADwALwBiAHIAPg-'
+    assert data.decode('utf-7') == '</br>'
+    with pytest.raises(ValueError, match='Cannot locate HTML tag boundaries'):
+        list(_native_spans(data, 'utf-7', [(1, 4)]))

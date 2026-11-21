@@ -1,6 +1,10 @@
 """EDIT-002/REV-102/136: complete duplicate totals, bounded display sample."""
 
 import unittest
+import difflib
+import math
+import random
+
 import pytest
 from articulous import taxonomy_reports as reports
 
@@ -49,6 +53,60 @@ def test_edit002_groups_plurals_and_normalization():
         {"city", "cities", "class", "classes", "toy", "toys"}
     ) == [("city", "cities"), ("class", "classes"), ("toy", "toys")]
     assert reports.fold("Café - Name") == "cafename"
+
+
+@pytest.mark.parametrize(("name", "expected"), [
+    ("Москва", "москва"), ("Київ", "киів"), ("Python入門", "python入門"),
+    ("Python基礎", "python基礎"), ("Straße", "strasse"), ("कला", "कला"),
+])
+def test_review28_49_preserves_unicode_letters_and_spacing_marks(name, expected):
+    assert reports.fold(name) == expected
+
+
+def test_review28_49_distinct_scripts_do_not_fill_the_exact_duplicate_sample():
+    names = ["Москва", "Київ", "Python入門", "Python基礎", "python", "Straße", "STRASSE", "strae"]
+    assert reports.near_duplicates(names, 1.0) == [(1.0, "Straße", "STRASSE")]
+
+
+def test_review28_53_equal_length_tags_skip_unrelated_pairs(monkeypatch):
+    names = [f"tag-{chr(0x4E00 + index) * 12}" for index in range(512)]
+    quick_ratio = difflib.SequenceMatcher.quick_ratio
+    checks = []
+
+    def count(matcher):
+        checks.append(1)
+        return quick_ratio(matcher)
+
+    monkeypatch.setattr(difflib.SequenceMatcher, "quick_ratio", count)
+    assert reports.duplicate_summary(names) == (0, [])
+    assert len(checks) <= len(names)
+
+
+def _direct_candidates(names, threshold):
+    values = [reports.fold(name) for name in names]
+    for right, second in enumerate(names):
+        for left in range(right):
+            if values[left] == values[right]:
+                yield 1.0, names[left], second
+            else:
+                ratio = difflib.SequenceMatcher(None, values[left], values[right]).ratio()
+                if ratio >= threshold:
+                    yield round(ratio, 2), names[left], second
+
+
+@pytest.mark.parametrize("seed", range(8))
+def test_review28_53_order_bounds_and_sample_match_all_pairs(seed):
+    rng = random.Random(seed)
+    names = ["", "-", "a", "aa", "aab", "aba", "aabb", "AABB", "aBb", "abBb", "東京"]
+    names.extend("".join(rng.choices("aaabbccéßΩЖ日🗺 ", k=rng.randrange(30))) for _ in range(24))
+    names.extend(("ß" * 99 + "xyz", "SS" * 100 + "x", "ss" * 100 + "zyx"))
+    boundary = 2 / 3
+    for threshold in (-math.inf, 0, math.nextafter(boundary, 0), boundary,
+                      math.nextafter(boundary, 1), 0.8, 1, 1.1, math.inf, math.nan):
+        expected = list(_direct_candidates(names, threshold))
+        assert list(reports.duplicate_candidates(names, threshold)) == expected
+    expected = sorted(_direct_candidates(names, 0.8), reverse=True)
+    assert reports.duplicate_summary(names, 7) == (len(expected), expected[:7])
 
 
 @pytest.mark.parametrize("limit", [None, False, 0, -1, 1.5, "1"])

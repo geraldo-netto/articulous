@@ -6,6 +6,7 @@ import select
 import signal
 import sys
 import time
+from .process_groups import possible_group_member
 from .pidfds import open_pidfd, send_signal
 
 
@@ -22,7 +23,7 @@ def owned_members(owner):
         if not entry.name.isdecimal():
             continue
         pid = int(entry.name)
-        if pid in (owner, os.getpid()):
+        if pid in (owner, os.getpid()) or not possible_group_member(pid, owner):
             continue
         identity = process_identity(pid)
         if identity is not None and identity[0] == owner and identity[2] != 'Z':

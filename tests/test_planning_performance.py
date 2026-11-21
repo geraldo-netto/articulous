@@ -259,3 +259,115 @@ def test_perf33_planner_without_manifest_discards_listing_records():
     records = _ListingRecords()
     records.record('index:en:1', 'index.html')
     records.replay(None)
+
+
+def test_review28_34_integrated_publish_only_hashes_render_and_install(site_root, seo_config, monkeypatch):
+    from articulous.publication import build_site
+    calls = []
+    digest = builds.tree_fingerprint
+
+    def measured(root):
+        calls.append(root)
+        return digest(root)
+
+    monkeypatch.setattr(builds, 'tree_fingerprint', measured)
+    cli, config = seo_config
+    build_site(cli, config, site_root)
+    assert len(calls) == 2
+    assert calls[0] == calls[1]
+
+
+@pytest.mark.parametrize('capacity,workers', [(1, 1), (2, 2), (32, 2)])
+def test_review28_04_auto_worker_plateau(tmp_path, monkeypatch, capacity, workers):
+    from articulous import runtime
+    ctx = pipeline.BuildCtx(tmp_path, tmp_path, tmp_path, tmp_path)
+    monkeypatch.setattr(runtime, 'available_cpus', lambda: capacity)
+    assert pipeline._resolve_parallelism(ctx) == workers
+    assert runtime._worker_count('auto') == workers
+    assert runtime._worker_count(8) == 8
+
+
+def test_review28_05_warm_build_reuses_route_admission(site_root, seo_config, monkeypatch):
+    from articulous import runtime
+    from articulous.migrations import OutputMigrations
+    cli, config = seo_config
+    pipeline.run_build(cli, config, site_root)
+    admitted = Counter()
+    check = OutputMigrations.admit_path
+
+    def observe(self, path):
+        admitted[path] += 1
+        check(self, path)
+
+    def duplicate(_path):
+        pytest.fail('admitted route returned to public path validation')
+
+    monkeypatch.setattr(OutputMigrations, 'admit_path', observe)
+    monkeypatch.setattr(runtime, 'validate_output_path', duplicate)
+    pipeline.run_build(cli, config, site_root)
+    assert admitted and max(admitted.values()) == 1
+
+
+def test_review28_34_fingerprint_rejects_replaced_and_special_entries(tmp_path, monkeypatch):
+    import os
+    from articulous.filesystem import tree_fingerprint
+    root = tmp_path / 'stage'
+    root.mkdir()
+    entry = root / 'artifact'
+    entry.symlink_to(tmp_path / 'elsewhere')
+    with pytest.raises(ValueError, match='regular file'):
+        tree_fingerprint(root)
+    entry.unlink()
+    entry.write_bytes(b'original')
+    opened = os.open
+
+    def swap(name, flags, **kwargs):
+        if name == 'artifact':
+            replacement = root / 'replaced'
+            replacement.write_bytes(b'different')
+            replacement.replace(entry)
+        return opened(name, flags, **kwargs)
+
+    monkeypatch.setattr(os, 'open', swap)
+    with pytest.raises(ValueError, match='changed'):
+        tree_fingerprint(root)
+
+
+def test_review28_05_missing_or_concurrently_created_directory(tmp_path, monkeypatch):
+    import os
+    from articulous.filesystem import _directory_handle
+    absent = tmp_path / 'new'
+    with pytest.raises(FileNotFoundError), _directory_handle(absent):
+        pytest.fail('admitted missing directory')
+    mkdir = os.mkdir
+
+    def concurrent(name, *, dir_fd):
+        mkdir(name, dir_fd=dir_fd)
+        raise FileExistsError(name)
+
+    monkeypatch.setattr(os, 'mkdir', concurrent)
+    with _directory_handle(absent, create=True) as handle:
+        assert os.path.samestat(absent.stat(), os.fstat(handle))
+
+
+def test_review28_05_transient_parent_obstruction(tmp_path):
+    from articulous.migrations import OutputMigrations
+    mode = OutputMigrations(tmp_path, {}, {})
+    assert not mode._obstructing_parent(tmp_path / 'now-missing/item')
+
+
+def test_review28_34_staged_mode_changes_during_open(tmp_path, monkeypatch):
+    import os
+    from articulous.filesystem import tree_fingerprint
+    entry = tmp_path / 'page'
+    entry.write_text('checked')
+    opened = os.open
+
+    def change_mode(name, flags, **kwargs):
+        if name == 'page':
+            entry.chmod(entry.stat().st_mode ^ 0o004)
+        return opened(name, flags, **kwargs)
+
+    monkeypatch.setattr(os, 'open', change_mode)
+    with pytest.raises(ValueError, match='changed'):
+        tree_fingerprint(tmp_path)

@@ -49,7 +49,7 @@ streams those standard formats with bounded memory. Select `lxml` or
 
 ## Workers
 
-With `parallelism="auto"`, Articulous starts with the host CPU count and
+With `parallelism="auto"`, Articulous uses up to two render workers and
 respects Linux process affinity and available cgroup v2 CPU bandwidth.
 Fractional CPU bandwidth rounds up to a whole worker. Where a limit cannot
 be read, the other available counts still apply. An explicit positive

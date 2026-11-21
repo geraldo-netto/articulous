@@ -189,3 +189,31 @@ def test_perf11_warm_article_build_skips_private_body_reads(site_root, monkeypat
         pytest.fail('cache hits must use the admitted snapshot fingerprint')
     monkeypatch.setattr(ArticleSnapshot, 'read_bytes', unwanted)
     pipeline.run_build(cli, config, site_root)
+
+
+def test_review28_18_cached_body_uses_verified_source_without_spooling(site_root, monkeypatch):
+    cli, config = _site_config(site_root)
+    pipeline.run_build(cli, config, site_root)
+    observed = []
+    snapshot = pipeline.ArticleStore._snapshot_article
+
+    def observe(store, article):
+        stored = snapshot(store, article)
+        if isinstance(stored.source_xml, ArticleSnapshot):
+            observed.append(stored.source_xml.path == article.source_path)
+        return stored
+
+    monkeypatch.setattr(pipeline.ArticleStore, '_snapshot_article', observe)
+    pipeline.run_build(cli, config, site_root)
+    assert observed and all(observed)
+
+
+@pytest.mark.parametrize('alter', [b'', b'longer'])
+def test_review28_18_reject_cached_source_replaced_or_extended(tmp_path, alter):
+    path = tmp_path / 'source'
+    path.write_bytes(b'article')
+    snapshot = ArticleSnapshot(path, 0, 7, hashlib.sha256(b'article').hexdigest(), whole_file=True)
+    assert snapshot.read_bytes() == b'article'
+    path.write_bytes(b'article' + alter if alter else b'changed')
+    with pytest.raises(ValueError, match='snapshot changed'):
+        snapshot.read_bytes()

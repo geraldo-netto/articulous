@@ -230,7 +230,7 @@
   "files": [
     {
       "path": "articulous/theme_assets/xsl/content.xsl",
-      "sha256": "faf4a7c7d712abfac81a77b80889b47738ac2edc8137274eb7cee8cc01e74e63",
+      "sha256": "ae9f6e50de9d4a7ee301f47f7ff6e6ff6563a15b43951482e843e8c94271cbe9",
       "templates": [
         {
           "complexity": 1,
@@ -346,13 +346,13 @@
               "compiler_version": "20914",
               "line": 8,
               "predicates": 0,
-              "source": "comment()",
-              "trace_sha256": "97cd3d89cb745391abc7123cc49a73564b7de6cef2246b9b1a01a304a6e2c32f"
+              "source": "comment()|processing-instruction()",
+              "trace_sha256": "f528d019ebd87ebf937a299dc707157c9b396543507ac3d14d5099a8b270cd44"
             }
           ],
           "line": 8,
-          "name": "match=comment();mode=content",
-          "sha256": "497acea7b097a0c1057024dbbb3b15fd643f7adcc5232211c52990572196482f"
+          "name": "match=comment()|processing-instruction();mode=content",
+          "sha256": "3864ca930bad015a24a266745dd9a92018ee1be8251087e49fc6ff38c5dd7bcf"
         },
         {
           "complexity": 2,

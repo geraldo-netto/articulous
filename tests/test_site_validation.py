@@ -177,3 +177,24 @@ def test_valid001_sitemap_shards_and_invalid_indexes(publication):
     (root / 'map.xml').write_text('<unexpected/>')
     with pytest.raises(ValueError, match='Unsupported sitemap'):
         validate_site(root, base, plan)
+
+
+@pytest.mark.parametrize('url', ['http://localhost:PORT/', 'http://localhost:99999/', 'http://[', 'a%00b.html'])
+def test_review28_40_malformed_reference_preserves_other_failures(tmp_path, url):
+    from articulous.site_validation import check_link, sitemap_index_targets
+    failures = ['other.html: missing file']
+    check_link(tmp_path, url, 'http://localhost/page', 'http://localhost', {}, {}, failures, 'page.html')
+    assert len(failures) == 2
+    assert 'page.html' in failures[-1] and url in failures[-1]
+    assert list(sitemap_index_targets(tmp_path, 'http://localhost', [url], failures)) == []
+    assert url in failures[-1]
+
+
+@pytest.mark.parametrize('port', [0, 80, 65535])
+def test_review28_40_valid_ipv6_and_port_boundaries(tmp_path, port):
+    from articulous.site_validation import check_link
+    base = f'http://[::1]:{port}'
+    (tmp_path / 'real.html').write_text('ok')
+    failures = []
+    check_link(tmp_path, base + '/real.html', base + '/', base, {}, {}, failures, 'index.html')
+    assert failures == []

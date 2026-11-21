@@ -33,7 +33,7 @@ from .sections import validate_image_url
 _SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation", "author", "image", "structured-data"})
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
-
+_SCALAR_FIELDS = _SINGLETON_FIELDS | {"tag"}
 
 
 @dataclass(frozen=True)
@@ -42,11 +42,12 @@ class ArticleSnapshot:
     offset: int
     size: int
     fingerprint: str
+    whole_file: bool = False
 
     def read_bytes(self) -> bytes:
         with open_regular_file(self.path) as source:
             source.seek(self.offset)
-            content = source.read(self.size)
+            content = source.read(self.size + int(self.whole_file))
         if hashlib.sha256(content).hexdigest() != self.fingerprint:
             raise ValueError(f"Article snapshot changed or truncated: {self.path}")
         return content
@@ -134,8 +135,10 @@ def _track_singleton_field(tag, seen: set) -> None:
 
 
 def _field_text(child) -> str:
-    if child.tag in _SEO_FIELDS and len(child):
-        raise ValueError(f"<{child.tag}> must contain text only")
+    if len(child) and child.tag in _SCALAR_FIELDS:
+        if any(node.tag is not etree.Comment for node in child):
+            raise ValueError(f"<{child.tag}> must contain text only")
+        return "".join(child.itertext()).strip()
     return (child.text or "").strip()
 
 

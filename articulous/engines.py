@@ -79,6 +79,11 @@ def safe_xml_parser() -> etree.XMLParser:
     )
 
 
+def reject_entity_references(root):
+    if root.getroottree().docinfo.doctype and next(root.iter(etree.Entity), None) is not None:
+        raise ValueError("Unsupported XML entity reference")
+
+
 def safe_xslt_access_control() -> etree.XSLTAccessControl:
     return etree.XSLTAccessControl(
         read_file=False,
@@ -117,6 +122,7 @@ def _collect_stylesheets(path: Path, documents: dict, ancestors: frozenset[Path]
         content = source.read()
     documents[uri] = content
     root = etree.fromstring(content, parser=safe_xml_parser(), base_url=uri)
+    reject_entity_references(root)
     nodes = root.xpath(
         "//xsl:include[@href] | //xsl:import[@href]",
         namespaces=_XSL_NAMESPACE,
@@ -226,6 +232,8 @@ class XsltEngine(ABC):
         except _ADAPTER_ERRORS as error:
             raise _transform_failure('transform', error) from error
 
+    _atomic_writer = False
+
     def _run_transform(self, xml_input, xsl_path, output_path, dry_run,
                        stylesheet_fingerprint, xml_base_uri, parameters):
         if type(dry_run) is not bool:
@@ -241,8 +249,9 @@ class XsltEngine(ABC):
             logging.debug(f"[DRY RUN] {self.name}: {label} -> {output_path}")
             return
 
-        validate_output_path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if not self._atomic_writer:
+            validate_output_path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
         self._do_transform(
             normalised, xsl_path, output_path, stylesheet_fingerprint, xml_base_uri, parameters,
         )
@@ -339,6 +348,7 @@ def _explicit_output_method(snapshot):
 
 
 class LxmlEngine(XsltEngine):
+    _atomic_writer = True
     name = "lxml"
 
     def __init__(self):
@@ -347,7 +357,7 @@ class LxmlEngine(XsltEngine):
 
     @property
     def cache_identity(self) -> str:
-        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v4"
+        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v5"
 
     def _stylesheet_cache(self) -> dict:
         cache = getattr(self._thread_local, "stylesheets", None)
@@ -380,7 +390,8 @@ class LxmlEngine(XsltEngine):
             if isinstance(xml_input, bytes):
                 dom = etree.fromstring(xml_input, parser=parser, base_url=xml_base_uri)
             else:
-                dom = etree.parse(str(xml_input), parser=parser)
+                dom = etree.parse(str(xml_input), parser=parser).getroot()
+            reject_entity_references(dom)
             xslt, explicit_method = self._compiled_stylesheet(
                 xsl_path, stylesheet_fingerprint,
             )
@@ -396,6 +407,7 @@ def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:
     if base_uri is None:
         return content
     root = etree.fromstring(content, parser=safe_xml_parser(), base_url=base_uri)
+    reject_entity_references(root)
     root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
     return etree.tostring(root)
 
@@ -448,6 +460,7 @@ def _emit_native_output(stdout, stderr):
 
 
 class SaxonCEngine(XsltEngine):
+    _atomic_writer = True
     name = "saxonc"
 
     def __init__(self, saxonc_bin: Path):

@@ -14,10 +14,8 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from itertools import chain
 from pathlib import Path
 
-from .tree_entries import tree_entries
 
 
 def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
@@ -94,12 +92,17 @@ def validate_output_path(path: Path) -> None:
 
 
 def _open_directory_at(parent_fd: int, name: str, create: bool) -> int:
-    if create:
-        try:
-            os.mkdir(name, dir_fd=parent_fd)
-        except FileExistsError:
-            pass
-    return os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    try:
+        return os.open(name, flags, dir_fd=parent_fd)
+    except FileNotFoundError:
+        if not create:
+            raise
+    try:
+        os.mkdir(name, dir_fd=parent_fd)
+    except FileExistsError:
+        pass
+    return os.open(name, flags, dir_fd=parent_fd)
 
 
 @contextmanager
@@ -257,20 +260,40 @@ def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
         tmp_path.write_text(text, encoding=encoding)
 
 
+def _entry_digest(directory, entry, metadata):
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"Staged entry must be a regular file or directory: {entry.name}")
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+    with os.fdopen(os.open(entry.name, flags, dir_fd=directory), 'rb') as source:
+        actual = os.fstat(source.fileno())
+        if not stat.S_ISREG(actual.st_mode) or not os.path.samestat(actual, metadata):
+            raise ValueError(f"Staged entry changed during fingerprinting: {entry.name}")
+        digest = hashlib.file_digest(source, 'sha256').hexdigest()
+        final = os.fstat(source.fileno())
+        if (final.st_mode, final.st_ctime_ns) != (metadata.st_mode, metadata.st_ctime_ns):
+            raise ValueError(f"Staged entry changed during fingerprinting: {entry.name}")
+        return digest
+
+
 def tree_fingerprint(root: Path) -> str:
     validate_output_path(root)
+    records = {}
+    directories = [Path('.')]
+    empty = hashlib.sha256(b'').hexdigest()
+    while directories:
+        relative = directories.pop()
+        with _directory_handle(root / relative) as directory, os.scandir(directory) as entries:
+            records[relative] = 'directory', stat.S_IMODE(os.fstat(directory).st_mode), empty
+            for entry in entries:
+                child = relative / entry.name
+                metadata = entry.stat(follow_symlinks=False)
+                if stat.S_ISDIR(metadata.st_mode):
+                    directories.append(child)
+                else:
+                    records[child] = 'file', stat.S_IMODE(metadata.st_mode), _entry_digest(directory, entry, metadata)
     digest = hashlib.sha256()
-    for path in chain((root,), sorted(tree_entries(root))):
-        validate_output_path(path)
-        content = hashlib.sha256()
-        kind = 'directory'
-        if not path.is_dir():
-            kind = 'file'
-            with open_regular_file(path) as source:
-                while chunk := source.read(1024 * 1024):
-                    content.update(chunk)
-        record = [path.relative_to(root).as_posix(), kind, stat.S_IMODE(path.stat().st_mode), content.hexdigest()]
-        digest.update(json.dumps(record, ensure_ascii=True).encode() + b'\n')
+    for relative, record in sorted(records.items()):
+        digest.update(json.dumps([relative.as_posix(), *record], ensure_ascii=True).encode() + b'\n')
     return digest.hexdigest()
 
 

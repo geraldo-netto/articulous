@@ -5,7 +5,7 @@
       <div class="{$paragraph-class} {@class}"><xsl:apply-templates select="@*[name()!='class']|node()" mode="content"/></div>
     </xsl:when><xsl:otherwise><xsl:copy><xsl:apply-templates select="@*|node()" mode="content"/></xsl:copy></xsl:otherwise></xsl:choose>
   </xsl:template>
-  <xsl:template match="comment()" mode="content"/>
+  <xsl:template match="comment()|processing-instruction()" mode="content"/>
   <xsl:template match="*[contains('|script|style|base|meta|link|object|embed|animate|set|animatemotion|animatetransform|discard|',concat('|',translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|'))]" mode="content"/>
   <xsl:template match="@*" mode="content">
     <xsl:param name="attribute" select="name()"/>

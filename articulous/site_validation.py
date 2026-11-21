@@ -58,7 +58,12 @@ def resolved_path(output, value, base, resolved_paths):
 
 def read_pages(output, failures, html_errors=None):
     pages = {}
+    root = output.resolve()
     for path in sorted(path for path in tree_entries(output) if path.name.endswith('.html')):
+        resolved = path.resolve()
+        if not resolved.is_relative_to(root):
+            failures.append(f'{path.relative_to(output)}: HTML page escapes output')
+            continue
         source = path.read_bytes()
         errors = html_errors(source) if html_errors is not None else ()
         if errors:
@@ -68,7 +73,7 @@ def read_pages(output, failures, html_errors=None):
         except etree.ParserError as error:
             failures.append(f'{path.relative_to(output)}: HTML parse errors: {error}')
             continue
-        pages[path.resolve()] = page_references(document)
+        pages[resolved] = page_references(document)
     return pages
 
 
@@ -182,6 +187,13 @@ def redirect_target(output, target, resolved, base, redirects, failures, label, 
 
 
 def check_link(output, value, page_url, base, redirects, pages, failures, label, resolved_paths=None):
+    try:
+        _check_reference(output, value, page_url, base, redirects, pages, failures, label, resolved_paths)
+    except ValueError as error:
+        failures.append(f'{label}: invalid reference {value}: {error}')
+
+
+def _check_reference(output, value, page_url, base, redirects, pages, failures, label, resolved_paths):
     resolved = urljoin(page_url, value)
     target = resolved_path(output, resolved, base, resolved_paths)
     if target is None:
@@ -266,9 +278,16 @@ def _sitemap_location(entry, namespace):
     return nodes[0].text.strip()
 
 
+def _sitemap_target(output, value, base, resolved_paths):
+    try:
+        return resolved_path(output, value, base, resolved_paths)
+    except ValueError:
+        return None
+
+
 def sitemap_index_targets(output, base, values, failures, resolved_paths=None):
     for value in values:
-        target = resolved_path(output, value, base, resolved_paths)
+        target = _sitemap_target(output, value, base, resolved_paths)
         if target is None or not target.is_file():
             failures.append(f'Sitemap index target missing: {value}')
         else:
@@ -299,7 +318,7 @@ def validate_sitemap(output, base, plan, failures, resolved_paths=None):
         failures.append('Sitemap URL set does not match publication plan')
     canonicals = {(output / name).resolve(): url for name, url in plan.page_urls.items()}
     for url in urls:
-        target = resolved_path(output, url, base, resolved_paths)
+        target = _sitemap_target(output, url, base, resolved_paths)
         if target not in canonicals or canonicals[target] != url:
             failures.append(f'Sitemap target missing or noncanonical: {url}')
     return len(urls)

@@ -208,7 +208,7 @@ def test_cache_path_strips_traversal(tmp_path):
 
 def test_resolve_parallelism_lxml_default(tmp_path, monkeypatch):
     ctx = _ctx_for(tmp_path)
-    monkeypatch.setattr("articulous.pipeline.available_cpus", probe_one_cpu)
+    monkeypatch.setattr("articulous.runtime.available_cpus", probe_one_cpu)
     assert _resolve_parallelism(ctx) == 1
 
 
@@ -225,7 +225,7 @@ def test_resolve_parallelism_saxon_caps_at_cpu(tmp_path, monkeypatch):
             "articles": SaxonCEngine(tmp_path / "fake-bin"),
         },
     ))
-    monkeypatch.setattr("articulous.pipeline.available_cpus", probe_one_cpu)
+    monkeypatch.setattr("articulous.runtime.available_cpus", probe_one_cpu)
     assert _resolve_parallelism(ctx) == 1
 
 

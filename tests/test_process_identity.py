@@ -245,3 +245,12 @@ def test_life005_interrupted_cleanup_preserves_exact_recovery_owner(tmp_path, di
         processes._RETAINED.pop(token, None)
         cleanup(scratch, reservation.workspace.identity)
         cleanup(borrowed, reservation.borrowed[0].identity)
+
+
+@pytest.mark.parametrize('error,expected', [(PermissionError, True), (ProcessLookupError, False)])
+def test_review28_29_unknown_group_requires_stat(monkeypatch, error, expected):
+    from articulous.backends.process_groups import possible_group_member
+    def failed(_pid):
+        raise error()
+    monkeypatch.setattr(os, 'getpgid', failed)
+    assert possible_group_member(11, 42) is expected

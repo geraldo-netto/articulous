@@ -37,7 +37,7 @@ def test_review27_01_partition_migration_waits_for_retirement(site_root, seo_con
     monkeypatch.setattr(backend, '_finish_retirement', interrupt)
     with monkeypatch.context() as migration:
         if already_migrated:
-            migration.setattr(cache_store, '_has_pending_journal', lambda _: False)
+            migration.setattr(cache_store, '_has_pending_journal', lambda *_: False)
         build_site(cli, config, site_root, backend=backend)
     assert cache_store.select_cache(cache, output).partitioned is already_migrated
     recover_publication(output, cache)
@@ -146,7 +146,7 @@ def test_review27_12_unknown_journal_owner_defers_cache_migration(tmp_path, raw)
     path = transaction_path(tmp_path / 'output')
     path.mkdir()
     (path / 'journal.json').write_text(raw)
-    assert cache_store._has_pending_journal(tmp_path / 'cache.json')
+    assert cache_store._has_pending_journal(tmp_path / 'cache.json', tmp_path)
 
 
 @pytest.mark.parametrize('entry', ['assets/style.css', 'assets', '.'])

@@ -1,4 +1,5 @@
 """Plan removal of owned files that obstruct replacement output routes."""
+import stat
 from pathlib import Path
 
 from .filesystem import validate_output_path, validate_regular_file
@@ -9,7 +10,20 @@ class OutputMigrations:
         self.root = root.resolve()
         self.previous = previous
         self.selected = previous.keys() - retained.keys()
+        self._parents = set()
         self._targets: set[Path] = set()
+
+    def admit_path(self, path):
+        if path.is_symlink():
+            raise ValueError(f"Generated output path contains a symlink: {path}")
+        newly_checked = []
+        for parent in path.parents:
+            if parent in self._parents:
+                break
+            if parent.is_symlink():
+                raise ValueError(f"Generated output path contains a symlink: {parent}")
+            newly_checked.append(parent)
+        self._parents.update(newly_checked)
 
     def _owned_file(self, path: Path) -> Path:
         validate_output_path(path)
@@ -36,20 +50,35 @@ class OutputMigrations:
         return files
 
     def _obstructions(self, path: Path) -> set[Path]:
-        validate_output_path(path)
+        try:
+            mode = path.lstat().st_mode
+        except FileNotFoundError:
+            return set()
+        except NotADirectoryError:
+            return self._obstructing_parent(path)
+        return self._directory_files(path) if stat.S_ISDIR(mode) else set()
+
+    def _obstructing_parent(self, path):
         ancestors = path.relative_to(self.root).parents
         for relative in reversed(ancestors):
             parent = self.root / relative
             if parent.exists() and not parent.is_dir():
                 return {self._owned_file(parent)}
-        return self._directory_files(path) if path.is_dir() else set()
+        return set()
 
     def requires_rebuild(self, path: Path) -> bool:
+        validate_output_path(path)
+        return self.admitted_requires_rebuild(path)
+
+    def admitted_requires_rebuild(self, path):
         if not self._obstructions(path):
             return False
         self._targets.add(path)
         return True
 
     def removals(self) -> list[Path]:
-        paths = {entry for target in self._targets for entry in self._obstructions(target)}
+        paths = set()
+        for target in self._targets:
+            validate_output_path(target)
+            paths.update(self._obstructions(target))
         return sorted(paths)

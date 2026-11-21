@@ -69,7 +69,7 @@ def test_api002_structural_engine_runs_captured_pipeline(site_root, seo_config, 
     assert output.read_bytes() == b'neutral output'
     assert engine.calls == 1
     assert cache['neutral'][1] == 'independent-stylesheet-v1'
-    monkeypatch.setattr('articulous.pipeline.available_cpus', lambda: 2)
+    monkeypatch.setattr('articulous.runtime.available_cpus', lambda: 2)
     assert _resolve_parallelism(context) == 2
 
 

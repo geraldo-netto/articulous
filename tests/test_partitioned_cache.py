@@ -276,7 +276,7 @@ def test_perf31_activation_distinguishes_pending_journal_identity(tmp_path, raw,
     pending = transaction_path(tmp_path / 'other')
     pending.mkdir()
     (pending / 'journal.json').write_text(raw)
-    assert cache_store._has_pending_journal(base) is blocks
+    assert cache_store._has_pending_journal(base, tmp_path) is blocks
 
 
 def test_perf31_activation_preserves_state_if_directory_cannot_be_scanned(tmp_path, monkeypatch, caplog):
@@ -299,7 +299,7 @@ def test_perf31_legacy_flat_values_bind_to_migrating_output(tmp_path, value):
     if value is not None:
         base.write_text(value)
     destination = tmp_path / 'output'
-    assert cache_store._migration_records(base, destination) == (
+    assert cache_store._migration_records(base, destination, tmp_path) == (
         {} if value is None else {str(destination): json.loads(value)}
     )
 
@@ -309,7 +309,7 @@ def test_perf31_malformed_legacy_root_paths_are_ignored(tmp_path):
     invalid_paths = ('relative', str(tmp_path.parent), str(tmp_path / 'bad\0path'))
     value = {'__output_roots__': dict.fromkeys(invalid_paths, {'fingerprint': [1]})}
     base.write_text(json.dumps(value))
-    assert cache_store._migration_records(base, tmp_path / 'output') == {}
+    assert cache_store._migration_records(base, tmp_path / 'output', tmp_path) == {}
 
 
 @pytest.mark.parametrize('fault', ['hardlink', 'wrong-root', 'not-string', 'missing'])
@@ -322,7 +322,7 @@ def test_perf31_does_not_expire_unverified_cache_headers(tmp_path, fault):
         path.write_text(json.dumps({'__output_roots__': {other: {'__last_used__': 0}}}, indent=2))
     if fault == 'hardlink':
         os.link(path, namespace / 'unknown')
-    cache_store._prune_root(path, None)
+    cache_store._prune_root(path, None, tmp_path)
     assert path.exists() is (fault != 'missing')
 
 
@@ -344,24 +344,24 @@ def _expiry_fixture(tmp_path):
 def test_perf41_reuses_stable_headers_and_invalidates_in_place_updates(tmp_path, cache_clock, monkeypatch):
     active, index = _expiry_fixture(tmp_path)
     path = _seed_partition(active, 'other', cache_clock[0])
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     expected = cache_usage_index.read_usage_index(index)
     assert expected[path.name][-1] == cache_clock[0]
     reads = []
     read = cache_store._read_usage
 
-    def observe(candidate):
+    def observe(candidate, project):
         reads.append(candidate)
-        return read(candidate)
+        return read(candidate, project)
 
     monkeypatch.setattr(cache_store, '_read_usage', observe)
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert reads == []
     metadata = path.stat()
     _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     os.utime(path, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
     assert path.stat().st_size == metadata.st_size
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert reads == [path, path]
     assert not path.exists()
     assert cache_usage_index.read_usage_index(index) == {}
@@ -372,7 +372,7 @@ def test_perf41_expiry_hint_cannot_delete_a_refreshed_partition(tmp_path, cache_
     target = _seed_partition(active, 'other', cache_clock[0])
     expired = cache_clock[0] - 4 * DAY
     monkeypatch.setattr(cache_store, 'reusable_usage', lambda *_: [0, 0, 0, 0, 0, expired])
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert target.is_file()
 
 
@@ -381,7 +381,7 @@ def test_perf41_retention_still_visits_all_partitions_when_index_is_full(tmp_pat
     active, index = _expiry_fixture(tmp_path)
     fresh = [_seed_partition(active, f'fresh-{i}', cache_clock[0]) for i in range(4)]
     expired = [_seed_partition(active, f'old-{i}', cache_clock[0] - 4 * DAY) for i in range(4)]
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert all(path.is_file() for path in fresh)
     assert not any(path.exists() for path in expired)
     assert len(cache_usage_index.read_usage_index(index)) == 1
@@ -397,17 +397,17 @@ def test_rel44_bad_index_payloads_fall_back_to_authoritative_headers(tmp_path, c
     active, index = _expiry_fixture(tmp_path)
     target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     index.write_bytes(_index_message(payload))
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert not target.exists()
 
 
 def test_perf41_index_corruption_rebuilds_hints(tmp_path, cache_clock):
     active, index = _expiry_fixture(tmp_path)
     target = _seed_partition(active, 'other', cache_clock[0])
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     expected = index.read_bytes()
     index.write_bytes(expected[:-1] + b' ')
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert target.is_file()
     assert index.read_bytes() == expected
 
@@ -417,7 +417,7 @@ def test_perf41_changes_during_header_read_do_not_admit_a_partition(tmp_path, ca
     target = _seed_partition(active, 'other', cache_clock[0] - 4 * DAY)
     generations = iter(([1], [2]))
     monkeypatch.setattr(cache_store, 'file_generation', lambda _: next(generations))
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert target.is_file()
     assert not index.exists()
 
@@ -439,7 +439,7 @@ def test_perf41_oversized_index_is_optional(tmp_path, cache_clock, monkeypatch):
     expired = _seed_partition(active, 'old', cache_clock[0] - 4 * DAY)
     original = b'x' * 33
     index.write_bytes(original)
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert not expired.exists()
     assert index.read_bytes() == original
 
@@ -465,7 +465,33 @@ def test_perf41_index_failure_preserves_cache_authority(tmp_path, cache_clock):
     unrelated = tmp_path / 'keep'
     unrelated.write_text('untouched')
     index.symlink_to(unrelated)
-    cache_store._expire_partitions(active, 3)
+    cache_store._expire_partitions(active, 3, tmp_path)
     assert not expired.exists()
     assert unrelated.read_text() == 'untouched'
     assert index.is_symlink()
+
+
+def test_review28_23_symlinked_cache_migration_and_retention(site_root, cache_clock):
+    base = site_root / 'state/cache.json'
+    base.parent.mkdir()
+    _base(site_root).symlink_to(base)
+    pipeline.run_build(REQUEST, _config('first', enable=False), site_root)
+    pipeline.run_build(REQUEST, _config(), site_root)
+    first = cache_store.partition_path(base, site_root / 'first')
+    assert str(site_root / 'first') in json.loads(first.read_bytes())['__output_roots__']
+    cache_clock[0] += 4 * DAY
+    pipeline.run_build(REQUEST, _config(), site_root)
+    assert not first.exists()
+
+
+def test_review28_23_journal_blocks_aliased_cache_activation(site_root):
+    target = site_root / 'state/cache.json'
+    target.parent.mkdir()
+    _base(site_root).symlink_to(target)
+    pipeline.run_build(REQUEST, _config(enable=False), site_root)
+    _interrupt_publication(site_root, 'nested/second', 'prepared')
+    pipeline.run_build(REQUEST, _config(), site_root)
+    assert not cache_store.select_cache(target, site_root / 'output').partitioned
+    recover_publication(site_root / 'nested/second', _base(site_root))
+    pipeline.run_build(REQUEST, _config(), site_root)
+    assert cache_store.select_cache(target, site_root / 'output').partitioned

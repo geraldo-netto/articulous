@@ -9,7 +9,8 @@ from articulous.backends import browser_fence as fence
 from articulous.backends.processes import LinuxSession, open_session
 
 
-def test_test002_proc_identity_and_members(tmp_path):
+def test_test002_proc_identity_and_members(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "getpgid", lambda pid: 42)
     absent = tmp_path / '10'
     foreign = tmp_path / '11'
     zombie = tmp_path / '12'

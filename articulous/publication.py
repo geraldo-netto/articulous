@@ -7,10 +7,10 @@ from .publication_contracts import PublicationBackend
 from .cache_store import lock_selected_cache
 from .config import normalize_configuration
 from .configuration_contracts import BuildOptions, ConfigurationInput
-from .publication_adapter import publish_generation
+from .publication_adapter import _publish_current, publish_generation
 from .build_contracts import ValidatedBuild, ValidationReport
 from .builds import (
-    prepare_build, render_prepared, validate_generated,
+    prepare_build, _render_validated,
 )
 
 
@@ -32,7 +32,10 @@ def _backend(backend, require_atomic, require_durable) -> PublicationBackend:
 def publish_validated(checked: ValidatedBuild, *, backend=None,
                       require_atomic=False, require_durable=False) -> None:
     selected = _backend(backend, require_atomic, require_durable)
-    publish_generation(checked, selected)
+    if backend is None:
+        _publish_current(checked, selected)
+    else:
+        publish_generation(checked, selected)
 
 
 def recover_publication(destination: Path, cache_path: Path, *, backend=None) -> None:
@@ -47,8 +50,8 @@ def build_site(cli: BuildOptions, config: ConfigurationInput, project_root: Path
     selected = _backend(backend, require_atomic, require_durable)
     with prepare_build(cli, config, project_root, extra_pages=extra_pages, extra_artifacts=extra_artifacts,
                        backend=selected, composer=composer) as prepared:
-        checked = validate_generated(render_prepared(prepared), validators=validators)
-        publish_validated(checked, backend=selected, require_atomic=require_atomic, require_durable=require_durable)
+        checked = _render_validated(prepared, validators)
+        _publish_current(checked, selected)
         return ValidationReport(len(prepared.routes), checked.diagnostics)
 
 

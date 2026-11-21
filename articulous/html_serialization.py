@@ -14,7 +14,7 @@ MATH_TEXT = frozenset('mi mo mn ms mtext'.split())
 _ASCII_LOWER = str.maketrans(ascii_uppercase, ascii_lowercase)
 _RAW_NAME = re.compile(r'</?\s*([A-Za-z][^\t\n\r\f />]*)')
 _END_TOKEN = re.compile(r"""(?:[^"'<>]|"[^"]*"|'[^']*')*>""")
-_VOID_CANDIDATE = re.compile(r'</\s*(?ai:' + '|'.join(sorted(VOID)) + ')')
+_VOID_CANDIDATE = re.compile(r'</\s*(?ai:' + '|'.join(sorted(VOID)) + r')(?=[\t\n\r\f />]|$)')
 
 
 def child_context(tag, namespace, attributes):
@@ -102,18 +102,29 @@ class _VoidEnds(HTMLParser):
             self.stack.pop()
 
 
-def html5_void_ends(source):
+def void_omissions(source):
     if not isinstance(source, str):
         raise ValueError('Serialized HTML must be text')
     if _VOID_CANDIDATE.search(source) is None:
-        return source
+        return ()
     parser = _VoidEnds(source)
     parser.feed(source)
     parser.close()
+    return parser.omissions
+
+
+def html5_void_ends(source):
+    omissions = void_omissions(source)
+    if not omissions:
+        return source
+    return omit_spans(source, omissions)
+
+
+def omit_spans(source, omissions):
     parts = []
     position = 0
-    for start, end in parser.omissions:
+    for start, end in omissions:
         parts.append(source[position:start])
         position = end
     parts.append(source[position:])
-    return ''.join(parts)
+    return source[:0].join(parts)

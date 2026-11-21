@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 
+from .process_groups import possible_group_member
 from ..process_contracts import ProcessSession, SessionOptions, RecoveryToken, NativeCleanupError, deadline_seconds
 from ..tooling_resources import tooling_resources
 from ..source_files import cleanup_workspace, require_workspace, workspace_identity
@@ -20,10 +21,10 @@ _RETAINED = {}
 
 
 @contextmanager
-def _proc_stat_paths():
+def _proc_stat_paths(group):
     with os.scandir('/proc') as entries:
         yield (f'{entry.path}/stat' for entry in entries
-               if entry.name.isascii() and entry.name.isdecimal())
+               if entry.name.isascii() and entry.name.isdecimal() and possible_group_member(int(entry.name), group))
 
 
 def _read_proc_stat(path: str) -> bytes:
@@ -43,7 +44,7 @@ def _live_group_member(path: str, group: int) -> bool:
 
 
 def group_running(group: int) -> bool:
-    with _proc_stat_paths() as paths:
+    with _proc_stat_paths(group) as paths:
         return any(_live_group_member(path, group) for path in paths)
 
 

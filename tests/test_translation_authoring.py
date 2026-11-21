@@ -245,3 +245,18 @@ def test_i18n002_one_prompt_snapshot_per_request():
         translator = Translator(Provider(), cache, changing_prompt, normalize, record_log)
         assert translator.translate('Prose', 'aa', 'bb') == 'PROSE'
         assert len(prompts) == 1, 'I18N-002: cache identity and provider must use the same prompt snapshot'
+
+
+@pytest.mark.parametrize('char', [chr(code) for code in (*range(9), 11, 12, *range(14, 32), 0xd800, 0xfffe, 0xffff)])
+def test_review28_59_reject_invalid_xml_before_cache(char):
+    with client() as translator, patch.object(translator, '_post', side_effect=['a' + char + 'b', 'ok\t\U00010000']):
+        assert translator.translate('x', 'en', 'fr', False) == 'ok\t\U00010000'
+        assert translator.translate('x', 'en', 'fr', False) == 'ok\t\U00010000'
+        assert translator.calls == 2
+
+
+def test_review28_59_evict_legacy_xml_poison():
+    with client() as translator:
+        translator._store(translator._key('old', 'en', 'fr', False), 'bad\x0breply')
+        assert translator.translate('old', 'en', 'fr', False) == 'OLD'
+        assert translator.calls == 1 and translator.cache_hits == 0

@@ -113,3 +113,20 @@ def test_theme002_specific_handlers_win_independently_of_declaration_order():
     assert not output.xpath('//@onclick | //comment()')
     assert output.xpath('string(/out/div/@title)') == 'safe'
     assert output.xpath('string(/out/div)') == 'Text'
+
+
+def test_review28_69_content_omits_processing_instructions(render):
+    root = etree.XML(b'<root>before<?editor hidden?><p>inside<?layout hidden?>after</p></root>')
+    result = render(root)
+    assert result.xpath('//processing-instruction()') == []
+    assert result.xpath('string(/out)') == 'beforeinsideafter'
+
+
+def test_review28_69_code_block_preserves_text_around_instructions():
+    sheet = etree.fromstring(stylesheet_source())
+    rule = etree.SubElement(sheet, XSL + 'template', match='pre', mode='content')
+    etree.SubElement(rule, XSL + 'call-template', name='render-code-block')
+    render = etree.XSLT(sheet, access_control=safe_xslt_access_control())
+    result = render(etree.XML(b'<root><pre><code>one<?editor note?>two</code></pre></root>'))
+    assert result.xpath('//processing-instruction()') == []
+    assert result.xpath('string(//pre/code)') == 'onetwo'

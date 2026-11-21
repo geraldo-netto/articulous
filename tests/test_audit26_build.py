@@ -25,7 +25,8 @@ from test_seo_translations import _translation_pair, _alternates
 def deny_listing(monkeypatch, directory):
     original = os.scandir
     def listing(path):
-        if not isinstance(path, int) and Path(path) == directory:
+        denied = os.path.samestat(os.fstat(path), directory.stat()) if isinstance(path, int) else Path(path) == directory
+        if denied:
             raise PermissionError(str(directory))
         return original(path)
     monkeypatch.setattr(os, 'scandir', listing)

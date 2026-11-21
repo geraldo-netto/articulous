@@ -2,10 +2,14 @@
 import hashlib
 import http.client
 import json
+import re
 import time
 import urllib.error
 from .markup import placeholder_signature, usable_translation
 from .translation_contracts import TranslationCache, TranslationProvider
+
+
+_INVALID_XML = re.compile(r'[^\t\n\r\x20-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]')
 
 
 class Translator:
@@ -44,7 +48,8 @@ class Translator:
         return self.provider.post(system, user)
 
     def _valid(self, value, wanted, markup, accept):
-        return isinstance(value, str) and usable_translation(value, wanted, markup) and (accept is None or accept(value))
+        return (isinstance(value, str) and not _INVALID_XML.search(value) and usable_translation(value, wanted, markup)
+                and (accept is None or accept(value)))
 
     def _cache_hit(self, key, wanted, markup, accept):
         value = self._cached(key)

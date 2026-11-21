@@ -92,7 +92,8 @@ function lineOwners(lines,children) {
 }
 
 function childOwns(child,outer,position) {
-  return child && child.startOffset>outer.startOffset && child.endOffset<=outer.endOffset
+  return child && child.startOffset>=outer.startOffset && child.endOffset<=outer.endOffset
+    && (child.startOffset!==outer.startOffset || child.endOffset!==outer.endOffset)
     && child.startOffset<=position;
 }
 

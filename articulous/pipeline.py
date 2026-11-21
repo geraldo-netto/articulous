@@ -35,7 +35,6 @@ from urllib.parse import quote
 from uuid import uuid4
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
-from .backends.cpu_capacity import available_cpus
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .cache_store import cache_payload, finish_cache_update, lock_selected_cache, selected_roots
 from .config import admit_configuration, normalize_configuration, validate_output_layout
@@ -77,7 +76,8 @@ from .runtime import (
     load_cache,
     run_parallel_tasks,
     save_cache,
-    should_rebuild,
+    _admitted_rebuild,
+    _worker_count,
     timed,
     update_cache,
 )
@@ -223,7 +223,7 @@ class _AdmittedOutput(NamedTuple):
 
 
 def _admit_output(ctx: BuildCtx, output_path: Path) -> _AdmittedOutput:
-    root = ctx.output_dir.resolve()
+    root = ctx.output_migrations.root if ctx.output_migrations is not None else ctx.output_dir.resolve()
     candidate = output_path if output_path.is_absolute() else ctx.output_dir / output_path
     candidate = Path(os.path.abspath(candidate))
     if not candidate.is_relative_to(root):
@@ -232,7 +232,10 @@ def _admit_output(ctx: BuildCtx, output_path: Path) -> _AdmittedOutput:
             f"(output_dir={ctx.output_dir})"
         )
     validate_path_length(candidate)
-    validate_output_path(candidate)
+    if ctx.output_migrations is None:
+        validate_output_path(candidate)
+    else:
+        ctx.output_migrations.admit_path(candidate)
     return _AdmittedOutput(candidate, candidate.relative_to(root).as_posix())
 
 
@@ -632,7 +635,8 @@ def _consolidate_sorted_chunks(workspace: TempWorkspace, chunks):
 
 
 class ArticleStore:
-    def __init__(self, workspace: TempWorkspace):
+    def __init__(self, workspace: TempWorkspace, cache=None):
+        self._cache = cache
         self._workspace = workspace
         self._files: dict[str, Any] = {}
         self._sources: Any = None
@@ -641,12 +645,18 @@ class ArticleStore:
     def _snapshot_article(self, art):
         if not isinstance(art.source_xml, bytes):
             return art
+        content = art.source_xml
+        fingerprint = hashlib.sha256(content).hexdigest()
+        key = f"article:{art.lang}:{art.slug}"
+        record = self._cache.get(key) if self._cache is not None else None
+        if isinstance(record, list) and record[:1] == [fingerprint]:
+            snapshot = ArticleSnapshot(art.source_path, 0, len(content), fingerprint, whole_file=True)
+            return replace(art, source_xml=snapshot)
         if self._sources is None:
             self._sources = self._workspace.named_file("w+b")
-        content = art.source_xml
         snapshot = ArticleSnapshot(
             Path(self._sources.name), self._sources.tell(), len(content),
-            hashlib.sha256(content).hexdigest(),
+            fingerprint,
         )
         self._sources.write(content)
         return replace(art, source_xml=snapshot)
@@ -1017,9 +1027,9 @@ def _record_planned_output(
 
 
 def _needs_output_rebuild(ctx: BuildCtx, cache_key, cache, fingerprint, output_path: Path) -> bool:
-    if ctx.output_migrations is not None and ctx.output_migrations.requires_rebuild(output_path):
+    if ctx.output_migrations is not None and ctx.output_migrations.admitted_requires_rebuild(output_path):
         return True
-    return should_rebuild(cache_key, cache, fingerprint, ctx.force, output_path=output_path)
+    return _admitted_rebuild(cache_key, cache, fingerprint, ctx.force, output_path)
 
 
 def _transform_input_hash(source: Path | bytes | ArticleSnapshot) -> str:
@@ -1528,6 +1538,7 @@ def _stream_projections(
     ctx: BuildCtx,
     workspace: TempWorkspace | None = None,
     *,
+    cache=None,
     collect_cross: bool = True,
     collect_articles: bool = False,
 ) -> StreamProjection:
@@ -1540,7 +1551,7 @@ def _stream_projections(
     """
     workspace = workspace or TempWorkspace()
     sections = _projection_sections(cli, collect_cross, collect_articles)
-    article_store = ArticleStore(workspace) if "articles" in sections else None
+    article_store = ArticleStore(workspace, cache) if "articles" in sections else None
     sitemap_listings = ctx.sitemap_listings and "sitemap" in sections
     listing_store = ArticleStore(workspace) if sections.intersection({"index", "tags"}) or sitemap_listings else None
     projection = StreamProjection(
@@ -1856,7 +1867,7 @@ def _collect_tasks(
         cli,
         ctx,
         workspace,
-        collect_cross=need_cross,
+        cache=cache, collect_cross=need_cross,
         collect_articles=need_per_lang,
     )
     try:
@@ -2030,7 +2041,7 @@ def _cache_build_lock(cache, output_lock):
 
 
 def _resolve_parallelism(ctx: BuildCtx) -> WorkerCount:
-    return available_cpus() if ctx.parallelism == "auto" else ctx.parallelism
+    return _worker_count(ctx.parallelism)
 
 
 def _can_prune_outputs(cli) -> bool:
@@ -2255,7 +2266,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                   extra_artifacts=artifact_values(extra_artifacts))
     cache_path = _cache_path_for(ctx, project_root)
     locked = partial(_cache_build_lock, output_lock=_lock_path_for(ctx, project_root))
-    with lock_selected_cache(cache_path, ctx.output_dir, locked) as selected:
+    with lock_selected_cache(cache_path, ctx.output_dir, locked, project=project_root.resolve()) as selected:
         if os.path.lexists(transaction_path(ctx.output_dir)):
             raise ValueError("Whole-site publication requires recovery before an incremental build")
         with TempWorkspace() as workspace:

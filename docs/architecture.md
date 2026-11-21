@@ -117,7 +117,7 @@ receives that boundary data rather than `BuildCtx` or a task plan.
 ## Data and resource ownership
 
 Article discovery feeds the requested projections in a shared scan. Full article
-XML is spooled to disk for article rendering; shared listings keep metadata.
+XML is spooled for new or changed articles. A matching cached article keeps its path, size and digest. If rendering becomes necessary, the build reads the file and rejects a digest mismatch. Shared listings keep metadata.
 Sorting uses temporary chunks. Sitemap/search sinks are disk-backed, RSS keeps
 a bounded newest-item heap (or one per language), and translation-link lookup
 uses SQLite. Listing pages share one pagination pass with sitemap planning when

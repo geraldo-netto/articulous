@@ -126,3 +126,11 @@ function checked(body,functions) {
  assert.equal(rows.find(row=>row.function==='inner').line,3);
  assert.ok(rows.every(row=>row.percent===100));
 }
+
+{
+ const fn='function first(){\n'+' void 0;\n'.repeat(16)+'}';
+ const body=fn+'\nfirst();\nvoid 0;\nvoid 0;\nvoid 0;\nvoid 0;';
+ const mod=counter(body,'');
+ mod.ranges.push({startOffset:body.indexOf('void 0;',fn.length),endOffset:body.length,count:0});
+ assert.throws(()=>checked(body,[mod,counter(body,'first',fn)]),/below 80/); // REVIEW28-64
+}

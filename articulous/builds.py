@@ -209,10 +209,13 @@ class _ValidatedBuild:
         return self._diagnostics
 
     def assert_unchanged(self):
+        self.require_current()
+        self._staged.assert_unchanged()
+
+    def require_current(self):
         self._staged._owner.require_state('validated')
         if self._revision != self._staged._owner.validation_revision:
             raise BuildError('Validation handle has been superseded')
-        self._staged.assert_unchanged()
 
 
 def _owned_prepared(value: PreparedBuild) -> _BuildState:
@@ -342,7 +345,7 @@ def _preparation_lock(original, root, backend):
         locked = partial(backend.locked, original.output_dir)
     else:
         locked = partial(_cache_build_lock, output_lock=_lock_path_for(original, root))
-    with lock_selected_cache(cache, original.output_dir, locked) as selected:
+    with lock_selected_cache(cache, original.output_dir, locked, project=root.resolve()) as selected:
         if backend is not None:
             backend.recover(original.output_dir, selected.path)
         yield selected
@@ -395,12 +398,20 @@ def _validator_diagnostics(validator, staged):
 
 
 def validate_generated(staged: StagedBuild, *, validators: Iterable[Validator] = ()) -> ValidatedBuild:
-    handle = _owned_staged(staged)
+    return _validate_stage(_owned_staged(staged), validators, fresh=False)
+
+
+def _render_validated(prepared, validators):
+    return _validate_stage(render_prepared(prepared), validators, fresh=True)
+
+
+def _validate_stage(handle, validators, *, fresh):
     owner = handle._owner
     owner.require_state('rendered', 'validated')
     owner.state = 'rendered'
     owner.validation_revision += 1
-    handle.assert_unchanged()
+    if not fresh:
+        handle.assert_unchanged()
     _validate_manifest(handle)
     diagnostics = []
     for validator in validators:
@@ -417,5 +428,5 @@ def check_build(cli: BuildOptions, config: ConfigurationInput, project_root: Pat
                 extra_pages: Iterable[ExtraPage] = (), extra_artifacts: Iterable[ExtraArtifact] = (),
                 validators: Iterable[Validator] = (), composer: Composer | None = None) -> ValidationReport:
     with prepare_build(cli, config, project_root, extra_pages=extra_pages, extra_artifacts=extra_artifacts, composer=composer) as prepared:
-        checked = validate_generated(render_prepared(prepared), validators=validators)
+        checked = _render_validated(prepared, validators)
         return ValidationReport(len(prepared.routes), checked.diagnostics)

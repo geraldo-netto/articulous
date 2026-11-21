@@ -43,6 +43,12 @@ def publication_input(checked: ValidatedBuild) -> PublicationInput:
 def publish_generation(checked: ValidatedBuild, backend: PublicationBackend) -> None:
     native = _owned_validated(checked)
     native.assert_unchanged()
+    _publish_current(native, backend)
+
+
+def _publish_current(checked, backend):
+    native = _owned_validated(checked)
+    native.require_current()
     owner = native._staged._owner
     owner.settle_readers()
     backend.recover(owner.destination, owner.cache_path)

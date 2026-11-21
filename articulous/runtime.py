@@ -130,16 +130,14 @@ def should_rebuild(
     """Decide whether a page should be rebuilt."""
     if output_path is not None:
         validate_output_path(output_path)
-        if output_path.exists():
-            validate_regular_file(output_path)
-    if force:
-        return True
-    if output_path is not None and not output_path.exists():
+    return _admitted_rebuild(key, cache, new_hashes, force, output_path)
+
+
+def _admitted_rebuild(key, cache, new_hashes, force, output_path):
+    if output_path is not None and validate_regular_file(output_path) is None:
         return True
     old = cache.get(key)
-    if not old:
-        return True
-    return old != list(new_hashes)
+    return force or not old or old != list(new_hashes)
 
 
 def update_cache(cache: dict, key: str, new_hashes: tuple) -> None:
@@ -257,7 +255,7 @@ def _drain_tasks(pool, admission, results, errors) -> None:
 
 def _worker_count(value: WorkerCount) -> int:
     if value == "auto":
-        return available_cpus()
+        return min(2, available_cpus())
     if type(value) is not int or value < 1:
         raise ValueError("max_workers must be a positive integer or auto")
     return value
@@ -275,7 +273,7 @@ def run_parallel_tasks(
     the budget is admitted by itself.
 
     ``max_workers`` accepts either a positive ``int`` or the sentinel
-    string ``"auto"`` (uses the effective CPU count).
+    string ``"auto"`` (up to two workers within the effective CPU limit).
 
     Ordinary task or producer failures cancel pending work and drain
     submitted tasks. Task failures are logged; one error is re-raised

@@ -142,3 +142,11 @@ def test_review28_42_one_element_free_page_reports_size(tmp_path, raw, capsys):
     assert capsys.readouterr().out.splitlines() == [
         f'{page}: {len(raw)/1024:.0f} KB raw, {len(gzip.compress(raw, 6))/1024:.0f} KB estimated gzip',
     ]
+
+
+def test_audit1121_07_top_recipes_keep_first_seen_ties(tmp_path, capsys):
+    body = ''.join(f'<p class="{name * 40}"></p>' for name in 'caedbfé')
+    (tmp_path / 'index.html').write_text(f'<meta charset="utf-8"><body>{body}</body>', encoding='utf-8')
+    report.class_weight(report.scan(tmp_path))
+    lines = capsys.readouterr().out.splitlines()
+    assert [line.split()[-1] for line in lines[-5:]] == [name * 40 + '...' for name in 'écaed']

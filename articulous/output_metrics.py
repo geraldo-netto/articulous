@@ -1,5 +1,6 @@
 """Local output byte accounting; gzip values are estimates, not HTTP evidence."""
 import gzip
+from heapq import nlargest
 from collections import Counter
 from pathlib import Path
 from statistics import median
@@ -117,8 +118,8 @@ def class_weight(metrics: OutputMetrics) -> None:
     if repeats:
         print('  longest recipes still spelled out in the markup:')
         def recipe_weight(item):
-            return -len(item[0].encode('utf-8')) * item[1]
-        for value, count in sorted(repeats.items(), key=recipe_weight)[:5]:
+            return len(item[0].encode('utf-8')) * item[1]
+        for value, count in nlargest(5, repeats.items(), key=recipe_weight):
             size = len(value.encode('utf-8'))
             print(f'    {size:4}b x {count:6} = {megabytes(size*count):>8}  {value[:52]}...')
 

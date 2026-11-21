@@ -198,3 +198,26 @@ def test_review28_40_valid_ipv6_and_port_boundaries(tmp_path, port):
     failures = []
     check_link(tmp_path, base + '/real.html', base + '/', base, {}, {}, failures, 'index.html')
     assert failures == []
+
+
+def test_review28_41_directory_with_html_suffix_preserves_page_validation(publication):
+    root, base, plan = publication
+    directory = root / 'a-folder.html'
+    directory.mkdir()
+    (directory / 'child.html').write_text(html_page(base + '/a-folder.html/child.html'))
+    plan.page_urls['a-folder.html/child.html'] = base + '/a-folder.html/child.html'
+    (root / 'alias-file.html').symlink_to('a-folder.html/child.html')
+    (root / 'alias-folder.html').symlink_to('a-folder.html', target_is_directory=True)
+    (root / 'dangling.html').symlink_to('absent')
+    assert validate_site(root, base, plan).html_pages == 3
+
+    (root / 'outside.html').symlink_to(root.parent, target_is_directory=True)
+    (directory / 'child.html').write_text(
+        html_page(plan.page_urls['a-folder.html/child.html'], '<a href="absent.html">missing</a>')
+    )
+    with pytest.raises(ValueError) as errors:
+        validate_site(root, base, plan)
+    assert str(errors.value).splitlines() == [
+        'outside.html: HTML page escapes output',
+        'a-folder.html/child.html: missing absent.html',
+    ]

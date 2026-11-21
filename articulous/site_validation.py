@@ -1,5 +1,6 @@
 """Check generated artifacts before making a completed build visible."""
 from dataclasses import dataclass, replace
+from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 import json
 import re
@@ -55,12 +56,21 @@ def resolved_path(output, value, base, resolved_paths):
 def read_pages(output, failures, html_errors=None):
     pages = {}
     root = output.resolve()
-    for path in sorted(path for path in tree_entries(output) if path.name.endswith('.html')):
+
+    def html_page(entry):
+        if not entry.name.endswith('.html'):
+            return False
+        if entry.is_symlink():
+            target = Path(entry.path).resolve()
+            return not target.is_relative_to(root) or target.is_file()
+        return entry.is_file(follow_symlinks=False)
+
+    for path in sorted(tree_entries(output, include=html_page)):
         resolved = path.resolve()
         if not resolved.is_relative_to(root):
             failures.append(f'{path.relative_to(output)}: HTML page escapes output')
             continue
-        source = path.read_bytes()
+        source = resolved.read_bytes()
         errors = html_errors(source) if html_errors is not None else ()
         if errors:
             failures.append(f'{path.relative_to(output)}: HTML parse errors: {errors}')

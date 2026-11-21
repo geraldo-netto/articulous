@@ -1560,6 +1560,17 @@ class BuildPlan(dict):
         self.projection = projection
 
 
+class _BuildSelection(NamedTuple):
+    only_sections: frozenset[str]
+    only_langs: frozenset[str]
+    only_slugs: frozenset[str]
+
+    @classmethod
+    def from_request(cls, request: BuildOptions):
+        return cls(frozenset(request.only_sections or ()), frozenset(request.only_langs or ()),
+                   frozenset(request.only_slugs or ()))
+
+
 def _passes_cli_filters(art, cli) -> bool:
     if cli.only_langs and art.lang not in cli.only_langs:
         return False
@@ -2365,6 +2376,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
     config = normalize_configuration(config, cli, project_root)
     ctx = replace(build_ctx_from_config(config, dry_run=cli.dry_run), extra_pages=tuple(extra_pages),
                   extra_artifacts=artifact_values(extra_artifacts))
+    selection = _BuildSelection.from_request(cli)
     cache_path = _cache_path_for(ctx, project_root)
     locked = partial(_cache_build_lock, output_lock=_lock_path_for(ctx, project_root))
     with lock_selected_cache(cache_path, ctx.output_dir, locked, project=project_root.resolve()) as selected:
@@ -2374,22 +2386,22 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
             projection = None
             plan: dict = {}
             try:
-                cache, roots, ownership = _incremental_state(cli, ctx, selected)
+                cache, roots, ownership = _incremental_state(selection, ctx, selected)
                 old_manifest = ownership.paths
                 ctx = replace(ctx, force=ctx.force or ownership.pending, previous_translations=ownership.translations)
                 ctx = replace(ctx, output_migrations=OutputMigrations(
-                    ctx.output_dir, old_manifest, _retained_outputs(cli, old_manifest, _extra_output_keys(ctx)),
-                ), retained_page_routes=_retained_page_routes(cli, ctx, ownership))
+                    ctx.output_dir, old_manifest, _retained_outputs(selection, old_manifest, _extra_output_keys(ctx)),
+                ), retained_page_routes=_retained_page_routes(selection, ctx, ownership))
                 stats = ArticleStats()
                 stream_factory = _article_stream_factory(ctx, stats)
                 current_manifest = OutputManifest(ctx, route_catalog)
                 plan = _collect_tasks(
-                    stream_factory, cli, ctx, cache, workspace, current_manifest,
+                    stream_factory, selection, ctx, cache, workspace, current_manifest,
                 )
                 projection = plan.projection
-                checked_parents = _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
-                _record_retained_routes(cli, ctx, ownership, current_manifest)
-                next_paths = _next_output_paths(cli, ctx, old_manifest, current_manifest)
+                checked_parents = _validate_retained_outputs(selection, ctx, old_manifest, current_manifest)
+                _record_retained_routes(selection, ctx, ownership, current_manifest)
+                next_paths = _next_output_paths(selection, ctx, old_manifest, current_manifest)
                 outputs = _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
                 del current_manifest, old_manifest, ownership
                 _run_plan(plan, ctx)

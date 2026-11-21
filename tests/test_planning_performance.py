@@ -467,3 +467,20 @@ def test_review28_13_filtered_build_rechecks_retained_ancestors_after_render(sit
     monkeypatch.setattr(pipeline, '_run_plan', replace_after_render)
     with pytest.raises(OSError, match='ancestor is a symlink'):
         pipeline.run_build(cli, config, site_root)
+
+
+def test_audit1121_03_indexes_incremental_filters_once(site_root, seo_config):
+    cli, config = seo_config
+    probes = []
+
+    class ObservedSlugs(tuple):
+        def __contains__(self, value):
+            probes.append(value)
+            return super().__contains__(value)
+
+    cli.only_slugs = ObservedSlugs(('absent', 'first-post'))
+    cli.only_sections = ('articles',)
+    pipeline.run_build(cli, config, site_root)
+    pipeline.run_build(cli, config, site_root)
+    assert [p.parent.name for p in (site_root / 'output').rglob('index.html')] == ['first-post']
+    assert not probes

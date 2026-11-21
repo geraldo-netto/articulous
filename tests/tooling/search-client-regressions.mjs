@@ -98,7 +98,7 @@ for(const batchSize of [0,-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1])assert.
  await controller.search('title');assert.equal(appended,1);assert.equal(published,0);controller.dispose();
 }
 {
- const pending=deferred();const f=fixture({schedule:()=>pending.promise,batchSize:2});
+ const pending=deferred();const f=fixture({load:async()=>rows.slice(0,200),schedule:()=>pending.promise,batchSize:2});
  const work=f.controller.search('title');
  while(f.events.appended.length<2)await new Promise(resolve=>setImmediate(resolve));
  f.controller.reset();pending.resolve();await work;
@@ -224,4 +224,48 @@ console.log('THEME-002 neutral search consumer and lifecycle passed');
  for(const tags of [[],[''],['a','']]){
   assert.deepEqual(api.prepareIndex([{...row,tags}],'https://example.test',metadata)[0].tags,tags);
  }
+}
+
+// REVIEW28-56: the injected scheduler owns preparation yields independently of rendering.
+{
+ const native=globalThis.MessageChannel;
+ globalThis.MessageChannel=undefined;
+ try {
+  for(const size of [199,200,201,400,401]){
+   let calls=0;
+   const f=fixture({load:async()=>rows.slice(0,size),batchSize:503,
+    schedule:async signal=>{assert.equal(signal.aborted,false);calls++;}});
+   await f.controller.search('title');
+   assert.deepEqual(f.events.failed,[]);
+   assert.equal(calls,Math.floor((size-1)/200));
+   assert.equal(f.events.published[0].count,size);
+   f.controller.dispose();
+  }
+ } finally {globalThis.MessageChannel=native;}
+}
+{
+ const started=deferred();
+ const f=fixture({load:async()=>rows.slice(0,201),
+  schedule:signal=>new Promise(resolve=>{
+   signal.addEventListener('abort',resolve,{once:true});
+   started.resolve(signal);
+  })});
+ const work=f.controller.search('title');
+ const signal=await started.promise;
+ assert.equal(f.events.prepared,200);
+ f.controller.dispose();await work;
+ assert.ok(signal.aborted);
+ assert.equal(f.events.prepared,200);
+ assert.equal(f.events.published.length,0);
+ assert.deepEqual(f.events.failed,[]);
+}
+{
+ let prepared=0,scheduled=0;
+ const f=fixture({load:async()=>rows.slice(0,201),
+  prepare(item,url){if(++prepared===200)f.controller.dispose();return metadata(item,url);},
+  schedule:async()=>{scheduled++;}});
+ await f.controller.search('title');
+ assert.equal(prepared,200);
+ assert.equal(scheduled,0);
+ assert.equal(f.events.published.length,0);
 }

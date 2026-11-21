@@ -90,7 +90,7 @@ globalThis.SearchClient = (() => {
       const prepared=new Array(data.length);
       const size=200;
       for (let offset=0;offset<prepared.length;offset+=size) {
-        if (offset) await yieldTask(lifetime.signal);
+        if (offset && !closed) await schedule(lifetime.signal);
         if (closed) throw new Error('Search disposed');
         prepareBatch(data,prepared,offset,Math.min(offset+size,prepared.length),origin,prepareActive);
       }

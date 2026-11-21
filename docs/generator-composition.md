@@ -979,7 +979,8 @@ the tooling performs no dependency download.
 `theme_resources.search_resources()` supplies `assets/js/search-client.js`.
 Its `SearchClient` factory takes an explicit origin, loader, metadata preparation,
 selection/matching policy and renderer callbacks. The controller validates and
-prepares loaded index rows in batches of 200, yielding between batches. It owns
+prepares loaded index rows in batches of 200. Preparation and rendering both
+yield through the injected scheduler with the controller’s lifetime signal. It owns
 immutable prepared data and one retryable request/cache, and renders every
 match in bounded batches (default 200, configurable). It assumes
 no language segment, tag destination, search URL, card DOM or localized labels.

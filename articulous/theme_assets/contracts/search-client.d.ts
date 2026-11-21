@@ -22,6 +22,7 @@ export interface SearchOptions<Entry extends SearchRecord, Container> {
   match(entries: readonly Entry[], query: string): readonly Entry[];
   renderer: SearchRenderer<Entry, Container>;
   batchSize?: number;
+  /** Yield between index preparation batches and between rendering batches. */
   schedule?(signal: AbortSignal): Promise<void>;
 }
 export interface SearchController {

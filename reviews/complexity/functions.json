@@ -34777,14 +34777,14 @@
       {
         "functions": [
           {
-            "body_sha256": "75925694db9182996464a8b065ae57920d809f8aa42077e946719a118dbf13ea",
+            "body_sha256": "38902505140cf7fe0eff120af8fed1cabc67cecbb501092a32a2bee194d53dcf",
             "column": 27,
             "complexity": 1,
             "end_column": 1,
             "end_line": 172,
             "line": 2,
             "name": "Arrow function",
-            "projection_sha256": "75925694db9182996464a8b065ae57920d809f8aa42077e946719a118dbf13ea"
+            "projection_sha256": "38902505140cf7fe0eff120af8fed1cabc67cecbb501092a32a2bee194d53dcf"
           },
           {
             "body_sha256": "3b2b5706037d10eb9c73557ce2ca33e0c14290fdacf707495962e2d0e98c11c0",
@@ -34917,14 +34917,14 @@
             "projection_sha256": "9cac9a07bcc74af117c58c0d501030fa365b48162a88fff76145caa90d5f2f9c"
           },
           {
-            "body_sha256": "07a2256a62b4660127be712b8dba84e6af29509bcd4b904d27c12b5f8f0ec6b6",
+            "body_sha256": "c428203e32b29dc7bd05e5855257b6741f5b632381c7f8f675dbf7c6b98c97e5",
             "column": 2,
             "complexity": 5,
             "end_column": 3,
             "end_line": 170,
             "line": 63,
             "name": "Function 'create'",
-            "projection_sha256": "07a2256a62b4660127be712b8dba84e6af29509bcd4b904d27c12b5f8f0ec6b6"
+            "projection_sha256": "c428203e32b29dc7bd05e5855257b6741f5b632381c7f8f675dbf7c6b98c97e5"
           },
           {
             "body_sha256": "8918cd9fa624204ecf82baf8981ca51b5bbd8818c9ca53533a83ccb98f1c9405",
@@ -34967,14 +34967,14 @@
             "projection_sha256": "d1aea8b4b6c414984fdbdd58f1fb144705683419eaffcb067744416bfade41f7"
           },
           {
-            "body_sha256": "12f3fd8dd06622decc39e4bfb0905a9063ed3505188bceee906b19237208bb9b",
+            "body_sha256": "351128cfd996de8e16274d8d307c693918ba14d67bc591ea213d593976d8016b",
             "column": 4,
-            "complexity": 5,
+            "complexity": 6,
             "end_column": 5,
             "end_line": 98,
             "line": 88,
             "name": "Async function 'prepareLoaded'",
-            "projection_sha256": "12f3fd8dd06622decc39e4bfb0905a9063ed3505188bceee906b19237208bb9b"
+            "projection_sha256": "351128cfd996de8e16274d8d307c693918ba14d67bc591ea213d593976d8016b"
           },
           {
             "body_sha256": "bf926716fc8264ab3c108b14abe92dce884b3011c45767d08264e72e3226ebf6",
@@ -35089,7 +35089,7 @@
         ],
         "language": "javascript",
         "path": "articulous/theme_assets/assets/js/search-client.js",
-        "sha256": "b80e8ba6a9d922d77a08f9fe303911867b0452748fa418963076f87bcb8248bc"
+        "sha256": "13ac97c3cc4c4ad112592128fefed85600784ed5350e40adbb3a66b9cb2f378d"
       },
       {
         "functions": [
@@ -37403,10 +37403,20 @@
             "projection_sha256": "d1567c8faf4bf0bf47e744ffe5d2d09fc88f0eab95991356a7d0d36b0d406dba"
           },
           {
-            "body_sha256": "a4ff89e48a93edda0f55ade92c588228feb66587454099c2431e5f2b19b51bea",
-            "column": 52,
+            "body_sha256": "241963c09dc5b887c507d08fb7954ca2509e005b26040eacbf28e0f619f8b0e3",
+            "column": 48,
             "complexity": 1,
-            "end_column": 71,
+            "end_column": 74,
+            "end_line": 101,
+            "line": 101,
+            "name": "Async method 'load'",
+            "projection_sha256": "241963c09dc5b887c507d08fb7954ca2509e005b26040eacbf28e0f619f8b0e3"
+          },
+          {
+            "body_sha256": "a4ff89e48a93edda0f55ade92c588228feb66587454099c2431e5f2b19b51bea",
+            "column": 84,
+            "complexity": 1,
+            "end_column": 103,
             "end_line": 101,
             "line": 101,
             "name": "Method 'schedule'",
@@ -37701,11 +37711,91 @@
             "line": 220,
             "name": "Arrow function",
             "projection_sha256": "1008f1d2d390f00c9144b5aed1489851cacc3127b8f3cc9bc2be454d1608abe1"
+          },
+          {
+            "body_sha256": "2d7578b5fee69071ed88d35d2a3063b4ffd060de73ac3f30267ec402e925c675",
+            "column": 25,
+            "complexity": 1,
+            "end_column": 52,
+            "end_line": 236,
+            "line": 236,
+            "name": "Async method 'load'",
+            "projection_sha256": "2d7578b5fee69071ed88d35d2a3063b4ffd060de73ac3f30267ec402e925c675"
+          },
+          {
+            "body_sha256": "9e1869bd59b02a5c427b3f678ee5953df63915e7d0637d22d6a849134d81f97b",
+            "column": 13,
+            "complexity": 1,
+            "end_column": 72,
+            "end_line": 237,
+            "line": 237,
+            "name": "Async method 'schedule'",
+            "projection_sha256": "9e1869bd59b02a5c427b3f678ee5953df63915e7d0637d22d6a849134d81f97b"
+          },
+          {
+            "body_sha256": "aa118043c31cdcc574f663597fe74c0a0ee54c9a5591900e49a9590a5569a8a4",
+            "column": 23,
+            "complexity": 1,
+            "end_column": 49,
+            "end_line": 248,
+            "line": 248,
+            "name": "Async method 'load'",
+            "projection_sha256": "aa118043c31cdcc574f663597fe74c0a0ee54c9a5591900e49a9590a5569a8a4"
+          },
+          {
+            "body_sha256": "0c8b2f5464c375b32f8cd7c1728c71e0cc26cd9b5aaa452947694090e39f5da6",
+            "column": 11,
+            "complexity": 1,
+            "end_column": 4,
+            "end_line": 252,
+            "line": 249,
+            "name": "Method 'schedule'",
+            "projection_sha256": "0c8b2f5464c375b32f8cd7c1728c71e0cc26cd9b5aaa452947694090e39f5da6"
+          },
+          {
+            "body_sha256": "3b95977ba56403b7bb12a68a062022bbff7666a30626f4823c1f32667171f39b",
+            "column": 31,
+            "complexity": 1,
+            "end_column": 3,
+            "end_line": 252,
+            "line": 249,
+            "name": "Arrow function",
+            "projection_sha256": "3b95977ba56403b7bb12a68a062022bbff7666a30626f4823c1f32667171f39b"
+          },
+          {
+            "body_sha256": "aa118043c31cdcc574f663597fe74c0a0ee54c9a5591900e49a9590a5569a8a4",
+            "column": 23,
+            "complexity": 1,
+            "end_column": 49,
+            "end_line": 264,
+            "line": 264,
+            "name": "Async method 'load'",
+            "projection_sha256": "aa118043c31cdcc574f663597fe74c0a0ee54c9a5591900e49a9590a5569a8a4"
+          },
+          {
+            "body_sha256": "39bcff0bca7eca9950c4c9c5adb1497de258fcb37c9da43bd7014ecc74a91334",
+            "column": 9,
+            "complexity": 2,
+            "end_column": 90,
+            "end_line": 265,
+            "line": 265,
+            "name": "Method 'prepare'",
+            "projection_sha256": "39bcff0bca7eca9950c4c9c5adb1497de258fcb37c9da43bd7014ecc74a91334"
+          },
+          {
+            "body_sha256": "c478c7244a17e3c35819ea992dc6f8ac6ae24da5dd1a9cdb777077f671deb171",
+            "column": 11,
+            "complexity": 1,
+            "end_column": 34,
+            "end_line": 266,
+            "line": 266,
+            "name": "Async method 'schedule'",
+            "projection_sha256": "c478c7244a17e3c35819ea992dc6f8ac6ae24da5dd1a9cdb777077f671deb171"
           }
         ],
         "language": "javascript",
         "path": "tests/tooling/search-client-regressions.mjs",
-        "sha256": "507771c2332c002f3a986d9c2c6495692a7b0710752dd294039daa0f6aa988f0"
+        "sha256": "421d0ea85a24a3009a3d9c6da9e552769f6e2262e0826a76f98c767ca6df47f1"
       },
       {
         "functions": [

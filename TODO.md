@@ -104,7 +104,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-56 | open | low | small | Contract inconsistency: index preparation ignores the injected `schedule` and requires `MessageChannel`. | `search-client.js:83-93` (`prepareLoaded` uses `yieldTask` and a literal 200) versus the option at `:58` and `renderMatches` at `:140`. Reproduced in Node: with a custom `schedule` and no `MessageChannel`, 200 rows work and 201 rows fail every search with `ReferenceError`; before bdcaeaa preparation was synchronous. The docs state the fixed batch of 200 but not that `schedule` is bypassed. Next: use `schedule(lifetime.signal)` in `prepareLoaded` or document it as render-only in the `.d.ts`. |
 
 
 ## Source editing

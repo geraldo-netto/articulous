@@ -267,3 +267,21 @@ def test_audit1121_11_symlink_loops_preserve_other_diagnostics(publication, leng
     for name in names:
         assert f'{name}: cannot read HTML page' in str(failure.value)
     assert 'missing absent.png' in str(failure.value)
+
+
+def test_audit1121_18_keeps_disappearing_file_diagnostic(publication, monkeypatch):
+    from pathlib import Path
+    root, base, plan = publication
+    page = root / 'disappearing.html'
+    page.write_text('temporary')
+    (root / 'index.html').write_text(html_page(base + '/', '<img src="absent.png">'))
+    read = Path.read_bytes
+    def remove_before_read(path):
+        if path == page:
+            path.unlink()
+        return read(path)
+    monkeypatch.setattr(Path, 'read_bytes', remove_before_read)
+    with pytest.raises(ValueError) as failure:
+        validate_site(root, base, plan)
+    assert 'disappearing.html: cannot read HTML page' in str(failure.value)
+    assert 'missing absent.png' in str(failure.value)

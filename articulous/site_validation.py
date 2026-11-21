@@ -63,6 +63,13 @@ def _html_candidate(entry):
     return entry.name.endswith('.html') and (entry.is_symlink() or entry.is_file(follow_symlinks=False))
 
 
+def _regular_html_alias(path):
+    try:
+        return stat.S_ISREG(path.stat().st_mode)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+
+
 def _html_sources(output, failures):
     root = output.resolve()
     for path in sorted(tree_entries(output, include=_html_candidate)):
@@ -71,11 +78,9 @@ def _html_sources(output, failures):
             failures.append(f'{path.relative_to(output)}: HTML page escapes output')
             continue
         try:
-            if path.is_symlink() and not stat.S_ISREG(path.stat().st_mode):
+            if path.is_symlink() and not _regular_html_alias(path):
                 continue
             source = resolved.read_bytes()
-        except FileNotFoundError:
-            continue
         except OSError as error:
             failures.append(f'{path.relative_to(output)}: cannot read HTML page: {error}')
             continue

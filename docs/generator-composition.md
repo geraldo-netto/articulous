@@ -331,9 +331,12 @@ file bytes admitted on open, so huge integer sizes cannot allocate unbounded
 buffers. Context exit and publication handoff settle retained artifact readers;
 reads after cutoff fail before native access. Paths stay inside the stage;
 absolute, dot-segment, backslash and drive-style paths are rejected.
-`validate_generated` verifies manifest targets, runs each validator and
-checks the fingerprint again. A validator returns an iterable of `Diagnostic`
-values or `None`; severity `error` rejects the build, while `warning` is retained
+`validate_generated` checks the stage fingerprint before verifying manifest
+targets. With the default empty validator tuple, that single fingerprint check
+suffices. When given validators or a custom iterable, it also checks the
+fingerprint after consuming them and before accepting the stage. A validator
+returns an iterable of `Diagnostic` values or `None`; severity `error` rejects
+the build, while `warning` is retained
 in the report. Exceptions and staged mutations also prevent publication.
 Every revalidation retires earlier validation handles before checking artifacts
 or invoking callbacks. Rejection leaves the generation rendered and requires a
@@ -776,7 +779,12 @@ fences. The caller chooses corpus, languages, source preference, paths, current
 checks and execution callback; dry-run stays outside cache/provider acquisition.
 `translation_xml.mirror_xml` translates caller-configured XML fields and markup,
 checks captured source/target state again before atomic replacement, and stamps
-a clean digest only when no unit failed. Morpha owns its prompts, language names,
+a clean digest only when no unit failed. Element-based prose, language and
+provenance fields accept scalar text and comments. Translation discards the
+inherited hash field. Other field updates preserve comments and replace the
+complete field text. Loose body prose
+includes descendant tails and ends at the configured body's closing tag.
+Morpha owns its prompts, language names,
 article/page layouts, provenance reader, link rewrite and all-language policy.
 
 Jobs own temporary parsed trees and snapshots for one synchronous execution;
@@ -810,9 +818,9 @@ late clipboard results, timers and listeners by controller identity. Prism remai
 optional theme tooling; generator core adds no default JS dependency.
 
 Repository acceptance runs `tests/test_code_browser.py` with
-`tests/tooling/code-browser.mjs` and `code-block-page.js`. Sixteen native Chromium
+`tests/tooling/code-browser.mjs` and `code-block-page.js`. Seventeen native Chromium
 scenarios cover invalid/detached admission, exact text and markup, language
-normalization, labels, success/rejection, disposal, remounts and stale callbacks.
+normalization, labels, success/rejection, disposal, remounts, wrapper ownership and stale callbacks.
 V8 counters independently checked against parsed source inventory require >=80%
 executable lines for every maintained function. The recorded Linux Chromium
 149.0.7827.55 run measured all 25 functions and both module bodies at 100%; see

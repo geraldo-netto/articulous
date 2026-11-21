@@ -6,6 +6,7 @@ import re
 
 import lxml.etree as etree
 import lxml.html as html
+from .sections import url_origin
 from .tree_entries import tree_entries
 from .validation_contracts import PageReferences, ReferenceSource, ValidationPlan, ValidationResult
 
@@ -14,11 +15,6 @@ def page_route(output, path):
     route = '/' + path.relative_to(output).as_posix()
     route = route.removesuffix('index.html') if path.name == 'index.html' else route
     return quote(route, safe='/')
-
-
-def url_origin(parsed):
-    default = 443 if parsed.scheme == 'https' else 80
-    return parsed.scheme, parsed.hostname, default if parsed.port is None else parsed.port
 
 
 def _same_publication_origin(parsed, origin):
@@ -218,7 +214,10 @@ def document_base(page_url, href):
         return page_url
     try:
         resolved = urljoin(page_url, href)
-        if urlsplit(resolved).scheme in ('data', 'javascript'):
+        parsed = urlsplit(resolved)
+        if parsed.scheme in ('http', 'https') and not url_origin(parsed)[1]:
+            return page_url
+        if parsed.scheme in ('data', 'javascript'):
             return page_url
         return resolved
     except ValueError:

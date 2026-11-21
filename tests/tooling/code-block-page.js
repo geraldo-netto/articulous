@@ -187,6 +187,26 @@ const CodeTest = (() => {
     } finally {await release(f);}
   }
 
+  function wrapperOwnership() {
+    const host = document.createElement('section');
+    host.innerHTML = '<div class="code-toolbar"><span>keep</span><pre>code</pre></div>';
+    document.body.append(host);
+    const wrapper = host.firstElementChild, pre = wrapper.lastElementChild, sibling = wrapper.firstElementChild;
+    try {
+      const first = CodeBlocks.mount(pre), next = CodeBlocks.mount(pre);
+      first.dispose();
+      next.dispose();
+      check(wrapper.parentElement === host && pre.parentElement === wrapper, 'REVIEW29-22: authored wrapper retained');
+      check(sibling.parentElement === wrapper, 'authored sibling retained');
+      host.append(pre);
+      const controller = CodeBlocks.mount(pre), generated = pre.parentElement;
+      generated.append(sibling);
+      controller.dispose();
+      check(pre.parentElement === host && sibling.parentElement === host && pre.nextSibling === sibling,
+        'new caller content preserved when retiring a generated wrapper');
+    } finally {host.remove();}
+  }
+
   async function initialization() {
     const host = document.createElement('section');
     host.id = 'code-admission';
@@ -206,7 +226,7 @@ const CodeTest = (() => {
 
   async function normal() {
     const cases = [admission,normalization,success,rejection,defaultLabels,cutoffBeforeWrite,
-      detachedAdmission,movedWrapper,changedWrapperClass,staleTimer,initialization];
+      detachedAdmission,movedWrapper,changedWrapperClass,staleTimer,wrapperOwnership,initialization];
     for (const run of cases) {
       await run();
       console.log('[BUILD-013] settled '+run.name);

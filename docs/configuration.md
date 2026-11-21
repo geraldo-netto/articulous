@@ -6,7 +6,7 @@ Configuration lives in `config.json`. If the file is missing, defaults
 are written automatically on first run. Malformed existing configuration
 fails fast instead of being overwritten.
 Supplied JSON is merged with defaults, so omitted settings use their
-defaults. Unknown keys and invalid value types are rejected.
+defaults. Unknown keys, duplicate keys in the same JSON object and invalid value types are rejected.
 
 | Block | Keys |
 |---|---|

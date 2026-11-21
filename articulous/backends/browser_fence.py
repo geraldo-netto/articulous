@@ -35,11 +35,15 @@ def admit_member(pid, expected):
         descriptor = open_pidfd(pid)
     except ProcessLookupError:
         return None
-    actual = process_identity(pid)
-    if actual is None or actual[:2] != expected[:2]:
+    try:
+        actual = process_identity(pid)
+        if actual is not None and actual[:2] == expected[:2]:
+            return descriptor
+    except BaseException:
         os.close(descriptor)
-        return None
-    return descriptor
+        raise
+    os.close(descriptor)
+    return None
 
 
 def signal_member(descriptor, number):

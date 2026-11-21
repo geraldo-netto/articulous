@@ -230,7 +230,7 @@
   "files": [
     {
       "path": "articulous/theme_assets/xsl/content.xsl",
-      "sha256": "ae9f6e50de9d4a7ee301f47f7ff6e6ff6563a15b43951482e843e8c94271cbe9",
+      "sha256": "62a3dca1ecf544f42b724f63ae92e735ca7a5f06838a141870fbd1a2ab29a153",
       "templates": [
         {
           "complexity": 1,
@@ -598,7 +598,7 @@
           "sha256": "88bd0eaf80b01df4fa83120f99168621968b282303b681125f2f22c2e1509ca1"
         },
         {
-          "complexity": 6,
+          "complexity": 7,
           "controls": [
             {
               "instruction": "when",
@@ -635,12 +635,12 @@
             },
             {
               "attribute": "select",
-              "booleans": 0,
+              "booleans": 1,
               "compiler_version": "20914",
               "line": 46,
               "predicates": 1,
-              "source": "@*[translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')!='tabindex']",
-              "trace_sha256": "aaa4f19ebe1a48acefc8e06aeda602833e89583c5479f76475d3a42cd4fde0b1"
+              "source": "@*[translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')!='tabindex' and not(contains('|data-toolbar-order|data-prismjs-copy|data-prismjs-copy-success|data-prismjs-copy-error|',concat('|',translate(name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|')))]",
+              "trace_sha256": "f2b03a54cecef06ea109555a4d20e696dd1126d679b5bfb46cc33863ffafbf76"
             },
             {
               "attribute": "test",
@@ -699,7 +699,7 @@
           ],
           "line": 41,
           "name": "render-code-block",
-          "sha256": "887a378700f2c3b9736d79016f73eea39981674e94ab0724b00608fb038559d2"
+          "sha256": "739a5f2291229dfcb816e6670aaf481dc4a1e7cad787adfa29870268fdfeec4d"
         },
         {
           "complexity": 1,

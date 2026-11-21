@@ -219,3 +219,18 @@ def test_real_saxonc_compile_failure_preserves_output(tmp_path, saxonc_engine, c
     assert "XPST0003" in captured.out + captured.err
     assert output.read_bytes() == b"previous"
     assert list(tmp_path.glob(".output.xml.*")) == []
+
+
+@pytest.mark.parametrize("as_path", [False, True])
+def test_review29_03_captured_document_preserves_outer_nodes(tmp_path, saxonc_engine, as_path):
+    xml = tmp_path / "source.xml"
+    xml.write_bytes(b'<?editor one?><!DOCTYPE r [<!ENTITY unused "value">]><!--two-->'
+                    b'<r xml:base="media/"/><!--three--><?editor four?>')
+    stylesheet = _stylesheet(tmp_path / "style.xsl", '<xsl:for-each select="/comment() | /processing-instruction()">'
+                             '<n><xsl:value-of select="."/></n></xsl:for-each><base><xsl:value-of '
+                             'select="base-uri(/*)"/></base>')
+    target = tmp_path / "out.xml"
+    saxonc_engine.run(xml if as_path else xml.read_bytes(), stylesheet, target, xml_base_uri=xml.as_uri())
+    result = etree.parse(str(target))
+    assert result.xpath('/out/n/text()') == ['one', 'two', 'three', 'four']
+    assert result.findtext('base') == (tmp_path / 'media').as_uri() + '/'

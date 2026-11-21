@@ -145,6 +145,11 @@ def output_path_from_pattern(section: str, pattern: str, **kwargs) -> Path:
     return Path(rel)
 
 
+def url_origin(parsed):
+    default = 443 if parsed.scheme == 'https' else 80
+    return parsed.scheme, parsed.hostname, default if parsed.port is None else parsed.port
+
+
 def _validate_absolute_web_url(url: str) -> None:
     parsed = urlsplit(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
@@ -180,8 +185,7 @@ def _validate_web_url_path(path: str) -> None:
     decoded = unquote(path)
     if "\\" in decoded or any(ord(char) < 32 or ord(char) == 127 for char in decoded):
         raise ValueError("URL paths cannot contain backslashes or controls")
-    segments = decoded.removeprefix("/").removesuffix("/")
-    if segments and any(part in {".", "..", ""} for part in segments.split("/")):
+    if "//" in decoded or any(part in {".", ".."} for part in decoded.split("/")):
         raise ValueError("URL paths cannot contain dot or empty segments")
 
 

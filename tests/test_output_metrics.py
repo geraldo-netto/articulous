@@ -104,3 +104,14 @@ class MetricsBoundaryTests(unittest.TestCase):
             with self.assertRaises(etree.XPathEvalError):
                 report.scan(root, regions=(("invalid", "["),))
             self.assertEqual(before, page.read_bytes())
+
+
+def test_review29_08_region_bytes_exclude_following_body_text(tmp_path, capsys):
+    path = tmp_path / 'page.html'
+    selected = '<header>日<em>🌍</em>é</header>'
+    tail = 'outside' * 1024
+    path.write_text(f'<html><head><meta charset="utf-8"></head><body>{selected}{tail}</body></html>')
+    size = len(selected.encode('utf-8'))
+    assert report.scan(tmp_path, regions=REGIONS)['regions']['header'] == size
+    report.one_page(path, regions=REGIONS)
+    assert f'{size / 1024:7.1f} KB' in capsys.readouterr().out.splitlines()[-1]

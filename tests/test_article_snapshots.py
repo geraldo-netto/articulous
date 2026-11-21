@@ -217,3 +217,11 @@ def test_review28_18_reject_cached_source_replaced_or_extended(tmp_path, alter):
     path.write_bytes(b'article' + alter if alter else b'changed')
     with pytest.raises(ValueError, match='snapshot changed'):
         snapshot.read_bytes()
+
+
+def test_review29_03_saxon_snapshot_keeps_dtd_cutoff(tmp_path):
+    from articulous.engines import _xml_with_base
+    doc = b'<?editor note?><!DOCTYPE r [<!ENTITY unused "example">]><r/><!--after-->'
+    data = _xml_with_base(doc, (tmp_path / 'doc.xml').as_uri())
+    assert b'<!DOCTYPE' not in data
+    assert b'<?editor note?>' in data and b'<!--after-->' in data

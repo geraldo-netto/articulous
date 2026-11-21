@@ -495,3 +495,19 @@ def test_review28_23_journal_blocks_aliased_cache_activation(site_root):
     recover_publication(site_root / 'nested/second', _base(site_root))
     pipeline.run_build(REQUEST, _config(), site_root)
     assert cache_store.select_cache(target, site_root / 'output').partitioned
+
+
+@pytest.mark.parametrize('partitioned', [False, True], ids=['migration', 'retention'])
+def test_review29_02_unrelated_cyclic_output_does_not_abort_cache_update(site_root, cache_clock, partitioned):
+    pipeline.run_build(REQUEST, _config('former', enable=partitioned), site_root)
+    prior = site_root / 'former'
+    shard = cache_store.partition_path(_base(site_root), prior)
+    prior.rename(site_root / 'moved')
+    prior.symlink_to(prior.name)
+    pipeline.run_build(REQUEST, _config('active'), site_root)
+    cache_clock[0] += 4 * DAY
+    pipeline.run_build(REQUEST, _config('current'), site_root)
+    assert _record(site_root, 'current')['__last_used__'] == cache_clock[0]
+    assert not _selected(site_root, 'active').path.exists()
+    assert shard.exists() is partitioned
+    assert prior.is_symlink()

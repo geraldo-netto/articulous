@@ -31,7 +31,7 @@ from pathlib import Path
 
 from types import MappingProxyType
 from typing import Any, Callable, NamedTuple, Optional, Protocol
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from uuid import uuid4
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
@@ -89,6 +89,7 @@ from .sections import (
     SECTION_NAMES,
     SECTION_XSL,
     section_is_per_lang,
+    url_origin,
     validate_sitemap_location,
 )
 from .sitemaps import (
@@ -405,7 +406,7 @@ def _mirror_existing_assets(ctx, cache, dest, destination_paths, before_mutation
     old_manifest = _cached_asset_manifest(cache)
     for rel in old_manifest.keys() | manifest.keys():
         _asset_target(dest, rel)
-    stale = (destination_paths | old_manifest.keys()) - manifest.keys()
+    stale = destination_paths - manifest.keys()
 
     if ctx.dry_run:
         logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
@@ -1366,11 +1367,14 @@ def _single_native_section(
 def _validated_sitemap_source(base_url: str, sitemap_url: str, source):
     validate_sitemap_location(base_url)
     validate_sitemap_location(sitemap_url)
-    prefix = sitemap_url.rsplit("/", 1)[0] + "/"
+    sitemap = urlsplit(sitemap_url)
+    origin = url_origin(sitemap)
+    prefix = sitemap.path.rsplit("/", 1)[0] + "/"
     for value in _source_values(source):
         url, _ = _sitemap_entry(value)
         validate_sitemap_location(url)
-        if not url.startswith(prefix):
+        location = urlsplit(url)
+        if url_origin(location) != origin or not (location.path or "/").startswith(prefix):
             raise ValueError(f"Sitemap URL is outside its host or directory scope: {url}")
         yield value
 
@@ -1382,12 +1386,10 @@ def build_sitemap_section(urls, ctx: BuildCtx, cache, workspace=None, manifest=N
         workspace = None
     sitemap = build_sitemap_model([], ctx)
     if isinstance(ctx.engine_for("sitemap"), NativeEngine):
-        source = urls if isinstance(urls, SitemapSink) else list(urls)
-        with closing(_validated_sitemap_source(ctx.base_url, sitemap.url, source)) as validated:
+        with closing(_validated_sitemap_source(ctx.base_url, sitemap.url, urls)) as validated:
             if isinstance(workspace, TempWorkspace):
                 return _build_partitioned_sitemap(validated, sitemap, ctx, cache, workspace, manifest)
-            for _ in validated:
-                pass
+            source = [value.copy() if isinstance(value, dict) else value for value in validated]
         return _single_native_section(
             "sitemap", source, ctx.output_dir / sitemap.output_path,
             _write_native_sitemap, ctx, cache, manifest,

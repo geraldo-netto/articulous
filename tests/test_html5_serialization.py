@@ -173,3 +173,16 @@ def test_review28_02_unaddressable_multichar_boundary_fails_closed():
     assert data.decode('utf-7') == '</br>'
     with pytest.raises(ValueError, match='Cannot locate HTML tag boundaries'):
         list(_native_spans(data, 'utf-7', [(1, 4)]))
+
+
+@pytest.mark.parametrize('encoding', ['UTF-16', 'EUC-JP', 'ISO-2022-JP', 'ISO-8859-1'])
+def test_review29_04_decoder_skips_distant_payload_bytes(encoding, monkeypatch):
+    import codecs
+    from articulous.backends.lxml_output import _project_html
+    from unittest.mock import Mock
+    decoder = Mock(wraps=codecs.getincrementaldecoder(encoding)(errors='surrogateescape'))
+    monkeypatch.setattr(codecs, 'getincrementaldecoder', lambda _: Mock(return_value=decoder))
+    text = ('été' if encoding == 'ISO-8859-1' else '時') * 32000
+    body = f'<p>{text}</p><source></source>'
+    assert _project_html(body.encode(encoding), encoding) == body.removesuffix('</source>').encode(encoding)
+    assert decoder.decode.call_count < 4096

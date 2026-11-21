@@ -111,3 +111,12 @@ def test_life003_failed_admission_requires_another_membership_scan():
     with patch.object(fence, 'owned_members', return_value=iter([(7, (42, 1, 'S'))])):
         with patch.object(fence, 'admit_member', return_value=None):
             assert fence.collect_members(42, {}, signal.SIGSTOP), 'LIFE-003: a raced member must force another scan'
+
+
+@pytest.mark.parametrize('fault', [PermissionError, ValueError, KeyboardInterrupt])
+def test_review29_05_identity_failure_closes_untransferred_pidfd(fault):
+    with patch.object(fence, 'open_pidfd', return_value=8), patch.object(fence.os, 'close') as close:
+        with patch.object(fence, 'process_identity', side_effect=fault):
+            with pytest.raises(fault):
+                fence.admit_member(7, (42, 1, 'S'))
+        close.assert_called_once_with(8)

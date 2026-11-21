@@ -36,6 +36,10 @@ def _class_metrics(document, metrics: OutputMetrics):
                 metrics['recipes'][value] += 1
 
 
+def _region_bytes(elements):
+    return sum(len(html.tostring(element, encoding='utf-8', with_tail=False)) for element in elements)
+
+
 def _output_entries(output):
     try:
         output.stat()
@@ -70,7 +74,7 @@ def scan(output: Path, *, regions=()) -> OutputMetrics:
         for label, selector in regions:
             found = document.xpath(selector)
             if found:
-                metrics['regions'][label] += sum(len(html.tostring(e, encoding='utf-8')) for e in found)
+                metrics['regions'][label] += _region_bytes(found)
                 metrics['region_pages'][label] += 1
         _class_metrics(document, metrics)
     return metrics
@@ -117,7 +121,7 @@ def one_page(path: Path, *, regions=()) -> None:
     document = html.fromstring(raw)
     print(f'{path}: {len(raw)/1024:.0f} KB raw, {len(gzip.compress(raw, 6))/1024:.0f} KB estimated gzip')
     for label, selector in regions:
-        size = sum(len(html.tostring(e, encoding='utf-8')) for e in document.xpath(selector))
+        size = _region_bytes(document.xpath(selector))
         if size:
             print(f'   {label:22} {size/1024:7.1f} KB  {size/len(raw):5.0%}')
 

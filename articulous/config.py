@@ -310,6 +310,15 @@ def admit_configuration(value: ConfigurationInput) -> SiteConfiguration:
     return cast(SiteConfiguration, value)
 
 
+def _config_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ConfigurationError(f"duplicate key {key!r}")
+        result[key] = value
+    return result
+
+
 def load_or_create_config(path: Path) -> SiteConfiguration:
     """
     Load config from JSON file. Missing config creates defaults;
@@ -323,8 +332,8 @@ def load_or_create_config(path: Path) -> SiteConfiguration:
 
     try:
         with open_regular_file(path.resolve()) as source:
-            data = json.loads(source.read().decode("utf-8"))
-    except json.JSONDecodeError as e:
+            data = json.loads(source.read().decode("utf-8"), object_pairs_hook=_config_object)
+    except (json.JSONDecodeError, ConfigurationError) as e:
         raise ConfigurationError(f"Invalid config JSON at {path}: {e}") from e
 
     if not isinstance(data, dict):

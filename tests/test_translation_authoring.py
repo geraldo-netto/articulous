@@ -260,3 +260,41 @@ def test_review28_59_evict_legacy_xml_poison():
         translator._store(translator._key('old', 'en', 'fr', False), 'bad\x0breply')
         assert translator.translate('old', 'en', 'fr', False) == 'OLD'
         assert translator.calls == 1 and translator.cache_hits == 0
+
+
+def test_review29_23_provider_only_receives_text_inside_body(tmp_path):
+    source, target = tmp_path / 'source.xml', tmp_path / 'target.xml'
+    source.write_text('<entry><body>inside <b>nested</b> inner tail</body> outside tail </entry>')
+    layout = XmlTranslationLayout((), False, False, None, digest)
+    with client() as translator, patch.object(translator, '_post', wraps=translator._post) as post:
+        mirror_xml(source, target, 'en', 'fr', translator, {'units': 0, 'failed': 0}, layout, MarkupPolicy(), record_log)
+        assert [call.args[1].strip() for call in post.call_args_list] == ['inside', 'nested', 'inner tail']
+    body = etree.parse(str(target)).find('body')
+    assert ''.join(body.itertext()) == 'INSIDE NESTED INNER TAIL'
+    assert body.tail == ' outside tail '
+
+
+def test_review29_25_commented_scalar_metadata_and_provenance(tmp_path):
+    source, target = tmp_path / 'source.xml', tmp_path / 'target.xml'
+    source.write_text('<entry><title><!--begin-->Café <!--inner-->news</title>'
+                      '<lang><!--locale-->en</lang><translated-from><!--origin-->old</translated-from></entry>')
+    layout = XmlTranslationLayout(('title',), False, False, 'lang', digest)
+    with client() as translator:
+        mirror_xml(source, target, 'en', 'fr', translator, {'units': 0, 'failed': 0}, layout, MarkupPolicy(), record_log)
+    tree = etree.parse(str(target))
+    assert tree.xpath('string(/entry/title)') == 'CAFÉ NEWS'
+    assert tree.xpath('string(/entry/lang)') == 'fr'
+    assert tree.xpath('string(/entry/translated-from)') == 'en'
+    assert [node.text for node in tree.xpath('//comment()')] == ['begin', 'inner', 'locale', 'origin']
+    assert tree.findtext('source-hash') == digest(source.read_bytes())
+
+
+@pytest.mark.parametrize('field', ['title', 'lang', 'translated-from'])
+def test_review29_25_reject_non_scalar_xml_fields(tmp_path, field):
+    source, target = tmp_path / 'source.xml', tmp_path / 'target.xml'
+    source.write_text(f'<entry><{field}>a<b>b</b>c</{field}></entry>')
+    target.write_bytes(b'prior')
+    layout = XmlTranslationLayout(('title',), False, False, 'lang', digest)
+    with client() as translator, pytest.raises(ValueError, match=f'<{field}> must contain text only'):
+        mirror_xml(source, target, 'en', 'fr', translator, {'units': 0, 'failed': 0}, layout, MarkupPolicy(), record_log)
+    assert target.read_bytes() == b'prior'

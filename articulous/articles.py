@@ -34,6 +34,7 @@ _SEO_FIELDS = frozenset({"indexing", "slug", "modified", "translation", "author"
 _SINGLETON_FIELDS = frozenset({"title", "date", "description", "lang", "status", "publish-at"}) | _SEO_FIELDS
 
 _SCALAR_FIELDS = _SINGLETON_FIELDS | {"tag"}
+_OFFSET_FIELDS = re.compile(r"[+-][0-9]{2}:?([0-9]{2})(?::?([0-9]{2}))?(?:[.,][0-9]+)?\Z")
 
 
 @dataclass(frozen=True)
@@ -120,9 +121,13 @@ class _ScanProgress:
         self._reported_at = now
 
 
-def _as_utc(value: datetime) -> datetime:
+def _parse_utc(raw: str) -> datetime:
+    value = datetime.fromisoformat(raw)
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
+    offset = _OFFSET_FIELDS.search(raw)
+    if offset and any(int(part) >= 60 for part in offset.groups("0")):
+        raise ValueError("UTC offset minutes and seconds must be below 60")
     return value.astimezone(timezone.utc)
 
 
@@ -240,7 +245,7 @@ def _parse_publish_at(raw: str, path: Path) -> Optional[datetime]:
     if not raw:
         return None
     try:
-        return _as_utc(datetime.fromisoformat(raw))
+        return _parse_utc(raw)
     except (ValueError, OverflowError):
         logging.warning(
             f"Article {path} has invalid publish-at {raw!r} — treating as scheduled"
@@ -365,7 +370,7 @@ def parse_article_source(path: Path, source: XmlSource, *, default_lang: str = "
     lang = _validated_lang(fields["lang"], default_lang, allowed_langs, path)
 
     try:
-        dt = _as_utc(datetime.fromisoformat(fields["date"]))
+        dt = _parse_utc(fields["date"])
     except (ValueError, TypeError, OverflowError):
         logging.warning(
             f"Article {path} has missing/invalid date {fields['date']!r} — skipping"

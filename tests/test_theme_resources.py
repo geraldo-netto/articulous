@@ -94,3 +94,23 @@ def test_review006_seeded_text_and_markup_boundaries(tmp_path):
         expected = re.sub(r'^(?:[ \t\r]*\n)+', '', text)
         assert document.xpath('string(//pre)') == expected.replace('\r\n', '\n').replace('\r', '\n')
         assert document.xpath('//span/@title') == list(map(str, range(0, len(text), 3)))
+
+
+@pytest.mark.parametrize('upper', [False, True], ids=['lowercase', 'uppercase'])
+def test_review29_24_code_toolbar_keeps_configured_labels(tmp_path, upper):
+    expected = {'data-toolbar-order': 'copy-to-clipboard', 'data-prismjs-copy': 'Copiar',
+                'data-prismjs-copy-success': 'Listo', 'data-prismjs-copy-error': 'Error'}
+    root = etree.Element('root')
+    pre = etree.SubElement(root, 'pre', id='sample', attrib={'class': 'example', 'data-topic': 'demo'})
+    for name in expected:
+        pre.set(name.upper() if upper else name, 'stale')
+    etree.SubElement(pre, 'code').text = 'some code'
+    output = tmp_path / 'code.html'
+    LxmlEngine().run(etree.tostring(root), neutral_stylesheet(tmp_path), output)
+    tag = re.search(rb'<pre\b[^>]+>', output.read_bytes())
+    assert tag is not None
+    for name in expected:
+        assert tag[0].lower().count(name.encode() + b'=') == 1
+    actual = html.parse(str(output)).xpath('//pre')[0].attrib
+    assert {name: actual[name] for name in expected} == expected
+    assert (actual['id'], actual['class'], actual['data-topic']) == ('sample', 'example', 'demo')

@@ -43,7 +43,7 @@
       <xsl:attribute name="data-prismjs-copy"><xsl:value-of select="$copy-label"/></xsl:attribute>
       <xsl:attribute name="data-prismjs-copy-success"><xsl:value-of select="$success-label"/></xsl:attribute>
       <xsl:attribute name="data-prismjs-copy-error"><xsl:value-of select="$error-label"/></xsl:attribute>
-      <xsl:apply-templates select="@*[translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')!='tabindex']" mode="content"/>
+      <xsl:apply-templates select="@*[translate(local-name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')!='tabindex' and not(contains('|data-toolbar-order|data-prismjs-copy|data-prismjs-copy-success|data-prismjs-copy-error|',concat('|',translate(name(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'|')))]" mode="content"/>
       <xsl:variable name="code-content"><xsl:choose>
         <xsl:when test="count(*)=1 and code and not(text()[normalize-space()])"><xsl:apply-templates select="code" mode="content"/></xsl:when>
         <xsl:otherwise><xsl:apply-templates select="node()" mode="content"/></xsl:otherwise>

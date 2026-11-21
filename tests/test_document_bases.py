@@ -74,3 +74,18 @@ def test_review030_seeded_encoded_directory_bases(tmp_path):
         (directory / 'icon.png').write_bytes(b'image')
         head = '<base href="/' + quote(name, safe='') + '/">'
         assert validate_document(tmp_path, 'https://example.test', head, '<img src="icon.png">') == []
+
+
+@pytest.mark.parametrize('authority', ['remote.test:word', 'remote.test:65536', '[::1]:-1', ':80'])
+def test_review29_11_invalid_http_authority_falls_back_to_page(tmp_path, authority):
+    (tmp_path / 'real.png').write_bytes(b'image')
+    assert validate_document(tmp_path, 'https://example.test', f'<base href="https://{authority}/">',
+                             '<img src="real.png">') == []
+    assert validate_document(tmp_path, 'https://example.test', f'<base href="https://{authority}/">',
+                             '<img src="absent.png">') == ['index.html: missing absent.png']
+
+
+@pytest.mark.parametrize('port', [0, 443, 65535])
+def test_review29_11_valid_ipv6_base_is_still_external(tmp_path, port):
+    assert validate_document(tmp_path, 'https://example.test', f'<base href="https://[::1]:{port}/">',
+                             '<img src="remote.png">') == []

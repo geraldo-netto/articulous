@@ -3,6 +3,7 @@ import argparse
 import functools
 import http.server
 import io
+import os
 from pathlib import Path
 import socket
 import threading
@@ -106,15 +107,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def not_found(self):
         target = preview_path(self.root, self.not_found_route, self.internal) if self.not_found_route else None
-        if target is not None and target.is_file():
-            body, media = target.read_bytes(), 'text/html'
-        else:
-            body, media = b'Not found\n', 'text/plain'
+        if target is None or not target.is_file():
+            body = b'Not found\n'
+            self._error_headers('text/plain', len(body))
+            return io.BytesIO(body)
+        source = target.open('rb')
+        try:
+            self._error_headers('text/html', os.fstat(source.fileno()).st_size)
+        except BaseException:
+            source.close()
+            raise
+        return source
+
+    def _error_headers(self, media, size):
         self.send_response(404)
         self.send_header('Content-Type', media + '; charset=utf-8')
-        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Content-Length', str(size))
         self.end_headers()
-        return None if self.command == 'HEAD' else io.BytesIO(body)
 
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')
@@ -131,7 +140,7 @@ def serve(root, port=8000, *, internal=(), not_found=None, open_browser=False):
     if not root.is_dir():
         print(f'{root} does not exist yet: build the site first')
         return 1
-    handler = functools.partial(Handler, directory=str(root), internal=internal, not_found=not_found)
+    handler = functools.partial(Handler, directory=str(root), internal=frozenset(internal), not_found=not_found)
     with PreviewServer(('127.0.0.1', port), handler) as server:
         url = f'http://127.0.0.1:{server.server_port}/'
         print(f'serving {root} at {url}  (only non-200s are logged)')

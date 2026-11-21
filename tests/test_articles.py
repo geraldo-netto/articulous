@@ -429,3 +429,18 @@ def test_iter_articles_allowed_langs_filter(tmp_path):
     # Lang fell back to "en"; URL built with that fallback.
     assert arts[0].lang == "en"
     assert arts[0].url.startswith("/en/")
+
+
+@pytest.mark.parametrize("component", ["minute", "second"])
+@pytest.mark.parametrize("separator", [":", ""])
+@pytest.mark.parametrize("sign", ["+", "-"])
+@pytest.mark.parametrize("number", [0, 1, 59, 60, 61, 99])
+def test_review29_09_offset_components_bound_article_and_schedule(tmp_path, component, separator, sign, number):
+    minutes, seconds = (number, 0) if component == "minute" else (0, number)
+    timestamp = f"2000-01-02T12:00:00{sign}02{separator}{minutes:02}{separator}{seconds:02}"
+    path = tmp_path / "article.xml"
+    path.write_text(ARTICLE_XML.replace("2025-01-15", timestamp))
+    state = _validated_publication("scheduled", timestamp, path)
+    assert state is not None
+    assert state.policy.page == (number < 60)
+    assert (parse_article_xml(path) is not None) == (number < 60)

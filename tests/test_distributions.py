@@ -132,3 +132,16 @@ def test_review023_missing_resource_control(distributions):
     expected['theme_assets/contracts/missing.d.ts'] = hashlib.sha256(b'missing').hexdigest()
     with pytest.raises(AssertionError, match='REVIEW-023'):
         require_wheel_inventory(distributions[0], expected)
+
+
+def test_review29_12_wheel_requires_native_function_positions(distributions):
+    from email.parser import BytesParser
+    from packaging.requirements import Requirement
+    wheel, _ = distributions
+    with zipfile.ZipFile(wheel) as archive:
+        metadata = next(name for name in archive.namelist() if name.endswith('.dist-info/METADATA'))
+        requirements = BytesParser().parsebytes(archive.read(metadata)).get_all('Requires-Dist')
+    assert requirements is not None
+    coverage = next(req for req in map(Requirement, requirements) if req.name == 'coverage')
+    assert '7.13.0' not in coverage.specifier
+    assert '7.13.1' in coverage.specifier

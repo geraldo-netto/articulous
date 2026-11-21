@@ -135,6 +135,8 @@ def test_arch005_unowned_output_and_changed_stage_are_preserved(site_root, seo_c
     with pytest.raises(ValueError, match='ownership'):
         build_site(cli, config, site_root)
     assert (output / 'manual.txt').read_text() == 'keep'
+    (output / 'manual.txt').unlink()
+    output.rmdir()
     with prepare_build(cli, config, site_root) as prepared:
         staged = render_prepared(prepared)
         checked = validate_generated(staged)
@@ -563,3 +565,32 @@ def test_rel40_recovery_with_missing_or_invalid_cache(tmp_path):
     cache.write_text('[]')
     with pytest.raises(ValueError, match='Invalid shared cache'):
         state.restore_cache(cache, backup, claim, 'x', 'active')
+
+
+def test_review29_01_recheck_staged_bytes_after_journal_preparation(site_root, seo_config, monkeypatch):
+    cli, config = seo_config
+    build_site(cli, config, site_root)
+    before = published(site_root)
+    backend = PosixPublicationBackend()
+    begin = backend._begin
+    with prepare_build(cli, config, site_root) as prepared:
+        staged = render_prepared(prepared)
+        checked = validate_generated(staged)
+        feed = staged.root / 'rss.xml'
+        verified = feed.read_bytes()
+
+        def edit_after_capture(publication):
+            journal = begin(publication)
+            feed.write_bytes(b'late edit')
+            return journal
+
+        with monkeypatch.context() as changes:
+            changes.setattr(backend, '_begin', edit_after_capture)
+            with pytest.raises(ValueError, match='changed'):
+                publish_validated(checked, backend=backend)
+        assert published(site_root) == before
+        assert prepared.state == 'validated'
+        assert not (site_root / '.output.articulous-transaction').exists()
+        feed.write_bytes(verified)
+        publish_validated(checked, backend=backend)
+        assert prepared.state == 'published'

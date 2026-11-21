@@ -79,7 +79,7 @@ def _check_source(path, filename, record, names, failures):
 
 def check_file(path, root, report):
     filename = path.relative_to(root).as_posix()
-    names = inventory(ast.parse(path.read_text()))
+    names = inventory(ast.parse(path.read_bytes(), filename=filename))
     if len(names) != len(set(names)):
         raise ValueError('Ambiguous callable names; native counters cannot distinguish definitions')
     reporter = PythonFileReporter(str(path), Coverage())
@@ -115,7 +115,7 @@ def check_report(root: Path, directories, report):
         for path in sorted(p for p in tree_entries(source) if p.suffix == '.py' and p.is_file()):
             try:
                 measured, errors = check_file(path, root, report)
-            except ValueError as error:
+            except (SyntaxError, ValueError) as error:
                 failures.append(f'{path.relative_to(root)}: {error}')
                 continue
             count += measured

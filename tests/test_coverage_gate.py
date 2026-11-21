@@ -96,6 +96,30 @@ def test_test001_empty_declarations_and_nested_inventory(tmp_path):
     assert inventory(ast.parse('class A:\n def m(self):\n  def nested():\n   pass\n')) == ['A.m', 'A.m.nested']
 
 
+@pytest.mark.parametrize(('encoding', 'declaration'), [('utf-8-sig', 'utf-8'), ('latin-1', 'latin-1')])
+def test_review29_27_inventory_uses_python_source_encoding(tmp_path, encoding, declaration):
+    path = tmp_path / 'example.py'
+    source = f'# coding: {declaration}\ndef work():\n    return "café"\n'.encode(encoding)
+    path.write_bytes(source)
+    record = {'executed_lines': [3], 'missing_lines': [], 'start_line': 2,
+              'summary': {'covered_lines': 1, 'missing_lines': 0, 'num_statements': 1, 'percent_covered': 100}}
+    report = {'files': {'example.py': {'source_sha256': sha256(source).hexdigest(), 'functions': {'work': record}}}}
+    assert check_report(tmp_path, ['.'], report) == (1, [])
+    record.update(executed_lines=[], missing_lines=[3])
+    record['summary'].update(covered_lines=0, missing_lines=1, percent_covered=0)
+    assert 'require 80' in check_report(tmp_path, ['.'], report)[1][0]
+
+
+@pytest.mark.parametrize('source', [b'\xef\xbb\xbf# coding: latin-1\n', b'# coding: unknown-charset\n', b'# coding: utf-8\n\xff'])
+def test_review29_27_invalid_encodings_report_the_file(evidence, source):
+    root, _, _ = evidence
+    (root / 'code/bad.py').write_bytes(source)
+    count, failures = check(evidence)
+    assert count == 1
+    assert len(failures) == 1
+    assert failures[0].startswith('code/bad.py:')
+
+
 def test_build008_anonymous_callback_rejected(tmp_path):
     (tmp_path / 'bad.py').write_text('callback = lambda value: value\n')
     assert 'named function' in check_report(tmp_path, ['.'], {})[1][0]

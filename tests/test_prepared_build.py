@@ -201,3 +201,15 @@ def test_arch005_workspace_swap_never_deletes_replacement(site_root, seo_config)
         check_build(cli, config, site_root, validators=[swap])
     assert replacements[0].read_text() == 'keep replacement'
     assert (site_root / 'original-stage/output/rss.xml').exists()
+
+
+def test_review29_06_failed_fingerprint_leaves_failed_render(site_root, seo_config, monkeypatch):
+    from articulous import builds
+    cli, config = seo_config
+    with prepare_build(cli, config, site_root) as prepared:
+        def unreadable(_root):
+            raise OSError('unreadable staged file')
+        monkeypatch.setattr(builds, 'tree_fingerprint', unreadable)
+        with pytest.raises(OSError, match='unreadable staged file'):
+            render_prepared(prepared)
+        assert prepared.state == 'failed'

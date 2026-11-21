@@ -27,17 +27,24 @@ const CodeBlocks = (() => {
     const code = codeElement(pre);
     Prism.util.setLanguage(code, language(code));
     code.classList.add('drop-tokens');
+    const parent = pre.parentElement;
     Prism.highlightElement(code);
-    const wrapper = pre.parentElement;
+    const wrapper = pre.parentElement !== parent ? pre.parentElement : null;
+    const toolbar = wrapper?.querySelector(':scope > .toolbar');
     const controller = {dispose};
     owners.set(pre, controller);
 
     function dispose() {
       if (owners.get(pre) !== controller) return;
       owners.delete(pre);
+      if (!wrapper) return;
       Prism.plugins.copyToClipboard.dispose(code);
       if (pre.parentElement !== wrapper || !wrapper.classList.contains('code-toolbar')) return;
-      wrapper.replaceWith(pre);
+      if (toolbar?.parentElement === wrapper) toolbar.remove();
+      if (!wrapper.parentNode) return;
+      const content = pre.ownerDocument.createDocumentFragment();
+      while (wrapper.firstChild) content.append(wrapper.firstChild);
+      wrapper.replaceWith(content);
     }
     return controller;
   }

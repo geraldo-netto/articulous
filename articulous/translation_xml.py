@@ -70,6 +70,21 @@ def translate_body(body, translator, source, target, stats, policy, log):
     translate_attributes(body, translator, source, target, stats, policy, log)
 
 
+def _require_scalar(element):
+    if any(child.tag is not etree.Comment for child in element):
+        raise ValueError(f'<{element.tag}> must contain text only')
+
+
+def _prose_value(root, name, attributes):
+    if attributes:
+        return root.get(name)
+    element = root.find(name)
+    if element is None:
+        return None
+    _require_scalar(element)
+    return ''.join(element.itertext())
+
+
 def set_field(root, name, value, attributes):
     if attributes:
         root.set(name, value)
@@ -77,12 +92,15 @@ def set_field(root, name, value, attributes):
         old = root.find(name)
         if old is None:
             old = etree.SubElement(root, name)
+        _require_scalar(old)
         old.text = value
+        for comment in old:
+            comment.tail = None
 
 
 def translate_metadata(root, layout, translator, source, target, stats):
     for name in layout.prose_fields:
-        value = root.get(name) if layout.metadata_attributes else root.findtext(name)
+        value = _prose_value(root, name, layout.metadata_attributes)
         if value and value.strip():
             result = translator.translate(value, source, target, keep_placeholders=False)
             stats['units'] += 1

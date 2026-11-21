@@ -54,13 +54,14 @@ special files are skipped with an error. Each article has this shape:
   `scheduled`. Unknown statuses are skipped with a warning.
 - `unlisted` pages are generated but excluded from index/tag pages, RSS,
   sitemap, and search. `draft` and `private` articles are skipped.
-- Article pages render the XML captured during metadata and publication
-  validation; fingerprints use those same bytes and the captured source URI.
-  Bodies are spooled to disk, while shared listings retain metadata only.
-  Edits after capture apply on the next build: changing a public article to
-  private can still publish its old public snapshot in the current build,
-  but cannot publish newly added private text. The next selected build
-  retracts the owned page. This is snapshot consistency, not immediate revocation.
+- Article fingerprints use the captured XML bytes and source URI. New or
+  changed articles render from a private spool. For an article whose bytes
+  match its cached digest, shared listings keep metadata and the renderer
+  retains its source path, size and digest. If that page needs rendering, the
+  build rereads the file and fails if its digest changed. A public-to-private
+  edit after discovery can leave the old public page visible until the next
+  selected build retracts it. Newly added private text cannot render under
+  the old public metadata.
 - `scheduled` articles publish only when `<publish-at>` is present and
   its ISO-8601 timestamp has been reached. A missing or invalid timestamp
   keeps the article unpublished and emits a warning. Scheduling is

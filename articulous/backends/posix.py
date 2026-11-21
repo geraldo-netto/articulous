@@ -172,8 +172,19 @@ class PosixPublicationBackend:
         save_ownership(publication.destination, dict(publication.output_owners), routes=publication.output_routes,
                        generation=publication.generation, translations=dict(publication.translations))
 
+    def _verify_handoff(self, publication, transaction, data):
+        try:
+            publication.verify()
+        except BaseException:
+            # No tree or state has moved. Retire only the journal so its live
+            # caller can correct the staged files and retry the same handle.
+            self._set_phase(transaction, data, 'rolled_back')
+            self._retire_transaction(transaction, data)
+            raise
+
     def _install(self, publication, transaction, data):
         destination = publication.destination
+        self._verify_handoff(publication, transaction, data)
         self._expect(publication.root, data['new'])
         self._rename(publication.root, transaction / 'new')
         self._expect(destination, data['previous'])
@@ -187,7 +198,6 @@ class PosixPublicationBackend:
 
     def publish(self, publication: PublicationInput):
         validate_publication_paths(publication.destination, [publication.cache_path])
-        publication.verify()
         validate_owned_output(publication.destination)
         transaction, data = self._begin(publication)
         try:

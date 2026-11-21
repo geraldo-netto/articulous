@@ -201,3 +201,27 @@ console.log('THEME-002 neutral search consumer and lifecycle passed');
   assert.equal(creates, 0, 'REVIEW27-15 reset during matching stops renderer admission');
   controller.dispose();
 }
+
+{
+ const item={url:'/original',title:'Title',description:'Text',tags:['tag']};
+ const [record]=api.prepareIndex([item],'https://example.test',(raw,url)=>{
+  raw.url='/different';raw.title=null;raw.description=42;raw.tags.push('changed');
+  return {destination:url.pathname};
+ });
+ assert.deepEqual(record,{destination:'/original',url:'/original',title:'Title',
+  description:'Text',tags:['tag'],haystack:'title text tag'},'REVIEW29-20 retain validated row fields');
+}
+
+{
+ const row={url:'/item',title:'Item',description:'Text',tags:[]};
+ for(const size of [1,2,7]){
+  for(let index=0;index<size;index++){
+   const sparse=Array(size).fill('tag');delete sparse[index];
+   assert.throws(()=>api.prepareIndex([{...row,tags:sparse}],'https://example.test',metadata),
+    /Invalid search entry/,'REVIEW29-21 every tag slot must contain a string');
+  }
+ }
+ for(const tags of [[],[''],['a','']]){
+  assert.deepEqual(api.prepareIndex([{...row,tags}],'https://example.test',metadata)[0].tags,tags);
+ }
+}

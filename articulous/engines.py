@@ -409,7 +409,7 @@ def _xml_with_base(content: bytes, base_uri: Optional[str]) -> bytes:
     root = etree.fromstring(content, parser=safe_xml_parser(), base_url=base_uri)
     reject_entity_references(root)
     root.set("{http://www.w3.org/XML/1998/namespace}base", root.base)
-    return etree.tostring(root)
+    return etree.tostring(root.getroottree(), doctype="")
 
 
 def _saxon_input_bytes(xml_input, base_uri):
@@ -479,7 +479,7 @@ class SaxonCEngine(XsltEngine):
             revision = f"{stat.st_size}:{stat.st_mtime_ns}"
         except OSError:
             revision = "missing"
-        return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none:owned-inputs=v1"
+        return f"{self.name}:{binary}:{revision}:ext=off:xi=off:protocols=none:owned-inputs=v2"
 
     def _do_transform(
         self, xml_input, xsl_path, output_path, stylesheet_fingerprint=None, xml_base_uri=None,

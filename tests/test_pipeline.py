@@ -2368,3 +2368,23 @@ def test_run_build_zero_elapsed_branch(site_root, monkeypatch, caplog):
     with caplog.at_level(logging.INFO):
         run_build(cli, cfg, site_root)
     assert any("Ran" in r.message and "task" in r.message for r in caplog.records)
+
+
+def test_review29_14_mirror_prunes_only_existing_destinations(site_root):
+    config = _site_config(site_root)
+    old = site_root / "assets/node"
+    old.mkdir()
+    (old / "child").write_bytes(b"previous")
+    run_build(_CLI(), config, site_root)
+
+    copied = site_root / "output/assets/node"
+    shutil.rmtree(old)
+    old.write_bytes(b"new")
+    shutil.rmtree(copied)
+    copied.write_bytes(b"replace")
+    extra = copied.parent / "extra"
+    extra.write_bytes(b"stale")
+
+    run_build(_CLI(), config, site_root)
+    assert copied.read_bytes() == b"new"
+    assert not extra.exists()

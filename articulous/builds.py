@@ -375,8 +375,9 @@ def render_prepared(prepared: PreparedBuild) -> StagedBuild:
     _run_plan(owner.plan, owner.context)
     _cleanup_stream_projection(owner.plan.projection)
     owner.workspace.cleanup()
+    staged = _StagedBuild(owner, tree_fingerprint(owner.context.output_dir))
     owner.state = 'rendered'
-    return _StagedBuild(owner, tree_fingerprint(owner.context.output_dir))
+    return staged
 
 def _validate_manifest(staged):
     for route in staged.routes:

@@ -213,6 +213,6 @@ def loose_text_nodes(body, blocks, policy=DEFAULT_POLICY):
     for element in body.iter():
         if _loose_text(element, block_set, policy):
             found.append((element, 'text'))
-        if _loose_tail(element, block_set, policy):
+        if element is not body and _loose_tail(element, block_set, policy):
             found.append((element, 'tail'))
     return found

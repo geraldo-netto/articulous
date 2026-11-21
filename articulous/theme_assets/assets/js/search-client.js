@@ -1,24 +1,29 @@
 /* Optional search controller. Callers own paths, matching, rendering and UI text. */
 globalThis.SearchClient = (() => {
-  function validTags(tags) {
-    return tags == null || (Array.isArray(tags) && tags.every(tag => typeof tag === 'string'));
+  function prepareTags(raw) {
+    if (raw == null) return Object.freeze([]);
+    if (!Array.isArray(raw)) throw new Error('Invalid search entry');
+    const tags = [...raw];
+    if (!tags.every(tag => typeof tag === 'string')) throw new Error('Invalid search entry');
+    return Object.freeze(tags);
   }
 
-  function validateRow(item) {
-    if (!item || typeof item.url !== 'string' || !item.url.trim() ||
-        typeof item.title !== 'string' || typeof item.description !== 'string' || !validTags(item.tags)) {
+  function validateRow(url, title, description) {
+    if (typeof url !== 'string' || !url.trim() ||
+        typeof title !== 'string' || typeof description !== 'string') {
       throw new Error('Invalid search entry');
     }
   }
 
   function prepareRow(item, origin, prepare) {
-    validateRow(item);
-    const url = new URL(item.url, origin);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Invalid search URL');
-    const tags = Object.freeze([...(item.tags || [])]);
-    const metadata = prepare(item, url);
-    return Object.freeze({...metadata, url:item.url, title:item.title, description:item.description, tags,
-      haystack:[item.title, item.description, ...tags].join(' ').toLocaleLowerCase()});
+    const {url, title, description, tags:rawTags} = item ?? {};
+    validateRow(url, title, description);
+    const tags = prepareTags(rawTags);
+    const destination = new URL(url, origin);
+    if (destination.protocol !== 'http:' && destination.protocol !== 'https:') throw new Error('Invalid search URL');
+    const metadata = prepare(item, destination);
+    return Object.freeze({...metadata, url, title, description, tags,
+      haystack:[title, description, ...tags].join(' ').toLocaleLowerCase()});
   }
 
   function prepareIndex(data, origin, prepare) {

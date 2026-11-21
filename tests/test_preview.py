@@ -155,3 +155,62 @@ def record_log(calls):
     def record(self, *args):
         calls.append(args)
     return record
+
+
+@pytest.mark.parametrize('method', ['HEAD', 'GET'])
+def test_review29_07_stream_custom_error_document(tmp_path, monkeypatch, method):
+    from pathlib import Path
+    data = b'missing' * 131072
+    path = tmp_path / '404.html'
+    path.write_bytes(data)
+    eager = []
+    reader = Path.read_bytes
+
+    def observe(source):
+        eager.append(source)
+        return reader(source)
+
+    monkeypatch.setattr(Path, 'read_bytes', observe)
+    with running(tmp_path, not_found='/404.html') as server:
+        connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=2)
+        try:
+            connection.request(method, '/missing')
+            response = connection.getresponse()
+            assert response.status == 404 and response.getheader('Content-Length') == str(len(data))
+            assert response.read() == (data if method == 'GET' else b'')
+        finally:
+            connection.close()
+    assert eager == []
+
+
+def test_review29_07_failed_headers_close_error_document(tmp_path, monkeypatch):
+    from pathlib import Path
+    handler = object.__new__(preview.Handler)
+    handler.root, handler.internal, handler.not_found_route = tmp_path, frozenset(), '/404.html'
+    path = tmp_path / '404.html'
+    path.touch()
+    source = path.open('rb')
+    monkeypatch.setattr(Path, 'open', lambda *_: source)
+
+    def disconnected(*_args):
+        raise BrokenPipeError()
+
+    monkeypatch.setattr(handler, '_error_headers', disconnected)
+    with pytest.raises(BrokenPipeError):
+        handler.not_found()
+    assert source.closed
+
+
+def test_review29_26_internal_names_are_captured_for_the_server(tmp_path, monkeypatch):
+    supplied = ['hosting', 'drafts']
+    policies = []
+
+    def inspect_factory(server):
+        supplied.append('late')
+        for _ in range(2):
+            policies.append(frozenset(server.RequestHandlerClass.keywords['internal']))
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(preview.PreviewServer, 'serve_forever', inspect_factory)
+    assert preview.serve(tmp_path, 0, internal=iter(supplied)) == 0
+    assert policies == [frozenset(('hosting', 'drafts'))] * 2

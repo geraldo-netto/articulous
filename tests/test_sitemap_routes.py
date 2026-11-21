@@ -104,3 +104,47 @@ def test_canonical_urls_map_to_outputs_beneath_deployment_prefix(site_root):
 
 def test_encoded_url_pattern_joins_without_escaping_path_separators():
     assert build_url_from_pattern("", "/café & news/{lang}/", lang="en") == "/caf%C3%A9%20%26%20news/en/"
+
+
+@pytest.mark.parametrize('url', ['https://example.test', 'HTTPS://EXAMPLE.TEST/a/', 'https://example.test:443/a/'])
+def test_review29_16_sitemap_accepts_same_origin_spellings(site_root, url):
+    _, config = _configuration(site_root)
+    ctx = build_ctx_from_config(config, False)
+    tasks = build_sitemap_section([url], ctx, {})
+    tasks[0]()
+    loc = etree.parse(str(ctx.output_dir / 'sitemap.xml')).findtext('{*}url/{*}loc')
+    assert loc == url
+
+
+@pytest.mark.parametrize('workspace_backed', [False, True])
+def test_review29_15_sitemap_captures_each_record_before_advancing(site_root, workspace_backed):
+    from articulous.filesystem import TempWorkspace
+
+    _, config = _configuration(site_root)
+    ctx = build_ctx_from_config(config, False)
+    record = {'url': '', 'modified': '2026-11-21'}
+
+    def entries():
+        for suffix in ('first/', 'second/'):
+            record['url'] = ctx.base_url + '/' + suffix
+            yield record
+
+    cache = {}
+    with TempWorkspace() as workspace:
+        planner = workspace if workspace_backed else None
+        tasks = build_sitemap_section(entries(), ctx, cache, planner)
+        record['url'] = 'https://other.test/'
+        tasks[0]()
+        tree = etree.parse(str(ctx.output_dir / 'sitemap.xml'))
+        urls = [loc.text for loc in tree.findall('{*}url/{*}loc')]
+        assert urls == [ctx.base_url + '/first/', ctx.base_url + '/second/']
+        assert build_sitemap_section(entries(), ctx, cache, planner) == []
+
+
+@pytest.mark.parametrize('path', ['//', '/%2F', '/%2f'])
+def test_review29_18_reject_double_separator_at_root(path):
+    from articulous.sections import validate_base_url, validate_image_url
+    for validate in (validate_base_url, validate_image_url, validate_sitemap_location):
+        validate('https://example.test/')
+        with pytest.raises(ValueError, match='empty segments'):
+            validate('https://example.test' + path)

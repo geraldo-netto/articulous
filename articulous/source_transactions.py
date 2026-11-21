@@ -52,7 +52,7 @@ def restore_source(change):
 
 def fingerprint(path):
     try:
-        with path.open('rb') as source:
+        with open_regular_file(path) as source:
             return hashlib.file_digest(source, 'sha256').digest()
     except FileNotFoundError:
         return None

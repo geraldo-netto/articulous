@@ -7,6 +7,7 @@ controls bind both signals.
 The transform owns the result tree; this synchronous call retains no native view.
 HTML decoding, token spans and output add O(serialized length) temporary storage.
 """
+from bisect import bisect_left, bisect_right
 import codecs
 from ..html_serialization import omit_spans, void_omissions
 
@@ -18,10 +19,8 @@ def automatic_html(result):
     return not any(text.strip() for text in leading)
 
 
-def _byte_boundaries(content, encoding, positions):
-    decoder = codecs.getincrementaldecoder(encoding)(errors='surrogateescape')
-    offset = 0
-    for end, byte in enumerate(content, 1):
+def _record_boundaries(block, decoder, positions, offset, start):
+    for end, byte in enumerate(block, start + 1):
         pending = len(decoder.getstate()[0])
         decoded = decoder.decode(bytes((byte,)))
         if not decoded:
@@ -31,6 +30,20 @@ def _byte_boundaries(content, encoding, positions):
         offset += len(decoded)
         if offset in positions:
             positions[offset][1] = end
+
+
+def _byte_boundaries(content, encoding, positions):
+    decoder = codecs.getincrementaldecoder(encoding)(errors='surrogateescape')
+    targets = sorted(positions)
+    offset = 0
+    for start in range(0, len(content), 256):
+        block = content[start:start + 256]
+        state = decoder.getstate()
+        stop = offset + len(decoder.decode(block))
+        if bisect_left(targets, offset) < bisect_right(targets, stop):
+            decoder.setstate(state)
+            _record_boundaries(block, decoder, positions, offset, start)
+        offset = stop
 
 
 def _native_spans(content, encoding, spans):

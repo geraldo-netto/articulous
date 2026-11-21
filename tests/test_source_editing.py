@@ -176,3 +176,19 @@ def test_edit001_replaced_workspace_identity_is_preserved(tmp_path):
             (original / 'owner.txt').write_bytes(b'keep')
     assert original is not None
     assert (original / 'owner.txt').read_bytes() == b'keep'
+
+
+@pytest.mark.parametrize('kind', ['fifo', 'directory'])
+def test_review29_13_capture_rejects_special_files_before_blocking_open(tmp_path, kind):
+    import os
+    source = tmp_path / 'input.xml'
+    if kind == 'fifo':
+        os.mkfifo(source)
+    else:
+        source.mkdir()
+    with source_transaction(tmp_path) as transaction:
+        with patch.object(Path, 'open', side_effect=AssertionError('unguarded source open')):
+            with pytest.raises(ValueError, match='regular file'):
+                transaction.capture(source.name)
+        assert not transaction.expected
+    assert source.exists()

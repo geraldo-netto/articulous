@@ -331,3 +331,27 @@ def test_state_hardlinks_cannot_alias_source_inputs(tmp_path, block, key):
     with pytest.raises(ValueError, match="multiple hardlinks"):
         apply_cli_overrides(config, FakeCLI(), tmp_path)
     assert source.read_text() == "<article/>"
+
+
+@pytest.mark.parametrize('key,data', [
+    ('site', '{"site":{"mistyped":true},"site":{}}'),
+    ('per_page', '{"site":{"pagination":{"per_page":0,"per_page":4}}}'),
+    ('force_full_build', r'{"build":{"force_full_build":false,"force\u005ffull_build":true}}'),
+])
+def test_review29_17_reject_duplicate_json_members(tmp_path, key, data):
+    from articulous.configuration_contracts import ConfigurationError
+    path = tmp_path / 'site-config.json'
+    path.write_text(data)
+    with pytest.raises(ConfigurationError) as caught:
+        load_or_create_config(path)
+    assert str(path) in str(caught.value)
+    assert f'duplicate key {key!r}' in str(caught.value)
+    assert path.read_text() == data
+
+
+def test_review29_17_distinct_objects_can_repeat_a_key(tmp_path):
+    path = tmp_path / 'site-config.json'
+    path.write_text('{"engines":{"rss":"lxml"},"urls":{"rss":"/feed.xml"}}')
+    config = load_or_create_config(path)
+    assert config['engines']['rss'] == 'lxml'
+    assert config['urls']['rss'] == '/feed.xml'

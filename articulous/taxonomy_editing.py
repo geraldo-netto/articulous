@@ -56,6 +56,10 @@ def _glob_documents(root, parts):
 
 
 def _recursive_documents(root, tail):
+    first = 0
+    while tail[first] == '**':
+        first += 1
+    tail = tail[first:]
     yield from _glob_documents(root, tail)
     for directory in tree_entries(root):
         if not directory.is_symlink() and directory.is_dir():

@@ -298,3 +298,21 @@ def test_perf25_document_read_is_bound_to_captured_generation(tmp_path):
     path.write_bytes(b'<article><tag>x</tag></article>')
     with pytest.raises(ValueError, match='destination changed during staging'):
         _read_document(path, b'older-generation')
+
+
+@pytest.mark.parametrize('repetitions', [1, 2, 4])
+def test_review29_19_adjacent_recursive_components_share_one_walk(tmp_path, repetitions):
+    from articulous import taxonomy_editing
+
+    expected = []
+    directory = tmp_path
+    for _ in range(5):
+        file = directory / 'entry.xml'
+        file.touch()
+        expected.append(file)
+        directory = directory / 'nested'
+        directory.mkdir()
+    pattern = '**/' * repetitions + '*.xml'
+    with patch.object(taxonomy_editing, 'tree_entries', wraps=taxonomy_editing.tree_entries) as walk:
+        assert taxonomy_editing._document_paths(tmp_path, pattern) == sorted(expected)
+        walk.assert_called_once_with(tmp_path)

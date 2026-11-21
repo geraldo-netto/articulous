@@ -123,10 +123,13 @@ def _has_pending_journal(base: Path, project: Path) -> bool:
 
 def _admitted_root(root: str, project: Path) -> bool:
     path = Path(root)
+    if not path.is_absolute() or not path.is_relative_to(project) or ".." in path.parts or "\0" in root:
+        return False
     try:
-        return path.is_absolute() and path.is_relative_to(project) and path.resolve() == path
+        validate_output_path(path)
     except (OSError, ValueError):
         return False
+    return True
 
 
 def _migration_records(base, destination, project):

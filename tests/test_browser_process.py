@@ -31,7 +31,7 @@ def test_review015_disappearing_task_does_not_hide_live_group_members(missing, s
 def test_review015_identity_reads_distinguish_absence_from_unknown(name, error):
     from articulous.backends import browser_fence, recovery
     functions = {'process_state': recovery.process_state, 'process_identity': browser_fence.process_identity}
-    with patch.object(Path, 'read_text', side_effect=error('native read')):
+    with patch.object(Path, 'read_bytes', side_effect=error('native read')):
         if error is PermissionError:
             with pytest.raises(PermissionError):
                 functions[name](42)
@@ -205,3 +205,32 @@ class BrowserProcess(unittest.TestCase):
                 "articulous.backends.processes._proc_stat_paths", return_value=nullcontext([other, owned])
             ):
                 self.assertTrue(group_running(42))
+
+
+@pytest.mark.parametrize('observer', ['browser', 'recovery', 'members'])
+def test_review28_30_identity_ignores_arbitrary_comm_bytes(observer):
+    import os
+    from articulous.backends import browser_fence, recovery
+
+    script = ("from pathlib import Path; import sys; "
+              "Path('/proc/self/comm').write_bytes(bytes([233]) + b') name'); "
+              "print('ready', flush=True); sys.stdin.buffer.read()")
+    with subprocess.Popen([sys.executable, '-c', script], stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE) as child:
+        assert child.stdout is not None and child.stdout.readline() == b'ready\n'
+        fields = Path(f'/proc/{child.pid}/stat').read_bytes()
+        assert b'\xe9) name)' in fields
+        generation = int(fields.rsplit(b') ', 1)[1].split()[19])
+        if observer == 'recovery':
+            current = recovery.process_state(child.pid)
+            assert current is not None
+            record, state = current
+            assert (record.pid, record.started) == (child.pid, generation)
+        else:
+            group = os.getpgid(child.pid)
+            identity = (browser_fence.process_identity(child.pid) if observer == 'browser'
+                        else dict(browser_fence.owned_members(group))[child.pid])
+            assert identity is not None
+            assert identity[:2] == (group, generation)
+            state = identity[2]
+        assert state in ('R', 'S')

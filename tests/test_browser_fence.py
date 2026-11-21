@@ -19,9 +19,9 @@ def test_test002_proc_identity_and_members(tmp_path, monkeypatch):
     with patch.object(fence.Path, 'iterdir', return_value=[tmp_path / 'self', absent, foreign, zombie, live, root]):
         with patch.object(fence, 'process_identity', side_effect=[None, (8, 1, 'S'), (42, 2, 'Z'), (42, 3, 'S')]):
             assert list(fence.owned_members(42)) == [(13, (42, 3, 'S'))]
-    with patch.object(fence.Path, 'read_text', side_effect=FileNotFoundError):
+    with patch.object(fence.Path, 'read_bytes', side_effect=FileNotFoundError):
         assert fence.process_identity(123) is None
-    with patch.object(fence.Path, 'read_text', return_value='13 (name (inside)) S 1 42 ' + '0 ' * 16 + '99 0'):
+    with patch.object(fence.Path, 'read_bytes', return_value=b'13 (name (inside)) S 1 42 ' + b'0 ' * 16 + b'99 0'):
         assert fence.process_identity(13) == (42, 99, 'S')
 
 

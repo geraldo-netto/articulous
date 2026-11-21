@@ -10,6 +10,7 @@ import stat
 from ..filesystem import _generated_output, open_regular_file
 from ..recovery_contracts import ProcessGeneration, RecoveryRecord, WorkspaceClaim, decode_record, encode_record
 from ..source_files import require_workspace
+from .process_groups import process_identity
 
 MAX_RECORD_BYTES = 1024 * 1024
 
@@ -19,11 +20,11 @@ def boot_identity():
 
 
 def process_state(pid):
-    try:
-        fields = Path(f'/proc/{pid}/stat').read_text().rpartition(') ')[2].split()
-    except (FileNotFoundError, ProcessLookupError):
+    identity = process_identity(pid)
+    if identity is None:
         return None
-    return ProcessGeneration(pid, int(fields[19])), fields[0]
+    _, started, state = identity
+    return ProcessGeneration(pid, started), state
 
 
 def generation(pid):

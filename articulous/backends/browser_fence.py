@@ -6,16 +6,8 @@ import select
 import signal
 import sys
 import time
-from .process_groups import possible_group_member
+from .process_groups import possible_group_member, process_identity
 from .pidfds import open_pidfd, send_signal
-
-
-def process_identity(pid):
-    try:
-        fields = Path(f'/proc/{pid}/stat').read_text().rpartition(') ')[2].split()
-    except (FileNotFoundError, ProcessLookupError):
-        return None
-    return int(fields[2]), int(fields[19]), fields[0]
 
 
 def owned_members(owner):

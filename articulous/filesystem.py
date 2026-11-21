@@ -85,6 +85,10 @@ def open_regular_file(path: Path):
         yield source
 
 
+def file_generation(metadata):
+    return [metadata.st_dev, metadata.st_ino, metadata.st_ctime_ns, metadata.st_mtime_ns, metadata.st_size]
+
+
 def validate_output_path(path: Path) -> None:
     for component in (path, *path.parents):
         if component.is_symlink():

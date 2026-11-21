@@ -143,7 +143,12 @@ durable source for retained files and route semantics; derived cache metadata
 cannot override it. Partial sitemap builds include eligible retained extra pages
 using that saved policy. Missing required route semantics force a full build.
 The current plan's `OutputManifest` checks route collisions before writes.
-The path trie uses a terminal value for each generated file.
+Its path trie marks each generated file. After incremental preflight, the trie,
+cached ancestor checks and superseded routes are released. Rendering retains
+current routes and a single ownership path map, plus the paths and fingerprint
+keys to retire. Filesystem checks still run before stale-output deletion. An unchanged build skips ownership serialization when its
+generation and observed sidecar file still match under the output lock.
+See the [retained-state measurements](../reviews/retained-state/README.md).
 
 Whole-site publication has a separate journal and backup lifecycle. Its reserved
 transaction directory cannot overlap source/configuration or state paths.

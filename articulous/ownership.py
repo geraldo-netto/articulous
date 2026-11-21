@@ -1,12 +1,13 @@
 """Persistent output ownership, independent of disposable fingerprints."""
 import json
+import os
 import re
 import stat
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from .tree_entries import tree_entries
-from .filesystem import open_regular_file, write_text_atomic, validate_output_path, validate_regular_file
+from .filesystem import file_generation, open_regular_file, write_text_atomic, validate_output_path, validate_regular_file
 from .composition_contracts import Route
 
 
@@ -17,6 +18,7 @@ class Ownership:
     routes: dict[str, Route] = field(default_factory=dict)
     generation: str | None = None
     translations: dict = field(default_factory=dict)
+    source_generation: list[int] | None = field(default=None, compare=False, repr=False)
 
 
 def ownership_path(output_dir: Path) -> Path:
@@ -131,6 +133,7 @@ def load_ownership(output_dir: Path, *, allow_pending: bool = True) -> Ownership
     path = ownership_path(output_dir)
     try:
         with open_regular_file(path) as source:
+            generation = file_generation(os.fstat(source.fileno()))
             payload = source.read()
     except FileNotFoundError:
         if output_dir.exists() and any(output_dir.iterdir()):
@@ -146,7 +149,17 @@ def load_ownership(output_dir: Path, *, allow_pending: bool = True) -> Ownership
         raise ValueError(f"{error}; restore current ownership or use an empty output tree") from error
     if ownership.pending and not allow_pending:
         raise ValueError("Interrupted build requires a full recovery build without --only, --lang or --slug")
-    return ownership
+    return replace(ownership, source_generation=generation)
+
+
+def ownership_file_matches(output_dir, generation):
+    if generation is None:
+        return False
+    try:
+        metadata = ownership_path(output_dir).lstat()
+    except FileNotFoundError:
+        return False
+    return metadata.st_nlink == 1 and file_generation(metadata) == generation
 
 
 def ownership_payload(output_dir, paths, route_data, *, generation, translations, pending=False, existing=None):

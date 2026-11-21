@@ -41,7 +41,7 @@ from articulous.pipeline import (
     _lock_path_for,
     _make_xslt_task,
     _passes_cli_filters,
-    _prune_stale_outputs,
+    _OutputPaths,
     _resolve_parallelism,
     _run_plan,
     _rss_doc,
@@ -1696,7 +1696,7 @@ def test_prune_preserves_reassigned_paths_and_parents(tmp_path, old_path):
     page.parent.mkdir(parents=True)
     page.write_text("new index")
     cache = {"old": ["old hash"], "new": ["new hash"]}
-    _prune_stale_outputs(ctx, cache, {old_path: "old"}, {"en/1/index.html": "new"})
+    _OutputPaths({old_path: "old"}, {"en/1/index.html": "new"}).prune(ctx, cache)
     assert page.read_text() == "new index"
     assert cache == {"new": ["new hash"]}
 
@@ -1714,7 +1714,7 @@ def test_prune_stale_outputs_handles_manifest_edges(tmp_path, caplog):
         "bad": str(tmp_path.parent / "outside.txt"),
     }
     with caplog.at_level(logging.WARNING):
-        _prune_stale_outputs(ctx, cache, {path: key for key, path in old.items()}, {})
+        _OutputPaths({path: key for key, path in old.items()}, {}).prune(ctx, cache)
     assert not root_file.exists()
     assert cache == {}
     assert any("invalid output ownership" in r.message for r in caplog.records)
@@ -1745,7 +1745,7 @@ def test_prune_never_deletes_reserved_assets(tmp_path, old_path):
     asset.parent.mkdir()
     asset.write_text("current asset")
     cache = {"rss": ["old"]}
-    _prune_stale_outputs(ctx, cache, {old_path: "rss"}, {})
+    _OutputPaths({old_path: "rss"}, {}).prune(ctx, cache)
     assert asset.read_text() == "current asset"
     assert cache == {}
 
@@ -1782,7 +1782,7 @@ def test_pruning_rejects_symlink_ancestors(tmp_path, outside):
     (ctx.output_dir / "stale").symlink_to(manual, target_is_directory=True)
     cache = {"old": ["fingerprint"]}
     with pytest.raises(OSError, match="ancestor is a symlink"):
-        _prune_stale_outputs(ctx, cache, {"stale/index.html": "old"}, {})
+        _OutputPaths({"stale/index.html": "old"}, {}).prune(ctx, cache)
     assert victim.read_text() == "unowned"
     assert cache == {"old": ["fingerprint"]}
 

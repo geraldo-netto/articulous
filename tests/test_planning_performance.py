@@ -111,7 +111,7 @@ def test_perf12_no_stale_paths_still_checks_current_ancestors(tmp_path):
     (tmp_path / 'alias').symlink_to(tmp_path, target_is_directory=True)
     path = 'alias/current.html'
     with pytest.raises(OSError, match='Manifest output ancestor'):
-        pipeline._prune_stale_outputs(ctx, {}, {path: 'old'}, {path: 'new'})
+        pipeline._OutputPaths({path: 'old'}, {path: 'new'}).prune(ctx, {})
 
 
 def test_perf12_keeps_cache_key_retirement_without_prune(tmp_path, monkeypatch):
@@ -122,7 +122,7 @@ def test_perf12_keeps_cache_key_retirement_without_prune(tmp_path, monkeypatch):
     monkeypatch.setattr(pipeline, '_remove_stale_paths', unexpected)
     cache = {'old': 'retired'}
     path = 'current.html'
-    pipeline._prune_stale_outputs(ctx, cache, {path: 'old'}, {path: 'new'})
+    pipeline._OutputPaths({path: 'old'}, {path: 'new'}).prune(ctx, cache)
     assert cache == {}
 
 

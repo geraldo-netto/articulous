@@ -9,9 +9,16 @@ class OutputMigrations:
     def __init__(self, root: Path, previous: dict, retained: dict):
         self.root = root.resolve()
         self.previous = previous
-        self.selected = previous.keys() - retained.keys()
+        self.selected = previous.keys() - retained.keys() if retained else previous.keys()
         self._parents = set()
         self._targets: set[Path] = set()
+
+    def finish_planning(self):
+        """Drop admission and obstruction state after the last preflight mutation."""
+        self.previous = {}
+        self.selected = self.previous.keys()
+        self._parents.clear()
+        self._targets.clear()
 
     def admit_path(self, path):
         if path.is_symlink():

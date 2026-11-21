@@ -10,9 +10,9 @@ from pathlib import Path
 import re
 
 from .cache_activity import CacheActivity, activity_path, partition_with_queue, retirement_queue
-from .cache_usage_index import file_generation, read_usage_index, reusable_usage, save_usage_index
+from .cache_usage_index import read_usage_index, reusable_usage, save_usage_index
 from .filesystem import (
-    cache_lock_path, lock_file, open_regular_file, partition_directory_lock, private_directory,
+    cache_lock_path, file_generation, lock_file, open_regular_file, partition_directory_lock, private_directory,
     validate_output_path, validate_regular_file, write_text_atomic,
 )
 from .output_cache import CACHE_ROOTS_KEY, LAST_USED_KEY, cutoff_for, last_used, output_cache_roots

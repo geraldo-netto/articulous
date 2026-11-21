@@ -4,14 +4,10 @@ from itertools import islice
 import json
 import os
 
-from .filesystem import atomic_output, open_regular_file, validate_output_path
+from .filesystem import atomic_output, file_generation, open_regular_file, validate_output_path
 
 _MAX_ENTRIES = 65_536
 _MAX_FILE_BYTES = 16 * 1024 * 1024
-
-
-def file_generation(metadata):
-    return [metadata.st_dev, metadata.st_ino, metadata.st_ctime_ns, metadata.st_mtime_ns, metadata.st_size]
 
 
 def _timestamp_is_valid(timestamp):

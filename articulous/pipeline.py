@@ -25,6 +25,7 @@ import time
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from contextlib import closing, contextmanager
+from collections.abc import Collection, Mapping
 from functools import partial
 from itertools import chain
 from pathlib import Path
@@ -83,7 +84,7 @@ from .runtime import (
     update_cache,
 )
 from .publication_paths import transaction_path
-from .ownership import Ownership, journal_ownership, load_ownership, ownership_path, save_ownership
+from .ownership import Ownership, journal_ownership, load_ownership, ownership_file_matches, ownership_path, save_ownership
 from .sections import (
     CROSS_LANG_SECTIONS,
     PER_LANG_SECTIONS,
@@ -2084,15 +2085,26 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
 
 def _next_output_paths(cli, ctx, old_manifest, current_manifest):
     retained = _retained_outputs(cli, old_manifest, _extra_output_keys(ctx))
-    return {**retained, **{path: key for key, path in current_manifest.items()}}
+    retained.update((path, key) for key, path in current_manifest.items())
+    return old_manifest if old_manifest == retained else retained
 
 
-def _published_translations(ownership, cache, planned, routes):
-    if cache['__generation__'] == ownership.generation:
-        return ownership.translations
-    history = {key: pair for key, pair in ownership.translations.items()
-               if key not in planned and key in routes}
-    history.update(translation_history(cache, planned))
+@dataclass(frozen=True)
+class _OutputUpdate:
+    previous_generation: str | None
+    previous_translations: dict
+    paths: _OutputPaths
+    routes: Mapping[str, Route]
+    planned: Collection[str]
+    unchanged_file: list[int] | None
+
+
+def _published_translations(outputs, cache):
+    if cache['__generation__'] == outputs.previous_generation:
+        return outputs.previous_translations
+    history = {key: pair for key, pair in outputs.previous_translations.items()
+               if key not in outputs.planned and key in outputs.routes}
+    history.update(translation_history(cache, outputs.planned))
     return history
 
 
@@ -2109,14 +2121,14 @@ def _save_fingerprints(ctx, cache, roots, selected):
     return save_cache(selected.path, cache_payload(selected, roots))
 
 
-def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifest, selected, checked_parents) -> None:
-    _prune_stale_outputs(ctx, cache, ownership.paths, next_manifest, checked_parents)
-    routes = current_manifest.route_values()
+def _finalize_cache(ctx, cache, roots, outputs, selected, checked_parents) -> None:
+    outputs.paths.prune(ctx, cache, checked_parents)
     if not _save_fingerprints(ctx, cache, roots, selected):
         logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
         return
-    save_ownership(ctx.output_dir, next_manifest, routes=routes, generation=cache['__generation__'],
-                   translations=_published_translations(ownership, cache, current_manifest, routes))
+    if not ownership_file_matches(ctx.output_dir, outputs.unchanged_file):
+        save_ownership(ctx.output_dir, outputs.paths.current, routes=outputs.routes, generation=cache['__generation__'],
+                       translations=_published_translations(outputs, cache))
     finish_cache_update(selected, ctx.cache_retention_days, ctx.partition_cache, roots=roots)
 
 
@@ -2207,20 +2219,22 @@ def _delete_output_file(path: Path, root: Path) -> None:
     _remove_empty_parents(path, root)
 
 
-def _prune_stale_outputs(
-    ctx: BuildCtx,
-    cache: dict,
-    old_manifest: dict,
-    current_manifest: dict,
-    checked_parents: set[Path] | None = None,
-) -> None:
-    stale_paths = sorted(old_manifest.keys() - current_manifest.keys())
-    root = ctx.output_dir.resolve()
-    paths = _current_output_paths(root, current_manifest, checked_parents, collect=bool(stale_paths))
-    if stale_paths:
-        _remove_stale_paths(root, stale_paths, paths)
-    for key in set(old_manifest.values()) - set(current_manifest.values()):
-        cache.pop(key, None)
+class _OutputPaths:
+    def __init__(self, previous: dict, current: dict):
+        self.current = current
+        self.stale: list[str] = []
+        self.retired_keys: set[str] = set()
+        if previous is not current:
+            self.stale = sorted(previous.keys() - current.keys())
+            self.retired_keys = set(previous.values()) - set(current.values())
+
+    def prune(self, ctx: BuildCtx, cache: dict, checked_parents: set[Path] | None = None) -> None:
+        root = ctx.output_dir.resolve()
+        paths = _current_output_paths(root, self.current, checked_parents, collect=bool(self.stale))
+        if self.stale:
+            _remove_stale_paths(root, self.stale, paths)
+        for key in self.retired_keys:
+            cache.pop(key, None)
 
 
 def _current_output_paths(root: Path, manifest: dict, checked_parents, *, collect: bool) -> set[Path]:
@@ -2295,7 +2309,7 @@ def _ownership_will_change(ctx, ownership: Ownership, next_paths, routes, plan) 
     )
 
 
-def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) -> None:
+def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) -> _OutputUpdate:
     pending = False
     routes = current_manifest.route_values()
 
@@ -2313,6 +2327,12 @@ def _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan) 
     copy_assets(ctx, cache, before_mutation=start_journal)
     if not ctx.dry_run:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
+
+    ctx.output_migrations.finish_planning()
+    planned = routes.keys() if len(routes) == len(current_manifest) else frozenset(current_manifest)
+    unchanged = ownership.source_generation if not pending and cache['__generation__'] == ownership.generation else None
+    return _OutputUpdate(ownership.generation, ownership.translations, _OutputPaths(ownership.paths, next_paths),
+                         routes, planned, unchanged)
 
 
 def _retained_page_routes(cli, ctx, ownership):
@@ -2370,13 +2390,12 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 checked_parents = _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
                 _record_retained_routes(cli, ctx, ownership, current_manifest)
                 next_paths = _next_output_paths(cli, ctx, old_manifest, current_manifest)
-                _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
+                outputs = _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
+                del current_manifest, old_manifest, ownership
                 _run_plan(plan, ctx)
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
-                    _finalize_cache(
-                        ctx, cache, roots, ownership, next_paths, current_manifest, selected, checked_parents,
-                    )
+                    _finalize_cache(ctx, cache, roots, outputs, selected, checked_parents)
             finally:
                 _close_task_queues(plan)
                 _cleanup_stream_projection(projection)

@@ -18,9 +18,9 @@ from pathlib import Path
 
 
 
-def ensure_parent_dir(path: Path, dry_run: bool = False) -> None:
+def ensure_parent_dir(path: Path) -> None:
     parent = path.parent
-    if not parent.exists() and not dry_run:
+    if not parent.exists():
         parent.mkdir(parents=True, exist_ok=True)
 
 
@@ -400,10 +400,6 @@ class TempWorkspace:
         )
         self._paths.append(Path(f.name))
         return f
-
-    def add(self, path: Path) -> Path:
-        self._paths.append(path)
-        return path
 
     def cleanup(self) -> None:
         for path in self._paths:

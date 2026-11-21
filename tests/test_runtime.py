@@ -10,7 +10,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 import pytest
 
 from articulous.filesystem import (
-    TempWorkspace,
     _pid_alive,
     atomic_output,
     ensure_parent_dir,
@@ -68,12 +67,6 @@ def test_ensure_parent_dir_creates(tmp_path):
     p = tmp_path / "a" / "b" / "c.txt"
     ensure_parent_dir(p)
     assert p.parent.is_dir()
-
-
-def test_ensure_parent_dir_dry_run_noop(tmp_path):
-    p = tmp_path / "a" / "b" / "c.txt"
-    ensure_parent_dir(p, dry_run=True)
-    assert not p.parent.exists()
 
 
 def test_ensure_parent_dir_existing_parent_noop(tmp_path):
@@ -464,19 +457,6 @@ def test_pid_alive_handles_os_errors(monkeypatch):
 
     monkeypatch.setattr("articulous.filesystem.os.kill", denied)
     assert _pid_alive(123) is True
-
-
-def test_temp_workspace_add_and_cleanup(tmp_path):
-    owned = tmp_path / "owned.txt"
-    owned.write_text("x")
-    with TempWorkspace() as workspace:
-        workspace.add(owned)
-        f = workspace.named_file("w+b")
-        f.write(b"x")
-        temp_path = f.name
-        f.close()
-    assert not owned.exists()
-    assert not os.path.exists(temp_path)
 
 
 def test_update_cache_thread_safe():

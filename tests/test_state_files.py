@@ -1,4 +1,5 @@
 """Regular-file requirements for configuration and build state."""
+from contextlib import chdir
 import json
 import os
 import socket
@@ -37,8 +38,16 @@ def test_cli_preserves_configuration_inside_output(site_root, flags):
 
 
 def _make_socket(path):
-    with socket.socket(socket.AF_UNIX) as connection:
-        connection.bind(str(path))
+    with chdir(path.parent), socket.socket(socket.AF_UNIX) as connection:
+        connection.bind(path.name)
+
+
+def test_verify_socket_01_long_fixture_path(tmp_path):
+    directory = tmp_path / ("nested" * 24)
+    directory.mkdir()
+    sock = directory / "state.sock"
+    _make_socket(sock)
+    assert sock.is_socket()
 
 
 def _make_special(path, kind):

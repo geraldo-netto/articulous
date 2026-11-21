@@ -32939,8 +32939,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 22,
-            "line": 15,
+            "end_line": 23,
+            "line": 16,
             "name": "test_config_creation_preserves_symlinked_parent_support",
             "projection_sha256": "1418a438e205d89b8edc7fb466e89ac2771b88e9a392040f55463b3dfae43a2c"
           },
@@ -32949,28 +32949,38 @@
             "column": 0,
             "complexity": 1,
             "end_column": 57,
-            "end_line": 36,
-            "line": 26,
+            "end_line": 37,
+            "line": 27,
             "name": "test_cli_preserves_configuration_inside_output",
             "projection_sha256": "82a91c109c9644c7629e16d597cacff07c3a958e8ccb3a1b589c1eeeef6bdf9b"
           },
           {
-            "body_sha256": "aa091993cb3f56f8cbc86d739249f40e37ef6ede738e30b158656ab8c0bcbf11",
+            "body_sha256": "5975acc88277fc46d1df9cefd5734b2fee970ae784cc97e6c035714feb57415d",
             "column": 0,
             "complexity": 1,
             "end_column": 34,
-            "end_line": 41,
-            "line": 39,
+            "end_line": 42,
+            "line": 40,
             "name": "_make_socket",
-            "projection_sha256": "788e9b4b720d0b548e168936c91605f7c1564d8c35fdb67f126231bee8b13f5a"
+            "projection_sha256": "917fa2eb420642ced6fca5208e21a6bfe8d0d568ca7f8cbbd8718918d93d9373"
+          },
+          {
+            "body_sha256": "3a79c53f20f90d16568aec32c4380365a19c8e06f1df789bf5085ce5291dff99",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 27,
+            "end_line": 50,
+            "line": 45,
+            "name": "test_verify_socket_01_long_fixture_path",
+            "projection_sha256": "0772f23a9bfa0518b42bbb78be9924a6676b29aec5e9cfcc9f9ba8282cf0324e"
           },
           {
             "body_sha256": "dfc427927e7772b2dad6949d33d56e94090f32e876edbab1b097d21113427c4f",
             "column": 0,
             "complexity": 1,
             "end_column": 18,
-            "end_line": 47,
-            "line": 44,
+            "end_line": 56,
+            "line": 53,
             "name": "_make_special",
             "projection_sha256": "d701e0a900c749d25b390b0db72285433e5723570bfe1cbe624b37d3ba788946"
           },
@@ -32979,9 +32989,9 @@
             "column": 22,
             "complexity": 1,
             "end_column": 45,
-            "end_line": 45,
-            "line": 45,
-            "name": "_make_special.<lambda>@45:22",
+            "end_line": 54,
+            "line": 54,
+            "name": "_make_special.<lambda>@54:22",
             "projection_sha256": "0ace1560f1efe7c1aa17885121dac4c297147def1d2d434b712c15cc4061fc6c"
           },
           {
@@ -32989,9 +32999,9 @@
             "column": 24,
             "complexity": 1,
             "end_column": 50,
-            "end_line": 46,
-            "line": 46,
-            "name": "_make_special.<lambda>@46:24",
+            "end_line": 55,
+            "line": 55,
+            "name": "_make_special.<lambda>@55:24",
             "projection_sha256": "e378dc4b801249a5d81341ea40fff687ef68f6fcf206761103084e65e08efea1"
           },
           {
@@ -32999,8 +33009,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 24,
-            "end_line": 66,
-            "line": 52,
+            "end_line": 75,
+            "line": 61,
             "name": "test_cli_rejects_special_state_files_without_blocking",
             "projection_sha256": "c55521e6ef0abd2cc8c09f73349bc9e3a8d9959c0f5af15be95cb398abedbcc8"
           },
@@ -33009,8 +33019,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 20,
-            "end_line": 75,
-            "line": 71,
+            "end_line": 84,
+            "line": 80,
             "name": "test_json_readers_reject_special_files",
             "projection_sha256": "38249344461f265605ec57d8201da4286ca8b6c4aeb94e1545048d5b2ab5bc49"
           },
@@ -33019,8 +33029,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 28,
-            "end_line": 85,
-            "line": 79,
+            "end_line": 94,
+            "line": 88,
             "name": "test_json_readers_accept_regular_symlink_targets",
             "projection_sha256": "37e35b85b555a2753ff7c2c8c786fcd5bc8f757a92e32ccafbf8aca203d67527"
           },
@@ -33029,8 +33039,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 20,
-            "end_line": 93,
-            "line": 89,
+            "end_line": 102,
+            "line": 98,
             "name": "test_json_readers_reject_symlink_to_device",
             "projection_sha256": "fcdf76333b0dc42d2cc96d4e407c840198a7aad9aed75f3bd4776110ac96683b"
           },
@@ -33039,8 +33049,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 39,
-            "end_line": 102,
-            "line": 97,
+            "end_line": 111,
+            "line": 106,
             "name": "test_logging_rejects_special_files",
             "projection_sha256": "1948e7eec54a4dce17cdf561c5c6a7beaea444d642096b639169537ff6c38563"
           },
@@ -33049,8 +33059,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 28,
-            "end_line": 116,
-            "line": 105,
+            "end_line": 125,
+            "line": 114,
             "name": "test_logging_appends_to_regular_symlink_target",
             "projection_sha256": "892b95010596b43c520b5bdf328ffc09b9709edd26007c6f14f359b1dfa8ee8e"
           },
@@ -33059,8 +33069,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 139,
-            "line": 119,
+            "end_line": 148,
+            "line": 128,
             "name": "test_regular_reader_rejects_file_swapped_after_validation",
             "projection_sha256": "156b441bb7b3ac1eeb2d4ecb0d9cefd9a9dfb1d197920c49bb9656b58c6eb646"
           },
@@ -33069,15 +33079,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 17,
-            "end_line": 131,
-            "line": 125,
+            "end_line": 140,
+            "line": 134,
             "name": "test_regular_reader_rejects_file_swapped_after_validation.swap_and_open",
             "projection_sha256": "9e013dd23d2ba39d591e54bc80b66989eee03d3dc9a8f23f8919ffb9f63858b5"
           }
         ],
         "language": "python",
         "path": "tests/test_state_files.py",
-        "sha256": "ff63b0504763a2cb3764a286a69479a3c3914b60a5a821657efe1fe304733030"
+        "sha256": "d1e4653b4dc894e42c5b393a480298e6d2585be3be903f66dfb25e85973a637c"
       },
       {
         "functions": [

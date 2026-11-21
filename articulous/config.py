@@ -76,7 +76,6 @@ DEFAULT_CONFIG = {
 }
 
 _BARE_SECTIONS = frozenset(PER_LANG_SECTIONS) | {"rss"}
-_CONFIG_KEYS = CONFIG_KEYS
 _LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 
 
@@ -271,7 +270,7 @@ def _validate_bare_default_language(config: dict) -> None:
 
 def _validate_configuration(config) -> None:
     config = _require_object(config, "root")
-    _require_exact_keys(config, _CONFIG_KEYS, "root")
+    _require_exact_keys(config, CONFIG_KEYS, "root")
     for validator in (
         _validate_paths,
         _validate_engines,

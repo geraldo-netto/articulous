@@ -120,6 +120,18 @@ def _directory_handle(path: Path, *, create: bool = False):
 
 
 @contextmanager
+def partition_directory_lock(namespace: Path, *, pruning: bool = False):
+    """Coordinate cache-lock admission with the short expiry check and unlink."""
+    with _directory_handle(namespace) as directory:
+        mode = fcntl.LOCK_EX | fcntl.LOCK_NB if pruning else fcntl.LOCK_SH
+        try:
+            fcntl.flock(directory, mode)
+        except BlockingIOError as error:
+            raise FileExistsError(namespace) from error
+        yield
+
+
+@contextmanager
 def _asset_source(path: Path):
     with _directory_handle(path.parent) as directory_fd:
         fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory_fd)

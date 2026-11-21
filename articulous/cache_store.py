@@ -1,6 +1,6 @@
 """Filesystem adapter for shared and partitioned fingerprint cache storage."""
 from collections.abc import Callable
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import AbstractContextManager, ExitStack, contextmanager, nullcontext
 from dataclasses import dataclass
 import hashlib
 import json
@@ -11,7 +11,7 @@ import re
 
 from .cache_usage_index import file_generation, read_usage_index, reusable_usage, save_usage_index
 from .filesystem import (
-    cache_lock_path, lock_file, open_regular_file, private_directory,
+    cache_lock_path, lock_file, open_regular_file, partition_directory_lock, private_directory,
     validate_output_path, validate_regular_file, write_text_atomic,
 )
 from .output_cache import CACHE_ROOTS_KEY, LAST_USED_KEY, cutoff_for, last_used, output_cache_roots
@@ -71,7 +71,10 @@ def lock_selected_cache(base: Path, destination: Path,
                         locked: Callable[[Path], AbstractContextManager], *, project=None):
     while True:
         selected = select_cache(base, destination, project)
-        with locked(selected.path):
+        with ExitStack() as owners:
+            admission = partition_directory_lock(selected.path.parent) if selected.partitioned else nullcontext()
+            with admission:
+                owners.enter_context(locked(selected.path))
             # Activation publishes the directory while holding the old cache lock.
             if selected.partitioned or not os.path.lexists(cache_namespace(selected.base)):
                 yield selected
@@ -193,7 +196,7 @@ def _is_expired(used, cutoff):
 
 def _prune_root(path, cutoff, project):
     try:
-        with lock_file(cache_lock_path(path)):
+        with partition_directory_lock(path.parent, pruning=True), lock_file(cache_lock_path(path)):
             usage = _dated_usage(path, project)
             if _eligible_for_pruning(usage, cutoff):
                 path.unlink()

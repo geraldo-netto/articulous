@@ -2802,22 +2802,22 @@
             "projection_sha256": "f6f91a92cd9e6de7870019bbcecb029619f3bab11f7825615e093eb0b9d54ef6"
           },
           {
-            "body_sha256": "bcfa117a768bd51c39579a896fdc6ec2d06c27d9a271005f935f200c979a2733",
+            "body_sha256": "77cf452bbbb45cd9e1f6c715117a0d3bc0b0a13beb4a4a65c6309ea5b96ffb53",
             "column": 0,
-            "complexity": 4,
+            "complexity": 5,
             "end_column": 22,
-            "end_line": 78,
+            "end_line": 81,
             "line": 70,
             "name": "lock_selected_cache",
-            "projection_sha256": "2b97cda49e164f3766ce92d359246e717d5fb7af73a6324a19562d190a5ea606"
+            "projection_sha256": "69f02e80c4f1430c383614bdcce02fb06749c2e63f2eb1e21e0fdfb00394ff8b"
           },
           {
             "body_sha256": "d450053668c9e39ee3d4d6689d2258dd3f063db997e3f9e752c939cef52c2e03",
             "column": 0,
             "complexity": 3,
             "end_column": 37,
-            "end_line": 86,
-            "line": 81,
+            "end_line": 89,
+            "line": 84,
             "name": "partitioned_payload",
             "projection_sha256": "d814a662447fdd3bbf4ed287ab97e33585f473cb74d75b7bb16e4021cd14c0e0"
           },
@@ -2826,8 +2826,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 91,
-            "end_line": 90,
-            "line": 89,
+            "end_line": 93,
+            "line": 92,
             "name": "cache_payload",
             "projection_sha256": "4ccc0f43710aa192005e301227a177aabc0d44cd28950ef1711423e33447371d"
           },
@@ -2836,8 +2836,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 16,
-            "end_line": 97,
-            "line": 93,
+            "end_line": 100,
+            "line": 96,
             "name": "selected_roots",
             "projection_sha256": "5c8e9d806d7184259b9c30087aa0b54ab27beae0608e0e27554ce586cdb4a774"
           },
@@ -2846,8 +2846,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 92,
-            "end_line": 108,
-            "line": 100,
+            "end_line": 111,
+            "line": 103,
             "name": "_pending_journal",
             "projection_sha256": "b4b7be6203698e6576059d9fde3633db066232589b516ad1f9a0a7ad84e736bd"
           },
@@ -2856,8 +2856,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 16,
-            "end_line": 121,
-            "line": 111,
+            "end_line": 124,
+            "line": 114,
             "name": "_has_pending_journal",
             "projection_sha256": "d3ef59be86845096e239b420d3007c7c078560132f68a1374dbbe1ee11c2aaeb"
           },
@@ -2866,8 +2866,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 113,
-            "line": 112,
+            "end_line": 116,
+            "line": 115,
             "name": "_has_pending_journal.failed",
             "projection_sha256": "642aeb19d9b0fbbf77b1d530afef3ce5f25aae8fb5ff992c7609709626578fad"
           },
@@ -2876,8 +2876,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 15,
-            "end_line": 132,
-            "line": 124,
+            "end_line": 135,
+            "line": 127,
             "name": "_admitted_root",
             "projection_sha256": "40ed07dc729b57460922933671d64d2c778e260344c347e1f2320245bf77cda3"
           },
@@ -2886,8 +2886,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 5,
-            "end_line": 142,
-            "line": 135,
+            "end_line": 145,
+            "line": 138,
             "name": "_migration_records",
             "projection_sha256": "dea5ee916c19d7392049cdf063de509369aa615995c0edf8ec83e02a80b417f7"
           },
@@ -2896,8 +2896,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 62,
-            "end_line": 155,
-            "line": 145,
+            "end_line": 158,
+            "line": 148,
             "name": "_activate_namespace",
             "projection_sha256": "0feb511e00a8c0120f1f5b4d5cd9563e5b35acd2571dc3532a9f1d28307db797"
           },
@@ -2906,8 +2906,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 76,
-            "end_line": 175,
-            "line": 158,
+            "end_line": 178,
+            "line": 161,
             "name": "_read_usage",
             "projection_sha256": "f0975409cfa605bc41fb219b279ed7b0c9bc91de60ce1b398e4ec5e06ef22daa"
           },
@@ -2916,8 +2916,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 54,
-            "end_line": 180,
-            "line": 178,
+            "end_line": 183,
+            "line": 181,
             "name": "_usage_root_matches",
             "projection_sha256": "86e1d1977bba34f5c4551fd2a6bc15f2e95b5cfbae1185727badba9481f69a9e"
           },
@@ -2926,8 +2926,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 19,
-            "end_line": 187,
-            "line": 183,
+            "end_line": 190,
+            "line": 186,
             "name": "_dated_usage",
             "projection_sha256": "53142c0cd3c0195e6e8e89ed63d1c0f793b27464eb50f2a279be3895acf32393"
           },
@@ -2936,28 +2936,28 @@
             "column": 0,
             "complexity": 3,
             "end_column": 66,
-            "end_line": 191,
-            "line": 190,
+            "end_line": 194,
+            "line": 193,
             "name": "_is_expired",
             "projection_sha256": "207546804eb6e12a6f9b51f272b2e2c4103ab728de081bf544dc72c6c534f7ca"
           },
           {
-            "body_sha256": "daba4c957bcef72d57301bf4edcb06bca53f8595f179af0d1c4588275c53b8a0",
+            "body_sha256": "6ec13a07c3929ad506227757e14fe8caa5339a48905018ea85787dadd47d792c",
             "column": 0,
             "complexity": 3,
             "end_column": 16,
-            "end_line": 203,
-            "line": 194,
+            "end_line": 206,
+            "line": 197,
             "name": "_prune_root",
-            "projection_sha256": "167781c06220693bb11e5c396aefb98daef47511ebe8f1ae5413cfe682561aec"
+            "projection_sha256": "61dd6a42b0b36a32e52a1fca7783acd05248b566eac283d8398b571401c74142"
           },
           {
             "body_sha256": "d04a4152d5080b6c871aad04e77397174c5bc5056800a25393c29863cfdd0b2a",
             "column": 0,
             "complexity": 3,
             "end_column": 90,
-            "end_line": 210,
-            "line": 206,
+            "end_line": 213,
+            "line": 209,
             "name": "_eligible_for_pruning",
             "projection_sha256": "32103cb57dcd3ef2b443c1967bfeac074a3d573b626ee85f7c150955da7282cb"
           },
@@ -2966,8 +2966,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 15,
-            "end_line": 223,
-            "line": 213,
+            "end_line": 226,
+            "line": 216,
             "name": "_partition_usage",
             "projection_sha256": "586029eecba9bfd3d1cad604a32a525303fecb0aa3fd5cca8e0ad68643a84b1c"
           },
@@ -2976,8 +2976,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 91,
-            "end_line": 233,
-            "line": 226,
+            "end_line": 236,
+            "line": 229,
             "name": "_partition_entries",
             "projection_sha256": "0dc18abe54d9cf7b5991be4c7f906fc085b2d808f9b6b1a3ecfe74d6bf25154c"
           },
@@ -2986,8 +2986,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 90,
-            "end_line": 240,
-            "line": 236,
+            "end_line": 243,
+            "line": 239,
             "name": "_expire_partitions",
             "projection_sha256": "826bd1089a3d17d2aedc5e24d1a3730ee127dec79f2e2851ef88f8ec3ed0c53e"
           },
@@ -2996,15 +2996,15 @@
             "column": 0,
             "complexity": 5,
             "end_column": 74,
-            "end_line": 252,
-            "line": 243,
+            "end_line": 255,
+            "line": 246,
             "name": "finish_cache_update",
             "projection_sha256": "507611c4bc97247e9f3fee820712b0362f082d2024d874fb1806a4775b6dd2f0"
           }
         ],
         "language": "python",
         "path": "articulous/cache_store.py",
-        "sha256": "8d0a9e1b7db87c44ac0b5455695aea60621fac1a654098c05ee36f5441819946"
+        "sha256": "eceebdab0954c17203826e326d29add26e98158aab0a8627fa277e67b497c714"
       },
       {
         "functions": [
@@ -5992,12 +5992,22 @@
             "projection_sha256": "819ff6e9855d7afd44197824695adfc0fe2d9c07385b40200ebe6174cbf52900"
           },
           {
+            "body_sha256": "1f918a5ae783adf81faf3a7652f832d64ffbba0019e7543bf25ec0a462258874",
+            "column": 0,
+            "complexity": 3,
+            "end_column": 13,
+            "end_line": 131,
+            "line": 123,
+            "name": "partition_directory_lock",
+            "projection_sha256": "453b9f0257d82391c95bf14c48488cf62307b9782e2e5f171847264915936030"
+          },
+          {
             "body_sha256": "c5fede2ded49813df66cdb5a2acea445e4e199e104ac3c54cb624039a82f035a",
             "column": 0,
             "complexity": 3,
             "end_column": 24,
-            "end_line": 132,
-            "line": 123,
+            "end_line": 144,
+            "line": 135,
             "name": "_asset_source",
             "projection_sha256": "06c99a9f1f89db432d7afbaa66b468bf9e0a034c8c7771b0d0894b1ad10d016e"
           },
@@ -6006,8 +6016,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 47,
-            "end_line": 144,
-            "line": 135,
+            "end_line": 156,
+            "line": 147,
             "name": "_cleanup_private_directory",
             "projection_sha256": "0a5ef1fd6b2295b7cec4daefa1cfc7a72122af968ee3339b2eccb89449675d39"
           },
@@ -6016,8 +6026,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 76,
-            "end_line": 154,
-            "line": 148,
+            "end_line": 166,
+            "line": 160,
             "name": "private_directory",
             "projection_sha256": "c1e8224f24fa8a702648597c43a51c57edfa335e59694c9a87dd29eb3c6d65bc"
           },
@@ -6026,8 +6036,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 74,
-            "end_line": 160,
-            "line": 157,
+            "end_line": 172,
+            "line": 169,
             "name": "_validate_asset_copy_target",
             "projection_sha256": "dad7131eca1e189a07f197cc926e9604b75dea64a1d0bfca5e3421b1dfc6a25f"
           },
@@ -6036,8 +6046,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 52,
-            "end_line": 171,
-            "line": 163,
+            "end_line": 183,
+            "line": 175,
             "name": "copy_asset_file",
             "projection_sha256": "408ba708c9e31e5f0cd86d946acc26fdc3c637f8bcf96134ae1ffe46d13c6c21"
           },
@@ -6046,8 +6056,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 29,
-            "end_line": 181,
-            "line": 180,
+            "end_line": 193,
+            "line": 192,
             "name": "StagedOutput.name",
             "projection_sha256": "8a2520666a8350a070b61d31a3b1d50f8f4c477eeb0250f81e20cb531a6b751b"
           },
@@ -6056,8 +6066,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 66,
-            "end_line": 188,
-            "line": 183,
+            "end_line": 200,
+            "line": 195,
             "name": "StagedOutput.open",
             "projection_sha256": "f2c0a9db57e30de28f71434f1b6698474a3f9024751d22468c48101a3c1e4e50"
           },
@@ -6066,8 +6076,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 40,
-            "end_line": 192,
-            "line": 190,
+            "end_line": 204,
+            "line": 202,
             "name": "StagedOutput.write_bytes",
             "projection_sha256": "86714bf4049c8258683c7b317d2893f3ef608a3789bf83fb2cc30dcaf1726ada"
           },
@@ -6076,8 +6086,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 40,
-            "end_line": 196,
-            "line": 194,
+            "end_line": 208,
+            "line": 206,
             "name": "StagedOutput.write_text",
             "projection_sha256": "c64c95472bee755662d68d693e1e302d78459efbd551476bb905c65cb7e3e3f6"
           },
@@ -6086,8 +6096,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 91,
-            "end_line": 203,
-            "line": 199,
+            "end_line": 215,
+            "line": 211,
             "name": "_validate_staging_file",
             "projection_sha256": "1e4186b051a4a8951f207ecdd82a5686580292ed0f758763eb87c5387ebade15"
           },
@@ -6096,8 +6106,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 16,
-            "end_line": 217,
-            "line": 207,
+            "end_line": 229,
+            "line": 219,
             "name": "_generated_staging_file",
             "projection_sha256": "5c0a59e8adb07e6678e463b91b68a2fd59b3b60d01c1f8155039744113fc3460"
           },
@@ -6106,8 +6116,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 96,
-            "end_line": 236,
-            "line": 221,
+            "end_line": 248,
+            "line": 233,
             "name": "_generated_output",
             "projection_sha256": "2a37de1a3b41dd675502653746a16b247c96e152360ee35694f6e3dce6f2158a"
           },
@@ -6116,8 +6126,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 40,
-            "end_line": 255,
-            "line": 240,
+            "end_line": 267,
+            "line": 252,
             "name": "atomic_output",
             "projection_sha256": "16e20129cff634ab9f82ef5e0c7bae1d8ae57ec8224a0b1010430486e2555c54"
           },
@@ -6126,8 +6136,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 52,
-            "end_line": 260,
-            "line": 258,
+            "end_line": 272,
+            "line": 270,
             "name": "write_text_atomic",
             "projection_sha256": "49ccdbbeff2d6731a5193503cbe442ec1d97776d345b4c68775bb7291e34f26d"
           },
@@ -6136,8 +6146,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 21,
-            "end_line": 275,
-            "line": 263,
+            "end_line": 287,
+            "line": 275,
             "name": "_entry_digest",
             "projection_sha256": "19e7c1bd82fba6c890255adf8dcdaf9449028ee42e3a688377bded3b8aa09a21"
           },
@@ -6146,8 +6156,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 29,
-            "end_line": 297,
-            "line": 278,
+            "end_line": 309,
+            "line": 290,
             "name": "tree_fingerprint",
             "projection_sha256": "efdb140c3642554e03a0c1b989da0663a36ae6943aeb9b57e492670d5018b65b"
           },
@@ -6156,8 +6166,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 15,
-            "end_line": 309,
-            "line": 300,
+            "end_line": 321,
+            "line": 312,
             "name": "_pid_alive",
             "projection_sha256": "5dc01640a4b1c243432d248fba16835fac4ef0b9db50f3d4a1aee9f1d537320d"
           },
@@ -6166,8 +6176,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 43,
-            "end_line": 314,
-            "line": 312,
+            "end_line": 326,
+            "line": 324,
             "name": "_lock_payload",
             "projection_sha256": "90426b6702ce8d78efe38ceb5d82d4d4d245ad99c040e60a232239b00ebd9afc"
           },
@@ -6176,8 +6186,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 26,
-            "end_line": 331,
-            "line": 317,
+            "end_line": 343,
+            "line": 329,
             "name": "_stale_lock_reason",
             "projection_sha256": "15b9c0efd4ff2afbb788a493f623a259fec800e46ac60ea37b8f50ebbd3384cb"
           },
@@ -6186,8 +6196,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 63,
-            "end_line": 336,
-            "line": 334,
+            "end_line": 348,
+            "line": 346,
             "name": "_read_lock",
             "projection_sha256": "40f91d8b57ef735d850c181ab09d33eb10c0e2a833549de8a279d1a14de405f0"
           },
@@ -6196,8 +6206,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 49,
-            "end_line": 342,
-            "line": 339,
+            "end_line": 354,
+            "line": 351,
             "name": "_write_lock",
             "projection_sha256": "2ee12802fba28f24aaab26703751d0b6c3ef231daa6c1a12024e09c61c77d5ca"
           },
@@ -6206,8 +6216,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 13,
-            "end_line": 363,
-            "line": 345,
+            "end_line": 375,
+            "line": 357,
             "name": "_acquire_lock",
             "projection_sha256": "a64d9fbf8d1641c59eddce827baeff654e3262164ee1f4a7e85aa5f27a632259"
           },
@@ -6216,8 +6226,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 24,
-            "end_line": 376,
-            "line": 367,
+            "end_line": 388,
+            "line": 379,
             "name": "lock_file",
             "projection_sha256": "7e851e1eab4a02bdb56352936d53ec656c26fd2b65730fe8fad27898b9c8d142"
           },
@@ -6226,8 +6236,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 35,
-            "end_line": 382,
-            "line": 380,
+            "end_line": 394,
+            "line": 392,
             "name": "TempWorkspace.__init__",
             "projection_sha256": "ce0edba00ab8511525aa4308de3eeff6431de069609a9b122a0efccb1a3d8f38"
           },
@@ -6236,8 +6246,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 16,
-            "end_line": 390,
-            "line": 384,
+            "end_line": 402,
+            "line": 396,
             "name": "TempWorkspace.named_file",
             "projection_sha256": "0e7e660aa1bb9dae2ecc42d360bd300e910f880d4df534561f35f88bd77b44ad"
           },
@@ -6246,8 +6256,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 394,
-            "line": 392,
+            "end_line": 406,
+            "line": 404,
             "name": "TempWorkspace.add",
             "projection_sha256": "bb438e667fc0236c7396dc944f33ef41ab2d3e7582566e0deab2404c5250f977"
           },
@@ -6256,8 +6266,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 27,
-            "end_line": 399,
-            "line": 396,
+            "end_line": 411,
+            "line": 408,
             "name": "TempWorkspace.cleanup",
             "projection_sha256": "2aad399f89984d5cbf247d3f6e41071f13048880db7edd05df582b5a23de859b"
           },
@@ -6266,8 +6276,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 19,
-            "end_line": 402,
-            "line": 401,
+            "end_line": 414,
+            "line": 413,
             "name": "TempWorkspace.__enter__",
             "projection_sha256": "55dd338420b48fdcea10cd65be0331bbbff351597f94a7d1f80a1aa9d2bfd03b"
           },
@@ -6276,15 +6286,15 @@
             "column": 4,
             "complexity": 1,
             "end_column": 22,
-            "end_line": 405,
-            "line": 404,
+            "end_line": 417,
+            "line": 416,
             "name": "TempWorkspace.__exit__",
             "projection_sha256": "c5fb70d6713e9ea85ee3283f03b44d50a3d7fbc0947beebb2f1ef52519527657"
           }
         ],
         "language": "python",
         "path": "articulous/filesystem.py",
-        "sha256": "f5ee3994b39eaadade732bbbe494e1b933b4d03ce74951a2138d3230dd02151e"
+        "sha256": "29067e3f99eb09b01266cc0078c48991445bed89984734b17721137a38a6ee15"
       },
       {
         "functions": [
@@ -23473,11 +23483,51 @@
             "line": 517,
             "name": "test_review28_24_nested_partition_headers_do_not_fail_committed_builds",
             "projection_sha256": "3479939fb87bb815de3d3803bccc80cc2912a3c82a7008fa0358691b8be2ca71"
+          },
+          {
+            "body_sha256": "bff2582253a79a2c680c6138e2db4f9b64a346fd409cf3b5acfacfbd9866fb07",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 74,
+            "end_line": 566,
+            "line": 531,
+            "name": "test_review28_25_build_admission_during_partition_expiry",
+            "projection_sha256": "869d1d67aac59b53b00a77fddf638bfaad20bb2ccaeae2f31e72ad8069801463"
+          },
+          {
+            "body_sha256": "de3f34f96b5197a17ce01ecdc574e81505b1ee1eec7782eb393eed87d99ec557",
+            "column": 4,
+            "complexity": 3,
+            "end_column": 38,
+            "end_line": 543,
+            "line": 539,
+            "name": "test_review28_25_build_admission_during_partition_expiry.pause_expiry",
+            "projection_sha256": "61f753fd832e6896ddb9523264f19b0c3627b5da5d9a604e7efa9818268dc331"
+          },
+          {
+            "body_sha256": "bb72c5c41beccae4515ca296029241e64a17cc148d159a70bf5a770e2d9698d6",
+            "column": 4,
+            "complexity": 2,
+            "end_column": 21,
+            "end_line": 549,
+            "line": 545,
+            "name": "test_review28_25_build_admission_during_partition_expiry.observe_selection",
+            "projection_sha256": "f90ed0944333e9a6665b164448179187d14c3bf847c6c9bcf79e644ec0383d37"
+          },
+          {
+            "body_sha256": "c6cf87578eddd46d791d0df12d430ae888a3dd6d9cd56f4a3079fbe5fe935d0d",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 30,
+            "end_line": 578,
+            "line": 569,
+            "name": "test_review28_25_expiry_skips_namespace_during_writer_admission",
+            "projection_sha256": "dcadb7c04b15783cf90dc1780194431ff7fc77be0fdc11652e137d92d5665bc7"
           }
         ],
         "language": "python",
         "path": "tests/test_partitioned_cache.py",
-        "sha256": "e87eec92eab69b722a4ab3910590579b2708c1feea4b4dec635d4390a0510961"
+        "sha256": "613cfa1808189deb17c6c7e65eeb7000719554c69729c3c947b469d57e1dc22a"
       },
       {
         "functions": [

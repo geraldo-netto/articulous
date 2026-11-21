@@ -149,10 +149,12 @@ Use `--force` for a rebuild that keeps ownership history.
 Builds targeting the same output directory share a lock beside it
 (`.output.articulous.lock` by default), independent of cache filename.
 Builds using the shared layout also share a cache lock
-(`..build-cache.json.articulous.lock` by default). Partitioned builds lock
-only their own cache file, allowing disjoint outputs to build concurrently.
-A conflicting build
-fails immediately rather than waiting. Lock files remain after release;
+(`..build-cache.json.articulous.lock` by default). Partitioned builds lock their own cache file for the build,
+allowing disjoint outputs to build concurrently. Expiry briefly locks the
+partition directory and the candidate cache file to recheck its age and
+remove it. Expiry skips busy candidates. A build starting during that check
+waits for it to finish. A second build targeting an active output or cache
+still fails immediately on contention. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
 Cache, log, lock and ownership paths must stay separate from configuration, source
 trees, output trees and each other.

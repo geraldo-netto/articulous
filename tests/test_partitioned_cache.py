@@ -9,7 +9,7 @@ import random
 import shutil
 import subprocess
 import sys
-from threading import Barrier
+from threading import Barrier, Event
 from types import SimpleNamespace
 
 import pytest
@@ -526,3 +526,53 @@ def test_review28_24_nested_partition_headers_do_not_fail_committed_builds(site_
     assert not old.path.exists()
     assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
     assert all(old.path.with_name(f'{i:064x}.json').exists() for i in range(3))
+
+
+def test_review28_25_build_admission_during_partition_expiry(site_root, cache_clock, monkeypatch):
+    pipeline.run_build(REQUEST, _config(), site_root)
+    cache_clock[0] += 4 * DAY
+    root = site_root / 'output'
+    checking, selected, release = Event(), Event(), Event()
+    eligible = cache_store._eligible_for_pruning
+    select = cache_store.select_cache
+
+    def pause_expiry(usage, cutoff):
+        if usage and usage[0] == str(root):
+            checking.set()
+            assert release.wait(10)
+        return eligible(usage, cutoff)
+
+    def observe_selection(base, destination, project=None):
+        result = select(base, destination, project)
+        if destination == root:
+            selected.set()
+        return result
+
+    monkeypatch.setattr(cache_store, '_eligible_for_pruning', pause_expiry)
+    monkeypatch.setattr(cache_store, 'select_cache', observe_selection)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        maintenance = pool.submit(pipeline.run_build, REQUEST, _config('second'), site_root)
+        try:
+            assert checking.wait(10)
+            build = pool.submit(pipeline.run_build, REQUEST, _config(), site_root)
+            assert selected.wait(10)
+            with pytest.raises(TimeoutError):
+                build.result(timeout=0.1)
+        finally:
+            release.set()
+        maintenance.result()
+        build.result()
+    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert _record(site_root, 'second')['__last_used__'] == cache_clock[0]
+
+
+def test_review28_25_expiry_skips_namespace_during_writer_admission(site_root, cache_clock):
+    from articulous.filesystem import partition_directory_lock
+    pipeline.run_build(REQUEST, _config(), site_root)
+    active = _selected(site_root, 'output').path
+    cache_clock[0] += 4 * DAY
+    with partition_directory_lock(active.parent):
+        assert not cache_store._prune_root(active, None, site_root)
+        assert active.is_file()
+    assert cache_store._prune_root(active, None, site_root)
+    assert not active.exists()

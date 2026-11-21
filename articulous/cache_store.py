@@ -183,7 +183,7 @@ def _usage_root_matches(root, path, project):
 def _dated_usage(path, project):
     try:
         return _read_usage(path, project)
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return None
 
 
@@ -248,5 +248,5 @@ def finish_cache_update(selected: CacheSelection, destination: Path, retention_d
             _expire_partitions(selected.path, retention_days, project)
         elif partition:
             _activate_namespace(selected.base, destination, project)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, RecursionError) as error:
         logging.warning('Fingerprint cache maintenance failed: %s', error)

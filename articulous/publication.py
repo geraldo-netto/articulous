@@ -7,6 +7,7 @@ from .publication_contracts import PublicationBackend
 from .cache_store import lock_selected_cache
 from .config import normalize_configuration
 from .configuration_contracts import BuildOptions, ConfigurationInput
+from .filesystem import validate_output_path
 from .publication_adapter import _publish_current, publish_generation
 from .build_contracts import ValidatedBuild, ValidationReport
 from .builds import (
@@ -39,6 +40,10 @@ def publish_validated(checked: ValidatedBuild, *, backend=None,
 
 
 def recover_publication(destination: Path, cache_path: Path, *, backend=None) -> None:
+    if not destination.is_absolute() or not cache_path.is_absolute():
+        raise ValueError('Publication recovery requires absolute destination and cache paths')
+    validate_output_path(destination)
+    destination = destination.resolve()
     selected = _backend(backend, False, False)
     with lock_selected_cache(cache_path, destination, partial(selected.locked, destination)) as cache:
         selected.recover(destination, cache.path)

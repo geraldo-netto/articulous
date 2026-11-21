@@ -148,12 +148,13 @@ class PosixPublicationBackend:
         destination, cache = publication.destination, publication.cache_path
         stage = publication.root.parent
         data = {
-            'version': 2, 'destination': str(destination), 'cache': str(cache),
+            'version': 2, 'phase': 'capturing', 'destination': str(destination), 'cache': str(cache),
             'previous': _identity(destination), 'new': _identity(publication.root),
             'stage': str(stage), 'stage_identity': _identity(stage),
             'cache_after': hashlib.sha256(publication.cache_text.encode()).hexdigest(),
             'cache_before': None, 'ownership_before': None,
         }
+        self._validate_journal(data, destination, cache)
         transaction = self._transaction(destination)
         with private_directory(stage) as intent:
             self._set_phase(intent, data, 'capturing')

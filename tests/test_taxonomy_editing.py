@@ -239,6 +239,31 @@ def key_map(value):
     return {value: "new"}
 
 
+def test_review28_50_map_normalized_scalar_tags_preserves_layout(tmp_path):
+    article = tmp_path / 'article.xml'
+    article.write_bytes(
+        b'<entry>start<tag>drop</tag>first<tag id="a">\n al<!--note-->pha </tag>second'
+        b'<marker/>third<tag id="b">  keep  </tag>fourth<tag>new</tag>fifth<tag>drop</tag>last</entry>')
+    result = apply_map(tmp_path, {'drop': None, 'alpha': 'new'}, TaxonomyLayout('tag', '*.xml'))
+    assert result.rewritten == 1
+    assert etree.tostring(etree.parse(str(article))) == (
+        b'<entry>startfirst<tag id="a">new<!--note--></tag>second'
+        b'<marker/>third<tag id="b">  keep  </tag>fourthfifthlast</entry>')
+    before = article.stat()
+    assert apply_map(tmp_path, {'keep': 'keep'}, TaxonomyLayout('tag', '*.xml')).rewritten == 0
+    assert article.stat().st_ino == before.st_ino
+
+
+@pytest.mark.parametrize('non_scalar', [b'<em/>', b'<?note instruction?>'])
+def test_review28_50_rejects_non_scalar_tags_atomically(tmp_path, non_scalar):
+    article = tmp_path / 'article.xml'
+    original = b'<entry><tag>edit</tag><tag>broken' + non_scalar + b'value</tag></entry>'
+    article.write_bytes(original)
+    with pytest.raises(ValueError, match='tag.*text only'):
+        apply_map(tmp_path, {'edit': 'changed'}, TaxonomyLayout('tag', '*.xml'))
+    assert article.read_bytes() == original
+
+
 def provenance_document(root, language, source=None, source_digest=None):
     path = root / language / 'item.xml'
     path.parent.mkdir(exist_ok=True)
@@ -315,4 +340,4 @@ def test_review29_19_adjacent_recursive_components_share_one_walk(tmp_path, repe
     pattern = '**/' * repetitions + '*.xml'
     with patch.object(taxonomy_editing, 'tree_entries', wraps=taxonomy_editing.tree_entries) as walk:
         assert taxonomy_editing._document_paths(tmp_path, pattern) == sorted(expected)
-        walk.assert_called_once_with(tmp_path)
+        walk.assert_called_once_with(tmp_path, skip_directory_prefix=taxonomy_editing.SOURCE_STAGE_PREFIX)

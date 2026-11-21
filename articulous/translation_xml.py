@@ -6,6 +6,7 @@ from .markup import block_units, encode_block, try_decode, loose_text_nodes, in_
 from .source_files import replace_file
 from .source_transactions import fingerprint
 from .translation_contracts import XmlTranslationLayout
+from .xml_fields import scalar_text, set_scalar_text
 
 
 def _translate_block(block, encoded, translator, source, target, policy):
@@ -70,19 +71,13 @@ def translate_body(body, translator, source, target, stats, policy, log):
     translate_attributes(body, translator, source, target, stats, policy, log)
 
 
-def _require_scalar(element):
-    if any(child.tag is not etree.Comment for child in element):
-        raise ValueError(f'<{element.tag}> must contain text only')
-
-
 def _prose_value(root, name, attributes):
     if attributes:
         return root.get(name)
     element = root.find(name)
     if element is None:
         return None
-    _require_scalar(element)
-    return ''.join(element.itertext())
+    return scalar_text(element)
 
 
 def set_field(root, name, value, attributes):
@@ -92,10 +87,7 @@ def set_field(root, name, value, attributes):
         old = root.find(name)
         if old is None:
             old = etree.SubElement(root, name)
-        _require_scalar(old)
-        old.text = value
-        for comment in old:
-            comment.tail = None
+        set_scalar_text(old, value)
 
 
 def translate_metadata(root, layout, translator, source, target, stats):

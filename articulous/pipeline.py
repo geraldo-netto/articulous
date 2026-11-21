@@ -97,6 +97,7 @@ from .sitemaps import (
     sitemap_entry as _sitemap_entry, write_document, write_index,
 )
 from .tree_entries import tree_entries
+from .source_files import SOURCE_STAGE_PREFIX
 from .translations import TranslationStore, translation_history
 from .structured_data import article_jsonld
 
@@ -244,7 +245,7 @@ def _asset_manifest(root: Path) -> dict:
     if not root.is_dir():
         raise ValueError(f"Asset source must be a directory: {root}")
     manifest = {}
-    for path in sorted(tree_entries(root)):
+    for path in sorted(tree_entries(root, skip_directory_prefix=SOURCE_STAGE_PREFIX)):
         rel = path.relative_to(root).as_posix()
         metadata = path.lstat()
         if stat.S_ISDIR(metadata.st_mode):
@@ -598,6 +599,23 @@ class SortedArticleBatch:
     def __eq__(self, other) -> bool:
         return self._count == 0 and other == []
 
+    def discard_chunks(self) -> None:
+        for path, _ in self._chunks:
+            path.unlink()
+
+
+@dataclass
+class _ListedArticles:
+    articles: SortedArticleBatch
+    count: int
+
+    def __iter__(self):
+        with closing(iter(self.articles)) as articles:
+            yield from filter(attrgetter("policy.listing"), articles)
+
+    def __len__(self):
+        return self.count
+
 
 def _write_sorted_article_chunk(workspace: TempWorkspace, articles: list) -> tuple[Path, int]:
     articles.sort(key=attrgetter("datetime"), reverse=True)
@@ -740,10 +758,13 @@ class OutputManifest(dict):
         self._route_store = route_store
         self._routes: dict[str, Route] = {}
 
+    def reserve_path(self, relpath: str) -> None:
+        _record_output_path(self._owners, relpath)
+
     def record(self, cache_key: str, relpath: str, route: Route | None = None) -> None:
         if cache_key in self:
             raise ValueError(f"Duplicate generated cache key: {cache_key}")
-        _record_output_path(self._owners, relpath)
+        self.reserve_path(relpath)
         super().__setitem__(cache_key, relpath)
         if self.ctx is not None:
             self.record_route(route or route_from_output(self.ctx.base_url, cache_key, relpath))
@@ -1503,12 +1524,15 @@ class StreamProjection:
     sections: frozenset[str] = field(default_factory=_default_sections)
     sitemap_listings: bool = False
     translations: Optional[TranslationStore] = None
-    sorted_listings: dict[str, SortedArticleBatch | list] = field(default_factory=dict)
+    shared_listing_counts: dict[str, int] | None = None
 
-    def listing_batch(self, lang: str):
-        if lang not in self.sorted_listings:
-            self.sorted_listings[lang] = _sorted_store_articles(self.listings_by_lang, lang)
-        return self.sorted_listings[lang]
+    def listing_batch(self, lang, articles):
+        if self.shared_listing_counts is None:
+            return _sorted_store_articles(self.listings_by_lang, lang)
+        count = self.shared_listing_counts.get(lang, 0)
+        if not count:
+            return []
+        return articles if len(articles) == count else _ListedArticles(articles, count)
 
 
 class BuildPlan(dict):
@@ -1534,6 +1558,14 @@ def _projection_sections(cli, collect_cross: bool, collect_articles: bool) -> fr
     return frozenset(enabled.intersection(cli.only_sections or SECTION_NAMES))
 
 
+def _listing_storage(workspace, sections, sitemap_listings, article_store, cli):
+    if not (sitemap_listings or sections.intersection({"index", "tags"})):
+        return None, None
+    if article_store is not None and not (cli.only_langs or cli.only_slugs):
+        return None, {}
+    return ArticleStore(workspace), None
+
+
 def _stream_projections(
     stream_factory,
     cli,
@@ -1548,18 +1580,19 @@ def _stream_projections(
     Single article pass with complete shared projections.
 
     Sitemap/search use disk-backed sinks and RSS uses a bounded heap.
-    Separate stores retain selected article snapshots and complete
-    language listings. Article XML bytes stay in a disk spool until planning.
+    Unfiltered listings borrow the sorted article batch. Filtered builds
+    spool complete listings separately from selected article snapshots.
     """
     workspace = workspace or TempWorkspace()
     sections = _projection_sections(cli, collect_cross, collect_articles)
     article_store = ArticleStore(workspace, cache) if "articles" in sections else None
     sitemap_listings = ctx.sitemap_listings and "sitemap" in sections
-    listing_store = ArticleStore(workspace) if sections.intersection({"index", "tags"}) or sitemap_listings else None
+    listing_store, listing_counts = _listing_storage(workspace, sections, sitemap_listings, article_store, cli)
     projection = StreamProjection(
         SitemapSink(workspace), SearchSink(workspace), [], 0,
         articles_by_lang=article_store,
         listings_by_lang=listing_store,
+        shared_listing_counts=listing_counts,
         sections=sections,
         sitemap_listings=sitemap_listings,
         translations=TranslationStore() if "articles" in sections else None,
@@ -1667,12 +1700,17 @@ def _prepare_shared_listings(plan, projection, cli, ctx, cache, want):
         return None
     pending = {}
     for lang in ctx.languages:
-        listings = projection.listing_batch(lang)
+        articles = None
+        if projection.shared_listing_counts is not None:
+            articles = _sorted_store_articles(projection.articles_by_lang, lang)
+        listings = projection.listing_batch(lang, articles)
         selected = not cli.only_langs or lang in cli.only_langs
-        pending[lang] = _shared_listings_for_language(
-            plan, ctx, cache, projection, lang, listings,
-            selected and _has_language_work(projection, lang, listings, ctx), want,
-        )
+        selected = selected and _has_language_work(projection, lang, listings, ctx)
+        records = _shared_listings_for_language(plan, ctx, cache, projection, lang, listings, selected, want)
+        if selected:
+            pending[lang] = (records, articles)
+        if projection.listings_by_lang is not None:
+            listings.discard_chunks()
     return pending
 
 
@@ -1712,9 +1750,19 @@ def _record_projection_article(projection: StreamProjection, art, cli):
     _add_cross_projection(projection, art)
     if cli.only_langs and art.lang not in cli.only_langs and not projection.sitemap_listings:
         return art
-    if projection.listings_by_lang is not None and art.policy.listing:
-        projection.listings_by_lang.append(art.lang, art)
+    if projection.shared_listing_counts is not None or projection.listings_by_lang is not None:
+        _record_listing(projection, art)
     return art
+
+
+def _record_listing(projection, art):
+    if not art.policy.listing:
+        return
+    if projection.shared_listing_counts is not None:
+        counts = projection.shared_listing_counts
+        counts[art.lang] = counts.get(art.lang, 0) + 1
+    else:
+        projection.listings_by_lang.append(art.lang, art)
 
 
 def _add_cross_projection(projection: StreamProjection, art) -> None:
@@ -1808,14 +1856,22 @@ def _collect_per_lang_plan(
     for lang in ctx.languages:
         if cli.only_langs and lang not in cli.only_langs:
             continue
-        lang_articles = _sorted_store_articles(projection.articles_by_lang, lang)
-        listing_articles = projection.listing_batch(lang)
-        if not (lang_articles or listing_articles or ctx.index_options.include_empty):
+        if prepared is not None and lang not in prepared:
             continue
-        _add_per_lang_tasks(
-            plan, lang_articles, listing_articles, lang, ctx, cache, want, manifest,
-            prepared.pop(lang) if prepared is not None else None,
-        )
+        records, articles = prepared.pop(lang) if prepared is not None else (None, None)
+        if articles is None:
+            articles = _sorted_store_articles(projection.articles_by_lang, lang)
+        listings = [] if records is not None else projection.listing_batch(lang, articles)
+        _plan_language(plan, articles, listings, lang, ctx, cache, want, manifest, records)
+
+
+def _plan_language(plan, articles, listings, lang, ctx, cache, want, manifest, records):
+    if articles or listings or records is not None or ctx.index_options.include_empty:
+        _add_per_lang_tasks(plan, articles, listings, lang, ctx, cache, want, manifest, records)
+    if isinstance(articles, SortedArticleBatch):
+        articles.discard_chunks()
+    if listings is not articles and isinstance(listings, SortedArticleBatch):
+        listings.discard_chunks()
 
 
 def _translation_context(projection, cli, ctx):
@@ -1974,15 +2030,17 @@ def _retained_outputs(cli, old_manifest: dict, extra_keys=()) -> dict:
     }
 
 
-def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifest) -> None:
+def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifest) -> set[Path] | None:
     retained = _retained_outputs(cli, old_manifest, _extra_output_keys(ctx))
     if not retained:
-        return
-    owners = OutputManifest()
+        return None
     root = ctx.output_dir.resolve()
+    checked: set[Path] = set()
+    for relpath in retained:
+        current_manifest.reserve_path(relpath)
     for relpath in chain(retained, current_manifest.values()):
-        path = _manifest_target(root, relpath)
-        owners.record(str(len(owners)), path.relative_to(root).as_posix())
+        _manifest_target(root, relpath, checked)
+    return checked
 
 
 def _next_output_paths(cli, ctx, old_manifest, current_manifest):
@@ -2006,8 +2064,8 @@ def _published_translations(ownership, cache, paths, planned):
     return history
 
 
-def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifest, selected) -> None:
-    _prune_stale_outputs(ctx, cache, ownership.paths, next_manifest)
+def _finalize_cache(ctx, cache, roots, ownership, next_manifest, current_manifest, selected, checked_parents) -> None:
+    _prune_stale_outputs(ctx, cache, ownership.paths, next_manifest, checked_parents)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     routes = current_manifest.route_values()
     cache['__routes__'] = route_cache_data(routes)
@@ -2063,6 +2121,11 @@ def _selected_output_key(key: str, cli) -> bool:
     return True
 
 
+def _require_manifest_parent(path: Path) -> None:
+    if path.is_symlink():
+        raise OSError(f"Manifest output ancestor is a symlink: {path}")
+
+
 def _manifest_target(root: Path, relpath: str, checked: set[Path] | None = None) -> Path:
     rel = Path(relpath)
     if rel.is_absolute() or ".." in rel.parts:
@@ -2070,8 +2133,7 @@ def _manifest_target(root: Path, relpath: str, checked: set[Path] | None = None)
     for parent in rel.parents:
         if checked is not None and parent in checked:
             break
-        if (root / parent).is_symlink():
-            raise OSError(f"Manifest output ancestor is a symlink: {root / parent}")
+        _require_manifest_parent(root / parent)
         if checked is not None:
             checked.add(parent)
     return root / rel
@@ -2098,7 +2160,10 @@ def _delete_asset_entry(path: Path, root: Path) -> None:
 def _delete_output_file(path: Path, root: Path) -> None:
     if path.is_dir() and not path.is_symlink():
         raise ValueError(f"Owned output file became a directory; refusing deletion: {path}")
-    path.unlink(missing_ok=True)
+    try:
+        path.unlink(missing_ok=True)
+    except NotADirectoryError:
+        return
     _remove_empty_parents(path, root)
 
 
@@ -2107,23 +2172,29 @@ def _prune_stale_outputs(
     cache: dict,
     old_manifest: dict,
     current_manifest: dict,
+    checked_parents: set[Path] | None = None,
 ) -> None:
     stale_paths = sorted(old_manifest.keys() - current_manifest.keys())
     root = ctx.output_dir.resolve()
-    paths = _current_output_paths(root, current_manifest)
+    paths = _current_output_paths(root, current_manifest, checked_parents, collect=bool(stale_paths))
     if stale_paths:
-        _remove_stale_paths(root, stale_paths, set(paths))
-    else:
-        for _ in paths:
-            pass
+        _remove_stale_paths(root, stale_paths, paths)
     for key in set(old_manifest.values()) - set(current_manifest.values()):
         cache.pop(key, None)
 
 
-def _current_output_paths(root: Path, manifest: dict):
+def _current_output_paths(root: Path, manifest: dict, checked_parents, *, collect: bool) -> set[Path]:
+    if checked_parents is not None:
+        for parent in checked_parents:
+            _require_manifest_parent(root / parent)
+        return {root / relpath for relpath in manifest} if collect else set()
     checked: set[Path] = set()
+    paths: set[Path] = set()
     for relpath in manifest:
-        yield _manifest_target(root, relpath, checked)
+        target = _manifest_target(root, relpath, checked)
+        if collect:
+            paths.add(target)
+    return paths
 
 
 def _remove_stale_paths(root: Path, stale_paths: list[str], current_paths: set[Path]) -> None:
@@ -2288,7 +2359,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                     stream_factory, cli, ctx, cache, workspace, current_manifest,
                 )
                 projection = plan.projection
-                _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
+                checked_parents = _validate_retained_outputs(cli, ctx, old_manifest, current_manifest)
                 _record_retained_routes(cli, ctx, cache, old_manifest, ownership.routes, current_manifest)
                 next_paths = _next_output_paths(cli, ctx, old_manifest, current_manifest)
                 _prepare_outputs(ctx, cache, ownership, current_manifest, next_paths, plan)
@@ -2296,7 +2367,7 @@ def run_build(cli: BuildOptions, config: ConfigurationInput, project_root: Path,
                 _log_article_stats(stats, projection)
                 if not cli.dry_run:
                     _finalize_cache(
-                        ctx, cache, roots, ownership, next_paths, current_manifest, selected,
+                        ctx, cache, roots, ownership, next_paths, current_manifest, selected, checked_parents,
                     )
             finally:
                 _close_task_queues(plan)

@@ -511,3 +511,18 @@ def test_review29_02_unrelated_cyclic_output_does_not_abort_cache_update(site_ro
     assert not _selected(site_root, 'active').path.exists()
     assert shard.exists() is partitioned
     assert prior.is_symlink()
+
+
+@pytest.mark.parametrize('build', [pipeline.run_build, build_site])
+def test_review28_24_nested_partition_headers_do_not_fail_committed_builds(site_root, cache_clock, build):
+    pipeline.run_build(REQUEST, _config('expired'), site_root)
+    old = _selected(site_root, 'expired')
+    cache_clock[0] += 4 * DAY
+    for i, depth in enumerate((1, 64, sys.getrecursionlimit() * 2)):
+        junk = old.path.with_name(f'{i:064x}.json')
+        junk.write_bytes(b'{\n  "__output_roots__": {\n' + b'[' * depth + b']' * depth + b'\n')
+    build(REQUEST, _config(), site_root)
+    assert (site_root / 'output/rss.xml').is_file()
+    assert not old.path.exists()
+    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]
+    assert all(old.path.with_name(f'{i:064x}.json').exists() for i in range(3))

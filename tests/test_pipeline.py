@@ -1285,13 +1285,15 @@ def test_stream_projections_respects_publication_policy(tmp_path):
     assert len(projection.sitemap_urls) == 1
     assert len(projection.search_items) == 1
     assert projection.articles_by_lang is not None
-    assert projection.listings_by_lang is not None
+    assert projection.listings_by_lang is None
     assert [a.slug for a in projection.articles_by_lang.iter_lang("en")] == [
         "published", "unlisted",
     ]
-    assert [a.slug for a in projection.listings_by_lang.iter_lang("en")] == [
+    batch = projection.articles_by_lang.sorted("en")
+    assert [a.slug for a in projection.listing_batch("en", batch)] == [
         "published",
     ]
+    batch.discard_chunks()
 
 
 def test_log_article_stats_includes_unpublished(tmp_path, caplog):
@@ -1308,7 +1310,8 @@ def test_cleanup_stream_projection_accepts_none():
     _cleanup_stream_projection(None)
 
 
-def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch):
+@pytest.mark.parametrize("slugs,expected_handles", [(None, 3), (["a"], 4)])
+def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch, slugs, expected_handles):
     ctx = _ctx_for(tmp_path)
     handles = []
     original = TempWorkspace.named_file
@@ -1322,9 +1325,9 @@ def test_failed_stream_closes_all_projection_handles(tmp_path, monkeypatch):
     monkeypatch.setattr(TempWorkspace, "named_file", track)
     with TempWorkspace() as workspace:
         with pytest.raises(OSError, match="article stream failed") as error:
-            _collect_tasks(fail_stream, _FakeCLI(), ctx, {}, workspace)
+            _collect_tasks(fail_stream, _FakeCLI(slugs=slugs), ctx, {}, workspace)
         assert error.value.__traceback__ is not None
-        assert len(handles) == 4
+        assert len(handles) == expected_handles
         assert all(file.closed for file in handles)
     assert all(not Path(file.name).exists() for file in handles)
 
@@ -2388,3 +2391,20 @@ def test_review29_14_mirror_prunes_only_existing_destinations(site_root):
     run_build(_CLI(), config, site_root)
     assert copied.read_bytes() == b"new"
     assert not extra.exists()
+
+
+def test_review28_08_unpublish_when_an_old_parent_is_a_regular_file(site_root):
+    config = _site_config(site_root)
+    run_build(_CLI(), config, site_root)
+    output = site_root / 'output'
+    relative = 'en/articles/first-post/index.html'
+    page = output / relative
+    page.unlink()
+    page.parent.rmdir()
+    page.parent.write_text('manual replacement')
+    _set_publication(site_root / 'content/en/first-post.xml', 'private')
+
+    run_build(_CLI(), config, site_root)
+    state = load_ownership(output)
+    assert not state.pending and relative not in state.paths
+    assert page.parent.read_text() == 'manual replacement'

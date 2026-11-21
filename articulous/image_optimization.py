@@ -5,13 +5,13 @@ import stat
 
 from .tree_entries import tree_entries
 from .image_contracts import ImageBackend, ImageGeneration, ImageResult, KINDS, validate_options
-from .source_files import replace_file
+from .source_files import SOURCE_STAGE_PREFIX, replace_file
 from .source_transactions import fingerprint
 from .resource_locks import resource_lock
 
 
 def candidates(root: Path, threshold: int, kinds: set[str]):
-    for path in sorted(tree_entries(root)):
+    for path in sorted(tree_entries(root, skip_directory_prefix=SOURCE_STAGE_PREFIX)):
         if path.is_file() and KINDS.get(path.suffix.lower()) in kinds and path.stat().st_size >= threshold:
             yield path
 

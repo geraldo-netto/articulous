@@ -21,6 +21,52 @@ def test_edit001_atomic_replace_and_writer_failure(tmp_path):
     assert target.read_bytes() == b'second'
 
 
+@pytest.mark.parametrize('kind', ['content', 'assets'])
+def test_review28_57_build_cannot_discover_staged_replacement(tmp_path, kind):
+    from articulous.articles import _discover_article_files
+    from articulous.pipeline import _asset_manifest
+
+    root = tmp_path / kind
+    owner_dir = root / '.owner'
+    owner_dir.mkdir(parents=True)
+    target = owner_dir / ('entry.xml' if kind == 'content' else 'style.css')
+    target.write_bytes(b'published')
+    owner_file = owner_dir / '.articulous-source-stage-owner.xml'
+    owner_file.write_bytes(b'owner file')
+    def write(staged):
+        staged.write_bytes(b'unpublished')
+        if kind == 'content':
+            assert list(_discover_article_files(root)) == [owner_file, target]
+        else:
+            assert set(_asset_manifest(root)) == {'.owner', '.owner/style.css', '.owner/' + owner_file.name}
+        assert target.read_bytes() == b'published'
+    replace_file(target, write)
+    assert target.read_bytes() == b'unpublished'
+    assert set(owner_dir.iterdir()) == {target, owner_file}
+
+
+@pytest.mark.parametrize('pattern', ['**/*.xml', '*/*/*.xml'])
+def test_review28_57_taxonomy_cannot_capture_another_writers_stage(tmp_path, pattern):
+    from articulous.taxonomy_editing import _document_paths
+
+    target = tmp_path / 'content' / 'article.xml'
+    def write(staged):
+        staged.write_bytes(b'<article/>')
+        assert _document_paths(tmp_path, pattern) == []
+    replace_file(target, write)
+
+
+def test_review28_57_image_candidates_exclude_staged_replacement(tmp_path):
+    from articulous.image_optimization import candidates
+
+    target = tmp_path / 'photo.png'
+    target.write_bytes(b'original')
+    def write(staged):
+        staged.write_bytes(b'smaller')
+        assert list(candidates(tmp_path, 0, {'png'})) == [target]
+    replace_file(target, write)
+
+
 def test_edit001_commit_order_permissions_and_conflict(tmp_path):
     root = tmp_path / 'source'
     root.mkdir()

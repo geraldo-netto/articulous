@@ -23,6 +23,56 @@ def published(root):
             (root / '.output.articulous-ownership.json').read_bytes())
 
 
+@pytest.mark.parametrize('relative', ['output', 'cache', 'both'])
+def test_review28_35_relative_recovery_paths_create_no_locks(tmp_path, monkeypatch, relative):
+    monkeypatch.chdir(tmp_path)
+    output = Path('output') if relative != 'cache' else tmp_path / 'output'
+    cache = Path('cache') if relative != 'output' else tmp_path / 'cache'
+    with pytest.raises(ValueError, match='absolute'):
+        recover_publication(output, cache)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_review28_35_recovery_normalizes_destination_and_configured_cache(site_root, seo_config, monkeypatch):
+    cli, config = seo_config
+    cache = site_root / '.build-cache.json'
+    cache.symlink_to('actual-cache.json')
+    backend = PosixPublicationBackend()
+    def interrupt(*_):
+        raise OSError('cleanup interrupted')
+    monkeypatch.setattr(backend, '_cleanup', interrupt)
+    build_site(cli, config, site_root, backend=backend)
+    transaction = site_root / '.output.articulous-transaction'
+    assert transaction.is_dir()
+    before = published(site_root)
+    recover_publication(site_root / 'content/../output', cache)
+    assert not transaction.exists()
+    assert cache.is_symlink()
+    assert published(site_root) == before
+
+
+def test_review28_35_rejects_symlinked_destination_before_locking(tmp_path):
+    (tmp_path / 'alias').symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(ValueError, match='symlink'):
+        recover_publication(tmp_path / 'alias/output', tmp_path / 'cache')
+    assert list(tmp_path.iterdir()) == [tmp_path / 'alias']
+
+
+@pytest.mark.parametrize('stage_path', ['ordinary', 'nested/.articulous-stage-private'])
+def test_review28_36_reject_foreign_stage_before_publication(tmp_path, stage_path):
+    from articulous.publication_contracts import PublicationInput
+    stage = tmp_path / stage_path
+    root = stage / 'output'
+    root.mkdir(parents=True)
+    (stage / 'unrelated').write_bytes(b'user data')
+    publication = PublicationInput(root, tmp_path / 'live', tmp_path / 'cache', '{}', {}, {}, lambda: None)
+    before = snapshot(tmp_path)
+    with pytest.raises(ValueError, match='staging path'):
+        PosixPublicationBackend().publish(publication)
+    assert snapshot(tmp_path) == before
+    assert root.is_dir()
+
+
 def test_arch005_publish_replace_and_incremental_compatibility(site_root, seo_config, cache_clock):
     cli, config = seo_config
     report = build_site(cli, config, site_root, extra_pages=[page(config)])

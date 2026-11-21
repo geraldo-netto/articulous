@@ -5,6 +5,9 @@ import tempfile
 import sys
 
 
+SOURCE_STAGE_PREFIX = '.articulous-source-stage-'
+
+
 def workspace_identity(path):
     metadata = path.lstat()
     return metadata.st_dev, metadata.st_ino, metadata.st_mode
@@ -26,7 +29,7 @@ def cleanup_workspace(path, identity):
 def replace_file(path, writer):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = Path(tempfile.mkdtemp(prefix='.' + path.name + '-', dir=path.parent))
+    temporary = Path(tempfile.mkdtemp(prefix=SOURCE_STAGE_PREFIX, dir=path.parent))
     identity = workspace_identity(temporary)
     try:
         staged = temporary / path.name

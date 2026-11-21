@@ -25,8 +25,10 @@ from lxml import etree  # type: ignore[attr-defined]
 from .article_contracts import PublicationPolicy, PublicationState, _PUBLICATION_POLICIES
 from .slugs import normalize_slug
 from .xml_sources import read_source
+from .xml_fields import scalar_text
 from .xml_contracts import XmlSource
 from .filesystem import open_regular_file
+from .source_files import SOURCE_STAGE_PREFIX
 from .sections import validate_image_url
 
 
@@ -141,9 +143,7 @@ def _track_singleton_field(tag, seen: set) -> None:
 
 def _field_text(child) -> str:
     if len(child) and child.tag in _SCALAR_FIELDS:
-        if any(node.tag is not etree.Comment for node in child):
-            raise ValueError(f"<{child.tag}> must contain text only")
-        return "".join(child.itertext()).strip()
+        return scalar_text(child).strip()
     return (child.text or "").strip()
 
 
@@ -416,6 +416,8 @@ def _directory_entries(directory: bytes):
     with os.scandir(os.fsdecode(directory)) as entries:
         for entry in entries:
             directory_entry = entry.is_dir(follow_symlinks=False)
+            if directory_entry and entry.name.startswith(SOURCE_STAGE_PREFIX):
+                continue
             if directory_entry or entry.name.endswith(".xml"):
                 yield os.fsencode(entry.path), int(directory_entry)
 

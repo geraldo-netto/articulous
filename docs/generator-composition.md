@@ -479,7 +479,10 @@ There is no silent fallback to weaker guarantees. Cache and output locks reject
 concurrent cooperating builds, including builds sharing only one of those resources.
 
 The publisher rejects unowned files and unexpected path types in an existing
-output tree. The entire `assets/` subtree remains mirror-owned. Symlink targets,
+output tree. The Linux backend requires the staged root's parent to be a private
+`.articulous-stage-*` directory beside the destination. It validates the journal
+record before creating the transaction. Cleanup removes this private directory.
+The entire `assets/` subtree remains mirror-owned. Symlink targets,
 changed directory identities and unsafe state files stop publication or recovery.
 Output, fingerprint cache and ownership state are committed as one recoverable
 generation. This does not make readers observe all three atomically, and callers
@@ -511,13 +514,15 @@ rollback retains backups and reports the journal location. A post-commit cleanup
 failure logs `Publication committed; cleanup pending` and leaves publication
 successful; recovery can finish that cleanup.
 
-To recover explicitly, use the same resolved destination and cache paths:
+Explicit recovery requires absolute paths for the destination and configured
+cache. It rejects symlinks in the destination path before acquiring locks and
+resolves a symlinked cache filename the same way as a build.
 
 ```python
 from articulous.publication import recover_publication
 
 recover_publication(
-    Path(config["paths"]["output_dir"]),
+    root / config["paths"]["output_dir"],
     root / Path(config["build"]["cache_file"]).name,
 )
 ```
@@ -607,6 +612,11 @@ of generated-output publication. A transaction exposes `capture(relative)`,
 `final_paths=("manifest.json",)` when a caller's metadata must publish last;
 the engine has no knowledge of an import manifest's schema or location.
 `prefix` optionally selects the caller's temporary-directory label.
+
+Single-file replacements stage beside their target on the same filesystem.
+Directories beginning with `.articulous-source-stage-` are reserved for these
+workspaces and excluded from article discovery, asset mirroring, taxonomy edits
+and image candidate selection.
 
 The context owns its private workspace and every staged file/backup until
 commit or rollback settles. File streams close before replacement. Each
@@ -715,8 +725,11 @@ checks over immutable `TagSummary` records.
 duplicate totals with a bounded sample (default 20, configurable); it does not
 select vocabulary or print editorial advice. `taxonomy_editing.apply_map` takes
 a `TaxonomyLayout` and optional `ProvenanceLayout` with caller-defined source
-reference and fingerprint projection. The XML adapter stages all edits in one
-source transaction. Only provenance already current before the edit can advance;
+reference and fingerprint projection. The XML adapter matches trimmed scalar
+tag text, including text split by comments. It renames tags in place, keeps the
+first occurrence after a merge and preserves surrounding text when dropping a
+tag. It stages all edits in one source transaction. Only provenance already
+current before the edit can advance;
 stale/missing hashes stay stale. Morpha supplies its language/file schema and
 16-character digest projection. XML entity resolution and network access are
 disabled.

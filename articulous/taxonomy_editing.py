@@ -7,9 +7,11 @@ from graphlib import TopologicalSorter
 import lxml.etree as etree
 
 from .filesystem import open_regular_file
+from .source_files import SOURCE_STAGE_PREFIX
 from .tree_entries import tree_entries
 from .source_transactions import fingerprint, source_transaction
 from .taxonomy_contracts import TaxonomyEdits, TaxonomyLayout
+from .xml_fields import scalar_text, set_scalar_text
 
 
 def validate_map(mapping):
@@ -51,7 +53,7 @@ def _glob_documents(root, parts):
             if not tail:
                 if path.is_file():
                     yield path
-            elif path.is_dir():
+            elif not path.name.startswith(SOURCE_STAGE_PREFIX) and path.is_dir():
                 yield from _glob_documents(path, tail)
 
 
@@ -61,7 +63,7 @@ def _recursive_documents(root, tail):
         first += 1
     tail = tail[first:]
     yield from _glob_documents(root, tail)
-    for directory in tree_entries(root):
+    for directory in tree_entries(root, skip_directory_prefix=SOURCE_STAGE_PREFIX):
         if not directory.is_symlink() and directory.is_dir():
             yield from _glob_documents(directory, tail)
 
@@ -105,23 +107,35 @@ def _current_provenance(metadata, transaction, provenance):
     return current
 
 
+def _restore_tag_tails(root, tails):
+    for previous, fragments in tails.items():
+        text = ''.join(fragments)
+        if previous is None:
+            root.text = (root.text or '') + text
+        else:
+            previous.tail = (previous.tail or '') + text
+
+
 def replace_tags(tree, mapping, tag_element):
     root = tree.getroot()
-    nodes = root.findall(tag_element)
-    if not nodes:
-        return False
-    before = [node.text for node in nodes]
-    after = list(dict.fromkeys(tag for tag in (mapping.get(tag, tag) for tag in before) if tag))
-    if after == before:
-        return False
-    index = list(root).index(nodes[0])
-    for node in nodes:
-        root.remove(node)
-    for offset, value in enumerate(after):
-        node = etree.Element(tag_element)
-        node.text = value
-        root.insert(index + offset, node)
-    return True
+    seen = set()
+    tails = {}
+    changed = False
+    for node in root.findall(tag_element):
+        original = scalar_text(node).strip()
+        value = (mapping.get(original, original) or '').strip()
+        if not value or value in seen:
+            if node.tail:
+                tails.setdefault(node.getprevious(), []).append(node.tail)
+            root.remove(node)
+            changed = True
+        else:
+            seen.add(value)
+            if value != original:
+                set_scalar_text(node, value)
+                changed = True
+    _restore_tag_tails(root, tails)
+    return changed
 
 
 def stage_document(transaction, relative, tree):

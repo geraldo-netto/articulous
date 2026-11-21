@@ -50,6 +50,63 @@ def test_perf09_sorts_each_listing_language_once(site_root, seo_config, monkeypa
     assert counts == dict.fromkeys(config['site']['languages'], 1)
 
 
+@pytest.mark.parametrize('sitemap_listings', [False, True])
+def test_review28_12_spools_and_sorts_article_and_listing_inputs_once(site_root, seo_config, monkeypatch, sitemap_listings):
+    cli, config = seo_config
+    config['sitemap']['include_listings'] = sitemap_listings
+    config['site']['pagination']['per_page'] = 1
+    source = site_root / 'content/en/first-post.xml'
+    source.write_text(source.read_text().replace('</article>', '<status>unlisted</status></article>'))
+    appended, sorted_languages = Counter(), Counter()
+    append, sort = pipeline.ArticleStore.append, pipeline.ArticleStore.sorted
+
+    def count_append(store, lang, article):
+        appended[lang, article.slug] += 1
+        append(store, lang, article)
+
+    def count_sort(store, lang):
+        sorted_languages[lang] += 1
+        return sort(store, lang)
+
+    monkeypatch.setattr(pipeline.ArticleStore, 'append', count_append)
+    monkeypatch.setattr(pipeline.ArticleStore, 'sorted', count_sort)
+    pipeline.run_build(cli, config, site_root)
+    assert appended == {('en', 'first-post'): 1, ('en', 'second-post'): 1, ('fr', 'premier-article'): 1}
+    assert sorted_languages == {'en': 1, 'fr': 1}
+    output = site_root / 'output/en'
+    assert (output / 'articles/first-post/index.html').is_file()
+    assert not (output / 'page/2/index.html').exists()
+    for relative in ['page/1/index.html', 'tags/news/index.html']:
+        content = (output / relative).read_text()
+        assert 'Second Post' in content and 'First Post' not in content
+
+
+def test_review28_12_empty_language_has_no_deferred_listing_tasks(site_root, seo_config):
+    cli, config = seo_config
+    config['sitemap']['include_listings'] = True
+    (site_root / 'content/fr/premier.xml').unlink()
+    pipeline.run_build(cli, config, site_root)
+    output = site_root / 'output'
+    assert not (output / 'fr').exists()
+    assert '/fr/' not in (output / 'sitemap.xml').read_text()
+
+
+def test_review28_12_releases_sorted_chunks_between_languages(site_root, seo_config, monkeypatch):
+    cli, config = seo_config
+    previous = []
+    sort = pipeline.ArticleStore.sorted
+
+    def track(store, lang):
+        assert all(not path.exists() for path in previous)
+        batch = sort(store, lang)
+        previous.extend(path for path, _ in batch._chunks)
+        return batch
+
+    monkeypatch.setattr(pipeline.ArticleStore, 'sorted', track)
+    pipeline.run_build(cli, config, site_root)
+    assert previous and all(not path.exists() for path in previous)
+
+
 def test_perf12_no_stale_paths_still_checks_current_ancestors(tmp_path):
     ctx = pipeline.BuildCtx(tmp_path, tmp_path, tmp_path, tmp_path / 'assets')
     (tmp_path / 'alias').symlink_to(tmp_path, target_is_directory=True)
@@ -371,3 +428,42 @@ def test_review28_34_staged_mode_changes_during_open(tmp_path, monkeypatch):
     monkeypatch.setattr(os, 'open', change_mode)
     with pytest.raises(ValueError, match='changed'):
         tree_fingerprint(tmp_path)
+
+
+@pytest.mark.parametrize('move_rss', [False, True])
+def test_review28_13_filtered_build_admits_each_manifest_path_once(site_root, seo_config, monkeypatch, move_rss):
+    cli, config = seo_config
+    pipeline.run_build(cli, config, site_root)
+    cli.only_sections = ['rss']
+    if move_rss:
+        config['urls']['rss'] = '/moved.xml'
+    calls = Counter()
+    original = pipeline._manifest_target
+
+    def count(root, relative, checked=None):
+        calls[relative] += 1
+        return original(root, relative, checked)
+
+    monkeypatch.setattr(pipeline, '_manifest_target', count)
+    pipeline.run_build(cli, config, site_root)
+    assert calls['en/articles/first-post/index.html'] == 1
+    assert set(calls.values()) == {1}
+    assert (site_root / 'output/rss.xml').exists() is not move_rss
+
+
+def test_review28_13_filtered_build_rechecks_retained_ancestors_after_render(site_root, seo_config, monkeypatch):
+    cli, config = seo_config
+    pipeline.run_build(cli, config, site_root)
+    cli.only_sections = ['rss']
+    root = site_root / 'output'
+    original = pipeline._run_plan
+
+    def replace_after_render(plan, ctx):
+        original(plan, ctx)
+        parent = root / 'en/articles'
+        parent.rename(root / 'saved')
+        parent.symlink_to(root / 'saved', target_is_directory=True)
+
+    monkeypatch.setattr(pipeline, '_run_plan', replace_after_render)
+    with pytest.raises(OSError, match='ancestor is a symlink'):
+        pipeline.run_build(cli, config, site_root)

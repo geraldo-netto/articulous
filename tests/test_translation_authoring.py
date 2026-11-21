@@ -298,3 +298,34 @@ def test_review29_25_reject_non_scalar_xml_fields(tmp_path, field):
     with client() as translator, pytest.raises(ValueError, match=f'<{field}> must contain text only'):
         mirror_xml(source, target, 'en', 'fr', translator, {'units': 0, 'failed': 0}, layout, MarkupPolicy(), record_log)
     assert target.read_bytes() == b'prior'
+
+
+def test_review28_47_configured_identifiers_preserve_translation_paths(tmp_path):
+    from copy import deepcopy
+    from articulous.config import DEFAULT_CONFIG, validate_config
+
+    codes = ['en', 'pt_BR', 'en_US', 'zh-Hant', 'x_1-2']
+    config = deepcopy(DEFAULT_CONFIG)
+    config['site'].update(languages=codes, default_language='en')
+    validate_config(config)
+    paths = {}
+    for code in codes:
+        directory = tmp_path / code
+        directory.mkdir()
+        paths[code] = directory / 'entry.xml'
+        paths[code].write_text('article')
+    assert collect_variants(tmp_path, tuple(codes)) == {'entry.xml': paths}
+    assert resolve_original(paths['pt_BR'], tmp_path, lambda _: ('pt_BR', None)) == ('pt_BR', paths['pt_BR'])
+
+
+@pytest.mark.parametrize('pair', [('en', 'EN'), ('pt_BR', 'PT_br')])
+def test_review28_47_config_rejects_case_collisions_before_build(pair):
+    from copy import deepcopy
+    from articulous.config import DEFAULT_CONFIG, validate_config
+
+    config = deepcopy(DEFAULT_CONFIG)
+    config['site'].update(languages=list(pair), default_language=pair[0])
+    with pytest.raises(ValueError, match='duplicates'):
+        validate_config(config)
+    with pytest.raises(ValueError):
+        validate_languages(pair)

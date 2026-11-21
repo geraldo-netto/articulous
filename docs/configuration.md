@@ -66,7 +66,9 @@ each enabled language without published listing articles; the default is `false`
 zero, producing an empty RSS feed. Feeds select the newest articles first.
 Equal dates retain source-path discovery order, including at the feed limit.
 `languages` must be non-empty and
-unique, and must contain `default_language`. Language identifiers may
+unique ignoring ASCII case, and must contain the exact spelling of
+`default_language`. Builds and translation jobs preserve that spelling in
+paths and provenance. Language identifiers may
 contain only ASCII letters, digits, hyphens and underscores, such as
 `en`, `fr`, `pt-BR` or `en_US`, so they remain safe URL and filesystem
 segments.

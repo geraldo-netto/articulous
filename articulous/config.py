@@ -8,7 +8,6 @@ normalization. Build orchestration consumes its admitted schema values.
 from collections.abc import Mapping
 from copy import deepcopy
 import json
-import re
 from pathlib import Path
 from typing import Any, cast
 
@@ -29,6 +28,7 @@ from .sections import (
     validate_url_pattern,
     validate_index_first_pattern,
 )
+from .languages import validate_languages
 from .ownership import ownership_path
 from .publication_paths import validate_publication_paths
 
@@ -169,13 +169,7 @@ def _validate_saxonc(config: dict) -> None:
 def _require_languages(languages, default_language) -> None:
     if not isinstance(languages, list) or not languages:
         raise ValueError("config site.languages must be a non-empty list of strings")
-    if not all(isinstance(lang, str) and re.fullmatch(r"[A-Za-z0-9_-]+", lang) for lang in languages):
-        raise ValueError(
-            "config site.languages must contain non-empty identifiers using only "
-            "ASCII letters, digits, hyphens, and underscores"
-        )
-    if len(languages) != len(set(languages)):
-        raise ValueError("config site.languages must not contain duplicates")
+    validate_languages(languages, label="config site.languages")
     _require_string(default_language, "site.default_language", nonempty=True)
     if default_language not in languages:
         raise ValueError(

@@ -1,15 +1,6 @@
 """Schema-independent translation discovery, provenance selection and job execution."""
-import re
-from collections.abc import Sequence
+from .languages import validate_languages
 from .source_transactions import fingerprint
-
-
-def validate_languages(languages):
-    if not isinstance(languages, Sequence) or isinstance(languages, (str, bytes)):
-        raise ValueError('Languages must be distinct, nonempty language codes')
-    if (any(not isinstance(code, str) or not re.fullmatch(r'[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*', code) for code in languages)
-            or len({code.casefold() for code in languages}) != len(languages)):
-        raise ValueError('Languages must be distinct, nonempty language codes')
 
 
 def collect_variants(content, languages):

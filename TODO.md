@@ -72,7 +72,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-47 | open | low | small | Contradictions: two grammars define a language identifier. | `config.py:172` admits `[A-Za-z0-9_-]+` and the docs cite `en_US`; `translation_jobs.py:10-11` rejects underscores and case-folded duplicates. Reproduced: configuration admits `['en','pt_BR','en_US']` and `['en','EN']`, `collect_variants` rejects both. Next: share one identifier rule. |
 | UNUSED-01 | wont_fix | low | — | Keep `deep_merge` as a shared configuration helper | Used by `config.load_or_create_config` and `config.normalize_configuration`, with direct unit tests; keep. |
 
 

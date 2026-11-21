@@ -652,3 +652,29 @@ def test_review28_65_nested_class_bindings_belong_to_enclosing_callable():
     assert {ast.unparse(item) for item in ast.walk(inner) if isinstance(item, ast.IfExp)} == {
         '1 if xs else 2', '3 if x else 4',
     }
+
+
+@pytest.mark.parametrize('backend', ['aggregate', 'xslt'])
+@pytest.mark.parametrize('explicit', [False, True])
+def test_review28_66_report_paths_follow_root_for_measure_and_check(tmp_path, monkeypatch, backend, explicit):
+    from articulous import complexity_xslt
+    root = tmp_path / 'project'
+    root.mkdir()
+    monkeypatch.chdir(tmp_path)
+    payload = {'project': 'first repository'}
+    if backend == 'aggregate':
+        module = gate
+        monkeypatch.setattr(module, 'measured_all', lambda *_: payload)
+        monkeypatch.setattr(module, 'check_all', lambda _root, data: (len(data), 0))
+        options = ['--eslint', 'eslint']
+    else:
+        module = complexity_xslt
+        monkeypatch.setattr(module, 'measured_report', lambda *_: payload)
+        monkeypatch.setattr(module, 'check_report', lambda _root, data: len(data))
+        options = []
+    relative = 'reports/snapshot.json' if explicit else module.EVIDENCE
+    args = ['--root', 'project', *(['--report', relative] if explicit else [])]
+    assert module.main(['measure', *args, *options]) == 0
+    assert json.loads((root / relative).read_bytes()) == payload
+    assert not (tmp_path / relative).exists()
+    assert module.main(['check', *args]) == 0

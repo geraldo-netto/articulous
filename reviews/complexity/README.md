@@ -14,6 +14,9 @@ export ARTICULOUS_ACORN=/home/netto/.npm/_npx/515228b7c8d004a2/node_modules/acor
 .venv/bin/python -m articulous.complexity_gate check
 ```
 
+Both complexity CLIs resolve the default report and any relative `--report`
+against `--root` in check and measure modes. An absolute report path is used directly.
+
 `functions.json` is the schema-2 aggregate: `python_javascript` contains the
 schema-1 callable inventory, and `xslt` contains its independent schema-1
 per-template report. Both components record source identities, analyzer versions

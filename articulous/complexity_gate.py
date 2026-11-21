@@ -220,12 +220,13 @@ def main(argv=None):
     parser.add_argument('--python-analyzer', default='/usr/bin/python3')
     parser.add_argument('--eslint', type=Path)
     args = parser.parse_args(argv)
+    report_path = args.root / args.report
     if args.mode == 'measure':
         if args.eslint is None:
             parser.error('--eslint must name an installed ESLint package directory')
         report = measured_all(args.root, args.python_analyzer, args.eslint)
-        write_text_atomic(args.report, json.dumps(report, indent=2, sort_keys=True) + '\n')
-    count, templates = check_all(args.root, load_json(args.report))
+        write_text_atomic(report_path, json.dumps(report, indent=2, sort_keys=True) + '\n')
+    count, templates = check_all(args.root, load_json(report_path))
     print(f'{count} source-bound functions and {templates} XSLT templates accepted; unchanged pre-policy identities remain explicit')
     return 0
 

@@ -206,10 +206,11 @@ def main(argv=None):
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--report', type=Path, default=Path(EVIDENCE))
     args = parser.parse_args(argv)
+    report_path = args.root / args.report
     if args.mode == 'measure':
         report = measured_report(args.root, compile_xpath)
-        write_text_atomic(args.report, json.dumps(report, indent=2, sort_keys=True) + '\n')
-    count = check_report(args.root, load_json(args.report))
+        write_text_atomic(report_path, json.dumps(report, indent=2, sort_keys=True) + '\n')
+    count = check_report(args.root, load_json(report_path))
     print(f'{count} source-bound XSLT templates accepted by {XSLT_METRIC}')
     return 0
 

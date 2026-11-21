@@ -119,7 +119,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-66 | open | low | small | Contradictions: `--root` does not relocate the default evidence path in the complexity CLIs. | `complexity_gate.py:220-221`, `complexity_xslt.py:206-207`: baseline, manifest and sources resolve against `--root`, the default `--report` against the working directory. Reproduced from another directory: `FileNotFoundError` for `reviews/complexity/functions.json` and `xslt.json`. Fails closed; CI runs from the repository root. Next: resolve a relative `--report` against the root. |
 | REVIEW28-68 | blocked | low | small | Contradictions/wiring gap: the XSLT complexity inventory covers only the packaged stylesheet although AGENTS.md includes tests without exemptions. | `complexity_xslt.py:22,142-143` versus `complexity_gate.py:26-30` (tests are inventoried for Python and JS) and `docs/development.md:133`. The six `tests/fixtures/site/xsl/pages/*.xsl` files are in no inventory; `article.xsl` scores 10 for `match=/article` by `measure_template` and its top-level declarations are rejected by the gate parser. `reviews/complexity/xslt.md` scopes the metric to maintained packaged XSLT. Blocked on an owner decision: bring fixture XSLT into the inventory and baseline, or record the exclusion in AGENTS.md and the complexity guide. |
 
 

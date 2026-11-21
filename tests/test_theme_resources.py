@@ -126,3 +126,15 @@ def test_review28_55_stock_prism_files_have_upstream_provenance():
     for asset, upstream in [('light', 'themes/prism.css'), ('dark', 'themes/prism-tomorrow.css'),
                             ('toolbar', 'plugins/toolbar/prism-toolbar.css')]:
         assert manifest['upstream_sources'][f'assets/css/vendor/prism/{asset}.css'] == upstream
+
+
+@pytest.mark.parametrize('method', ['xml', 'html'])
+def test_review28_70_code_blocks_omit_unused_exslt_namespace(tmp_path, method):
+    wrapper = neutral_stylesheet(tmp_path)
+    source = etree.parse(str(wrapper))
+    etree.SubElement(source.getroot(), '{http://www.w3.org/1999/XSL/Transform}output', method=method)
+    transform = etree.XSLT(source)
+    markup = etree.XML(b'<root><pre><code>\nvalue</code></pre></root>')
+    result = transform(markup)
+    assert result.xpath('string(//pre)') == 'value'
+    assert b'xmlns:exsl=' not in bytes(result)

@@ -130,7 +130,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-70 | open | low | small | Correctness: every `render-code-block` `<pre>` is published with a stray `xmlns:exsl` attribute. | `content.xsl:1` declares `xmlns:exsl` without `exclude-result-prefixes`; literal `<pre>` at `:42`. Reproduced with lxml for the default and `html` methods: `<pre xmlns:exsl="http://exslt.org/common" ...>`. An including stylesheet cannot exclude it. Next: add `exclude-result-prefixes="exsl"` on the stylesheet root. |
 
 
 ## Documentation

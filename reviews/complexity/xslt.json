@@ -230,7 +230,7 @@
   "files": [
     {
       "path": "articulous/theme_assets/xsl/content.xsl",
-      "sha256": "62a3dca1ecf544f42b724f63ae92e735ca7a5f06838a141870fbd1a2ab29a153",
+      "sha256": "d2359ed5f8ed3d02e521c8d13f7c388f0c730a1a6cff5e0f509dc55c6da7fb74",
       "templates": [
         {
           "complexity": 1,

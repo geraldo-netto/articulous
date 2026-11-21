@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import shutil
 
+from ..cache_store import partition_path
 from ..filesystem import (
     _directory_handle, atomic_output, cache_lock_path, lock_file, open_regular_file,
     private_directory, validate_output_path, write_text_atomic,
@@ -28,6 +29,13 @@ def _validate_journal_header(data, destination, cache):
         raise ValueError('Invalid journal fields')
     if data['destination'] != str(destination) or data['cache'] != str(cache):
         raise ValueError('Wrong journal identity')
+
+
+def _retired_cache_identity(data, destination, cache):
+    if data['phase'] not in ('committed', 'rolled_back', 'capturing'):
+        raise ValueError('Unsettled journal in retirement directory')
+    original = Path(data['cache'])
+    return original if partition_path(original, destination) == cache else cache
 
 
 def _journal_version(data):
@@ -195,13 +203,15 @@ class PosixPublicationBackend:
         except (OSError, ValueError):
             logging.warning(f'Publication committed; cleanup pending at {transaction}', exc_info=True)
 
-    def _read_journal(self, transaction, destination, cache):
+    def _read_journal(self, transaction, destination, cache, *, retired=False):
         try:
             with open_regular_file(transaction / 'journal.json') as source:
                 data = json.load(source)
+            if retired:
+                cache = _retired_cache_identity(data, destination, cache)
             self._validate_journal(data, destination, cache)
             _verify_saved_state(transaction, data)
-        except (OSError, ValueError, TypeError, KeyError) as error:
+        except (OSError, ValueError, TypeError, KeyError, RecursionError) as error:
             raise ValueError(f'Invalid publication journal at {transaction}; preserve it for recovery') from error
         return data
 
@@ -268,7 +278,7 @@ class PosixPublicationBackend:
             if any(entry != journal for entry in retired.iterdir()):
                 raise ValueError(f'Unexpected files in publication retirement directory: {retired}')
             if journal.exists():
-                self._read_journal(retired, destination, cache)
+                self._read_journal(retired, destination, cache, retired=True)
                 journal.unlink()
             retired.rmdir()
 

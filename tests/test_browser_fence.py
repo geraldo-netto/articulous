@@ -15,7 +15,7 @@ def test_test002_proc_identity_and_members(tmp_path):
     zombie = tmp_path / '12'
     live = tmp_path / '13'
     root = tmp_path / '42'
-    with patch.object(fence.Path, 'glob', return_value=[absent, foreign, zombie, live, root]):
+    with patch.object(fence.Path, 'iterdir', return_value=[tmp_path / 'self', absent, foreign, zombie, live, root]):
         with patch.object(fence, 'process_identity', side_effect=[None, (8, 1, 'S'), (42, 2, 'Z'), (42, 3, 'S')]):
             assert list(fence.owned_members(42)) == [(13, (42, 3, 'S'))]
     with patch.object(fence.Path, 'read_text', side_effect=FileNotFoundError):

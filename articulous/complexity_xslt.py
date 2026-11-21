@@ -16,6 +16,7 @@ from .complexity_xslt_contracts import (
 )
 from .engines import safe_xml_parser, safe_xslt_access_control
 from .filesystem import write_text_atomic
+from .tree_entries import tree_entries
 
 EVIDENCE = 'reviews/complexity/xslt.json'
 DIRECTORY = 'articulous/theme_assets/xsl'
@@ -139,7 +140,7 @@ def measure_source(content, compiler):
 
 
 def source_paths(root):
-    return sorted(path.relative_to(root).as_posix() for path in (root / DIRECTORY).rglob('*.xsl'))
+    return sorted(path.relative_to(root).as_posix() for path in tree_entries(root / DIRECTORY) if path.suffix == '.xsl')
 
 
 def measured_report(root, compiler):

@@ -17,8 +17,13 @@ def collect_variants(content, languages):
     catalog = {}
     for language in languages:
         directory = content / language
-        for path in sorted(directory.glob('*.xml')):
-            catalog.setdefault(path.name, {})[language] = path
+        try:
+            entries = sorted(directory.iterdir())
+        except FileNotFoundError:
+            continue
+        for path in entries:
+            if path.name.endswith('.xml') and path.is_file():
+                catalog.setdefault(path.name, {})[language] = path
     return catalog
 
 

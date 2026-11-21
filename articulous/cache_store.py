@@ -42,6 +42,10 @@ def _root_path(namespace: Path, root: str) -> Path:
     return namespace / (hashlib.sha256(os.fsencode(root)).hexdigest() + '.json')
 
 
+def partition_path(base: Path, destination: Path) -> Path:
+    return _root_path(cache_namespace(base), str(destination.resolve()))
+
+
 def select_cache(base: Path, destination: Path) -> CacheSelection:
     namespace = cache_namespace(base)
     if not os.path.lexists(namespace):
@@ -51,7 +55,7 @@ def select_cache(base: Path, destination: Path) -> CacheSelection:
     validate_output_path(marker)
     if not marker.is_file():
         raise ValueError(f'Unrecognized fingerprint cache directory: {namespace}')
-    active = _root_path(namespace, str(destination.resolve()))
+    active = partition_path(base, destination)
     validate_output_path(active)
     state = validate_regular_file(active)
     if state is not None and state.st_nlink != 1:
@@ -95,9 +99,10 @@ def _pending_journal(path: Path, base: Path) -> bool:
     try:
         with open_regular_file(path / 'journal.json') as source:
             data = json.load(source)
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return True
-    return not isinstance(data, dict) or data.get('cache') == str(base)
+    owner = data.get('cache') if isinstance(data, dict) else None
+    return not isinstance(owner, str) or not Path(owner).is_absolute() or owner == str(base)
 
 
 def _has_pending_journal(base: Path) -> bool:
@@ -106,7 +111,7 @@ def _has_pending_journal(base: Path) -> bool:
 
     for folder, dirs, _ in os.walk(base.parent, onerror=failed):
         for name in tuple(dirs):
-            if name.startswith('.') and name.endswith('.articulous-transaction'):
+            if name.startswith('.') and name.endswith(('.articulous-transaction', '.articulous-transaction-retired')):
                 dirs.remove(name)
                 if _pending_journal(Path(folder) / name, base):
                     return True

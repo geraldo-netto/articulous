@@ -189,3 +189,15 @@ console.log('THEME-002 neutral search consumer and lifecycle passed');
  assert.deepEqual(f.events.published.map(result=>result.count),[1,1]);
  f.controller.dispose();
 }
+
+{
+  let controller, creates = 0;
+  const f = fixture({
+    match(items) { controller.reset(); return items; },
+    renderer: {...fixture().options.renderer, create() { creates++; return []; }}
+  });
+  controller = f.controller;
+  await controller.search('title');
+  assert.equal(creates, 0, 'REVIEW27-15 reset during matching stops renderer admission');
+  controller.dispose();
+}

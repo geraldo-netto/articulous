@@ -133,6 +133,7 @@ globalThis.SearchClient = (() => {
     }
 
     async function renderMatches(matches, current) {
+      if (!active(current)) return null;
       const container = renderer.create();
       for (let offset=0;offset<matches.length;offset+=batchSize) {
         if (!active(current)) return null;

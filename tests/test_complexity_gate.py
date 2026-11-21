@@ -336,7 +336,7 @@ def test_cc003_javascript_inventory_lifetime(tmp_path, monkeypatch, fault):
 
 @pytest.fixture
 def evidence(tmp_path, record):
-    (tmp_path / 'articulous').mkdir()
+    (tmp_path / gate.xslt.DIRECTORY).mkdir(parents=True)
     (tmp_path / 'articulous/a.py').write_text('def f(value):\n return value\n')
     report = {'schema': 1, 'baseline': worker.BASELINE, 'upstream': {},
               'analyzers': {'python': {'analyzer': 'Lizard', 'version': '1.23.0',
@@ -495,7 +495,6 @@ def test_cc002_xslt_failure_preserves_published_aggregate(evidence, monkeypatch)
 def test_cc002_stale_xslt_fails_with_unchanged_python_and_javascript(evidence):
     root, report = evidence
     path = root / gate.xslt.DIRECTORY / 'test.xsl'
-    path.parent.mkdir(parents=True)
     path.write_text('<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">'
                     '<xsl:template match="/"><out/></xsl:template></xsl:stylesheet>')
     aggregate = {'schema': 2, 'python_javascript': report,

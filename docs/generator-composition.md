@@ -308,7 +308,7 @@ with prepare_build(cli, config, root, extra_pages=[about]) as prepared:
 dependencies and assets. Its private stage sits beside the output directory;
 callers do not provide a separate render target. Preparation does not publish the
 site. `render_prepared` may run once per prepared build; it renders the captured
-plan and fingerprints all staged file contents and directory paths. Source edits
+plan and fingerprints all staged file contents, directory paths and permission bits, including the output root. Source edits
 after capture apply to the next build. The prepared context owns locks, route
 storage and temporary resources; staged and validated handles expire when it
 exits. `PreparedBuild.state` and `closed` are read-only views of its single

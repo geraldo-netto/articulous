@@ -143,11 +143,13 @@ def load_ownership(output_dir: Path, legacy=None, *, allow_pending: bool = True)
     path = ownership_path(output_dir)
     try:
         with open_regular_file(path) as source:
-            data = json.loads(source.read().decode("utf-8"))
+            payload = source.read()
     except FileNotFoundError:
         outputs = _legacy_ownership(output_dir, legacy)
         return _from_legacy_outputs(outputs)
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+    try:
+        data = json.loads(payload.decode("utf-8"))
+    except (ValueError, RecursionError) as error:
         raise ValueError(f"Invalid output ownership at {path}; restore it before building") from error
     ownership = _decode_ownership(output_dir, data)
     if ownership.pending and not allow_pending:

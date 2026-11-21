@@ -51,15 +51,25 @@ def check_function(function, region, statements):
             or function.get('start_line') != region.start
             or counts != (len(executed), len(missing), len(expected))):
         raise ValueError('inconsistent native counters or summary')
-    check_percent(summary.get('percent_covered'), len(executed), len(expected))
+    check_summary_percentages(summary, len(executed), len(expected))
+
+
+def check_summary_percentages(summary, covered, total):
+    branches = summary.get('num_branches', 0)
+    taken = summary.get('covered_branches', 0)
+    if type(branches) is not int or type(taken) is not int or not 0 <= taken <= branches:
+        raise ValueError('inconsistent native branch summary')
+    check_percent(summary.get('percent_covered'), covered + taken, total + branches)
+    if 'percent_statements_covered' in summary:
+        check_percent(summary['percent_statements_covered'], covered, total)
+    if total and covered / total < 0.8:
+        raise ValueError(f'{100 * covered / total:g}% executable lines; require 80–100%')
 
 
 def check_percent(percent, executed, expected):
     actual = 100 * executed / expected if expected else 100
     if type(percent) not in (int, float) or not math.isclose(percent, actual, abs_tol=1e-8):
         raise ValueError('inconsistent native counters or summary')
-    if not 80 <= percent <= 100:
-        raise ValueError(f'{percent!r}% executable lines; require 80–100%')
 
 
 def _check_source(path, filename, record, names, failures):

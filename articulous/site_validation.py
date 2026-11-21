@@ -6,6 +6,7 @@ import re
 
 import lxml.etree as etree
 import lxml.html as html
+from .tree_entries import tree_entries
 from .validation_contracts import PageReferences, ReferenceSource, ValidationPlan, ValidationResult
 
 
@@ -17,7 +18,7 @@ def page_route(output, path):
 
 def url_origin(parsed):
     default = 443 if parsed.scheme == 'https' else 80
-    return parsed.scheme, parsed.hostname, parsed.port or default
+    return parsed.scheme, parsed.hostname, default if parsed.port is None else parsed.port
 
 
 def _same_publication_origin(parsed, origin):
@@ -57,7 +58,7 @@ def resolved_path(output, value, base, resolved_paths):
 
 def read_pages(output, failures, html_errors=None):
     pages = {}
-    for path in sorted(output.rglob('*.html')):
+    for path in sorted(path for path in tree_entries(output) if path.name.endswith('.html')):
         source = path.read_bytes()
         errors = html_errors(source) if html_errors is not None else ()
         if errors:

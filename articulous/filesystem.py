@@ -14,6 +14,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path
 
 from .tree_entries import tree_entries
@@ -259,7 +260,7 @@ def write_text_atomic(path: Path, text: str, encoding: str = "utf-8") -> None:
 def tree_fingerprint(root: Path) -> str:
     validate_output_path(root)
     digest = hashlib.sha256()
-    for path in sorted(tree_entries(root)):
+    for path in chain((root,), sorted(tree_entries(root))):
         validate_output_path(path)
         content = hashlib.sha256()
         kind = 'directory'
@@ -268,7 +269,7 @@ def tree_fingerprint(root: Path) -> str:
             with open_regular_file(path) as source:
                 while chunk := source.read(1024 * 1024):
                     content.update(chunk)
-        record = [path.relative_to(root).as_posix(), kind, content.hexdigest()]
+        record = [path.relative_to(root).as_posix(), kind, stat.S_IMODE(path.stat().st_mode), content.hexdigest()]
         digest.update(json.dumps(record, ensure_ascii=True).encode() + b'\n')
     return digest.hexdigest()
 

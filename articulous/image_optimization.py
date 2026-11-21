@@ -3,6 +3,7 @@ from pathlib import Path
 import shutil
 import stat
 
+from .tree_entries import tree_entries
 from .image_contracts import ImageBackend, ImageGeneration, ImageResult, KINDS, validate_options
 from .source_files import replace_file
 from .source_transactions import fingerprint
@@ -10,7 +11,7 @@ from .resource_locks import resource_lock
 
 
 def candidates(root: Path, threshold: int, kinds: set[str]):
-    for path in sorted(root.rglob('*')):
+    for path in sorted(tree_entries(root)):
         if path.is_file() and KINDS.get(path.suffix.lower()) in kinds and path.stat().st_size >= threshold:
             yield path
 
@@ -52,6 +53,7 @@ def optimize(root: Path, backend: ImageBackend, *, largest: int, quality: int,
             require_image(path, generation, digest)
             width, height = backend.dimensions(path)
             target = temporary / path.name
+            target.unlink(missing_ok=True)
             backend.shrink(path, target, largest, quality)
             require_image(path, generation, digest)
             old, new = generation.size, target.stat().st_size

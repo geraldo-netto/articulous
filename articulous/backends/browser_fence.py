@@ -18,7 +18,9 @@ def process_identity(pid):
 
 
 def owned_members(owner):
-    for entry in Path('/proc').glob('[0-9]*'):
+    for entry in Path('/proc').iterdir():
+        if not entry.name.isdecimal():
+            continue
         pid = int(entry.name)
         if pid in (owner, os.getpid()):
             continue

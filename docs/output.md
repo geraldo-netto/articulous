@@ -106,7 +106,7 @@ live under `__output_roots__`, keyed by resolved output directory.
 With `build.partition_cache: true`, the first successful cache update
 imports existing entries into a sibling directory, named
 `.build-cache.json.articulous-roots` by default. Migration holds the shared
-cache lock and waits for pending publication recovery. The shared file
+cache lock and waits until both active and retiring publication journals release the shared cache. The shared file
 is cleared after the import. Later builds using the same cache filename read and
 write one fingerprint file for their output. Setting `partition_cache` back
 to false leaves the migrated directory active. Choose another cache filename
@@ -156,8 +156,8 @@ fails immediately rather than waiting. Lock files remain after release;
 stale or malformed metadata is recovered once the OS lock is available.
 Cache, log, lock and ownership paths must stay separate from configuration, source
 trees, output trees and each other.
-The `.<output-name>.articulous-transaction/` directory is reserved for whole-site
-publication. State and source paths cannot be inside it or contain it.
+Whole-site publication reserves `.<output-name>.articulous-transaction/`
+and its `-retired` sibling. State and source paths must be disjoint from both.
 Configuration, cache, log, lock and ownership paths must refer to regular files
 when they exist; directories, FIFOs and devices are rejected. File opens
 are nonblocking and verify the opened file type before reading or writing.

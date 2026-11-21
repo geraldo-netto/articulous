@@ -36,6 +36,6 @@ class HttpProvider:
             content = body['choices'][0]['message']['content']
             if not isinstance(content, str):
                 raise TypeError('Message content must be text')
-        except (ValueError, TypeError, KeyError, IndexError) as error:
+        except (ValueError, TypeError, KeyError, IndexError, RecursionError) as error:
             raise urllib.error.URLError('Invalid translation response') from error
         return content.strip()

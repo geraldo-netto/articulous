@@ -2,10 +2,12 @@
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
+from fnmatch import fnmatch
 from graphlib import TopologicalSorter
 import lxml.etree as etree
 
 from .filesystem import open_regular_file
+from .tree_entries import tree_entries
 from .source_transactions import fingerprint, source_transaction
 from .taxonomy_contracts import TaxonomyEdits, TaxonomyLayout
 
@@ -39,10 +41,42 @@ def _provenance_fields(tree, provenance):
     return root.findtext(provenance.source_element), root.findtext(provenance.hash_element)
 
 
+def _glob_documents(root, parts):
+    head, *tail = parts
+    if head == '**':
+        yield from _recursive_documents(root, tail)
+        return
+    for path in root.iterdir():
+        if fnmatch(path.name, head):
+            if not tail:
+                if path.is_file():
+                    yield path
+            elif path.is_dir():
+                yield from _glob_documents(path, tail)
+
+
+def _recursive_documents(root, tail):
+    yield from _glob_documents(root, tail)
+    for directory in tree_entries(root):
+        if not directory.is_symlink() and directory.is_dir():
+            yield from _glob_documents(directory, tail)
+
+
+def _document_paths(root, pattern):
+    path = Path(pattern)
+    if path.is_absolute() or not path.parts or '..' in path.parts:
+        raise ValueError('Expected a relative taxonomy file pattern')
+    if path.name == '**' or pattern.endswith('/'):
+        raise ValueError('Expected a taxonomy pattern selecting files')
+    if any('**' in part and part != '**' for part in path.parts):
+        raise ValueError('Recursive wildcards must be entire path components')
+    return sorted(set(_glob_documents(root, path.parts)))
+
+
 def _stage_edits(content, transaction, layout, mapping):
     metadata = {}
     rewritten = 0
-    for path in sorted(content.glob(layout.pattern)):
+    for path in _document_paths(content, layout.pattern):
         relative = path.relative_to(content)
         expected = transaction.capture(relative)
         tree = _read_document(path, expected)

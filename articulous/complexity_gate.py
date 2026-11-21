@@ -10,6 +10,7 @@ from . import complexity_xslt as xslt
 from .complexity_contracts import AGGREGATE_SCHEMA, MAX_EVIDENCE_BYTES, decode_function, require_aggregate, require_digest, require_relative
 from .complexity_python import BASELINE, CALIBRATIONS, ast_identity, definitions, digest, function_identity, projection, python_text
 from .filesystem import write_text_atomic
+from .tree_entries import tree_entries
 
 EVIDENCE = 'reviews/complexity/functions.json'
 BASELINE_FILE = 'reviews/complexity/baseline.json'
@@ -23,9 +24,9 @@ JS_EXPECTED = (("Function 'straight'", 1), ("Function 'choices'", 4), ("Function
 
 
 def source_paths(root):
-    paths = set(root.glob('*.py'))
+    paths = {path for path in root.iterdir() if path.suffix == '.py'}
     for directory in ('articulous', 'tests'):
-        paths.update(path for path in (root / directory).rglob('*') if path.suffix in ('.py', '.js', '.mjs'))
+        paths.update(path for path in tree_entries(root / directory) if path.suffix in ('.py', '.js', '.mjs'))
     return sorted(path.relative_to(root).as_posix() for path in paths)
 
 

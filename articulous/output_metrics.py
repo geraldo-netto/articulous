@@ -7,6 +7,8 @@ from typing import TypedDict
 
 from lxml import html
 
+from .tree_entries import tree_entries
+
 
 class OutputMetrics(TypedDict):
     extensions: Counter[str]
@@ -34,6 +36,14 @@ def _class_metrics(document, metrics: OutputMetrics):
                 metrics['recipes'][value] += 1
 
 
+def _output_entries(output):
+    try:
+        output.stat()
+    except FileNotFoundError:
+        return
+    yield from tree_entries(output)
+
+
 def scan(output: Path, *, regions=()) -> OutputMetrics:
     """Accumulate counters in one pass, retaining no page bytes or DOMs."""
     metrics: OutputMetrics = {
@@ -41,7 +51,8 @@ def scan(output: Path, *, regions=()) -> OutputMetrics:
         'region_pages': Counter(), 'recipes': Counter(), 'sizes': [],
         'raw': 0, 'gzip': 0, 'class_bytes': 0,
     }
-    for path in output.rglob('*'):
+    regions = tuple(regions)
+    for path in _output_entries(output):
         if not path.is_file():
             continue
         size = path.stat().st_size

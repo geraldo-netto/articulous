@@ -62,7 +62,7 @@ def test_html5_001_literal_text_comments_and_foreign_elements_survive(tmp_path):
 
 def test_html5_001_implicit_html_method_and_cache_identity(tmp_path):
     assert b'</source>' not in render(tmp_path, '<html><source/></html>', 'encoding="UTF-8"')
-    assert 'serialization=v5' in LxmlEngine().cache_identity
+    assert 'serialization=v6' in LxmlEngine().cache_identity
 
 
 @pytest.mark.parametrize('body', ['<xsl:text>only text</xsl:text>',
@@ -186,3 +186,16 @@ def test_review29_04_decoder_skips_distant_payload_bytes(encoding, monkeypatch):
     body = f'<p>{text}</p><source></source>'
     assert _project_html(body.encode(encoding), encoding) == body.removesuffix('</source>').encode(encoding)
     assert decoder.decode.call_count < 4096
+
+
+@pytest.mark.parametrize('encoding', ['UTF-8', 'UTF-16'])
+@pytest.mark.parametrize('leading,html', [
+    ('&#xA0;', False), ('&#x85;', False), ('&#x2002;', False),
+    (' &#x9;&#xD;&#xA;', True),
+])
+def test_review28_10_inferred_method_uses_xml_whitespace(tmp_path, encoding, leading, html):
+    body = f'<xsl:text>{leading}</xsl:text><html><source>inside</source></html>'
+    actual = render(tmp_path, body, f'encoding="{encoding}"')
+    native = bytes(etree.XSLT(etree.parse(str(tmp_path / 'style.xsl')))(etree.XML('<input/>')))
+    expected = native.decode(encoding).replace('</source>', '').encode(encoding) if html else native
+    assert actual == expected

@@ -16,7 +16,7 @@ def automatic_html(result):
     if result.getroot().tag.lower() != 'html':
         return False
     leading = result.xpath('/text()[not(preceding-sibling::*)]')
-    return not any(text.strip() for text in leading)
+    return not any(text.strip(' \t\r\n') for text in leading)
 
 
 def _record_boundaries(block, decoder, positions, offset, start):

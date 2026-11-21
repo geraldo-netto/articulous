@@ -751,14 +751,14 @@
       {
         "functions": [
           {
-            "body_sha256": "c268b6ec8224a9ef50bcd0545ba771e067c8e1b5e282c5e7511ff6b3e9cfe5a9",
+            "body_sha256": "c504807fbf9e546028c47adb71074dd61f0ccd91a71bceae5c8b23b047f360f7",
             "column": 0,
             "complexity": 3,
-            "end_column": 52,
+            "end_column": 61,
             "end_line": 19,
             "line": 15,
             "name": "automatic_html",
-            "projection_sha256": "df9fea9577f48b0f1073bec0488413d5d8493cdaa00820cebce107542abf21ca"
+            "projection_sha256": "844613a20d4681d2c7af1f695dd63df2eb07f20e0bb3db1df372a345a2bea6d8"
           },
           {
             "body_sha256": "80f6dfa6f6fd80fd29d456066099726f9d0d92bd93f1c9c385f56ee711631c0e",
@@ -823,7 +823,7 @@
         ],
         "language": "python",
         "path": "articulous/backends/lxml_output.py",
-        "sha256": "5d2168c12feeaf9507410bd9ebe8b9473aa7e93ec74e75159681a142b1f919aa"
+        "sha256": "3dfc8b57fe352ddd05c808fa2ce3f61a3cfde10423381fe75ebbeb614aa837b5"
       },
       {
         "functions": [
@@ -5578,14 +5578,14 @@
             "projection_sha256": "d5bf98ee37d537ddbf581bc38f672fdac0a3d73a175fe9441a3161db1677d88b"
           },
           {
-            "body_sha256": "0cae7ba07e815bd2d03d655f4428bbd6682c640427848012e4d0ab0bdfd69129",
+            "body_sha256": "ec53c58ec8ac4f9ad9101d29529f9c90b171df379c991260afacda473b243b0c",
             "column": 4,
             "complexity": 1,
             "end_column": 78,
             "end_line": 360,
             "line": 359,
             "name": "LxmlEngine.cache_identity",
-            "projection_sha256": "4de189491f7263baf09e3b784db9cf60b5e0166528acd1d81ef8e5985aac18a8"
+            "projection_sha256": "a3602d4c181696a45362538d7a2b1091d134e3420a429dcceff876e0ee0ce578"
           },
           {
             "body_sha256": "d9fcae6e61212137e5ab430b2003dac58d0ec993642731d9ddc25cc97b43a0c2",
@@ -5770,7 +5770,7 @@
         ],
         "language": "python",
         "path": "articulous/engines.py",
-        "sha256": "d89cf22321daa54c7d8facf13a320367e80f1d70dd634f91c130a0fed6c27cad"
+        "sha256": "043e632815c0473155402554d060c059c21f2583fb051dbad92ec78357b486b2"
       },
       {
         "functions": [
@@ -20905,14 +20905,14 @@
             "projection_sha256": "2afd91677798b154d2dbf790533a0823ceaeb738889baea132e7ae8fe2aeb978"
           },
           {
-            "body_sha256": "c8b011685b24b4b939c705958ad53a1853f96fa75d4b99d1b909dc26ab06537f",
+            "body_sha256": "89a1fbfaa58d77e85ad1de1073ab1cb3d0650957f9472c91145ccda489dfbac3",
             "column": 0,
             "complexity": 1,
             "end_column": 60,
             "end_line": 65,
             "line": 63,
             "name": "test_html5_001_implicit_html_method_and_cache_identity",
-            "projection_sha256": "25a589b7ab06b716bc85ba01efed2e35a6899940f3ad93da0ee164bcdd12ff85"
+            "projection_sha256": "276b36562fb0c0219b8aa33010d668d3855c3ffeab72a69fbb879ed1711118db"
           },
           {
             "body_sha256": "3b62f648b18613b2708cffae03eba7b5790db445068ab58562a1eb244628014b",
@@ -21063,11 +21063,21 @@
             "line": 184,
             "name": "test_review29_04_decoder_skips_distant_payload_bytes.<lambda>@184:57",
             "projection_sha256": "82dad819495887a2aeb38f7b4a4551099e5741e1fb63c170f412cfa3bb95e621"
+          },
+          {
+            "body_sha256": "8c1ffb9c9879862d33344b0febd11942b7c502528b738ad47e5c3983b59b9d16",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 29,
+            "end_line": 201,
+            "line": 196,
+            "name": "test_review28_10_inferred_method_uses_xml_whitespace",
+            "projection_sha256": "6c2d16ba07ad4edc699a2fbaf7b90942616f70a0d9e27bc05ad03160b9f553d5"
           }
         ],
         "language": "python",
         "path": "tests/test_html5_serialization.py",
-        "sha256": "1a821cea52d7032542c974f7dd98ab99144952539686ca9f33187eba31286aaa"
+        "sha256": "37812d74a252582d9b7e2e4aa1922548fb4fecc57b7c31a7a87af5e45a735a26"
       },
       {
         "functions": [

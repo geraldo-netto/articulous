@@ -227,3 +227,17 @@ def test_a_built_site_keeps_its_prefixes_unless_asked(site_root):
     output = site_root / "output"
     assert (output / "en/page/1/index.html").is_file()
     assert not (output / "page").exists()
+
+
+@pytest.mark.parametrize("pattern", ["/news-{lang}/", "/{lang}-news/", "/news/lang_{lang}/"])
+def test_audit1121_12_bare_first_index_requires_removable_language(pattern):
+    config = _config([])
+    config["urls"]["index_first"] = pattern
+    validate_config(config)
+    config["site"]["bare_default_language"] = ["index"]
+    with pytest.raises(ValueError, match="index_first"):
+        validate_config(config)
+    with pytest.raises(ValueError, match="segment"):
+        list(build_index_models([1], "en", _ctx(), options=IndexOptions(pattern)))
+    config["urls"]["index_first"] = "/news/{lang}/"
+    validate_config(config)

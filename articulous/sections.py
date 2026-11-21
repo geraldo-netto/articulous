@@ -93,7 +93,9 @@ def section_is_per_lang(section: str, pattern: str) -> bool:
     return spec.scope == "per-lang" or "lang" in _pattern_fields(pattern)
 
 
-def bare_pattern(pattern: str) -> str:
+def bare_pattern(pattern: str, *, label: str = "URL pattern") -> str:
+    if "/{lang}/" not in pattern:
+        raise ValueError(f"{label} has no /{{lang}}/ segment to drop")
     return pattern.replace("/{lang}/", "/", 1)
 
 

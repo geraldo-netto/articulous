@@ -24,6 +24,7 @@ from .filesystem import (
 from .sections import (
     PER_LANG_SECTIONS,
     SECTION_NAMES,
+    bare_pattern,
     url_key_for_section,
     validate_base_url,
     validate_url_pattern,
@@ -258,15 +259,15 @@ def _require_bare_default_language(sections, urls: dict) -> None:
                 f"choose from {sorted(_BARE_SECTIONS)}"
             )
         key = url_key_for_section(section)
-        if "/{lang}/" not in urls[key]:
-            raise ValueError(
-                f"config {name} lists {section!r}, but urls.{key} has no "
-                "/{lang}/ segment to drop"
-            )
+        bare_pattern(urls[key], label=f"config {name} lists {section!r}, but urls.{key}")
 
 
 def _validate_bare_default_language(config: dict) -> None:
-    _require_bare_default_language(config["site"]["bare_default_language"], config["urls"])
+    sections = config["site"]["bare_default_language"]
+    urls = config["urls"]
+    _require_bare_default_language(sections, urls)
+    if "index" in sections and urls["index_first"] is not None:
+        bare_pattern(urls["index_first"], label="config urls.index_first")
 
 
 def _validate_configuration(config) -> None:

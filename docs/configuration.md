@@ -52,7 +52,8 @@ a site whose untranslated pages already live at bare routes. `articles`,
 `index`, `tags` and `rss` (once `urls.rss` names `{lang}`) may be listed; each
 listed section's pattern must contain a `/{lang}/` segment. The default is
 `[]`, so existing sites keep their prefixed URLs. By default, page one of a bare
-index is `/page/1/`.
+index is `/page/1/`. If a bare index sets `urls.index_first`, that pattern must
+also contain a `/{lang}/` segment.
 
 Set `urls.index_first` to `"/{lang}/"` to make page one canonical at `/en/`,
 `/fr/`, and so on. With `"index"` in `site.bare_default_language`, the default

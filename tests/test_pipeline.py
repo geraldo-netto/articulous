@@ -7,7 +7,7 @@ import os
 import shutil
 import tracemalloc
 import sqlite3
-from contextlib import ExitStack, closing
+from contextlib import ExitStack, closing, contextmanager
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -1279,10 +1279,36 @@ def closed_translation_database(monkeypatch):
 
 
 @pytest.fixture
-def planning_scope(tmp_path, closed_translation_database):
+def closed_task_queue_files(monkeypatch):
+    """MATRIX-09: queue owners must close each native file before teardown."""
+    from articulous.pipeline import _TaskQueue
+    files = []
+    original = _TaskQueue.__init__
+
+    def observe(queue, ctx, cache):
+        original(queue, ctx, cache)
+        files.append(queue._file)
+
+    monkeypatch.setattr(_TaskQueue, '__init__', observe)
+    yield
+    try:
+        assert all(file.closed for file in files)
+    finally:
+        for file in files:
+            file.close()
+
+
+@contextmanager
+def _planning_workspace(tmp_path):
     with ExitStack() as cleanup:
         workspace = cleanup.enter_context(TempWorkspace(tmp_path))
         yield cleanup, workspace
+
+
+@pytest.fixture
+def planning_scope(tmp_path, closed_translation_database):
+    with _planning_workspace(tmp_path) as scope:
+        yield scope
 
 
 def _inspect_projection(scope, factory, cli, ctx, **options):
@@ -1404,13 +1430,15 @@ def test_rss_sorted_from_heap_newest_first(tmp_path):
     ("sitemap", (False, False, 1, 0, 0)),
     ("search", (False, False, 0, 1, 0)),
 ])
-def test_section_build_collects_only_consumed_projections(tmp_path, section, expected):
+def test_section_build_collects_only_consumed_projections(
+    tmp_path, section, expected, closed_task_queue_files,
+):
     ctx = _ctx_for(tmp_path)
     source = ctx.content_dir / "a.xml"
     source.write_text("<article><title>a</title><date>2024-01-01</date></article>")
     article = dataclasses.replace(_art("a", tags=("tag",)), source_path=source)
-    with TempWorkspace() as workspace:
-        plan = _collect_tasks(lambda: iter([article]), _FakeCLI(sections=[section]), ctx, {}, workspace)
+    with _planning_workspace(tmp_path) as scope:
+        plan = _inspect_plan(scope, lambda: iter([article]), _FakeCLI(sections=[section]), ctx)
         projection = plan.projection
         observed = (
             projection.articles_by_lang is not None,
@@ -1419,18 +1447,19 @@ def test_section_build_collects_only_consumed_projections(tmp_path, section, exp
         )
         assert observed == expected
         assert len(plan[section]) == 1
-        _cleanup_stream_projection(projection)
 
 
-def test_rss_only_build_does_not_spool_unused_projections(tmp_path, monkeypatch):
+def test_rss_only_build_does_not_spool_unused_projections(
+    tmp_path, monkeypatch, closed_task_queue_files,
+):
     ctx = _ctx_for(tmp_path)
-    with TempWorkspace() as workspace:
+    with _planning_workspace(tmp_path) as scope:
+        _, workspace = scope
         def unexpected_spool(*args, **kwargs):
             pytest.fail("RSS-only planning must not create projection files")
         monkeypatch.setattr(workspace, "named_file", unexpected_spool)
-        plan = _collect_tasks(lambda: iter([_art("a")]), _FakeCLI(sections=["rss"]), ctx, {}, workspace)
+        plan = _inspect_plan(scope, lambda: iter([_art("a")]), _FakeCLI(sections=["rss"]), ctx)
         assert len(plan["rss"]) == 1
-        _cleanup_stream_projection(plan.projection)
 
 
 def test_collect_tasks_all_sections(tmp_path, planning_scope):
@@ -1486,14 +1515,15 @@ def test_collect_tasks_only_lang_filter(tmp_path, planning_scope):
     assert len(plan["articles"]) == 1
 
 
-def test_collect_tasks_only_index_subset(tmp_path):
+def test_collect_tasks_only_index_subset(tmp_path, closed_task_queue_files):
     """Per-lang sections requested but ``articles`` excluded."""
     ctx = _ctx_for(tmp_path)
     a = _art("a")
     cli = _FakeCLI(sections=["index"])
-    plan = _collect_tasks(lambda: iter([a]), cli, ctx, {})
-    assert "articles" not in plan
-    assert "index" in plan
+    with _planning_workspace(tmp_path) as scope:
+        plan = _inspect_plan(scope, lambda: iter([a]), cli, ctx)
+        assert "articles" not in plan
+        assert "index" in plan
 
 
 def test_collect_tasks_only_sitemap_subset(tmp_path):

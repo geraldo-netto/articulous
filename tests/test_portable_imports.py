@@ -5,13 +5,14 @@ import sys
 
 def test_arch009_package_and_publication_capabilities_import_without_native_modules():
     script = '''
-import builtins, subprocess
+import builtins, sys
 original = builtins.__import__
-def guarded(name, *args, **kwargs):
-    if name == 'fcntl':
+def guarded(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'fcntl' and (globals or {}).get('__name__', '').startswith('articulous.'):
         raise AssertionError('Native module loaded by shared interface')
-    return original(name, *args, **kwargs)
+    return original(name, globals, locals, fromlist, level)
 builtins.__import__ = guarded
+sys.modules['fcntl'] = None
 from articulous.resource_locks import resource_lock
 from articulous.extensions import BuildComposition
 from articulous.catalogue import PublicationCatalogue

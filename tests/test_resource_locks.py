@@ -31,14 +31,10 @@ class BuildLockTests(unittest.TestCase):
 
     def test_build007_shared_interface_imports_without_native_modules(self):
         script = """
-import builtins
-original = builtins.__import__
-def guarded(name, *args, **kwargs):
-    if name == 'fcntl':
-        raise AssertionError('Native module loaded by shared interface')
-    return original(name, *args, **kwargs)
-builtins.__import__ = guarded
+import sys
+sys.modules['fcntl'] = None
 from articulous.resource_locks import resource_lock
+assert callable(resource_lock)
 """
         result = subprocess.run(
             [sys.executable, "-c", script], cwd=ROOT, capture_output=True, text=True

@@ -26807,19 +26807,19 @@
       {
         "functions": [
           {
-            "body_sha256": "aa8b51df1f01a4fe35719ba956d07581214133f717028d263b8a258aaab4ffce",
+            "body_sha256": "b639f0ccd01b456ca025c10cc4e4b7756ad7c8ed48c4e8dac22841665a970acd",
             "column": 0,
             "complexity": 1,
             "end_column": 48,
-            "end_line": 24,
+            "end_line": 25,
             "line": 6,
             "name": "test_arch009_package_and_publication_capabilities_import_without_native_modules",
-            "projection_sha256": "922d6e06308f57aa3658fcd0cb2e6ffe33f45ee2e410b9807791930678f95d0e"
+            "projection_sha256": "ea4213ebd78b28f76332b182697dceb0985d495a010856b328be5a41b636f7a4"
           }
         ],
         "language": "python",
         "path": "tests/test_portable_imports.py",
-        "sha256": "68217d7b66476f2ccc4485ec97ec2094a0456842eaeb5149799887c0f3d09781"
+        "sha256": "e7b8eb3f317c69fee5deee12299fe09e7417007e62f395dd0479634bdd8daa44"
       },
       {
         "functions": [
@@ -29312,22 +29312,22 @@
             "projection_sha256": "57883b03f0c162f45336c854f8b05cdd50be0d22dc1940aca7919972d59a03a3"
           },
           {
-            "body_sha256": "5b61327d92a39633fc269e571f8d85b546ef0e7378901a2433c13626273b1325",
+            "body_sha256": "912b1e8496200ab00e9004fffc2b84b4c19b68cc467d6de7bbefbf597498fad6",
             "column": 4,
             "complexity": 1,
             "end_column": 61,
-            "end_line": 46,
+            "end_line": 42,
             "line": 32,
             "name": "BuildLockTests.test_build007_shared_interface_imports_without_native_modules",
-            "projection_sha256": "2457013a576e00e26c37ebaf51502146d63d5dad378ed07361182552cf6dae1e"
+            "projection_sha256": "0a07400805249759e22fb678c31c846191b67fc44d128c18d5823db72b490afb"
           },
           {
             "body_sha256": "d9b422f88ce78363a8c214a7f7aa2273c280ff688e4e995bc25331a195d35bd8",
             "column": 4,
             "complexity": 4,
             "end_column": 69,
-            "end_line": 90,
-            "line": 48,
+            "end_line": 86,
+            "line": 44,
             "name": "BuildLockTests.test_build007_native_contention_release_and_exception_release",
             "projection_sha256": "908e188adec551299eeefc9d08f1c0730599522c211c8773bf7b013244e2566b"
           },
@@ -29336,8 +29336,8 @@
             "column": 12,
             "complexity": 1,
             "end_column": 17,
-            "end_line": 71,
-            "line": 65,
+            "end_line": 67,
+            "line": 61,
             "name": "BuildLockTests.test_build007_native_contention_release_and_exception_release.contender",
             "projection_sha256": "e627b5c26eb417f16f7e728b98505f26366692e3128da2f68017845d1dde92b6"
           },
@@ -29346,8 +29346,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 69,
-            "end_line": 111,
-            "line": 92,
+            "end_line": 107,
+            "line": 88,
             "name": "BuildLockTests.test_build007_capabilities_do_not_claim_foreign_native_validation",
             "projection_sha256": "41c4ce848fb0e9f931681944fa61b3e327859f4ec31da3b76a415d525e9f6dbd"
           },
@@ -29356,8 +29356,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 63,
-            "end_line": 123,
-            "line": 113,
+            "end_line": 119,
+            "line": 109,
             "name": "BuildLockTests.test_build007_invalid_native_paths_fail_without_fallback",
             "projection_sha256": "b9494babdd5b92fbb375979472723cf28be4c99f0f0e4e7b48cb67e4680aecab"
           },
@@ -29366,8 +29366,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 45,
-            "end_line": 144,
-            "line": 126,
+            "end_line": 140,
+            "line": 122,
             "name": "test_arch009_injected_lock_closes_on_body_failure",
             "projection_sha256": "ee588a82c09e6c03e447bf4cb8e449148b142525fe29abe78569e3751746b27e"
           },
@@ -29376,8 +29376,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 37,
-            "end_line": 139,
-            "line": 134,
+            "end_line": 135,
+            "line": 130,
             "name": "test_arch009_injected_lock_closes_on_body_failure.backend",
             "projection_sha256": "40f9b2628a8030f96744d377bd3d0d9561bb1f51178752d833732f4e689bdc1e"
           },
@@ -29386,8 +29386,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 38,
-            "end_line": 158,
-            "line": 147,
+            "end_line": 154,
+            "line": 143,
             "name": "test_arch009_site_snapshot_lock_covers_all_build_entrypoints",
             "projection_sha256": "44f35ca21c60a2b3c734c1e055c16e05f8bf8d39e9c791b6c25b7199dd62a85b"
           },
@@ -29396,15 +29396,15 @@
             "column": 0,
             "complexity": 1,
             "end_column": 48,
-            "end_line": 166,
-            "line": 162,
+            "end_line": 162,
+            "line": 158,
             "name": "test_build007_invalid_lock_path_types_fail_before_native_access",
             "projection_sha256": "7c1aaa558474a5bfdf685d354ff3546cfd76dcd85a851d7dd2d4f04e9d3242fe"
           }
         ],
         "language": "python",
         "path": "tests/test_resource_locks.py",
-        "sha256": "102c1648a194fd03d28e73cb9bcdcc4d7a9b9b46b8a8cfaf6560d716cb00d6c8"
+        "sha256": "c27f9eaf6239b985642819e7be292b5f235b9d89888d4024eb891fb72122a3f3"
       },
       {
         "functions": [

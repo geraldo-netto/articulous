@@ -14,7 +14,7 @@ from typing import Any, cast
 
 from .configuration_contracts import (
     ConfigurationOptions, CONFIG_BLOCK_KEYS, CONFIG_KEYS, ConfigurationError,
-    ConfigurationInput, SiteConfiguration, validate_engines,
+    ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS, SiteConfiguration, validate_engines,
 )
 from .filesystem import (
     assert_disjoint_trees, cache_lock_path, open_regular_file,
@@ -66,6 +66,7 @@ DEFAULT_CONFIG = {
     },
     "build": {
         "cache_file": ".build-cache.json",
+        "cache_retention_days": DEFAULT_CACHE_RETENTION_DAYS,
         "parallelism": "auto",
         "force_full_build": False,
     },
@@ -220,6 +221,7 @@ def _validate_build(config: dict) -> None:
     cache_file = _require_string(build["cache_file"], "build.cache_file", nonempty=True)
     if not Path(cache_file).name:
         raise ValueError("config build.cache_file must contain a filename")
+    _require_non_negative_int(build["cache_retention_days"], "build.cache_retention_days")
     parallelism = build["parallelism"]
     if parallelism != "auto":
         _require_positive_int(parallelism, "build.parallelism")

@@ -11,6 +11,7 @@ EngineName = Literal['lxml', 'saxonc', 'native']
 VALID_ENGINES = frozenset(get_args(EngineName))
 NATIVE_SECTIONS = frozenset(('sitemap', 'search'))
 ConfigurationInput = Mapping[str, object]
+DEFAULT_CACHE_RETENTION_DAYS = 3
 
 
 class ConfigurationError(ValueError):
@@ -73,6 +74,7 @@ class UrlConfiguration(TypedDict):
 
 class BuildConfiguration(TypedDict):
     cache_file: str
+    cache_retention_days: int
     parallelism: int | Literal['auto']
     force_full_build: bool
 

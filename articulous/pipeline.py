@@ -32,7 +32,7 @@ from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
 from .articles import ArticleSnapshot, ArticleStats, iter_articles
 from .config import admit_configuration, normalize_configuration, validate_output_layout
-from .configuration_contracts import BuildOptions, ConfigurationInput
+from .configuration_contracts import BuildOptions, ConfigurationInput, DEFAULT_CACHE_RETENTION_DAYS
 from .composition import route_from_output, validate_page_url
 from .composition_contracts import ExtraArtifact, ExtraPage, Route, RouteWriter, artifact_values
 from .engines import (
@@ -60,10 +60,10 @@ from .models import (
     section_pattern,
 )
 from .migrations import OutputMigrations
+from .output_cache import CACHE_ROOTS_KEY, output_cache_roots, refresh_output_cache
 from .runtime import (
     TrackedCache,
     WorkerCount,
-    cache_changed,
     file_hash,
     load_cache,
     run_parallel_tasks,
@@ -92,7 +92,6 @@ from .structured_data import article_jsonld
 _ASSET_CACHE_KEY = "assets"
 _ASSET_CACHE_VERSION = 1
 _OUTPUT_MANIFEST_KEY = "__outputs__"
-_CACHE_ROOTS_KEY = "__output_roots__"
 _OUTPUT_OWNER = object()
 _SORT_CHUNK_SIZE = 1024
 _SORT_MERGE_FAN_IN = 32
@@ -146,6 +145,7 @@ class BuildCtx:
     retained_page_routes: tuple[Route, ...] = ()
     stylesheet_capture: StylesheetCapture | None = None
     model_projection: ModelProjection | None = None
+    cache_retention_days: int = DEFAULT_CACHE_RETENTION_DAYS
 
     def xsl_for(self, section: str) -> Path:
         return self.xsl_dir / "pages" / SECTION_XSL[section]
@@ -180,6 +180,7 @@ def build_ctx_from_config(config: ConfigurationInput, dry_run: bool) -> BuildCtx
         # Reduce user-controlled value to a bare filename; the path
         # prefix is added in _cache_path_for to prevent traversal.
         cache_file=Path(config["build"]["cache_file"]).name,
+        cache_retention_days=config["build"]["cache_retention_days"],
         engines=engines,
         saxonc_bin=saxonc_bin,
         site_name=config["site"]["site_name"],
@@ -1731,10 +1732,8 @@ def _log_article_stats(stats: ArticleStats, projection: StreamProjection) -> Non
 def _load_build_cache(cache_path: Path, output_dir: Path) -> tuple[TrackedCache, dict]:
     stored = load_cache(cache_path)
     root = str(output_dir.resolve())
-    legacy = _CACHE_ROOTS_KEY not in stored
-    roots = {root: stored} if legacy else stored[_CACHE_ROOTS_KEY]
-    if not isinstance(roots, dict):
-        roots = {}
+    legacy = CACHE_ROOTS_KEY not in stored
+    roots = {root: stored} if legacy else output_cache_roots(stored)
     data = roots.get(root, {})
     cache = TrackedCache(data if isinstance(data, dict) else {}, dirty=legacy)
     return cache, roots
@@ -1769,9 +1768,8 @@ def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cach
     _prune_stale_outputs(ctx, cache, old_manifest, next_manifest)
     cache[_OUTPUT_MANIFEST_KEY] = dict(sorted((key, path) for path, key in next_manifest.items()))
     cache['__routes__'] = current_manifest.route_metadata
-    if cache_changed(cache):
-        roots[str(ctx.output_dir.resolve())] = dict(cache)
-        if not save_cache(cache_path, {_CACHE_ROOTS_KEY: roots}):
+    if refresh_output_cache(roots, str(ctx.output_dir.resolve()), cache, ctx.cache_retention_days):
+        if not save_cache(cache_path, {CACHE_ROOTS_KEY: roots}):
             logging.warning("Cache save failed; retry without --only, --lang or --slug for recovery")
             return
     else:

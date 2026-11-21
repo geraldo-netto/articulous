@@ -17,8 +17,13 @@ defaults. Unknown keys and invalid value types are rejected.
 | `robots` | `enabled` — generate host-root robots.txt alongside sitemap (boolean, default false) |
 | `site` | `site_name`, `base_url`, `languages`, `default_language`, `bare_default_language`, `pagination.per_page`, `pagination.rss_items`, `pagination.paginate_tags`, `pagination.empty_index` |
 | `urls` | URL patterns for `article`, `index`, `tag`, `rss`, `sitemap`, `search` (e.g. `/{lang}/articles/{slug}/`); optional `index_first` |
-| `build` | `cache_file`, `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean) |
+| `build` | `cache_file`, `cache_retention_days` (nonnegative integer, default 3), `parallelism` (`"auto"` or a positive int), `force_full_build` (boolean) |
 | `logging` | `level` (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`), `file` (optional path) |
+
+Set `build.cache_retention_days` to retain fingerprint entries for inactive
+output directories longer or shorter than three days. A value of `0` expires
+dated entries for all other output directories at the next cache update.
+See [cache lifecycle](output.md#cache-ownership-and-locks).
 
 ## Languages and pagination
 

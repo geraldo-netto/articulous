@@ -5,17 +5,17 @@ from types import MappingProxyType
 from .publication_contracts import PublicationBackend, PublicationInput
 from .build_contracts import ValidatedBuild
 from .builds import _owned_validated
+from .output_cache import CACHE_ROOTS_KEY, output_cache_roots, refresh_output_cache
 from .runtime import load_cache
 
 
 def publication_cache(prepared):
-    roots = load_cache(prepared.cache_path).get('__output_roots__', {})
-    roots = dict(roots) if isinstance(roots, dict) else {}
+    roots = output_cache_roots(load_cache(prepared.cache_path))
     cache = dict(prepared.cache)
     cache['__outputs__'] = dict(sorted(prepared.manifest.items()))
     cache['__routes__'] = prepared.manifest.route_metadata
-    roots[str(prepared.destination)] = cache
-    return json.dumps({'__output_roots__': roots}, indent=2)
+    refresh_output_cache(roots, str(prepared.destination), cache, prepared.context.cache_retention_days)
+    return json.dumps({CACHE_ROOTS_KEY: roots}, indent=2)
 
 
 def publication_input(checked: ValidatedBuild) -> PublicationInput:
@@ -35,7 +35,7 @@ def publish_generation(checked: ValidatedBuild, backend: PublicationBackend) -> 
     native.assert_unchanged()
     owner = native._staged._owner
     owner.settle_readers()
+    backend.recover(owner.destination, owner.cache_path)
     publication = publication_input(checked)
-    backend.recover(publication.destination, publication.cache_path)
     backend.publish(publication)
     owner.published(native._revision)

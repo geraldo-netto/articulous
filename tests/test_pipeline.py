@@ -2114,7 +2114,7 @@ def test_cache_cannot_alias_output_lock(tmp_path):
         _lock_path_for(ctx, tmp_path)
 
 
-def test_lock_suffix_cache_survives_repeated_builds(site_root):
+def test_lock_suffix_cache_survives_repeated_builds(site_root, cache_clock):
     from articulous.config import apply_cli_overrides, load_or_create_config
     config = load_or_create_config(site_root / "config.json")
     config["build"]["cache_file"] = "state.lock"
@@ -2139,7 +2139,7 @@ def test_run_build_rejects_source_overlap_before_writes(site_root):
     assert not (site_root / ".content.articulous.lock").exists()
 
 
-def test_run_build_skips_save_when_cache_unchanged(site_root, caplog):
+def test_run_build_skips_save_when_cache_unchanged(site_root, caplog, cache_clock):
     """Second run with no changes should not rewrite the cache file."""
     from articulous.config import apply_cli_overrides, load_or_create_config
     cfg = load_or_create_config(site_root / "config.json")

@@ -17,6 +17,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import time
 from contextlib import ExitStack
 from pathlib import Path
 
@@ -30,6 +31,16 @@ from articulous.filesystem import TempWorkspace
 FIXTURE_SITE = Path(__file__).parent / "fixtures" / "site"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SITEGEN = str(PROJECT_ROOT / "sitegen.py")
+
+
+@pytest.fixture
+def cache_clock(monkeypatch):
+    seconds = [2_000_000_000]
+
+    def now():
+        return seconds[0] * 1_000_000_000
+    monkeypatch.setattr(time, 'time_ns', now)
+    return seconds
 
 
 @pytest.fixture

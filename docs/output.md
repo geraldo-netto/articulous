@@ -102,6 +102,16 @@ for extra pages, validator hooks, capability checks and recovery instructions.
 The build cache (`.build-cache.json` by default) lives at the project
 root. Only the filename component of `build.cache_file` is used. Entries
 live under `__output_roots__`, keyed by resolved output directory.
+
+Incremental builds and whole-site publication record the current output's
+last cache use in UTC seconds. A cache update removes other dated entries
+whose inactivity reaches the updating build's `build.cache_retention_days`
+(default 3, in 24-hour days). An unchanged build refreshes that timestamp when
+the clock advances. Incremental dry runs and validation-only builds leave the
+cache untouched. Older cache entries with no valid activity timestamp stay
+available until that output is used again, preserving any legacy ownership
+manifest during migration.
+
 Ownership is also stored beside each output tree in
 `.output.articulous-ownership.json` by default, under the output lock.
 Deleting, corrupting or switching the fingerprint cache preserves this

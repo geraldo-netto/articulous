@@ -23,7 +23,7 @@ def published(root):
             (root / '.output.articulous-ownership.json').read_bytes())
 
 
-def test_arch005_publish_replace_and_incremental_compatibility(site_root, seo_config):
+def test_arch005_publish_replace_and_incremental_compatibility(site_root, seo_config, cache_clock):
     cli, config = seo_config
     report = build_site(cli, config, site_root, extra_pages=[page(config)])
     assert report.routes > 0

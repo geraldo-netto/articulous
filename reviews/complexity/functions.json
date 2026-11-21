@@ -6693,8 +6693,8 @@
             "column": 0,
             "complexity": 3,
             "end_column": 48,
-            "end_line": 14,
-            "line": 12,
+            "end_line": 15,
+            "line": 13,
             "name": "opaque",
             "projection_sha256": "b226b7a83fe9a608954f9004f181e1586854b462faa45e10a3d7ac609b3986e4"
           },
@@ -6703,8 +6703,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 28,
-            "end_line": 27,
-            "line": 17,
+            "end_line": 28,
+            "line": 18,
             "name": "attribute_signature",
             "projection_sha256": "8c4ad78ebb0c27988ea1d1d5066d8757ce8e16a778a398e32172fadcd53c2448"
           },
@@ -6713,8 +6713,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 98,
-            "end_line": 43,
-            "line": 30,
+            "end_line": 44,
+            "line": 31,
             "name": "markup_signature",
             "projection_sha256": "d6ed4cbb70c3774a22b5a4204bc9510afdccb667fcec267840a92afc41bdbdf5"
           },
@@ -6723,8 +6723,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 79,
-            "end_line": 47,
-            "line": 46,
+            "end_line": 48,
+            "line": 47,
             "name": "escape",
             "projection_sha256": "d45627fc30c287c289a61cada70197cf43fc8b1f0720a793e8f4736042e538ac"
           },
@@ -6733,8 +6733,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 66,
-            "end_line": 52,
-            "line": 50,
+            "end_line": 53,
+            "line": 51,
             "name": "atomic_slot",
             "projection_sha256": "efb9f0a4ee16114a4e53150c5686d75a2a260a6608575a18db5caa35afee591a"
           },
@@ -6743,8 +6743,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 42,
-            "end_line": 68,
-            "line": 55,
+            "end_line": 69,
+            "line": 56,
             "name": "encode_children",
             "projection_sha256": "d07c2197f81d52c844f47319413fd6b12cdaef33a4596fe7785bf1da8b0f44a8"
           },
@@ -6753,18 +6753,28 @@
             "column": 0,
             "complexity": 2,
             "end_column": 69,
-            "end_line": 76,
-            "line": 71,
+            "end_line": 77,
+            "line": 72,
             "name": "encode_block",
             "projection_sha256": "f80af7f388f3a8c1db2cc346dbc80aafe2b4c48c24dc99f1a96ee58c544acd45"
+          },
+          {
+            "body_sha256": "c8e3f29f20da6bdedf65c575f750a4442a93346acc9f2c5e1d1e31340be3d67d",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 53,
+            "end_line": 81,
+            "line": 80,
+            "name": "has_encoded_prose",
+            "projection_sha256": "f126a969338c243a827bd9c1c419b177549aea383b3623da94e79c807477264c"
           },
           {
             "body_sha256": "4f772baab4342b5ad09ee3e1d96502798086b767281fdef89ef70d71604ab972",
             "column": 0,
             "complexity": 2,
             "end_column": 84,
-            "end_line": 80,
-            "line": 79,
+            "end_line": 85,
+            "line": 84,
             "name": "placeholder_signature",
             "projection_sha256": "d31848818f7406ffc91717a1d5d5db88de99c3a598a72062b7645cf75a690217"
           },
@@ -6773,8 +6783,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 59,
-            "end_line": 85,
-            "line": 83,
+            "end_line": 90,
+            "line": 88,
             "name": "parse_fragment",
             "projection_sha256": "50d70fd654b07ace7cb49dffab79289221c88126227e9c96cdd50a1bd81fcd62"
           },
@@ -6783,8 +6793,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 74,
-            "end_line": 98,
-            "line": 88,
+            "end_line": 103,
+            "line": 93,
             "name": "usable_translation",
             "projection_sha256": "6cff653500d9860bce59c5819a95c3a9f1c92dcf46de04ad26ae25d2f60c274c"
           },
@@ -6793,8 +6803,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 93,
-            "end_line": 105,
-            "line": 101,
+            "end_line": 110,
+            "line": 106,
             "name": "_slot_placement",
             "projection_sha256": "40f21296ad1524b47916858b69a2bd1b66d3a4d17b1dbef061356633b3fa92bf"
           },
@@ -6803,8 +6813,8 @@
             "column": 0,
             "complexity": 8,
             "end_column": 29,
-            "end_line": 121,
-            "line": 108,
+            "end_line": 126,
+            "line": 113,
             "name": "valid_slots",
             "projection_sha256": "c2c68da6d5bb7963e756cdd9174dd51542432a7105207257ef1fe517b4b6fe7b"
           },
@@ -6813,8 +6823,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 31,
-            "end_line": 135,
-            "line": 124,
+            "end_line": 140,
+            "line": 129,
             "name": "rebuild",
             "projection_sha256": "e20425f4c94af4f42f51f76084456597e42a64e5d1f25beb0d3188f59a155365"
           },
@@ -6823,8 +6833,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 15,
-            "end_line": 150,
-            "line": 138,
+            "end_line": 155,
+            "line": 143,
             "name": "apply_decoded",
             "projection_sha256": "5ea09a30f2dccd9837188d208d6c647d6e1bde0df98306431930b1fb3af21a88"
           },
@@ -6833,8 +6843,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 58,
-            "end_line": 162,
-            "line": 153,
+            "end_line": 167,
+            "line": 158,
             "name": "try_decode",
             "projection_sha256": "6cb35ed0c259938992082cc47e06f37e65bb2ef02652950f3d5fafe6caf46a68"
           },
@@ -6843,8 +6853,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 23,
-            "end_line": 169,
-            "line": 165,
+            "end_line": 174,
+            "line": 170,
             "name": "decode_block",
             "projection_sha256": "ab9206361331b700b951f9f6aed1a5ff6391fd8e3769335bb63c195b4dbcb117"
           },
@@ -6853,8 +6863,8 @@
             "column": 0,
             "complexity": 6,
             "end_column": 85,
-            "end_line": 178,
-            "line": 172,
+            "end_line": 183,
+            "line": 177,
             "name": "in_skipped",
             "projection_sha256": "1d8e7eae4033c4e4d1354f9aa62704f585dd026d6cfe97eb8edd310f985597f1"
           },
@@ -6863,8 +6873,8 @@
             "column": 0,
             "complexity": 7,
             "end_column": 17,
-            "end_line": 192,
-            "line": 181,
+            "end_line": 197,
+            "line": 186,
             "name": "block_units",
             "projection_sha256": "6dbe109ddffcd2dac5057b212f72d3aacf997b14b97d2e91c58a2a4c94e904e7"
           },
@@ -6873,8 +6883,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 87,
-            "end_line": 197,
-            "line": 195,
+            "end_line": 202,
+            "line": 200,
             "name": "_outside_blocks",
             "projection_sha256": "e0998e008ef4ba0204ee1bac46357ed191b7a70061ab14d63e4e64e46ce6304c"
           },
@@ -6883,8 +6893,8 @@
             "column": 0,
             "complexity": 5,
             "end_column": 94,
-            "end_line": 202,
-            "line": 200,
+            "end_line": 207,
+            "line": 205,
             "name": "_loose_text",
             "projection_sha256": "2f9e65fd5e8729e8f8a902bbb3fea3074350bba095dfd658e4b4ae8d37f79f54"
           },
@@ -6893,8 +6903,8 @@
             "column": 0,
             "complexity": 4,
             "end_column": 106,
-            "end_line": 207,
-            "line": 205,
+            "end_line": 212,
+            "line": 210,
             "name": "_loose_tail",
             "projection_sha256": "8ffd2c03a08609dc49e687c88b3f1e8d0b520949ba9e3a97527248b45ccabf45"
           },
@@ -6903,15 +6913,15 @@
             "column": 0,
             "complexity": 5,
             "end_column": 16,
-            "end_line": 218,
-            "line": 210,
+            "end_line": 223,
+            "line": 215,
             "name": "loose_text_nodes",
             "projection_sha256": "a50b3b31bf4c38c6cb683783174c9ee418f68574382d3f3438f47c26ff21365b"
           }
         ],
         "language": "python",
         "path": "articulous/markup.py",
-        "sha256": "680151413654332f1913143b47372e7250017880f80bb6115c08213fe70299d4"
+        "sha256": "2bfebeb6867072e178e1a734e82a4d6d93782c3af378c3264be1aa5e11fab414"
       },
       {
         "functions": [
@@ -12580,14 +12590,14 @@
             "projection_sha256": "ddc50958a1a61e5a66c58ca2b4b59e983dc7e8098f943fd197686345083501f0"
           },
           {
-            "body_sha256": "bb38516512e47f037875499afb0aed5d643820ab486650b8d884a260ced63c7d",
+            "body_sha256": "21bdab4c4df7a5b70b87199db171dd85f9707efa8227053cf9f7d56b75228064",
             "column": 0,
             "complexity": 5,
             "end_column": 27,
             "end_line": 34,
             "line": 21,
             "name": "translate_blocks",
-            "projection_sha256": "d400b770019bf5dfd462d805a2cdfa340caee2ffafa693a07d64ac6fc3a49d41"
+            "projection_sha256": "b35367e3adabbddf2cb1ac63d2de966e364500b1784c13aae7472a4cd138283f"
           },
           {
             "body_sha256": "142576d4581610efe47a1b40fc5cd5497608485ff4f285c8ad8093d97e990e44",
@@ -12712,7 +12722,7 @@
         ],
         "language": "python",
         "path": "articulous/translation_xml.py",
-        "sha256": "450417bd664dfa132137ff417e56c7626953916d3c978da84a0d77f4c3857700"
+        "sha256": "1f5a889f335005b447424611df294b10f9baaa7b258223f68de88376fd77411a"
       },
       {
         "functions": [
@@ -34125,11 +34135,31 @@
             "line": 322,
             "name": "test_review28_47_config_rejects_case_collisions_before_build",
             "projection_sha256": "6c633eefc4346426ec420d6377684331c3d37790db1259e5edd8fa365a0e64b6"
+          },
+          {
+            "body_sha256": "b7b23cc57ab088317afcb119ae795b88334b497e9aafa4a985f008747e88ac86",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 57,
+            "end_line": 353,
+            "line": 334,
+            "name": "test_review28_60_skip_protected_blocks_but_translate_attributes_and_literals",
+            "projection_sha256": "519d5b6e18f5a43a8dd25caaea6868c2be32863c2d351c7cbaddb841de1524dd"
+          },
+          {
+            "body_sha256": "b132339309f179e72515f21aa1957eeea4ca84e84ed25d056030fb6c672cc5a2",
+            "column": 4,
+            "complexity": 1,
+            "end_column": 71,
+            "end_line": 343,
+            "line": 341,
+            "name": "test_review28_60_skip_protected_blocks_but_translate_attributes_and_literals.translate",
+            "projection_sha256": "bb3389498c8fd5e924fc202f997ade4058237207c9e2a7ef2e25004bc03b7ccc"
           }
         ],
         "language": "python",
         "path": "tests/test_translation_authoring.py",
-        "sha256": "c3ccb6251fd7f4b1057526af547367dc3e60db09f5078ec92d9bbf3a3450eb63"
+        "sha256": "dc2b152aea07d898c0c61eb73db51a0d52cd97093c5fdbe9b891415db33098e6"
       },
       {
         "functions": [

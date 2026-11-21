@@ -329,3 +329,25 @@ def test_review28_47_config_rejects_case_collisions_before_build(pair):
         validate_config(config)
     with pytest.raises(ValueError):
         validate_languages(pair)
+
+
+def test_review28_60_skip_protected_blocks_but_translate_attributes_and_literals(tmp_path):
+    source, target = tmp_path / 'source.xml', tmp_path / 'target.xml'
+    source.write_text('<entry><body><p> <img src="pic" alt="Alt"/> </p>'
+                      '<li><b><code>stay</code></b></li><p>&lt;z1/&gt;</p>'
+                      '<p><b>word</b> tail</p></body></entry>')
+    layout = XmlTranslationLayout((), False, False, None, digest)
+    stats = {'units': 0, 'failed': 0}
+    def translate(system, text):
+        return {'Alt': 'Texte', '&lt;z1/&gt;': 'literal &lt;z1/&gt;',
+                '<z1>word</z1> tail': '<z1>mot</z1> fin'}.get(text, '')
+    with client() as translator, patch.object(translator, '_post', side_effect=translate) as requests:
+        mirror_xml(source, target, 'en', 'fr', translator, stats, layout, MarkupPolicy(), record_log)
+    assert [call.args[1] for call in requests.call_args_list] == [
+        '&lt;z1/&gt;', '<z1>word</z1> tail', 'Alt']
+    assert stats == {'units': 3, 'failed': 0}
+    entry = etree.parse(str(target))
+    assert entry.findtext('source-hash') == digest(source.read_bytes())
+    assert entry.find('body/p/img').get('alt') == 'Texte'
+    assert entry.findtext('body/li/b/code') == 'stay'
+    assert entry.findtext('body/p[2]') == 'literal <z1/>'

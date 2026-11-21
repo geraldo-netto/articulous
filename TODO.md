@@ -107,7 +107,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-60 | open | low | small | Reliability: placeholder-only blocks are sent to the provider. | `translation_xml.py:23` tests only `encoded.text.strip()`. Reproduced: `<p><img src="a.png" alt="Alt"/></p>` sends `<z1/>` as a unit; `<li><code>x</code></li>` encodes the same way. If the model answers anything but the bare placeholder the document never gets a clean source hash (traced, not run). Next: skip units with no characters outside placeholders. |
 | REVIEW28-61 | open | low | small | Observability: the translator logs a retry and sleeps two seconds after the final attempt. | `translation_client.py:64-65,71`. Reproduced with `retries=0` and a refusing endpoint: one call, a 2 s sleep and a logged `retry 1` that never happens. Next: log and sleep only when another attempt remains. |
 
 

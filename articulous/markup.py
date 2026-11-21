@@ -7,6 +7,7 @@ from .markup_contracts import Encoded, MarkupPolicy
 DEFAULT_POLICY = MarkupPolicy()
 PH = 'z'
 PH_RE = re.compile(r'<' + PH + r'(\d+)\s*/>|<' + PH + r'(\d+)>|</' + PH + r'(\d+)>')
+_PLACEHOLDERS_ONLY = re.compile(rf'(?:{PH_RE.pattern}|\s)*+')
 
 
 def opaque(element, policy=DEFAULT_POLICY):
@@ -74,6 +75,10 @@ def encode_block(block, policy=DEFAULT_POLICY):
         out.append(escape(block.text))
     encode_children(block, out, slots, policy)
     return Encoded(''.join(out), block, etree.tostring(block), slots)
+
+
+def has_encoded_prose(text):
+    return _PLACEHOLDERS_ONLY.fullmatch(text) is None
 
 
 def placeholder_signature(text):

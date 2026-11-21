@@ -2,7 +2,7 @@
 import io
 import lxml.etree as etree
 from .translation_client import Translator
-from .markup import block_units, encode_block, try_decode, loose_text_nodes, in_skipped
+from .markup import block_units, encode_block, has_encoded_prose, try_decode, loose_text_nodes, in_skipped
 from .source_files import replace_file
 from .source_transactions import fingerprint
 from .translation_contracts import XmlTranslationLayout
@@ -21,7 +21,7 @@ def _translate_block(block, encoded, translator, source, target, policy):
 def translate_blocks(blocks, translator, source, target, stats, policy, log):
     for block in blocks:
         encoded = encode_block(block, policy=policy)
-        if not encoded.text.strip():
+        if not has_encoded_prose(encoded.text):
             encoded.close()
             continue
         try:

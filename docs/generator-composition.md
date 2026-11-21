@@ -803,7 +803,8 @@ checks captured source/target state again before atomic replacement, and stamps
 a clean digest only when no unit failed. Element-based prose, language and
 provenance fields accept scalar text and comments. Translation discards the
 inherited hash field. Other field updates preserve comments and replace the
-complete field text. Loose body prose
+complete field text. Blocks containing only protected markup and whitespace bypass the provider.
+Configured attributes are translated independently. Loose body prose
 includes descendant tails and ends at the configured body's closing tag.
 Morpha owns its prompts, language names,
 article/page layouts, provenance reader, link rewrite and all-language policy.

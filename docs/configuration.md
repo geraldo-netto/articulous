@@ -63,7 +63,9 @@ Set `site.pagination.empty_index` to `true` to render one empty index page for
 each enabled language without published listing articles; the default is `false`.
 
 `pagination.per_page` must be positive; `pagination.rss_items` may be
-zero, producing an empty RSS feed. `languages` must be non-empty and
+zero, producing an empty RSS feed. Feeds select the newest articles first.
+Equal dates retain source-path discovery order, including at the feed limit.
+`languages` must be non-empty and
 unique, and must contain `default_language`. Language identifiers may
 contain only ASCII letters, digits, hyphens and underscores, such as
 `en`, `fr`, `pt-BR` or `en_US`, so they remain safe URL and filesystem

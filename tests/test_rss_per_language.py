@@ -106,3 +106,48 @@ def test_the_single_feed_remains_the_default(site_root):
     _build(site_root)
     assert (site_root / "output/rss.xml").is_file()
     assert not (site_root / "output/en/rss.xml").exists()
+
+
+def _tied_articles(root):
+    for article in root.rglob('*.xml'):
+        article.unlink()
+    for index, name in enumerate(('Zulu', 'Alpha', 'Extra', 'Newest')):
+        for lang in ('fr', 'en'):
+            date = '2025-02-01' if name == 'Newest' else '2025-01-01'
+            path = root / f'{index}-{0 if lang == "fr" else 1}.xml'
+            path.write_text(f'<article><title>{name}-{lang}</title><lang>{lang}</lang>'
+                            f'<date>{date}</date><tag>common</tag><content><p>text</p></content></article>')
+
+
+def _assert_tie_order(output, per_language):
+    for lang in ('en', 'fr'):
+        expected = [f'{name}-{lang}' for name in ('Newest', 'Zulu', 'Alpha')]
+        for listing in (f'{lang}/page/1/index.html', f'{lang}/tags/common/index.html'):
+            links = etree.HTML((output / listing).read_bytes()).xpath('//li/a/text()')
+            assert links[:3] == expected
+        if per_language:
+            feed = etree.parse(str(output / lang / 'rss.xml'))
+            assert feed.xpath('//item/title/text()') == expected
+    if not per_language:
+        feed = etree.parse(str(output / 'rss.xml'))
+        assert feed.xpath('//item/title/text()') == ['Newest-fr', 'Newest-en', 'Zulu-fr']
+
+
+@pytest.mark.parametrize('mode', ['direct', 'prepared', 'composed'])
+@pytest.mark.parametrize('per_language', [False, True])
+def test_review28_06_ties_and_feed_limits_match_listings(site_root, seo_config, mode, per_language):
+    from articulous.builds import prepare_build, render_prepared
+    from articulous.extensions import BuildComposition
+
+    cli, config = seo_config
+    _tied_articles(site_root / 'content')
+    config['site']['pagination'].update(rss_items=3, per_page=3)
+    if per_language:
+        config['urls']['rss'] = '/{lang}/rss.xml'
+    if mode == 'direct':
+        run_build(cli, config, site_root)
+        _assert_tie_order(site_root / 'output', per_language)
+    else:
+        composer = (lambda _snapshot: BuildComposition()) if mode == 'composed' else None
+        with prepare_build(cli, config, site_root, composer=composer) as prepared:
+            _assert_tie_order(render_prepared(prepared).root, per_language)

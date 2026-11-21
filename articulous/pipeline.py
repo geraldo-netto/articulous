@@ -1722,8 +1722,7 @@ def _prepare_shared_listings(plan, projection, cli, ctx, cache, want, check_rout
 
 
 def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx, check_route) -> None:
-    seq = 0  # monotonic tie-breaker for the heap
-    for art in stream_factory():
+    for seq, art in enumerate(stream_factory()):
         if projection.translations is not None:
             projection.translations.add(art, _passes_cli_filters(art, cli))
         if not art.policy.page:
@@ -1734,8 +1733,7 @@ def _fill_projection(projection: StreamProjection, stream_factory, cli, ctx, che
             _check_projected_article(projection, art, cli, ctx, check_route)
         art = _record_projection_article(projection, art, cli)
         if "rss" in projection.sections and ctx.rss_items > 0 and art.policy.rss:
-            _add_rss_article(projection, ctx, (art.datetime, seq, art))
-            seq += 1
+            _add_rss_article(projection, ctx, (art.datetime, -seq, art))
 
 
 def _add_rss_article(projection, ctx, entry):

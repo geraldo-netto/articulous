@@ -46,7 +46,8 @@ def local_path(output, value, base):
 def resolved_path(output, value, base, resolved_paths):
     if resolved_paths is None:
         return local_path(output, value, base)
-    key = output, value, base
+    parsed = urlsplit(urljoin(base.rstrip('/') + '/', value))
+    key = output, base, parsed.scheme, parsed.netloc, parsed.path
     if key not in resolved_paths:
         resolved_paths[key] = local_path(output, value, base)
     return resolved_paths[key]

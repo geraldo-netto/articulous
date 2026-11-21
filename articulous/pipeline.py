@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from contextlib import closing
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, NamedTuple, Optional
 from urllib.parse import quote
 from xml.sax.saxutils import escape as _xml_escape, quoteattr as _xml_attr
 
@@ -202,7 +202,12 @@ def build_ctx_from_config(config: ConfigurationInput, dry_run: bool) -> BuildCtx
 # Asset + URL helpers
 # ================================================================
 
-def _safe_output_path(ctx: BuildCtx, output_path: Path) -> Path:
+class _AdmittedOutput(NamedTuple):
+    path: Path
+    relative: str
+
+
+def _admit_output(ctx: BuildCtx, output_path: Path) -> _AdmittedOutput:
     root = ctx.output_dir.resolve()
     candidate = output_path if output_path.is_absolute() else ctx.output_dir / output_path
     candidate = Path(os.path.abspath(candidate))
@@ -213,13 +218,7 @@ def _safe_output_path(ctx: BuildCtx, output_path: Path) -> Path:
         )
     validate_path_length(candidate)
     validate_output_path(candidate)
-    return candidate
-
-
-def _output_relpath(ctx: BuildCtx, output_path: Path) -> str:
-    return _safe_output_path(ctx, output_path).relative_to(
-        ctx.output_dir.resolve()
-    ).as_posix()
+    return _AdmittedOutput(candidate, candidate.relative_to(root).as_posix())
 
 
 def _asset_manifest(root: Path) -> dict:
@@ -370,7 +369,7 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
     Mirror ``ctx.assets_dir`` into ``<output_dir>/assets``.
     If the source is missing, remove stale copied assets; honours dry-run.
     """
-    dest = _safe_output_path(ctx, _asset_target(ctx.output_dir, "assets"))
+    dest = _admit_output(ctx, _asset_target(ctx.output_dir, "assets")).path
     destination_paths = _asset_destination_paths(dest)
     if not ctx.assets_dir.exists():
         logging.debug(f"Assets directory not present, skipping: {ctx.assets_dir}")
@@ -388,13 +387,12 @@ def copy_assets(ctx: BuildCtx, cache: Optional[dict] = None) -> None:
         logging.debug(f"[DRY RUN] Would copy assets: {ctx.assets_dir} -> {dest}")
         return
 
-    mismatches = _asset_output_mismatches(dest, manifest)
+    mismatches = set(manifest) if ctx.force else _asset_output_mismatches(dest, manifest)
     if not stale and dest.is_dir() and _assets_unchanged(cache, manifest, ctx, mismatches):
         logging.debug("Skipping unchanged assets")
         return
 
-    refresh = set(manifest) if ctx.force else mismatches
-    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, refresh, stale)
+    _copy_asset_delta(ctx.assets_dir, dest, old_manifest, manifest, mismatches, stale)
     if cache is not None:
         cache[_ASSET_CACHE_KEY] = _asset_cache_entry(manifest)
     logging.info(f"Copied assets: {ctx.assets_dir} -> {dest}")
@@ -804,7 +802,7 @@ def _build_robots(ctx: BuildCtx, cache, manifest) -> list:
 
 @dataclass(frozen=True)
 class _TransformSpec:
-    xml_input: Path | bytes
+    xml_input: Path | bytes | ArticleSnapshot
     xsl_path: Path
     output_path: Path
     cache_key: str
@@ -839,9 +837,12 @@ class _XsltTask:
         update_cache(self.cache, self.spec.cache_key, fingerprint)
 
     def _model(self):
-        if self.ctx.model_projection is None or not isinstance(self.spec.xml_input, bytes):
-            return self.spec.xml_input, self.spec.fingerprint[0]
-        model = ModelInput(self.spec.xml_input, _output_relpath(self.ctx, self.spec.output_path),
+        source = self.spec.xml_input
+        if isinstance(source, ArticleSnapshot):
+            source = source.read_bytes()
+        if self.ctx.model_projection is None or not isinstance(source, bytes):
+            return source, self.spec.fingerprint[0]
+        model = ModelInput(source, _admit_output(self.ctx, self.spec.output_path).relative,
                            self.spec.parameters)
         source = self.ctx.model_projection(model)
         if not isinstance(source, bytes):
@@ -881,17 +882,17 @@ def _record_planned_output(
     manifest: Optional[OutputManifest],
     ctx: BuildCtx,
     cache_key: str,
-    output_path: Path,
+    output_path: Path | _AdmittedOutput,
     route: Route | None = None,
-) -> Path:
-    output_path = _safe_output_path(ctx, output_path)
-    relpath = _output_relpath(ctx, output_path)
-    if Path(relpath).parts[:1] == ("assets",):
-        raise ValueError(f"Generated output uses the reserved assets directory: {relpath}")
-    if manifest is None:
-        return output_path
-    manifest.record(cache_key, relpath, route)
-    return output_path
+) -> _AdmittedOutput:
+    output = output_path if isinstance(output_path, _AdmittedOutput) else _admit_output(ctx, output_path)
+    if Path(output.relative).parts[:1] == ("assets",):
+        raise ValueError(f"Generated output uses the reserved assets directory: {output.relative}")
+    if route is not None and (route.key, route.output_path) != (cache_key, output.relative):
+        raise ValueError(f"Route does not match planned output: {output.relative}")
+    if manifest is not None:
+        manifest.record(cache_key, output.relative, route)
+    return output
 
 
 def _needs_output_rebuild(ctx: BuildCtx, cache_key, cache, fingerprint, output_path: Path) -> bool:
@@ -900,12 +901,20 @@ def _needs_output_rebuild(ctx: BuildCtx, cache_key, cache, fingerprint, output_p
     return should_rebuild(cache_key, cache, fingerprint, ctx.force, output_path=output_path)
 
 
+def _transform_input_hash(source: Path | bytes | ArticleSnapshot) -> str:
+    if isinstance(source, ArticleSnapshot):
+        return source.fingerprint
+    if isinstance(source, bytes):
+        return hashlib.sha256(source).hexdigest()
+    return file_hash(source)
+
+
 def _make_xslt_task(
     *,
-    xml_input,            # Path on disk (article XML) or bytes (in-memory model)
+    xml_input: Path | bytes | ArticleSnapshot,
     xsl_path: Path,
     xsl_hash: str,        # PERF-01: caller hashes the section's XSL once
-    output_path: Path,
+    output_path: Path | _AdmittedOutput,
     cache: dict,
     cache_key: str,
     engine: TransformEngine,
@@ -919,10 +928,9 @@ def _make_xslt_task(
     Return a transform task for an XSLT-driven section, or ``None`` if
     the cache says the output is up to date.
 
-    ``xml_input`` is either a :class:`Path` (article XML on disk) or
-    :class:`bytes` (a freshly-synthesised model XML). In the bytes case
-    we hash the buffer directly — PERF-02 — instead of writing it to
-    a temp file just so :func:`file_hash` can read it back.
+    Captured articles already have a digest and are read only for a queued
+    transform. Bytes are hashed directly and file-backed models are hashed
+    through their path.
 
     ``xsl_hash`` is precomputed by the caller so per-section XSL hashing
     is amortised across every page in that section.
@@ -931,18 +939,15 @@ def _make_xslt_task(
     transform. The pipeline saves the cache after the build succeeds;
     a failed transform leaves its prior in-memory entry intact.
     """
-    output_path = _record_planned_output(manifest, ctx, cache_key, output_path, route)
-    if isinstance(xml_input, bytes):
-        xml_hash = hashlib.sha256(xml_input).hexdigest()
-    else:
-        xml_hash = file_hash(xml_input)
+    output_path, relpath = _record_planned_output(manifest, ctx, cache_key, output_path, route)
+    xml_hash = _transform_input_hash(xml_input)
 
-    fingerprint = (xml_hash, xsl_hash, engine.cache_identity, _output_relpath(ctx, output_path))
+    fingerprint = (xml_hash, xsl_hash, engine.cache_identity, relpath)
     if parameters:
         fingerprint += (json.dumps(parameters, sort_keys=True),)
     if xml_base_uri is not None:
         fingerprint += (xml_base_uri,)
-    projected = ctx.model_projection is not None and isinstance(xml_input, bytes)
+    projected = ctx.model_projection is not None and isinstance(xml_input, (bytes, ArticleSnapshot))
     if not projected and not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
@@ -962,10 +967,10 @@ def _make_native_task(
     manifest: Optional[OutputManifest] = None,
     route: Route | None = None,
 ) -> Optional[Callable]:
-    output_path = _record_planned_output(
+    output_path, relpath = _record_planned_output(
         manifest, ctx, cache_key, output_path, route,
     )
-    fingerprint = (_source_hash(source), engine.cache_identity, _output_relpath(ctx, output_path))
+    fingerprint = (_source_hash(source), engine.cache_identity, relpath)
     if not _needs_output_rebuild(ctx, cache_key, cache, fingerprint, output_path):
         return None
 
@@ -1044,20 +1049,22 @@ def build_articles_section(lang_articles, ctx: BuildCtx, cache, manifest=None, t
         tasks = _TaskQueue(ctx, cache, engine)
 
     for art in lang_articles:
-        output_path = ctx.output_dir / build_output_path_from_pattern(
+        relative_path = build_output_path_from_pattern(
             "articles", section_pattern(ctx, "articles", art.lang), lang=art.lang, slug=art.slug,
         )
+        output = _admit_output(ctx, ctx.output_dir / relative_path)
+        source = art.source_xml
         task = _make_xslt_task(
-            xml_input=_article_input(art),
+            xml_input=source if isinstance(source, ArticleSnapshot) else _article_input(art),
             parameters=_article_parameters(art, ctx),
             xml_base_uri=art.source_base_uri or art.source_path.resolve().as_uri(),
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
-            output_path=output_path,
+            output_path=output,
             cache=cache,
             cache_key=f"article:{art.lang}:{art.slug}",
             route=Route(f'article:{art.lang}:{art.slug}', 'articles', art.url,
-                        _output_relpath(ctx, output_path), art.lang, 'article', art.policy.sitemap),
+                        output.relative, art.lang, 'article', art.policy.sitemap),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1075,16 +1082,16 @@ def build_index_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest
 
     for page in build_index_models(lang_articles, lang, ctx):
         xml_bytes = _encode_xml(_index_doc(page, ctx.site_name))
-        output_path = ctx.output_dir / page.output_path
+        output = _admit_output(ctx, ctx.output_dir / page.output_path)
         cache_key = f"index:{page.lang}:{page.page}"
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
-            output_path=output_path,
+            output_path=output,
             cache=cache,
             cache_key=cache_key,
-            route=Route(cache_key, 'index', page.url, _output_relpath(ctx, output_path), page.lang, 'listing'),
+            route=Route(cache_key, 'index', page.url, output.relative, page.lang, 'listing'),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1107,16 +1114,16 @@ def build_tags_section(lang_articles, lang: str, ctx: BuildCtx, cache, manifest=
 
     for page in build_tags_models(lang_articles, lang, ctx, paginate=ctx.paginate_tags):
         xml_bytes = _encode_xml(_tag_doc(page, ctx.site_name))
-        output_path = ctx.output_dir / page.output_path
+        output = _admit_output(ctx, ctx.output_dir / page.output_path)
         cache_key = _tag_cache_key(page)
         task = _make_xslt_task(
             xml_input=xml_bytes,
             xsl_path=xsl_path,
             xsl_hash=xsl_hash,
-            output_path=output_path,
+            output_path=output,
             cache=cache,
             cache_key=cache_key,
-            route=Route(cache_key, 'tags', page.url, _output_relpath(ctx, output_path), page.lang, 'listing'),
+            route=Route(cache_key, 'tags', page.url, output.relative, page.lang, 'listing'),
             engine=engine,
             ctx=ctx,
             manifest=manifest,
@@ -1338,6 +1345,12 @@ class StreamProjection:
     sections: frozenset[str] = field(default_factory=_default_sections)
     sitemap_listings: bool = False
     translations: Optional[TranslationStore] = None
+    sorted_listings: dict[str, SortedArticleBatch | list] = field(default_factory=dict)
+
+    def listing_batch(self, lang: str):
+        if lang not in self.sorted_listings:
+            self.sorted_listings[lang] = _sorted_store_articles(self.listings_by_lang, lang)
+        return self.sorted_listings[lang]
 
 
 class BuildPlan(dict):
@@ -1416,20 +1429,31 @@ def _append_extra_sitemap(projection, ctx):
 
 def _collect_extra_plan(ctx, cache, manifest):
     tasks = []
+    engines: dict[str, TransformEngine] = {}
+    fingerprints: dict[tuple[str, Path], str] = {}
     for page in ctx.extra_pages:
-        engine = make_engine(page.engine, ctx.saxonc_bin)
-        if ctx.stylesheet_capture is not None:
-            engine = ctx.stylesheet_capture.wrap(engine)
-        engine = require_transform(engine)
-        fingerprint = engine.prepare_stylesheet(page.stylesheet)
+        if page.engine not in engines:
+            engines[page.engine] = _extra_page_engine(ctx, page.engine)
+        engine = engines[page.engine]
+        xsl_path = Path(os.path.abspath(page.stylesheet))
+        key = (page.engine, xsl_path)
+        if key not in fingerprints:
+            fingerprints[key] = engine.prepare_stylesheet(xsl_path)
         task = _make_xslt_task(
-            xml_input=page.model, xsl_path=page.stylesheet, xsl_hash=fingerprint,
+            xml_input=page.model, xsl_path=xsl_path, xsl_hash=fingerprints[key],
             output_path=ctx.output_dir / page.route.output_path, cache=cache,
             cache_key=page.route.key, engine=engine, ctx=ctx, manifest=manifest, route=page.route,
         )
         if task is not None:
             tasks.append(task)
     return tasks
+
+
+def _extra_page_engine(ctx, name):
+    engine = make_engine(name, ctx.saxonc_bin)
+    if ctx.stylesheet_capture is not None:
+        engine = ctx.stylesheet_capture.wrap(engine)
+    return require_transform(engine)
 
 
 def _write_extra_artifact(output, content):
@@ -1455,7 +1479,7 @@ def _append_sitemap_listings(projection: StreamProjection, ctx: BuildCtx) -> Non
     if not projection.sitemap_listings:
         return
     for lang in ctx.languages:
-        articles = _sorted_store_articles(projection.listings_by_lang, lang)
+        articles = projection.listing_batch(lang)
         pages = chain(
             build_index_models(articles, lang, ctx),
             build_tags_models(articles, lang, ctx, paginate=ctx.paginate_tags),
@@ -1596,7 +1620,7 @@ def _collect_per_lang_plan(
         if cli.only_langs and lang not in cli.only_langs:
             continue
         lang_articles = _sorted_store_articles(projection.articles_by_lang, lang)
-        listing_articles = _sorted_store_articles(projection.listings_by_lang, lang)
+        listing_articles = projection.listing_batch(lang)
         if not (lang_articles or listing_articles or ctx.index_options.include_empty):
             continue
         _add_per_lang_tasks(
@@ -1757,9 +1781,10 @@ def _validate_retained_outputs(cli, ctx: BuildCtx, old_manifest, current_manifes
     if not retained:
         return
     owners = OutputManifest()
+    root = ctx.output_dir.resolve()
     for relpath in chain(retained, current_manifest.values()):
-        path = _manifest_target(ctx, relpath)
-        owners.record(str(len(owners)), path.relative_to(ctx.output_dir.resolve()).as_posix())
+        path = _manifest_target(root, relpath)
+        owners.record(str(len(owners)), path.relative_to(root).as_posix())
 
 
 def _finalize_cache(cli, ctx, cache, roots, old_manifest, current_manifest, cache_path) -> None:
@@ -1826,14 +1851,17 @@ def _selected_output_key(key: str, cli) -> bool:
     return True
 
 
-def _manifest_target(ctx: BuildCtx, relpath: str) -> Path:
+def _manifest_target(root: Path, relpath: str, checked: set[Path] | None = None) -> Path:
     rel = Path(relpath)
     if rel.is_absolute() or ".." in rel.parts:
         raise ValueError(f"Manifest output path must be relative without traversal: {relpath}")
-    root = ctx.output_dir.resolve()
     for parent in rel.parents:
+        if checked is not None and parent in checked:
+            break
         if (root / parent).is_symlink():
             raise OSError(f"Manifest output ancestor is a symlink: {root / parent}")
+        if checked is not None:
+            checked.add(parent)
     return root / rel
 
 
@@ -1870,24 +1898,37 @@ def _prune_stale_outputs(
 ) -> None:
     stale_paths = sorted(old_manifest.keys() - current_manifest.keys())
     root = ctx.output_dir.resolve()
+    paths = _current_output_paths(root, current_manifest)
+    if stale_paths:
+        _remove_stale_paths(root, stale_paths, set(paths))
+    else:
+        for _ in paths:
+            pass
+    for key in set(old_manifest.values()) - set(current_manifest.values()):
+        cache.pop(key, None)
+
+
+def _current_output_paths(root: Path, manifest: dict):
+    checked: set[Path] = set()
+    for relpath in manifest:
+        yield _manifest_target(root, relpath, checked)
+
+
+def _remove_stale_paths(root: Path, stale_paths: list[str], current_paths: set[Path]) -> None:
     protected = {
         ancestor
-        for relpath in current_manifest
-        for path in [_manifest_target(ctx, relpath)]
+        for path in current_paths
         for ancestor in (path, *path.parents)
     }
     protected.add(root)
-    current_paths = {root / relpath for relpath in current_manifest}
     for relpath in stale_paths:
         try:
-            target = _manifest_target(ctx, relpath)
+            target = _manifest_target(root, relpath)
         except ValueError as e:
             logging.warning(f"Skipping invalid cached output manifest entry: {e}")
         else:
             if _can_delete_stale_target(target, root, protected, current_paths):
                 _delete_output_file(target, root)
-    for key in set(old_manifest.values()) - set(current_manifest.values()):
-        cache.pop(key, None)
 
 
 def _can_delete_stale_target(target: Path, root: Path, protected: set, current_paths: set) -> bool:

@@ -1,5 +1,6 @@
 """HTML5-001: finite independent lexical/namespace oracles and invalid controls."""
 import random
+from html.parser import HTMLParser
 import pytest
 from articulous.html_serialization import html5_void_ends, _VoidEnds
 
@@ -14,6 +15,7 @@ def test_html5_001_projection_rejects_non_text(value):
     ('', ''), ('plain text', 'plain text'),
     ('<source\n title="</source>"></source>', '<source\n title="</source>">'),
     ('<div><source/></div>', '<div><source/></div>'),
+    ('<div><source/></div><br></BR>', '<div><source/></div><br>'),
     ('<svg><source/></svg><source></source>', '<svg><source/></svg><source>'),
     ('<div/></unexpected><source></source>', '<div/></unexpected><source>'),
     ('<plaintext><source></source></plaintext><source></source>',
@@ -60,3 +62,24 @@ def test_html5_001_late_callbacks_after_plaintext_cannot_change_output():
     parser.handle_endtag('source')
     assert parser.stack == before
     assert parser.omissions == []
+
+
+def test_perf14_candidate_free_source_bypasses_tokenizer(monkeypatch):
+    from articulous import html_serialization
+
+    def unexpected(_source):
+        raise AssertionError('candidate-free output must bypass the tokenizer')
+
+    monkeypatch.setattr(html_serialization, '_VoidEnds', unexpected)
+    source = '<p>é<a>exact</a><linK></linK><br></p>'
+    assert html5_void_ends(source) is source
+
+
+def test_rel41_unterminated_legacy_token_is_preserved(monkeypatch):
+    def legacy_end(parser, index):
+        parser.handle_endtag('br')
+        return parser.rawdata.index('>', index) + 1
+
+    monkeypatch.setattr(HTMLParser, 'parse_endtag', legacy_end)
+    source = '<br></br a=">unterminated'
+    assert html5_void_ends(source) == source

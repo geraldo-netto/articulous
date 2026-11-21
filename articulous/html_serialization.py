@@ -6,10 +6,15 @@ line offsets and spans (O(document length)); nothing survives return/rejection.
 """
 from html.parser import HTMLParser
 import re
+from string import ascii_lowercase, ascii_uppercase
 
 VOID = frozenset('area base br col embed hr img input link meta param source track wbr'.split())
 RAW = frozenset('textarea title xmp iframe noembed noframes'.split())
 MATH_TEXT = frozenset('mi mo mn ms mtext'.split())
+_ASCII_LOWER = str.maketrans(ascii_uppercase, ascii_lowercase)
+_RAW_NAME = re.compile(r'</?\s*([A-Za-z][^\t\n\r\f />]*)')
+_END_TOKEN = re.compile(r"""(?:[^"'<>]|"[^"]*"|'[^']*')*>""")
+_VOID_CANDIDATE = re.compile(r'</\s*(?ai:' + '|'.join(sorted(VOID)) + ')')
 
 
 def child_context(tag, namespace, attributes):
@@ -32,6 +37,16 @@ class _VoidEnds(HTMLParser):
         self.stack = []
         self.omissions = []
         self.plaintext = False
+        self.omit_end = False
+
+    def source_offset(self):
+        line, column = self.getpos()
+        return self.lines[line - 1] + column
+
+    def raw_name(self):
+        match = _RAW_NAME.match(self.source, self.source_offset())
+        assert match is not None
+        return match[1].translate(_ASCII_LOWER)
 
     def namespace(self, tag):
         context = self.stack[-1][1] if self.stack else 'html'
@@ -44,6 +59,7 @@ class _VoidEnds(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if self.plaintext:
             return
+        tag = self.raw_name()
         namespace = self.namespace(tag)
         if namespace == 'html' and tag in VOID:
             return
@@ -64,13 +80,24 @@ class _VoidEnds(HTMLParser):
         if len(self.stack) > depth:
             self.stack.pop()
 
+    def parse_endtag(self, i):
+        self.omit_end = False
+        end = super().parse_endtag(i)
+        if not self.omit_end:
+            return end
+        start = self.source_offset()
+        token = _END_TOKEN.match(self.source, start + 2)
+        if token is None:
+            return end
+        self.omissions.append((start, token.end()))
+        return i + token.end() - start
+
     def handle_endtag(self, tag):
         if self.plaintext:
             return
+        tag = self.raw_name()
         if self.namespace(tag) == 'html' and tag in VOID:
-            line, column = self.getpos()
-            start = self.lines[line - 1] + column
-            self.omissions.append((start, self.source.index('>', start) + 1))
+            self.omit_end = True
         elif self.stack and self.stack[-1][0] == tag:
             self.stack.pop()
 
@@ -78,6 +105,8 @@ class _VoidEnds(HTMLParser):
 def html5_void_ends(source):
     if not isinstance(source, str):
         raise ValueError('Serialized HTML must be text')
+    if _VOID_CANDIDATE.search(source) is None:
+        return source
     parser = _VoidEnds(source)
     parser.feed(source)
     parser.close()

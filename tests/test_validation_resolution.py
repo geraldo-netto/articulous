@@ -33,7 +33,7 @@ class ResolutionScope(unittest.TestCase):
         with patch.object(validation, 'local_path', wraps=validation.local_path) as resolve:
             result = validation.validate_site(self.output, self.base, self.plan)
         self.assertEqual(2, result.html_pages)
-        self.assertEqual(3, resolve.call_count, 'PERF-017 repeated target resolution')
+        self.assertEqual(2, resolve.call_count, 'PERF-017 repeated target resolution')
 
     def test_perf017_diagnostics_remain_per_reference(self):
         self.page('<base href="https://example.test/"><a href="target.html?x=1#missing">bad</a>' * 2)
@@ -65,3 +65,10 @@ class ResolutionScope(unittest.TestCase):
         with patch.object(validation, 'validate_pages', failed), self.assertRaises(KeyboardInterrupt):
             validation.validate_site(self.output, self.base, self.plan)
         self.assertEqual([{}], retained)
+
+    def test_perf18_fragment_and_query_variants_share_the_path(self):
+        source = ''.join(f'<a href="target.html?view={index}#anchor">target</a>' for index in range(100))
+        self.page(source)
+        with patch.object(validation, 'local_path', wraps=validation.local_path) as resolve:
+            validation.validate_site(self.output, self.base, self.plan)
+        self.assertEqual(2, resolve.call_count)

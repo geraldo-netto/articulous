@@ -347,7 +347,7 @@ class LxmlEngine(XsltEngine):
 
     @property
     def cache_identity(self) -> str:
-        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v3"
+        return f"{self.name}:libxslt={etree.LIBXSLT_VERSION}:serialization=v4"
 
     def _stylesheet_cache(self) -> dict:
         cache = getattr(self._thread_local, "stylesheets", None)

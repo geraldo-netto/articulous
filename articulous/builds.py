@@ -401,7 +401,8 @@ def validate_generated(staged: StagedBuild, *, validators: Iterable[Validator] =
     errors = [item.message for item in diagnostics if item.severity == 'error']
     if errors:
         raise BuildError('\n'.join(errors))
-    handle.assert_unchanged()
+    if type(validators) is not tuple or validators:
+        handle.assert_unchanged()
     owner.state = 'validated'
     return _ValidatedBuild(handle, tuple(diagnostics), owner.validation_revision)
 

@@ -47,7 +47,7 @@ def duplicate_candidates(names: list[str], threshold: float = 0.8):
                 yield (1.0, first, second)
                 continue
             matcher.set_seq1(normalized[position])
-            if matcher.real_quick_ratio() < threshold:
+            if matcher.real_quick_ratio() < threshold or matcher.quick_ratio() < threshold:
                 continue
             ratio = matcher.ratio()
             if ratio >= threshold:

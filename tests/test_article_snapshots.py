@@ -179,3 +179,13 @@ def test_sorting_article_snapshots_keeps_bodies_on_disk(site_root):
             store.close()
             tracemalloc.stop()
     assert peak < 8_000_000
+
+
+def test_perf11_warm_article_build_skips_private_body_reads(site_root, monkeypatch):
+    cli, config = _site_config(site_root)
+    pipeline.run_build(cli, config, site_root)
+
+    def unwanted(_snapshot):
+        pytest.fail('cache hits must use the admitted snapshot fingerprint')
+    monkeypatch.setattr(ArticleSnapshot, 'read_bytes', unwanted)
+    pipeline.run_build(cli, config, site_root)

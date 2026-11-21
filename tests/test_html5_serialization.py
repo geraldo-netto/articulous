@@ -62,7 +62,7 @@ def test_html5_001_literal_text_comments_and_foreign_elements_survive(tmp_path):
 
 def test_html5_001_implicit_html_method_and_cache_identity(tmp_path):
     assert b'</source>' not in render(tmp_path, '<html><source/></html>', 'encoding="UTF-8"')
-    assert 'serialization=v3' in LxmlEngine().cache_identity
+    assert 'serialization=v4' in LxmlEngine().cache_identity
 
 
 @pytest.mark.parametrize('body', ['<xsl:text>only text</xsl:text>',
@@ -102,3 +102,31 @@ def test_html5_001_serialization_failure_keeps_prior_output(tmp_path, monkeypatc
     with pytest.raises(TransformFailure, match='serialization rejection'):
         render(tmp_path, '<html><source/></html>')
     assert output.read_bytes() == previous
+
+
+@pytest.mark.parametrize(('source', 'expected'), [
+    ('<p><linK a="1"></linK></p>', '<p><linK a="1"></linK></p>'),
+    ('<p><lİnk></lİnk></p>', '<p><lİnk></lİnk></p>'),
+    ('<p><BR></BR></p>', '<p><BR></p>'),
+    ('<p><br></br\t></p>', '<p><br></p>'),
+    ('<svg><linK><br></br></linK></svg>', '<svg><linK><br></br></linK></svg>'),
+])
+def test_rel03_void_tag_membership_uses_ascii_folding(source, expected):
+    from articulous.html_serialization import html5_void_ends
+
+    assert html5_void_ends(source) == expected
+
+
+@pytest.mark.parametrize('encoding', ['UTF-8', 'UTF-16'])
+def test_rel03_native_html_preserves_non_ascii_end_tag(tmp_path, encoding):
+    body = ('<html><body><xsl:element name="linK"><xsl:text>inside</xsl:text>'
+            '</xsl:element><p>after</p></body></html>')
+    output = render(tmp_path, body, f'method="html" encoding="{encoding}"').decode(encoding)
+    assert '<linK>inside</linK>' in output
+    assert '<p>after</p>' in output
+
+
+def test_rel41_quoted_greater_than_ends_with_the_full_token():
+    from articulous.html_serialization import html5_void_ends
+
+    assert html5_void_ends('<p>before</br a=">">after</p>') == '<p>beforeafter</p>'

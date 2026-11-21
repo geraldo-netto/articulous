@@ -86,10 +86,20 @@ function measureFunction(measured, fn, lines, children) {
   }
 }
 
-function recordFunction(file,source,fn,functions,lines,children,identity) {
+function sourceLine(lines, offset) {
+  let low=0, high=lines.length;
+  while (low<high) {
+    const middle=Math.floor((low+high)/2);
+    if (lines[middle].begin<=offset) low=middle+1;
+    else high=middle;
+  }
+  return low;
+}
+
+function recordFunction(file,fn,functions,lines,children,identity) {
   const outer=fn.ranges[0],key=`${file}:${identity}`;
   if (!functions.has(key)) functions.set(key,{file,function:fn.functionName || '(module/callback)',
-    line:source.slice(0,outer.startOffset).split('\n').length,executable:new Set(),covered:new Set(),called:false});
+    line:sourceLine(lines,outer.startOffset),executable:new Set(),covered:new Set(),called:false});
   measureFunction(functions.get(key),fn,lines,children);
 }
 
@@ -104,7 +114,7 @@ export function coverageRows(files) {
     const lines=sourceLines(source);
     const children=sourceFunctions(source);
     const counters=completeCounters(source,runs,children);
-    for (const {fn,identity} of counters) recordFunction(file,source,fn,functions,lines,children,identity);
+    for (const {fn,identity} of counters) recordFunction(file,fn,functions,lines,children,identity);
   }
   const coverage=[...functions.values()].map(functionRow);
   for (const fn of coverage) assert.ok(fn.percent>=80,`Per-function coverage below 80%: ${JSON.stringify(fn)}`);

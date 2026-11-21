@@ -13,6 +13,7 @@ any object with the right attributes will do.
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
@@ -282,10 +283,16 @@ def _tag_url(page, total, pattern, lang, tag_slug, ctx):
     )
 
 
-def _tag_pages(tag, items, lang, ctx, paginate):
+def _listing_tag_slug(tag):
     tag_slug = normalize_slug(tag)
     if not tag_slug:
         logging.warning(f"Tag {tag!r} slugifies to empty string — skipping")
+    return tag_slug
+
+
+def _tag_pages(tag, items, lang, ctx, paginate):
+    tag_slug = _listing_tag_slug(tag)
+    if not tag_slug:
         return
     size = ctx.per_page if paginate else len(items)
     total = (len(items) + size - 1) // size
@@ -342,12 +349,23 @@ def build_rss_model(articles, ctx: SiteModelCtx, lang: str | None = None) -> Rss
 
 
 def build_tag_index_model(articles, lang: str, ctx: SiteModelCtx) -> TagIndex:
+    counts = Counter()
+    for article in articles:
+        counts.update(dict.fromkeys(article.tags).keys())
+    return TagIndex(lang, tuple(_tag_summaries(counts, lang, ctx)))
+
+
+def _tag_summaries(counts, lang, ctx):
     tags = {}
-    for page in build_tags_models(articles, lang, ctx):
-        if page.tag_slug in tags:
-            raise ValueError(f'Duplicate tag slug: {page.tag_slug}')
-        tags[page.tag_slug] = TagSummary(page.tag, page.tag_slug, len(page.articles), page.url)
-    return TagIndex(lang, tuple(tags.values()))
+    for tag, count in counts.items():
+        slug = _listing_tag_slug(tag)
+        if not slug:
+            continue
+        if slug in tags:
+            raise ValueError(f'Duplicate tag slug: {slug}')
+        pattern = section_pattern(ctx, 'tags', lang)
+        tags[slug] = TagSummary(tag, slug, count, _tag_url(1, 1, pattern, lang, slug, ctx))
+    return tags.values()
 
 
 def build_sitemap_model(urls, ctx: SiteModelCtx) -> Sitemap:

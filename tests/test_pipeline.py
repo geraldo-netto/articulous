@@ -1717,7 +1717,7 @@ def _site_config(site_root):
     return config
 
 
-def test_empty_asset_mirror_repairs_root_after_dry_run(site_root):
+def test_empty_asset_mirror_repairs_root_after_dry_run(site_root, cache_clock):
     (site_root / "assets" / "style.css").unlink()
     config = _site_config(site_root)
     run_build(_CLI(), config, site_root)

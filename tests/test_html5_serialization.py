@@ -62,7 +62,7 @@ def test_html5_001_literal_text_comments_and_foreign_elements_survive(tmp_path):
 
 def test_html5_001_implicit_html_method_and_cache_identity(tmp_path):
     assert b'</source>' not in render(tmp_path, '<html><source/></html>', 'encoding="UTF-8"')
-    assert 'serialization=v6' in LxmlEngine().cache_identity
+    assert 'serialization=v7' in LxmlEngine().cache_identity
 
 
 @pytest.mark.parametrize('body', ['<xsl:text>only text</xsl:text>',
@@ -199,3 +199,16 @@ def test_review28_10_inferred_method_uses_xml_whitespace(tmp_path, encoding, lea
     native = bytes(etree.XSLT(etree.parse(str(tmp_path / 'style.xsl')))(etree.XML('<input/>')))
     expected = native.decode(encoding).replace('</source>', '').encode(encoding) if html else native
     assert actual == expected
+
+
+@pytest.mark.parametrize('encoding', ['UTF-8', 'UTF-16', 'EUC-JP'])
+def test_review28_09_script_projection_keeps_native_bytes(tmp_path, encoding):
+    body = ('<html><script><xsl:text>&lt;!--&lt;script>&lt;/script>～'
+            '&lt;/source></xsl:text></script><source/></html>')
+    actual = render(tmp_path, body, f'method="html" encoding="{encoding}"')
+    native = bytes(etree.XSLT(etree.parse(str(tmp_path / 'style.xsl')))(etree.XML('<input/>')))
+    closing = '</source>'.encode('utf-16-le' if encoding == 'UTF-16' and native.startswith(b'\xff\xfe')
+                                 else 'utf-16-be' if encoding == 'UTF-16' else encoding)
+    before, separator, after = native.rpartition(closing)
+    assert separator and closing in before
+    assert actual == before + after

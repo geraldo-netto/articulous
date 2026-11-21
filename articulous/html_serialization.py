@@ -13,8 +13,51 @@ RAW = frozenset('textarea title xmp iframe noembed noframes'.split())
 MATH_TEXT = frozenset('mi mo mn ms mtext'.split())
 _ASCII_LOWER = str.maketrans(ascii_uppercase, ascii_lowercase)
 _RAW_NAME = re.compile(r'</?\s*([A-Za-z][^\t\n\r\f />]*)')
-_END_TOKEN = re.compile(r"""(?:[^"'<>]|"[^"]*"|'[^']*')*>""")
-_VOID_CANDIDATE = re.compile(r'</\s*(?ai:' + '|'.join(sorted(VOID)) + r')(?=[\t\n\r\f />]|$)')
+_VOID_CANDIDATE = re.compile(r'</(?ai:(' + '|'.join(sorted(VOID)) + r'))(?=[\t\n\r\f />]|$)')
+_ATTR_GAP = re.compile(r'[\t\n\r\f /]*')
+_ATTR_NAME = re.compile(r'[^\t\n\r\f />][^\t\n\r\f />=]*')
+_ATTR_EQUALS = re.compile(r'[\t\n\r\f ]*=[\t\n\r\f ]*')
+_BARE_VALUE = re.compile(r'[^\t\n\r\f >]*')
+_SCRIPT_NAME = r'(?ai:script)(?=[\t\n\r\f />])'
+_SCRIPT_END = rf'(?P<end></{_SCRIPT_NAME})'
+_SCRIPT_EVENTS = {
+    'data': re.compile(r'(?P<escaped><!(?=--))|' + _SCRIPT_END),
+    'escaped': re.compile(rf'(?P<data>-->)|(?P<double><{_SCRIPT_NAME})|' + _SCRIPT_END),
+    'double': re.compile(rf'(?P<data>-->)|(?P<escaped></{_SCRIPT_NAME})'),
+}
+
+
+def _value_end(source, position):
+    quote = source[position:position + 1]
+    if quote in ('"', "'"):
+        close = source.find(quote, position + 1)
+        return len(source) if close < 0 else close + 1
+    bare = _BARE_VALUE.match(source, position)
+    assert bare is not None
+    return bare.end()
+
+
+def _tag_end(source, position):
+    while True:
+        gap = _ATTR_GAP.match(source, position)
+        assert gap is not None
+        position = gap.end()
+        name = _ATTR_NAME.match(source, position)
+        if name is None:
+            return position + 1 if source.startswith('>', position) else None
+        equals = _ATTR_EQUALS.match(source, name.end())
+        position = _value_end(source, equals.end()) if equals else name.end()
+
+
+def _script_end(source, position):
+    state = 'data'
+    while event := _SCRIPT_EVENTS[state].search(source, position):
+        position = event.end()
+        if event.lastgroup == 'end':
+            return _tag_end(source, position) or len(source)
+        assert event.lastgroup is not None
+        state = event.lastgroup
+    return len(source)
 
 
 def child_context(tag, namespace, attributes):
@@ -37,7 +80,6 @@ class _VoidEnds(HTMLParser):
         self.stack = []
         self.omissions = []
         self.plaintext = False
-        self.omit_end = False
 
     def source_offset(self):
         line, column = self.getpos()
@@ -77,28 +119,33 @@ class _VoidEnds(HTMLParser):
     def handle_startendtag(self, tag, attrs):
         depth = len(self.stack)
         self.handle_starttag(tag, attrs)
-        if len(self.stack) > depth:
+        if len(self.stack) > depth and self.stack[-1] != ('script', 'html'):
             self.stack.pop()
 
+    def parse_starttag(self, i):
+        end = super().parse_starttag(i)
+        if end >= 0 and self.stack and self.stack[-1] == ('script', 'html'):
+            self.stack.pop()
+            self.clear_cdata_mode()
+            return _script_end(self.rawdata, end)
+        return end
+
     def parse_endtag(self, i):
-        self.omit_end = False
-        end = super().parse_endtag(i)
-        if not self.omit_end:
-            return end
+        match = _VOID_CANDIDATE.match(self.rawdata, i)
+        if match is None or self.plaintext or self.namespace(match[1].lower()) != 'html':
+            return super().parse_endtag(i)
+        end = _tag_end(self.rawdata, match.end())
+        if end is None:
+            return len(self.rawdata)
         start = self.source_offset()
-        token = _END_TOKEN.match(self.source, start + 2)
-        if token is None:
-            return end
-        self.omissions.append((start, token.end()))
-        return i + token.end() - start
+        self.omissions.append((start, start + end - i))
+        return end
 
     def handle_endtag(self, tag):
         if self.plaintext:
             return
         tag = self.raw_name()
-        if self.namespace(tag) == 'html' and tag in VOID:
-            self.omit_end = True
-        elif self.stack and self.stack[-1][0] == tag:
+        if self.stack and self.stack[-1][0] == tag:
             self.stack.pop()
 
 

@@ -83,3 +83,64 @@ def test_rel41_unterminated_legacy_token_is_preserved(monkeypatch):
     monkeypatch.setattr(HTMLParser, 'parse_endtag', legacy_end)
     source = '<br></br a=">unterminated'
     assert html5_void_ends(source) == source
+
+
+def test_review28_09_script_escapes_keep_double_escaped_text():
+    data = '<!--<script/label></script>keep</source></script>'
+    assert html5_void_ends(f'<script>{data}<source></source>') == f'<script>{data}<source>'
+
+
+@pytest.mark.parametrize('attributes,remaining', [
+    (' "><p>kept</p> "x>tail', '<p>kept</p> "x>tail'),
+    (' x=n">rest', 'rest'), (' q = "n>m">é', 'é'),
+    (" q='x>unterminated", None), (' =>rest', 'rest'),
+    (' ="x>rest', 'rest'), (' a ==x>rest', 'rest'),
+    (' q=a/b>rest', 'rest'), (' a/ =b>rest', 'rest'),
+    (' q= ', None), (' attr', None), ('', None),
+])
+def test_review28_09_end_tags_follow_attribute_states(attributes, remaining):
+    source = '</source' + attributes
+    assert html5_void_ends(source) == (source if remaining is None else remaining)
+
+
+def test_review28_09_seeded_script_states_match_html5lib():
+    from html5lib import parseFragment
+
+    rng = random.Random(2809)
+    chunks = ['<script>', '<ScRiPt/', '<script ', '<scriptx>', '<script=>',
+              '<!--', '<!-->', '-->', '--', '<', '!', 'é', '</scriptx>', '--!>']
+    for _ in range(450):
+        lead = ''.join(rng.choices(chunks, k=rng.randrange(18)))
+        head = '<script>' + lead + '</script>kept'
+        tail = '<p>inside?</p></script><source>'
+        source = head + '</source>' + tail + '</source>'
+        script = parseFragment(source, namespaceHTMLElements=False).find('script')
+        retained = '</source>' if '</source>' in (script.text or '') else ''
+        assert html5_void_ends(source) == head + retained + tail
+
+
+def test_review28_09_seeded_attribute_ends_match_html5lib():
+    from html5lib._tokenizer import HTMLTokenizer
+    from html5lib.constants import tokenTypes
+
+    rng = random.Random(2908)
+    pieces = ['=', 'x', "'", '"', '/', '<', '>', ' ', '\t', 'é', '0']
+    for _ in range(450):
+        source = '</source ' + ''.join(rng.choices(pieces, k=rng.randrange(32))) + '>tail'
+        tokenizer = HTMLTokenizer(source)
+        expected = source
+        for token in tokenizer:
+            if token.get('type') == tokenTypes['EndTag'] and token.get('name') == 'source':
+                expected = source[tokenizer.stream.position()[1]:]
+                break
+        assert html5_void_ends(source) == expected
+
+
+@pytest.mark.parametrize('source', [
+    '<script>raw</source>',
+    '<script/><!--<script></script>still script</source>',
+    '<script>data</script q="unfinished>literal</source>',
+    '<script><!--><script>data</source></script>',
+])
+def test_review28_09_script_eof_keeps_original_serialization(source):
+    assert html5_void_ends(source) == source

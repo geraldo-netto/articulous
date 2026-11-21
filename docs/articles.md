@@ -64,7 +64,8 @@ special files are skipped with an error. Each article has this shape:
   the old public metadata.
 - `scheduled` articles publish only when `<publish-at>` is present and
   its ISO-8601 timestamp has been reached. A missing or invalid timestamp
-  keeps the article unpublished and emits a warning. Scheduling is
+  keeps the article unpublished and emits a warning. Other statuses ignore
+  the timestamp value. Scheduling is
   evaluated once per build, before article discovery; that timestamp governs
   pages, translation links and all shared projections. A captured composition
   uses its capture timestamp. No background scheduler runs the generator.

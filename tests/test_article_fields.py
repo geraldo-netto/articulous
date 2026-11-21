@@ -122,3 +122,26 @@ def test_review28_01_predefined_and_numeric_references_are_valid(tmp_path, text)
     path.write_text(f'<article><title>{text}</title><date>2025-01-01</date></article>')
     parsed = parse_article_xml(path)
     assert parsed is not None and parsed.title in ('Café', 'R&D')
+
+
+@pytest.mark.parametrize('status,page,listed,warning', [
+    ('', True, True, False), ('published', True, True, False), ('unlisted', True, False, False),
+    ('private', False, False, False), ('draft', False, False, False), ('scheduled', False, False, True),
+])
+def test_review28_22_publish_at_warning_matches_publication(site_root, seo_config, caplog,
+                                                            status, page, listed, warning):
+    from articulous.pipeline import run_build
+
+    path = site_root / 'content/en/first-post.xml'
+    tree = etree.parse(str(path))
+    if status:
+        etree.SubElement(tree.getroot(), 'status').text = status
+    etree.SubElement(tree.getroot(), 'publish-at').text = 'next Tuesday'
+    tree.write(str(path))
+    cli, config = seo_config
+    run_build(cli, config, site_root)
+    output = site_root / 'output'
+    assert (output / 'en/articles/first-post/index.html').is_file() == page
+    for shared in ('en/page/1/index.html', 'rss.xml', 'sitemap.xml', 'search.json'):
+        assert ('first-post' in (output / shared).read_text()) == listed
+    assert ('invalid publish-at' in caplog.text) == warning

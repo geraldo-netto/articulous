@@ -258,7 +258,9 @@ def _validated_publication(
 ) -> Optional[PublicationState]:
     value = (raw or "published").strip().lower()
     if value in _PUBLICATION_POLICIES:
-        if value == "scheduled" and not publish_at:
+        if value != "scheduled":
+            return PublicationState(value)
+        if not publish_at:
             logging.warning(
                 f"Article {path} is scheduled without publish-at — skipping"
             )

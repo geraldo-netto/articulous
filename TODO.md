@@ -24,7 +24,6 @@ Effort `—` means no change is planned for a retained `wont_fix` decision.
 
 | id | status | severity | effort | description | notes |
 |----|--------|----------|--------|-------------|-------|
-| REVIEW28-22 | open | low | small | Docs/observability: an invalid `<publish-at>` logs `treating as scheduled` for articles that publish immediately. | `articles.py:236-245`, called unconditionally from `:257`. Reproduced: no `<status>` plus `<publish-at>next tuesday</publish-at>` logs the warning and the page is written. `docs/articles.md` says publish-at is only used by scheduled articles. Next: parse and warn only for `scheduled`, or reword the message. |
 | SCAL-01 | wont_fix | low | — | Tag grouping retains per-language article references | One traversal groups tag memberships; the memory cost is scoped to one language's tag pages. |
 | CC-01 | wont_fix | low | — | `_stream_projections` collects multiple projections in one pass | The shared scan is intentional; helpers separate projection logic without additional article-discovery passes. |
 | REL-02 | wont_fix | low | — | `_stream_projections` tally counts published pages matching CLI filters | Correct by design; "Discovered N" counts selected article pages while shared projections retain their complete inputs. |

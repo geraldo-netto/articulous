@@ -730,7 +730,13 @@ link auditor uses Articulous to read page references, resolve document bases
 and check links. Morpha reads its own redirect file and reports protocol-relative
 host typos.
 Validation borrows a stable staged tree and caller-owned expectation mappings
-for one synchronous call. Compact records own plain strings, never parser DOM
+for one synchronous call. At 64 or more HTML candidates and two or more
+available CPUs, Articulous parses pages on two threads. Each batch contains
+up to 16 pages and 1 MiB of source, with a larger individual page in its own
+batch. At most three batches are submitted at a time. The error callback
+runs on the caller thread in filename order, and the workers join before
+return or exception. Link, search and sitemap checks run on the caller thread.
+Compact records own plain strings, never parser DOM
 references. File parsers close their inputs before return; retained state is
 bounded by the admitted publication's pages, references, routes and sitemap
 entries. Diagnostics retain all findings.

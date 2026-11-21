@@ -1,4 +1,8 @@
 """Check generated artifacts before making a completed build visible."""
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
+from typing import NamedTuple
 from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
@@ -9,6 +13,7 @@ import re
 
 import lxml.etree as etree
 import lxml.html as html
+from .backends.cpu_capacity import available_cpus
 from .sections import url_origin
 from .tree_entries import tree_entries
 from .validation_contracts import PageReferences, ReferenceSource, ValidationPlan, ValidationResult
@@ -78,35 +83,88 @@ def _regular_html_alias(path):
         return False
 
 
-def _html_sources(output, failures):
-    root = output.resolve()
-    for path in sorted(tree_entries(output, include=_html_candidate)):
-        resolved = _physical_path(path)
-        if not resolved.is_relative_to(root):
-            failures.append(f'{path.relative_to(output)}: HTML page escapes output')
-            continue
-        try:
-            if path.is_symlink() and not _regular_html_alias(path):
-                continue
-            source = resolved.read_bytes()
-        except OSError as error:
-            failures.append(f'{path.relative_to(output)}: cannot read HTML page: {error}')
-            continue
-        yield path, resolved, source
+class _PageRead(NamedTuple):
+    path: Path
+    references: PageReferences | None = None
+    source: bytes | None = None
+    problem: str = ''
+
+
+def _page_source(root, path):
+    resolved = _physical_path(path)
+    if not resolved.is_relative_to(root):
+        return _PageRead(resolved, problem='HTML page escapes output')
+    try:
+        if path.is_symlink() and not _regular_html_alias(path):
+            return _PageRead(resolved)
+        source = resolved.read_bytes()
+    except OSError as error:
+        return _PageRead(resolved, problem=f'cannot read HTML page: {error}')
+    return _PageRead(resolved, source=source)
+
+
+def _parse_page(page, parser, keep_source):
+    if page.source is None:
+        return page
+    retained = page.source if keep_source else None
+    try:
+        document = html.fromstring(page.source, parser=parser)
+    except etree.ParserError as error:
+        return _PageRead(page.path, source=retained, problem=f'HTML parse errors: {error}')
+    return _PageRead(page.path, page_references(document), retained)
+
+
+def _page_batches(sources):
+    batch = []
+    size = 0
+    for page in sources:
+        length = len(page.source or b'')
+        if batch and (len(batch) == 16 or size + length > 1024 * 1024):
+            yield batch
+            batch = []
+            size = 0
+        batch.append(page)
+        size += length
+    if batch:
+        yield batch
+
+
+def _parse_batch(batch, keep_source):
+    parser = html.HTMLParser()
+    return [_parse_page(page, parser, keep_source) for page in batch]
+
+
+def _page_reads(root, paths, keep_source):
+    sources = (_page_source(root, path) for path in paths)
+    if len(paths) < 64 or available_cpus() < 2:
+        parser = html.HTMLParser()
+        for page in sources:
+            yield _parse_page(page, parser, keep_source)
+        return
+    pending = deque()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        for batch in _page_batches(sources):
+            pending.append(pool.submit(_parse_batch, batch, keep_source))
+            if len(pending) == 3:
+                yield from pending.popleft().result()
+        while pending:
+            yield from pending.popleft().result()
 
 
 def read_pages(output, failures, html_errors=None):
     pages = {}
-    for path, resolved, source in _html_sources(output, failures):
-        errors = html_errors(source) if html_errors is not None else ()
-        if errors:
-            failures.append(f'{path.relative_to(output)}: HTML parse errors: {errors}')
-        try:
-            document = html.fromstring(source)
-        except etree.ParserError as error:
-            failures.append(f'{path.relative_to(output)}: HTML parse errors: {error}')
-            continue
-        pages[resolved] = page_references(document)
+    root = output.resolve()
+    paths = sorted(tree_entries(root, include=_html_candidate))
+    with closing(_page_reads(root, paths, html_errors is not None)) as results:
+        for path, page in zip(paths, results, strict=True):
+            if page.source is not None and html_errors is not None:
+                errors = html_errors(page.source)
+                if errors:
+                    failures.append(f'{path.relative_to(root)}: HTML parse errors: {errors}')
+            if page.problem:
+                failures.append(f'{path.relative_to(root)}: {page.problem}')
+            if page.references is not None:
+                pages[page.path] = page.references
     return pages
 
 

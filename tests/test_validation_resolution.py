@@ -166,3 +166,67 @@ class ResolutionScope(unittest.TestCase):
         with self.assertRaises(ValueError) as failure:
             validation.validate_site(self.output, self.base, self.plan)
         self.assertEqual(str(failure.exception), 'second.html: missing /absent.png')
+
+    def test_audit1121_23_parallel_extraction_keeps_callbacks_on_caller(self):
+        import threading
+        pages = 80
+        for index in range(pages):
+            (self.output / f'p{index:02}.html').write_text(f'<p>{index}</p>')
+        caller = threading.get_ident()
+        parsing_threads = set()
+        observed = []
+        parser = validation.html.fromstring
+
+        def parse(*args, **kwargs):
+            parsing_threads.add(threading.get_ident())
+            return parser(*args, **kwargs)
+
+        def inspect_source(source):
+            self.assertEqual(caller, threading.get_ident())
+            observed.append(source)
+            return []
+
+        with patch.object(validation, 'available_cpus', return_value=2), patch.object(validation.html, 'fromstring', parse):
+            refs = validation.read_pages(self.output, [], inspect_source)
+        self.assertEqual(observed, [p.read_bytes() for p in sorted(self.output.glob('*.html'))])
+        self.assertEqual(len(refs), pages + 2)
+        self.assertNotIn(caller, parsing_threads)
+
+    def test_audit1121_23_parallel_and_serial_preserve_diagnostic_order(self):
+        for index in range(65):
+            (self.output / f'e{index:02}.html').write_bytes(b'' if index % 3 == 0 else b'<p>ok</p>')
+        def warnings(source):
+            return ['empty source'] if not source else []
+        def inspect(cpus):
+            failures = []
+            with patch.object(validation, 'available_cpus', return_value=cpus):
+                pages = validation.read_pages(self.output, failures, warnings)
+            return list(pages.items()), failures
+        serial, parallel = inspect(1), inspect(2)
+        self.assertEqual(serial, parallel)
+        self.assertIn('empty source', parallel[1][0])
+        self.assertIn('Document is empty', parallel[1][1])
+
+    def test_audit1121_23_workers_settle_when_checker_raises(self):
+        import threading
+        for index in range(65):
+            (self.output / f'p{index:02}.html').write_bytes(b'<p>ok</p>')
+        workers = set()
+        parse_batch = validation._parse_batch
+        def observe(*args):
+            workers.add(threading.current_thread())
+            return parse_batch(*args)
+        def cancel(_):
+            raise KeyboardInterrupt
+        with patch.object(validation, 'available_cpus', return_value=2), patch.object(validation, '_parse_batch', observe):
+            with self.assertRaises(KeyboardInterrupt):
+                validation.read_pages(self.output, [], cancel)
+        self.assertTrue(workers)
+        self.assertFalse(any(worker.is_alive() for worker in workers))
+
+    def test_audit1121_23_batches_bound_bytes_and_keep_oversize_pages_whole(self):
+        sizes = (1, 1024 * 1024 - 1, 2, 1024 * 1024 + 1, 0)
+        values = [validation._PageRead(self.output, source=bytes(size)) for size in sizes]
+        batches = list(validation._page_batches(values))
+        self.assertEqual(batches, [values[:2], values[2:3], values[3:4], values[4:]])
+        self.assertEqual(list(validation._page_batches([])), [])

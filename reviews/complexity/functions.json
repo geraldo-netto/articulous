@@ -6850,19 +6850,19 @@
             "projection_sha256": "0062833cf79a65f911acc0ead4180cfec8dc2512d18ef02eff2184179988f60d"
           },
           {
-            "body_sha256": "6a76cfc4337fb05251d3cdecc330cb663510b273f8b64edc753d8ca92a459fff",
+            "body_sha256": "46c58a162da4f2a28d661bb7ad50ae088f12fdf2d64d2b4e7b60a0f99cf4d420",
             "column": 0,
-            "complexity": 4,
+            "complexity": 5,
             "end_column": 70,
-            "end_line": 62,
+            "end_line": 64,
             "line": 46,
             "name": "optimize",
-            "projection_sha256": "4eaa56b69cea66835b3853be85bb11b6d97557c45be4229c54e71938f937f3b4"
+            "projection_sha256": "59e8f771c189619a163c280e0e3c399ab1247fb7d5c5cc4df3268594e3677138"
           }
         ],
         "language": "python",
         "path": "articulous/image_optimization.py",
-        "sha256": "683cae4216f825afc59f202ec533b339ecb5e24801614f9fbf4ccff5b94da7ee"
+        "sha256": "690c0f95ca7d12402fd3533c6c610d37e5458bfaa9a2f8c5875a5313db24ed61"
       },
       {
         "functions": [
@@ -22493,11 +22493,21 @@
             "line": 282,
             "name": "test_review28_31_seeded_literal_names_and_extensionless_input",
             "projection_sha256": "499259b4df4df41ff9f9cacebab8847430b3a36e96347944129bf05533e8dd53"
+          },
+          {
+            "body_sha256": "77163dd2a3ee3d313d144dabf2e7fc15bb3161623fe3939c2bc656a9076b3316",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 29,
+            "end_line": 306,
+            "line": 295,
+            "name": "test_audit1121_01_empty_conversion_preserves_source",
+            "projection_sha256": "9844452ccb5fbaefe019c0d7dec87dd160f5f2e9da0d6b6b8d88caf579000815"
           }
         ],
         "language": "python",
         "path": "tests/test_image_optimization.py",
-        "sha256": "bf1690c305700f76736e62c3287e9c3d861b8928933cfa7d6c1ec782434674fe"
+        "sha256": "251fcd324e47cb6f7e9cb07ba1d97c112348e9782df2eb2c151f8851bfadf30f"
       },
       {
         "functions": [

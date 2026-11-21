@@ -289,3 +289,18 @@ def test_review28_31_seeded_literal_names_and_extensionless_input(tmp_path):
         source = tmp_path / name
         source.write_bytes(content)
         assert ImageMagick().dimensions(source) == (5, 3)
+
+
+@pytest.mark.parametrize('apply', [False, True])
+def test_audit1121_01_empty_conversion_preserves_source(tmp_path, apply):
+    root = tmp_path / 'images'
+    root.mkdir()
+    source = root / 'photo.jpg'
+    source.write_bytes(b'original')
+    backend = FakeImages(tmp_path, b'')
+    try:
+        with pytest.raises(ValueError, match='empty'):
+            list(optimize(root, backend, largest=1, quality=82, threshold=0, kinds={'jpeg'}, apply=apply))
+    finally:
+        assert source.read_bytes() == b'original'
+        assert backend.closed

@@ -57,6 +57,8 @@ def optimize(root: Path, backend: ImageBackend, *, largest: int, quality: int,
             backend.shrink(path, target, largest, quality)
             require_image(path, generation, digest)
             old, new = generation.size, target.stat().st_size
+            if new == 0:
+                raise ValueError(f'Image conversion produced an empty file: {path}')
             if new < old and apply:
                 apply_image(path, target, generation, digest)
             yield ImageResult(path, width, height, old, min(old, new))

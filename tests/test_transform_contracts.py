@@ -7,9 +7,16 @@ from unittest.mock import Mock
 
 import pytest
 
-from articulous.engines import LxmlEngine, StylesheetCapture
+from articulous.engines import LxmlEngine, SaxonCEngine, StylesheetCapture
 from articulous.filesystem import atomic_output
 from articulous.pipeline import _make_xslt_task, _resolve_parallelism, _section_runtime, build_ctx_from_config
+
+
+def test_matrix05_captured_engines_report_provider_capabilities(tmp_path):
+    capture = StylesheetCapture()
+    for engine, external in ((LxmlEngine(), False), (SaxonCEngine(tmp_path / 'Transform'), True)):
+        assert engine.capabilities.external_process is external
+        assert capture.wrap(engine).capabilities == engine.capabilities
 
 
 def test_api002_contract_import_needs_no_engine_or_native_modules():

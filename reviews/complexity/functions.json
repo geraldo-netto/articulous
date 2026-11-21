@@ -34097,12 +34097,22 @@
       {
         "functions": [
           {
+            "body_sha256": "617ccf53c53407e8eb71d72f3b9ba9e7d50153e32436cf7eeedeb0fa954ef217",
+            "column": 0,
+            "complexity": 2,
+            "end_column": 71,
+            "end_line": 19,
+            "line": 15,
+            "name": "test_matrix05_captured_engines_report_provider_capabilities",
+            "projection_sha256": "91cc7052cc5447694f15f5c1e3997f110c49521bcee981fc6ccba320853411a2"
+          },
+          {
             "body_sha256": "4e220c500494a07060d000bcb4b952b7ed0df5c581dd97cdaf1bf0f055238440",
             "column": 0,
             "complexity": 1,
             "end_column": 48,
-            "end_line": 25,
-            "line": 15,
+            "end_line": 32,
+            "line": 22,
             "name": "test_api002_contract_import_needs_no_engine_or_native_modules",
             "projection_sha256": "478b17f2d399b81ac22edd1ec6835def076baa7883e70caef301d265dcdc3917"
           },
@@ -34111,8 +34121,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 22,
-            "end_line": 34,
-            "line": 32,
+            "end_line": 41,
+            "line": 39,
             "name": "IndependentEngine.__init__",
             "projection_sha256": "5631ed847730ea6a3a62fd3d0e84eb6779ed83d0d55d585e9a3cab0ee6f40b14"
           },
@@ -34121,8 +34131,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 42,
-            "end_line": 37,
-            "line": 36,
+            "end_line": 44,
+            "line": 43,
             "name": "IndependentEngine.prepare_stylesheet",
             "projection_sha256": "d87f9037cdf2e79b1b8502858edc105bbc466850852bb9fc3813e82c28b0c612"
           },
@@ -34131,8 +34141,8 @@
             "column": 4,
             "complexity": 1,
             "end_column": 26,
-            "end_line": 40,
-            "line": 39,
+            "end_line": 47,
+            "line": 46,
             "name": "IndependentEngine.resolve_stylesheet_fingerprint",
             "projection_sha256": "b1abee3cef3d4265161cfe87da21342a0d1bd77e040b4273f355e46d7c37169d"
           },
@@ -34141,8 +34151,8 @@
             "column": 4,
             "complexity": 2,
             "end_column": 23,
-            "end_line": 49,
-            "line": 42,
+            "end_line": 56,
+            "line": 49,
             "name": "IndependentEngine.run",
             "projection_sha256": "b6214bec278c8516c4aca169cb39282bf1db12732cc3ef096397dd542147abcd"
           },
@@ -34151,8 +34161,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 45,
-            "end_line": 73,
-            "line": 53,
+            "end_line": 80,
+            "line": 60,
             "name": "test_api002_structural_engine_runs_captured_pipeline",
             "projection_sha256": "cfb7158f9ef8cc7b4bd453a9f09165dc5851d0bf31b759d1c5f6e8e53350f675"
           },
@@ -34161,9 +34171,9 @@
             "column": 61,
             "complexity": 1,
             "end_column": 70,
-            "end_line": 72,
-            "line": 72,
-            "name": "test_api002_structural_engine_runs_captured_pipeline.<lambda>@72:61",
+            "end_line": 79,
+            "line": 79,
+            "name": "test_api002_structural_engine_runs_captured_pipeline.<lambda>@79:61",
             "projection_sha256": "c51b94574f43210acf79ce59eb9bcac46de4cb67fb7bc79531325f93a865a94c"
           },
           {
@@ -34171,8 +34181,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 32,
-            "end_line": 80,
-            "line": 77,
+            "end_line": 87,
+            "line": 84,
             "name": "test_api002_rejects_incomplete_engine_contract",
             "projection_sha256": "bdeca48e9252a802a41da1780411e4b4f1689417397666e9d64c2c45a946a94c"
           },
@@ -34181,8 +34191,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 36,
-            "end_line": 87,
-            "line": 84,
+            "end_line": 94,
+            "line": 91,
             "name": "test_api002_capability_values_are_boolean",
             "projection_sha256": "f1997212f304cf55d3dd546611518e787cc3abc94414d4e00fa9a49a33d15b0b"
           },
@@ -34191,8 +34201,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 98,
-            "line": 91,
+            "end_line": 105,
+            "line": 98,
             "name": "test_api002_invalid_inputs_use_independent_errors",
             "projection_sha256": "5560158197941df8a0a8e9215ffe80b845d497d982f65f67c91a4c331bbf9c8e"
           },
@@ -34201,8 +34211,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 30,
-            "end_line": 107,
-            "line": 102,
+            "end_line": 114,
+            "line": 109,
             "name": "test_api002_invalid_parameter_mappings_reject_before_output",
             "projection_sha256": "099e015786894ead19803bd47a972be4067a029c1b2649a571f6b5f87bb82ec0"
           },
@@ -34211,8 +34221,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 76,
-            "end_line": 123,
-            "line": 110,
+            "end_line": 130,
+            "line": 117,
             "name": "test_api002_capture_preserves_provider_failure_identity",
             "projection_sha256": "efda9070f572df1a24c408f3aa84f4c2c36c300fdc26b6f86a40585d4bb7e949"
           },
@@ -34221,8 +34231,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 94,
-            "end_line": 130,
-            "line": 127,
+            "end_line": 137,
+            "line": 134,
             "name": "test_api002_invalid_dry_run_uses_contract_error",
             "projection_sha256": "0fa3af2193320304db6201deb15bdcfec974952141a13c16fbeb57e9ea725e6a"
           },
@@ -34231,8 +34241,8 @@
             "column": 0,
             "complexity": 1,
             "end_column": 58,
-            "end_line": 137,
-            "line": 133,
+            "end_line": 144,
+            "line": 140,
             "name": "test_api002_prepare_errors_use_contract_channel",
             "projection_sha256": "5eeb7383baf7f3cde185d6bfa7f2eb259c51c6997d9d61986fb887b0ed91f312"
           },
@@ -34241,8 +34251,8 @@
             "column": 0,
             "complexity": 2,
             "end_column": 41,
-            "end_line": 149,
-            "line": 141,
+            "end_line": 156,
+            "line": 148,
             "name": "test_review28_33_invalid_names_reject_before_backend_dispatch",
             "projection_sha256": "0d01f9a8e2cc257872e725fee639dac3a0b7ff6817101a8582dcc9f00d88acb1"
           },
@@ -34251,15 +34261,15 @@
             "column": 0,
             "complexity": 3,
             "end_column": 42,
-            "end_line": 158,
-            "line": 152,
+            "end_line": 165,
+            "line": 159,
             "name": "test_review28_33_xml_parameter_name_boundaries",
             "projection_sha256": "defcb7bf66dce21a0e832ff69d41db2f53fa94a45414b7b4ffaf4adc066cf5f3"
           }
         ],
         "language": "python",
         "path": "tests/test_transform_contracts.py",
-        "sha256": "6d286c52f3b5c5979c0a8a4b7697eb97164edd28c9e20c24c63204c03a158eed"
+        "sha256": "f2f93ca872e539611d27530cb80a423cd23e1ee02d22dee255d73eeff0041a73"
       },
       {
         "functions": [

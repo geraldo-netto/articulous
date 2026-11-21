@@ -118,9 +118,9 @@ last cache use in UTC seconds. A cache update removes other dated entries
 whose inactivity reaches the updating build's `build.cache_retention_days`
 (default 3, in 24-hour days). An unchanged build refreshes that timestamp when
 the clock advances. Incremental dry runs and validation-only builds leave the
-cache untouched. Older cache entries with no valid activity timestamp stay
-available until that output is used again, preserving any legacy ownership
-manifest during migration.
+cache untouched. Retention leaves inactive records with missing or invalid
+activity timestamps in place. When that output is built again, selected pages
+are rebuilt and the cache receives a fresh timestamp.
 With partitioned storage, retention scans the inactive files and reuses
 timestamps from a bounded, rebuildable index when file metadata matches.
 It verifies each eligible file's header again under that output's cache lock

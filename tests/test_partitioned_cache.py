@@ -580,3 +580,27 @@ def test_review28_25_expiry_skips_namespace_during_writer_admission(site_root, c
         assert active.is_file()
     assert cache_store._prune_root(active, None, site_root)
     assert not active.exists()
+
+
+@pytest.mark.parametrize('partitioned', [False, True], ids=['shared', 'partitioned'])
+@pytest.mark.parametrize('stamp,rebuild', [
+    ({}, True), ({'__last_used__': None}, True), ({'__last_used__': -1}, True),
+    ({'__last_used__': False}, True), ({'__last_used__': '0'}, True),
+    ({'__last_used__': 0}, False),
+])
+def test_compat06_active_cache_requires_valid_activity(site_root, cache_clock, partitioned, stamp, rebuild):
+    config = _config(enable=partitioned)
+    pipeline.run_build(REQUEST, config, site_root)
+    output = site_root / 'output'
+    cache_path = _selected(site_root, 'output').path
+    cache = json.loads(cache_path.read_text())
+    record = cache['__output_roots__'][str(output)]
+    del record['__last_used__']
+    record.update(stamp)
+    cache_path.write_text(json.dumps(cache, indent=2))
+    page = output / 'en/articles/first-post/index.html'
+    os.utime(page, ns=(1_000_000_000, 1_000_000_000))
+
+    pipeline.run_build(REQUEST, config, site_root)
+    assert (page.stat().st_mtime_ns != 1_000_000_000) is rebuild
+    assert _record(site_root, 'output')['__last_used__'] == cache_clock[0]

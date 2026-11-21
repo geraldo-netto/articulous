@@ -67,7 +67,7 @@ from .models import (
     section_pattern,
 )
 from .migrations import OutputMigrations
-from .output_cache import refresh_output_cache
+from .output_cache import last_used, refresh_output_cache
 from .runtime import (
     TrackedCache,
     WeightedTask,
@@ -2046,8 +2046,8 @@ def _load_build_cache(cache_path: Path, output_dir: Path, partitioned=False) -> 
     stored = load_cache(cache_path)
     root = str(output_dir.resolve())
     roots = selected_roots(stored, root, partitioned)
-    data = roots.get(root, {})
-    cache = TrackedCache(data if isinstance(data, dict) else {})
+    data = roots.get(root)
+    cache = TrackedCache(data if last_used(data) is not None else {})
     return cache, roots
 
 

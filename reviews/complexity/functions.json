@@ -9515,14 +9515,14 @@
             "projection_sha256": "e8307fb290e8eb1d4540de9df41a19a8b11f2b21cc011ea33262689743d35b38"
           },
           {
-            "body_sha256": "fb9c0426da7eb1a44383fba39dbc9647d9724ca4eef2c5b39186ca5d9e5bd01e",
+            "body_sha256": "a65c6e166a8865b3f545cd2bd89394fddde4fec292c17ab01e766cee963f103b",
             "column": 0,
             "complexity": 2,
             "end_column": 23,
             "end_line": 2051,
             "line": 2045,
             "name": "_load_build_cache",
-            "projection_sha256": "c28f4d30ae74dda608ca597668abd3e522b7313acb79f3b3bb8349778f7419c2"
+            "projection_sha256": "531d408ee12db28ccf62aef7028a56aaa97afb23dbcae8a81fcc6168c20d69ae"
           },
           {
             "body_sha256": "cc1bd807375a2ddc6d1f6711deceda9516d0f0749ce269ea9f03692a67440ae0",
@@ -9857,7 +9857,7 @@
         ],
         "language": "python",
         "path": "articulous/pipeline.py",
-        "sha256": "729b5e217ba65fdd62f84bc735e3107f2fa49007064c6cce3b375f5ff6adf8a9"
+        "sha256": "c5d70c59c69b3b6e495776abb896abeb4b523145579666baf87b093285a1bfdf"
       },
       {
         "functions": [
@@ -24211,11 +24211,21 @@
             "line": 573,
             "name": "test_review28_25_expiry_skips_namespace_during_writer_admission",
             "projection_sha256": "dcadb7c04b15783cf90dc1780194431ff7fc77be0fdc11652e137d92d5665bc7"
+          },
+          {
+            "body_sha256": "37cc28702cd7d10a3b2b86064be8e22cf0bb705eb09e06a3c49a162c8a7681c1",
+            "column": 0,
+            "complexity": 1,
+            "end_column": 74,
+            "end_line": 606,
+            "line": 591,
+            "name": "test_compat06_active_cache_requires_valid_activity",
+            "projection_sha256": "951319f08b18896d8f087672c21b68e3e2e4733445c291b277e3a21ff63c835d"
           }
         ],
         "language": "python",
         "path": "tests/test_partitioned_cache.py",
-        "sha256": "5722ba9f7c86d69ad8855df5e2b98d4c238800b42fa6f722748aa54b81b44439"
+        "sha256": "e170e8f0a03acf08d21bf5ce33efd1b524a90ca58e829a0d7a283de978040c31"
       },
       {
         "functions": [
